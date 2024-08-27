@@ -1,0 +1,48 @@
+/* FloatingButton.css */
+.floating-button {
+  position: fixed;
+  bottom: 20px; /* Distance from the bottom of the screen */
+  right: 20px;  /* Distance from the right of the screen */
+  z-index: 1000; /* Ensure it’s above other content */
+}
+
+.floating-button button {
+  background-color: #ff4081; /* Button color */
+  border: none;
+  color: white;
+  border-radius: 50%;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  font-size: 24px;
+  transition: background-color 0.3s;
+}
+
+.floating-button button:hover {
+  background-color: #e040fb; /* Button color on hover */
+}
+
+/* FloatingButton.css */
+.floating-button {
+    position: fixed;
+    bottom: 20px; /* Distance from the bottom of the screen */
+    right: 20px;  /* Distance from the right of the screen */
+    z-index: 1000; /* Ensure it’s above other content */
+  }
+  
+  .floating-button button {
+    background-color: #ff4081; /* Button color */
+    border: none;
+    color: white;
+    border-radius: 50%;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    font-size: 24px;
+    transition: background-color 0.3s;
+  }
+  
+  .floating-button button:hover {
+    background-color: #e040fb; /* Button color on hover */
+  }
+  
