@@ -3,23 +3,16 @@ import React, { useEffect } from 'react';
 import Header from '../../components/Header'
 import Layout from '../../layout/Layout'
 import { Textfield,SubmitButton } from '../../components/Buttons/Textfield';
-import { ComboBox,ComboBoxwithlabel } from '../../components/Buttons/ComboBox';
+import { ComboBox } from '../../components/Buttons/ComboBox';
 import SummernoteEditor from '../../components/Buttons/Summernote';
-import FloatingActionButtons from '../../components/floatingbuttons/floatingActionButton';
 
 
 export default function NewPage() {
 
     useEffect(() => {
-        // Initialize WYSIHTML5 when the component is mounted
-       
-        $('#action').select2();
+        
+       // $('#action').select2(); 
    
-
-        // Cleanup function (optional) to remove the WYSIHTML5 instance
-        // return () => {
-        //     $('#content').wysihtml5('destroy');
-        // };
     }, []);
     return (
         <>
@@ -93,12 +86,17 @@ export default function NewPage() {
                                          combodata="Action"
                                          />
                                     </div>
-                                    <div class="col-sm-12"> 
+                                    
+                                    <div class="col-sm-10"> 
                                          <ComboBox 
                                          id="category"
-                                         combodata="Category"
-                                       
-                                        
+                                         combodata="Category"                                        
+                                         />
+                                    </div>
+                                    <div class="col-sm-12"> 
+                                         <ComboBox 
+                                         id="subcategory"
+                                         combodata="Sub Category"                                        
                                          />
                                     </div>
                                     <div class="col-sm-12">

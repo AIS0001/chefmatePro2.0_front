@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+// Import FontAwesome CSS in your entry point file, usually index.js or App.js
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 

@@ -9,7 +9,7 @@ export default function Topbar() {
 				<div className="nav-header pull-left">
 					<div className="logo-wrap">
 						<a href="index.html">
-							<img class="brand-img" src="dist/img/logo.png" alt="brand"/>
+							<img class="brand-img" src="../../dist/img/logo.png" alt="brand"/>
 							<span className="brand-text">Hound</span>
 						</a>
 					</div>
@@ -150,11 +150,11 @@ export default function Topbar() {
 										<hr className="light-grey-hr ma-0"/>
 										<div className="product-carousel owl-carousel owl-theme text-center">
 											<a href="#">
-												<img src="dist/img/chair.jpg" alt="chair" />
+												<img src="../../dist/img/chair.jpg" alt="chair" />
 												<span>Circle chair</span>
 											</a>
 											<a href="#">
-												<img src="dist/img/chair2.jpg" alt="chair"/>
+												<img src="../../../../dist/img/chair2.jpg" alt="chair"/>
 												<span>square chair</span>
 											</a>
 											<a href="#">
@@ -162,11 +162,11 @@ export default function Topbar() {
 												<span>semi circle chair</span>
 											</a>
 											<a href="#">
-												<img src="dist/img/chair4.jpg" alt="chair"/>
+												<img src="../../dist/img/chair4.jpg" alt="chair"/>
 												<span>wooden chair</span>
 											</a>
 											<a href="#">
-												<img src="dist/img/chair2.jpg" alt="chair"/>
+												<img src="../../dist/img/chair2.jpg" alt="chair"/>
 												<span>square chair</span>
 											</a>								
 										</div>
@@ -234,7 +234,7 @@ export default function Topbar() {
 									<div className="sl-item">
 										<a href="javascript:void(0)">
 											<div className="sl-avatar">
-												<img class="img-responsive" src="dist/img/avatar.jpg" alt="avatar"/>
+												<img class="img-responsive" src="../../dist/img/avatar.jpg" alt="avatar"/>
 											</div>
 											<div className="sl-content">
 												<span className="inline-block capitalize-font  pull-left truncate head-notifications">Sandy Doe</span>
@@ -270,7 +270,7 @@ export default function Topbar() {
 						</ul>
 					</li>
 					<li className="dropdown auth-drp">
-						<a href="#" className="dropdown-toggle pr-0" data-toggle="dropdown"><img src="dist/img/user1.png" alt="user_auth" class="user-auth-img img-circle"/><span class="user-online-status"></span></a>
+						<a href="#" className="dropdown-toggle pr-0" data-toggle="dropdown"><img src="../../dist/img/user1.png" alt="user_auth" class="user-auth-img img-circle"/><span class="user-online-status"></span></a>
 						<ul className="dropdown-menu user-auth-dropdown" data-dropdown-in="flipInX" data-dropdown-out="flipOutX">
 							<li>
 								<a href="profile.html"><i className="zmdi zmdi-account"></i><span>Profile</span></a>
