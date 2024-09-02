@@ -2,9 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 // Import FontAwesome CSS in your entry point file, usually index.js or App.js
 import '@fortawesome/fontawesome-free/css/all.min.css';
-
+import axios from "axios";
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { startOfDay } from 'date-fns';
+axios.defaults.baseURL = "http://127.0.0.1:4400/api";
+//axios.defaults.baseURL = "https://jdapi2.dhruvinnovations.in/api";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

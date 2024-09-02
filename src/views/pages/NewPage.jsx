@@ -5,6 +5,7 @@ import Layout from '../../layout/Layout'
 import { Textfield,SubmitButton } from '../../components/Buttons/Textfield';
 import { ComboBox } from '../../components/Buttons/ComboBox';
 import SummernoteEditor from '../../components/Buttons/Summernote';
+import DatePicker from '../../components/Buttons/Date';
 
 
 export default function NewPage() {
@@ -100,9 +101,14 @@ export default function NewPage() {
                                          />
                                     </div>
                                     <div class="col-sm-12">
+                                        <DatePicker />
+                                    </div>
+           
+                                    <div class="col-sm-12">
                                           <SubmitButton 
                                           type="submit"
                                           name="Publish"
+                                          cls="btn btn-success btn-anim"
                                           />
                                     </div>
                                       </div>
