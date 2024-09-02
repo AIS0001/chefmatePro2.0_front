@@ -1,0 +1,202 @@
+.menu {
+    list-style-type: none;
+  padding: 0;
+  margin: 0;
+  }
+  
+  .menu-item {
+    position: relative;
+  }
+  
+  .submenu {
+    list-style-type: none;
+  padding: 0;
+  margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 1s ease; /* Slow down the transition */
+    background-color: white;
+    
+  }
+  
+  .submenu.show {
+    max-height: 500px; /* Adjust to fit the submenu content */
+    transition: max-height 1s ease; /* Slow down the transition */
+  }
+  
+  .submenu li {
+    
+    line-height: 1.2; /* Adjust line height as needed */
+  padding: 8px 16px; /* Add padding for spacing */
+  }
+  
+  .submenu li a {
+    text-decoration: none;
+    color: #333;
+  }
+  
+  .submenu li a:hover {
+    color: #007bff;
+  }
+
+
+
+  
+  /* Input Group Styling */
+  .input-group {
+    position: relative;
+    margin: 20px 0;
+    width: 300px;
+  }
+  
+  .input-group input {
+    font-size: 16px;
+    border: none;
+    border-bottom: 2px solid #ddd;
+    padding: 8px 0;
+    background: transparent;
+    width: 100%;
+    outline: none;
+    color: #333;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .input-group input:focus {
+    border-color: #009688;
+    box-shadow: 0 2px 4px rgba(0, 150, 136, 0.2);
+  }
+  
+  /* Label Styling */
+  .input-group label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 16px;
+    color: #999;
+    pointer-events: none;
+    transition: 0.3s ease;
+    transform-origin: left top;
+  }
+  
+  .input-group input:focus + label,
+  .input-group input:not(:placeholder-shown) + label {
+    top: -10px;
+    left: 0;
+    font-size: 12px;
+    color: #009688;
+  }
+  
+  /* Highlight Styling */
+  .input-group .highlight {
+    position: absolute;
+    height: 2px;
+    background: #009688;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    transition: width 0.3s ease;
+  }
+  
+  .input-group input:focus ~ .highlight {
+    width: 100%;
+  }
+  
+  /* Bar Styling */
+  .input-group .bar {
+    position: absolute;
+    height: 2px;
+    background: #009688;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    transition: width 0.3s ease;
+  }
+  
+  .input-group input:focus ~ .bar {
+    width: 100%;
+  }
+  
+  
+
+
+  /* Container for centering input */
+.custom-select-wrapper {
+    position: relative;
+    width: 300px;
+  }
+  
+  /* Custom Select Box Styling */
+  .custom-select {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 40px;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .custom-select:hover {
+    border-color: #0056b3;
+    box-shadow: 0 4px 8px rgba(0, 86, 179, 0.3);
+  }
+  
+  .select-selected {
+    flex: 1;
+    padding: 10px;
+    color: #333;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  
+  .select-arrow {
+    font-size: 18px;
+    color: #0056b3;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+  }
+  
+  /* Arrow Animation */
+  .select-arrow.open {
+    transform: rotate(-180deg);
+  }
+  
+  /* Options Styling */
+  .custom-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    max-height: 200px;
+    overflow-y: auto;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+  .custom-select .custom-options {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* Option Styling */
+  .custom-option {
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .custom-option:hover {
+    background-color: #0056b3;
+    color: #fff;
+  }
+  

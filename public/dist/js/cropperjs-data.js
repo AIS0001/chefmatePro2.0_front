@@ -1,4 +1,4 @@
-/*Cropperjs Init*/
+/* eslint-disable no-undef */
 
 window.onload = function () {
   'use strict';

@@ -1,6 +1,6 @@
 // auth.js
 const isAuthenticated = () => {
-    return !!localStorage.getItem("authToken");
+    return !!localStorage.getItem("token");
 };
 
 export default isAuthenticated;

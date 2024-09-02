@@ -1,11 +1,13 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import React, { useState } from 'react'
 import Dashboard from "./views/dashboard/dashboard";
-import Pages from './views/pages/Pages';
-import NewBlog from './views/blogs/NewBlog';
+
 import NewPage from './views/pages/NewPage';
 import PrivateRoute from './utility/PrivateRoute';
 import Login from './views/pages/Login';
+
+//Users
+import NewUser from './views/pages/users/NewUser';
 function App() {
   return (
     <>
@@ -18,9 +20,9 @@ function App() {
 
           
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+          <Route path="/pages/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
 
           <Route path='/pages/newpage' element={< NewPage />} />
-          <Route path='/blogs/newblog' element={< NewBlog />} />
 
 
         </Routes>

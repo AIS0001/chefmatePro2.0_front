@@ -1,4 +1,4 @@
-/*Chartist Init*/
+/* eslint-disable no-undef */
 
 $( document ).ready(function() {
 	"use strict";
