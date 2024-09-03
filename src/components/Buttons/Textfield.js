@@ -32,18 +32,18 @@ const TextfieldwithLabel = ({ lable, type, id, name, value }) => {
     </>
   )
 }
-
-const SubmitButton = ({ name, type ,cls}) => {
+const SubmitButton = ({ name, type, cls }) => {
   return (
-    <>
-      <div className='form-group'>
-        <button type={type} className={cls}>
-          <i className='icon-rocket'></i>
-          <span className='btn-text'>{name}</span>
-        </button>
-      </div>
-    </>
+      <>
+          <div className='form-group'>
+              <button type={type} className={cls}>
+                  <i className='icon-rocket'></i>
+                  <span className='btn-text'>{name}</span>
+              </button>
+          </div>
+      </>
   )
 }
 
-export { Textfield, TextfieldwithLabel, SubmitButton }
+
+export { Textfield, TextfieldwithLabel,SubmitButton }

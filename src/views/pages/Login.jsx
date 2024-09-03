@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import { Link, useNavigate } from "react-router-dom";
-import React, { useState, useEffect,useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
@@ -28,7 +28,7 @@ export default function Login() {
             .then((res) => {
                 if (res.status === 200) {
                     const data = res.data;
-                     console.log(data);
+                    console.log(data);
                     const { expiresIn } = data;
                     if (res.data.token) {
                         // alert("Status 200");
@@ -84,7 +84,7 @@ export default function Login() {
     }, []);
     return (
         <>
-        <ToastContainer />
+            <ToastContainer />
             <div class="wrapper pa-0">
                 <header className="sp-header">
                     <div className="sp-logo-wrap pull-left">
@@ -112,7 +112,7 @@ export default function Login() {
                                                 <h6 className="text-center nonecase-font txt-grey">Enter your details below</h6>
                                             </div>
                                             <div className="form-wrap">
-                                            <form onSubmit={handleSubmit}>
+                                                <form onSubmit={handleSubmit}>
                                                     <div className="form-group">
                                                         <label class="control-label mb-10" htmlFor="exampleInputEmail_2">UserID</label>
                                                         <input type="text" class="form-control" required="" id="uname"

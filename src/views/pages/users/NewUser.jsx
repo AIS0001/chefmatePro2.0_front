@@ -1,29 +1,91 @@
 /* eslint-disable no-undef */
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Header from '../../../components/Header';
 import Layout from '../../../layout/Layout'
-import { Textfield,SubmitButton } from '../../../components/Buttons/Textfield';
-import { ComboBox } from '../../../components/Buttons/ComboBox';
+import { format } from "date-fns";
+import { ComboBox, ComboBoxwithlabel } from '../../../components/Buttons/ComboBox';
 import { AdvanceInput } from '../../../components/Buttons/advanceinput';
-import { AdvanceComboBox } from '../../../components/Buttons/advanceinput';
-import DatePicker from '../../../components/Buttons/Date';
+import { SubmitButtons } from "../../../components/Buttons/SubmitButton";
+import { SubmitButton } from "../../../components/Buttons/Textfield";
 
 
 export default function NewUser() {
+    let currentDate = format(new Date(), "yyyy-MM-dd");
+    //  const headers = { Authorization: authheader().access_token };
+    const [data, setData] = useState([]);
+    const [errors, setErrors] = useState({});
+    const [formdata, setFormData] = useState({
+        name: "",
+        pass: "",
+        contact: "",
+        email: "",
+        type: "",
+        lastloggedin: currentDate,
+    });
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+
+    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formdata1 = e.target;
+  
+    axios
+      .post(
+        "/register",
+        {
+          name: formdata1.name.value,
+          pass: formdata1.pass.value,
+          contact: formdata1.contact.value,
+          email: formdata1.email.value,
+          type: formdata1.usertype.value,
+          lastloggedin: currentDate,
+        },
+        { headers }
+      )
+      .then((res) => {
+        fetchData("users", setData, "id");
+        toast.success('user added successfully!');
+       
+       setFormData({
+        name: "",
+    pass: "",
+    contact: "",
+    email: "",
+    type: "",
+    lastloggedin: currentDate,
+       })
+      })
+      .catch((err) => {
+       // alert(err.message)
+       toast.error('Error in adding user');
+        console.log(err.message);
+      });
+    // handleAddRecord(formdata);
+    setFormData({});
+    setErrors({});
+  };
 
     useEffect(() => {
-        
-       // $('#action').select2(); 
-   
+        console.log(formdata);
+        // $('#action').select2(); 
+
     }, []);
     return (
         <>
             <Layout>
                 <Header title="Add New User" />
-               
+
                 <div className='row'>
                     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
-                        <div class="panel panel-danger card-view">
+                        <div class="panel panel-primary card-view">
                             <div class="panel-heading">
                                 <div class="pull-left">
                                     <h6 class="panel-title txt-light">panel danger</h6>
@@ -33,40 +95,65 @@ export default function NewUser() {
                             <div class="panel-wrapper collapse in">
                                 <div class="panel-body">
 
-                                <div class="row">
-						<div class="col-md-12">
-							<div class="panel panel-default card-view">
-                            <Textfield 
-                                          id="title"
-                                            type="text"
-                                            name="title"                                            
-                                            value=""
-                                            placeholder="Enter Page Title"
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <form onSubmit={handleSubmit}>
+                                                <div class="panel panel-default card-view">
 
-                                            />
-                                            <AdvanceInput 
-                                             id="title"
-                                             type="text"
-                                             name="title"                                            
-                                             value=""
-                                            
-                                            />
+                                                    <AdvanceInput
+                                                        id="name"
+                                                        onChange={(e) => handleInputChange(e)}
+                                                        value={formdata.name}
+                                                        type="text"
+                                                        name="name"
+                                                        label="Name"
 
-<AdvanceInput 
-                                             id="title"
-                                             type="date"
-                                             name="title"                                            
-                                             value=""
-                                            
-                                            />
-                                           
+                                                    />
+                                                    <AdvanceInput
+                                                        id="pass"
+                                                        onChange={(e) => handleInputChange(e)}
+                                                        value={formdata.pass}
+                                                        type="password"
+                                                        name="pass"
+                                                        label="Password"
+
+                                                    />
+                                                    <AdvanceInput
+                                                        id="contact"
+                                                        onChange={(e) => handleInputChange(e)}
+                                                        value={formdata.contact}
+                                                        type="text"
+                                                        name="contact"
+                                                        label="Contact"
+
+                                                    />
+                                                    <AdvanceInput
+                                                        id="email"
+                                                        onChange={(e) => handleInputChange(e)}
+                                                        value={formdata.email}
+                                                        type="text"
+                                                        name="email"
+                                                        label="Email"
+
+                                                    />
+                                                    <ComboBox
+                                                        id="usertype"
+                                                        tablename="usertypes"
+                                                        groupby="name"
+                                                    />
+
+                                                    <SubmitButton
+                                                        type="submit"
+                                                        name="Save"
+                                                        cls="btn btn-success btn-anim"
+                                                    />
 
 
-								
-							</div>
-						</div>
-					</div>
-    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -81,47 +168,8 @@ export default function NewUser() {
                             </div>
                             <div class="panel-wrapper collapse in">
                                 <div class="panel-body">
-                                <div class="col-sm-12">
-                                            <Textfield 
-                                            id="Order"
-                                            type="text"
-                                            name="order"
-                                            value=""
-                                            placeholder="Order No."
-                                            />
-                                    </div>
-                                    
-                                    <div class="col-sm-12">
-                                         <ComboBox 
-                                         id="action"
-                                         combodata="Action"
-                                         />
-                                    </div>
-                                    
-                                    <div class="col-sm-10"> 
-                                         <ComboBox 
-                                         id="category"
-                                         combodata="Category"                                        
-                                         />
-                                    </div>
-                                    <div class="col-sm-12"> 
-                                         <ComboBox 
-                                         id="subcategory"
-                                         combodata="Sub Category"                                        
-                                         />
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <DatePicker />
-                                    </div>
-           
-                                    <div class="col-sm-12">
-                                          <SubmitButton 
-                                          type="submit"
-                                          name="Publish"
-                                          cls="btn btn-success btn-anim"
-                                          />
-                                    </div>
-                                      </div>
+
+                                </div>
                             </div>
                         </div>
                     </div>

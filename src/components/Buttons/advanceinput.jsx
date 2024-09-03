@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react'
 
 
-const AdvanceInput = ({ id, type, name, value}) => {
+const AdvanceInput = ({  onChange,  id, type, name, value,label}) => {
   return (
     <>
      <div className="container">
@@ -11,8 +11,10 @@ const AdvanceInput = ({ id, type, name, value}) => {
           name={name}
           id={id} 
           value={value}
+          onChange={onChange}
+          // Spread any additional props passed to the input
           placeholder=" "/>
-      <label for="modern-input">Your Name</label>
+      <label for="modern-input">{label}</label>
       <span className="highlight"></span>
       <span className="bar"></span>
     </div>

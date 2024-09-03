@@ -1,5 +1,8 @@
 import React from 'react'
 
+import Footer from "./Footer";
+import WhatsAppButton from '../components/floatingbuttons/Whatsappbutton';
+import PhoneButton from '../components/floatingbuttons/PhoneButton';
 
 export default function MainContent({ children }) {
   return (
@@ -10,6 +13,9 @@ export default function MainContent({ children }) {
           {children}
 
         </div>
+        <WhatsAppButton phoneNumber="66986643299" />
+        <PhoneButton phoneNumber="66986643299" />
+        <Footer />
       </div>
     </>
   )
