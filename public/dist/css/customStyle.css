@@ -235,3 +235,15 @@
     margin: 10px;
   }
 }
+
+
+
+/* Custom styles for the calendar */
+.rbc-day-slot {
+  min-height: 50px; /* Set a minimal height for the date column */
+}
+
+/* Optional: Adjust the height of slots if necessary */
+.rbc-time-slot {
+  min-height: 50px; /* Adjust slot height */
+}
