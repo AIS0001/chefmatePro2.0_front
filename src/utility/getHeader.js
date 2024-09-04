@@ -1,8 +1,3 @@
-// auth.js
-const isAuthenticated = () => {
-    return !!localStorage.getItem("token");
-};
-
 // Function to get the auth token (this can be modified based on where you store the token)
 const getAuthToken = () => {
     return localStorage.getItem('token'); // Or wherever you store your token
@@ -17,10 +12,9 @@ const getAuthToken = () => {
       },
     };
   };
-  export {
-    isAuthenticated,
-    getAuthToken,
-    getHeaders,
-    
-      }
 
+  export {
+getAuthToken,
+getHeaders,
+
+  }

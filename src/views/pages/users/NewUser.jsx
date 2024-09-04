@@ -2,14 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import { getHeaders } from "../../../utility/getHeader";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import Header from '../../../components/Header';
 import Layout from '../../../layout/Layout'
 import { format } from "date-fns";
 import { ComboBox, ComboBoxwithlabel } from '../../../components/Buttons/ComboBox';
 import { AdvanceInput } from '../../../components/Buttons/advanceinput';
-import { SubmitButtons } from "../../../components/Buttons/SubmitButton";
 import { SubmitButton } from "../../../components/Buttons/Textfield";
 
+
+import fetchData  from "../../../functions/fetchData";
 
 export default function NewUser() {
     let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -48,7 +54,7 @@ export default function NewUser() {
           type: formdata1.usertype.value,
           lastloggedin: currentDate,
         },
-        { headers }
+        { getHeaders }
       )
       .then((res) => {
         fetchData("users", setData, "id");
@@ -72,9 +78,14 @@ export default function NewUser() {
     setFormData({});
     setErrors({});
   };
+//Fetch data query 
+
 
     useEffect(() => {
-        console.log(formdata);
+       
+        fetchData('users', setData, 'id',{});
+      //  fetchData(tblname,setData, orderby, where)
+       // console.log(formdata);
         // $('#action').select2(); 
 
     }, []);
@@ -82,7 +93,7 @@ export default function NewUser() {
         <>
             <Layout>
                 <Header title="Add New User" />
-
+                <ToastContainer/>
                 <div className='row'>
                     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
                         <div class="panel panel-primary card-view">
@@ -168,7 +179,26 @@ export default function NewUser() {
                             </div>
                             <div class="panel-wrapper collapse in">
                                 <div class="panel-body">
-
+                                <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map(item => (
+                        <tr key={item.id}>
+                            <td>{item.id}</td>
+                            <td>{item.name}</td>
+                            <td>{item.email}</td>
+                            <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
                                 </div>
                             </div>
                         </div>

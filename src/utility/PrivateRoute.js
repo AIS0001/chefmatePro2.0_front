@@ -1,7 +1,7 @@
 // PrivateRoute.js
 import React from 'react';
 import { Route, Navigate ,useLocation  } from 'react-router-dom';
-import  isAuthenticated  from './auth.js';
+import  {isAuthenticated}  from './auth.js';
 
 const PrivateRoute = ({ element, ...rest }) => {
     const location = useLocation();

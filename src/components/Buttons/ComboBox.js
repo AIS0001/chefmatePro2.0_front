@@ -1,7 +1,6 @@
 /* eslint-disable no-undef */
 
 import React, { useState, useEffect } from 'react';
-import { fetchUserTypes } from '../../services/api';
 import { fetchComboData } from '../../services/api';
 
 const ComboBox = ({ id, tablename, groupby }) => {
