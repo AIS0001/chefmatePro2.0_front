@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComboData } from '../../services/api';
 
-const ComboBox = ({ id, tablename, groupby }) => {
+const ComboBox = ({ id,name, onChange,tablename, groupby,value }) => {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,7 +49,10 @@ const ComboBox = ({ id, tablename, groupby }) => {
         <div className='combo-box'>
           <select
             id={id}
+            name={name}
             className='combo-box-select'
+            value={value}
+            onChange={onChange}
             data-style='form-control btn-default btn-outline'
           >
             {options.map((option) => (

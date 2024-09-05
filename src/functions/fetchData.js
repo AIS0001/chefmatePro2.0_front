@@ -14,7 +14,7 @@ const fetchData = async (tblname, setData, orderby, where) => {
     if (where) {
         const whereParams = new URLSearchParams(where).toString();
         url += `/${whereParams}`;
-        alert(whereParams);
+       // alert(whereParams);
        
     }
    
@@ -24,7 +24,7 @@ const fetchData = async (tblname, setData, orderby, where) => {
     if (setData && typeof setData === 'function') {
         setData(response.data.data)
       
-        console.log(response.data);
+       // console.log(response.data);
     }
 
 }

@@ -247,3 +247,160 @@
 .rbc-time-slot {
   min-height: 50px; /* Adjust slot height */
 }
+
+
+.filter-btn {
+  font-size: 12px;
+  color: #666;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.filter-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+
+/* Pagination.css */
+.pagination {
+  display: flex;
+  justify-content: left;
+  margin: 20px 0;
+}
+
+.pagination button {
+  margin: 0 5px;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.export-icons {
+  display: flex;
+  gap: 10px; /* Space between icons */
+}
+
+.export-icon {
+  cursor: pointer; /* Pointer cursor for clickable icons */
+}
+
+.export-icon:hover {
+  color: #007bff; /* Change color on hover (optional) */
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 15px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.card-header-light {
+  background-color: #ffffff; /* Light color for the header */
+  color: #343a40; /* Darker color for the text */
+}
+.card-header-grey {
+  background-color: #535353; /* Light color for the header */
+  color: #ffffff; /* Darker color for the text */
+}
+.card-header-parrot {
+  background-color: #68e668; /* Parrot color for the header */
+  color: #fbfdff; /* Darker color for the text */
+}
+.card-body {
+  padding: 15px;
+  background-color: #ffffff;
+}
+
+
+.table-wrap {
+  margin: 2px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background-color: #e5fdc9; /* Dark background color */
+  color: #ffffff; /* White text color */
+  font-weight: bold; /* Bold text */
+  padding: 10px; /* Padding around text */
+  text-align: left; /* Align text to the left */
+  border-bottom: 2px solid #dee2e6; /* Bottom border */
+}
+
+.table th:hover {
+  background-color: #19191a; /* Lighter background on hover */
+}
+
+.table td {
+  padding: 10px; /* Padding around text */
+  border-bottom: 1px solid #dee2e6; /* Bottom border */
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2; /* Alternating row background color */
+}
+
+.table tr:hover {
+  background-color: #e9ecef; /* Highlight row on hover */
+}
+
+
+
+
+.notification {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  font-size: 14px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.notification.show {
+  opacity: 1;
+}
+
+.notification.success {
+  background-color: #28a745;
+}
+
+.notification.error {
+  background-color: #dc3545;
+}
+
+.notification.info {
+  background-color: #17a2b8;
+}

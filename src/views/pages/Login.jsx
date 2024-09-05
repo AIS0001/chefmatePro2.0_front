@@ -28,7 +28,7 @@ export default function Login() {
             .then((res) => {
                 if (res.status === 200) {
                     const data = res.data;
-                    console.log(data);
+                //  console.log(data);
                     const { expiresIn } = data;
                     if (res.data.token) {
                         // alert("Status 200");
