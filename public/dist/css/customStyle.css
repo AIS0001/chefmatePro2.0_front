@@ -325,7 +325,7 @@
   color: #ffffff; /* Darker color for the text */
 }
 .card-header-parrot {
-  background-color: #68e668; /* Parrot color for the header */
+  background-color: #dcf3dc; /* Parrot color for the header */
   color: #fbfdff; /* Darker color for the text */
 }
 .card-body {
@@ -351,13 +351,13 @@
   background-color: #e5fdc9; /* Dark background color */
   color: #ffffff; /* White text color */
   font-weight: bold; /* Bold text */
-  padding: 10px; /* Padding around text */
+  padding: 5px; /* Padding around text */
   text-align: left; /* Align text to the left */
   border-bottom: 2px solid #dee2e6; /* Bottom border */
 }
 
 .table th:hover {
-  background-color: #19191a; /* Lighter background on hover */
+  background-color: #e2e2e4; /* Lighter background on hover */
 }
 
 .table td {
@@ -376,31 +376,4 @@
 
 
 
-.notification {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  padding: 10px;
-  border-radius: 5px;
-  color: white;
-  font-size: 14px;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
 
-.notification.show {
-  opacity: 1;
-}
-
-.notification.success {
-  background-color: #28a745;
-}
-
-.notification.error {
-  background-color: #dc3545;
-}
-
-.notification.info {
-  background-color: #17a2b8;
-}

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import React, { useState } from 'react'
 import Dashboard from "./views/dashboard/dashboard";
 
+import PandaLogin from './views/pages/pandaLogin';
 import NewPage from './views/pages/NewPage';
 import PrivateRoute from './utility/PrivateRoute';
 import Login from './views/pages/Login';
@@ -18,6 +19,7 @@ function App() {
 
         <Routes>
           <Route path='/' element={< Login />} />
+          <Route path='/panda' element={< PandaLogin />} />
           {/* Protected Route */}
 
           

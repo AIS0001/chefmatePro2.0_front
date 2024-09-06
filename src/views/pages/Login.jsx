@@ -84,25 +84,12 @@ export default function Login() {
     }, []);
     return (
         <>
-            <ToastContainer />
-            <div class="wrapper pa-0">
-                <header className="sp-header">
-                    <div className="sp-logo-wrap pull-left">
-                        <Link to="index.html">
-                            <img class="brand-img mr-10" src="dist/img/logo.png" alt="brand" />
-                            <span className="brand-text">Hound</span>
-                        </Link>
-                    </div>
-                    <div className="form-group mb-0 pull-right">
-                        <span className="inline-block pr-10">Don't have an account?</span>
-                        <Link class="inline-block btn btn-info btn-rounded btn-outline" to="signup.html">Sign Up</Link>
-                    </div>
-                    <div className="clearfix"></div>
-                </header>
-                <div className="page-wrapper pa-0 ma-0 auth-page">
-                    <div className="container-fluid">
 
-                        <div className="table-struct full-width full-height">
+<div className="login-page">
+      {/* Left Column - Login Form */}
+      <div className="login-form-container">
+       
+      <div className="table-struct ">
                             <div className="table-cell vertical-align-middle auth-form-wrap">
                                 <div className="auth-form  ml-auto mr-auto no-float">
                                     <div className="row">
@@ -112,7 +99,7 @@ export default function Login() {
                                                 <h6 className="text-center nonecase-font txt-grey">Enter your details below</h6>
                                             </div>
                                             <div className="form-wrap">
-                                                <form onSubmit={handleSubmit}>
+                                                <form className="login-form" onSubmit={handleSubmit}>
                                                     <div className="form-group">
                                                         <label class="control-label mb-10" htmlFor="exampleInputEmail_2">UserID</label>
                                                         <input type="text" class="form-control" required="" id="uname"
@@ -145,6 +132,31 @@ export default function Login() {
                                 </div>
                             </div>
                         </div>
+      </div>
+          {/* Right Column - SaaS Product Pictures */}
+          <div className="product-images-container">
+       
+      </div>
+    </div>
+
+            <ToastContainer />
+            <div class="wrapper pa-0">
+                {/* <header className="sp-header">
+                    <div className="sp-logo-wrap pull-left">
+                        <Link to="index.html">
+                            <img class="brand-img mr-10" src="dist/img/logo.png" alt="brand" />
+                            <span className="brand-text">Hound</span>
+                        </Link>
+                    </div>
+                    <div className="form-group mb-0 pull-right">
+                        <span className="inline-block pr-10">Don't have an account?</span>
+                        <Link class="inline-block btn btn-info btn-rounded btn-outline" to="signup.html">Sign Up</Link>
+                    </div>
+                    <div className="clearfix"></div>
+                </header> */}
+                <div className="page-wrapper pa-0 ma-0 auth-page">
+                    <div className="container-fluid">
+
 
                     </div>
 
