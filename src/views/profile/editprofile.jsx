@@ -3,24 +3,22 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { getHeaders } from "../../../utility/getHeader";
+import { getHeaders } from "../../utility/getHeader";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ExportDataTable from "../../../components/Buttons/ExportdataTable";
 
-import CardComponent from "../../../components/cards/CardComponent";
+import CardComponent from "../../components/cards/CardComponent";
+import ProfileCard from "../../components/cards/profileCard";
 
-import Header from '../../../components/Header';
-import Layout from '../../../layout/Layout'
+import Header from "../../components/Header";
+import Layout from "../../layout/Layout";
 import { format } from "date-fns";
-import { ComboBox, ComboBoxwithlabel } from '../../../components/Buttons/ComboBox';
-import { AdvanceInput } from '../../../components/Buttons/advanceinput';
-import { SubmitButton } from "../../../components/Buttons/Textfield";
-import DataTable from "../../../components/data-tables/dataTable";
-import SimpleDataTable from "../../../components/data-tables/SimpledataTable";
-import fetchData from "../../../functions/fetchData";
+import { ComboBox } from "../../components/Buttons/ComboBox";
+import { AdvanceInput } from '../../components/Buttons/advanceinput';
+import { SubmitButton } from "../../components/Buttons/Textfield";
+import fetchData from "../../functions/fetchData";
 
-export default function NewUser() {
+export default function EditProfile() {
     let currentDate = format(new Date(), "yyyy-MM-dd");
     //  const headers = { Authorization: authheader().access_token };
     const [data, setData] = useState([]);
@@ -92,8 +90,8 @@ export default function NewUser() {
 
         const fetchAndSetData = async () => {
             try {
-                await fetchData('users', setData, 'id', {});
-                console.log('Fetched data:', data); // Add this line for debugging
+                await fetchData('users', setData, 'id', {uname:localStorage.getItem('uname')});
+                //console.log('Fetched data:', data); // Add this line for debugging
             } catch (error) {
                 console.error('Error in useEffect:', error);
             }
@@ -108,9 +106,9 @@ export default function NewUser() {
                 <Header title="Add New User" />
                 <ToastContainer />
                 <div className='row'>
-                    <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
 
-                        <CardComponent title="Fill User's Information" headerColor="primary" pull="left" bodyClass="panel-body">
+                        <CardComponent title="Edit Profile Information" headerColor="darkblue" pull="left" bodyClass="panel-body">
                             <div class="row">
                                 <div class="col-md-12">
                                     <form onSubmit={handleSubmit}>
@@ -119,7 +117,7 @@ export default function NewUser() {
                                             <AdvanceInput
                                                 id="name"
                                                 onChange={(e) => handleInputChange(e)}
-                                                value={formdata.name}
+                                                value={data.name}
                                                 type="text"
                                                 name="name"
                                                 label="Name"
@@ -128,7 +126,7 @@ export default function NewUser() {
                                             <AdvanceInput
                                                 id="pass"
                                                 onChange={(e) => handleInputChange(e)}
-                                                value={formdata.pass}
+                                                value={data.pass}
                                                 type="password"
                                                 name="pass"
                                                 label="Password"
@@ -137,7 +135,7 @@ export default function NewUser() {
                                             <AdvanceInput
                                                 id="contact"
                                                 onChange={(e) => handleInputChange(e)}
-                                                value={formdata.contact}
+                                                value={data.contact}
                                                 type="text"
                                                 name="contact"
                                                 label="Contact"
@@ -176,27 +174,15 @@ export default function NewUser() {
 
                     </div>
 
-                    <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
-                        <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="primary"
-                            pull="right"
-                            bodyClass="panel-body">
-
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
-
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                    <CardComponent title="My Profile Information" headerColor="darkblue" pull="left" bodyClass="panel-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    
+                                      <ProfileCard user={data} />
+                                   
+                                </div>
+                            </div>
                         </CardComponent>
 
                     </div>

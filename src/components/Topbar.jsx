@@ -61,9 +61,9 @@ export default function Topbar() {
 												</Link>
 											</li>
 											<li>
-												<Link to="contact-card.html" className="connection-item">
+												<Link to="/users/editprofile" className="connection-item">
 													<i className="zmdi zmdi-assignment-account"></i>
-													<span className="block">contact</span>
+													<span className="block">Profile</span>
 												</Link>
 											</li>
 										</ul>

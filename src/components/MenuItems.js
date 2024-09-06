@@ -44,7 +44,8 @@ const menuItems = [
     icon: 'account-circle',
     dataTargetId: '#users',
     submenu: [
-      { name: 'New User', path: '/pages/users/newuser' },
+      { name: 'New User', path: '/users/newuser' },
+      { name: 'Edit Profile', path: '/users/editprofile' },
       
     ]
   },

@@ -327,9 +327,18 @@
   color: #ffffff; /* Darker color for the text */
 }
 .card-header-parrot {
-  background-color: #68e668; /* Parrot color for the header */
+  background-color: #dcf3dc; /* Parrot color for the header */
   color: #fbfdff; /* Darker color for the text */
 }
+.card-header-darkblue {
+  background-color: #284152; /* Parrot color for the header */
+  color: #fbfdff; /* Darker color for the text */
+}
+.card-header-darkblue {
+  background-color: #284152; /* Parrot color for the header */
+  color: #fbfdff; /* Darker color for the text */
+}
+
 .card-body {
   padding: 15px;
   background-color: #ffffff;
@@ -353,13 +362,13 @@
   background-color: #e5fdc9; /* Dark background color */
   color: #ffffff; /* White text color */
   font-weight: bold; /* Bold text */
-  padding: 10px; /* Padding around text */
+  padding: 5px; /* Padding around text */
   text-align: left; /* Align text to the left */
   border-bottom: 2px solid #dee2e6; /* Bottom border */
 }
 
 .table th:hover {
-  background-color: #19191a; /* Lighter background on hover */
+  background-color: #e2e2e4; /* Lighter background on hover */
 }
 
 .table td {
@@ -376,132 +385,55 @@
 }
 
 
-
-
-.notification {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  padding: 10px;
-  border-radius: 5px;
-  color: white;
-  font-size: 14px;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-
-.notification.show {
-  opacity: 1;
-}
-
-.notification.success {
-  background-color: #28a745;
-}
-
-.notification.error {
-  background-color: #dc3545;
-}
-
-.notification.info {
-  background-color: #17a2b8;
-}
-
-
-
-.page-container {
-  display: flex;
-  align-items: center; /* Center vertically */
-  justify-content: center; /* Center horizontally */
-  height: 100vh; /* Full viewport height */
-  position: relative;
-}
-.login-container {
-  width: 100%;
-  max-width: 450px; /* Set a max-width for the login container */
-  max-height: 650px; /* Set a max-width for the login container */
-  padding: 20px;
-  background-color: rgba(255, 252, 252, 0.7); /* Semi-transparent black background */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Darker shadow */
+/* ProfileCard.css */
+.profile-card {
+  width: 350px;
+  margin: 20px auto;
+  background-color: #fff;
   border-radius: 10px;
-  text-align: center;
-  position: relative;
-  backdrop-filter: blur(10px); /* Blur effect for the background */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  font-family: 'Arial', sans-serif;
 }
 
-
-.image-area {
-  flex: 1;
-  background: url('https://spdload.com/wp-content/uploads/2019/09/SaaS-1.png') no-repeat center center;
-  background-size: cover;
+.profile-card-header {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background-color: #007bff;
+  color: #fff;
 }
 
-
-.panda {
-  width: 150px;
-  height: 150px;
-  background: url('https://img.freepik.com/premium-photo/panda-bear-sitting-ground-with-its-eyes-open_1021856-20766.jpg') no-repeat center center;
-  background-size: contain;
-  margin: 0 auto 20px;
-  position: relative;
-}
-
-.hand {
-  width: 50px;
-  height: 50px;
-  background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy4rNuZpfZESfTp4ncQZdLXVXVvbQ9lepfjQ&s') no-repeat center center;
-  background-size: contain;
-  position: absolute;
-  top: 55px;
-  cursor: pointer;
-}
-
-.hand.left {
-  left: -10px;
-  transition: left 0.5s ease;
-}
-
-.hand.right {
-  right: -10px;
-  transition: right 0.5s ease;
-}
-
-.eye {
-  width: 25px;
-  height: 25px;
-  background-color: orange; /* Orange color for the eye */
+.profile-image img {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  position: absolute;
-  top: 45px;
-  left: 35px;
-  display: none;
+  margin-right: 20px;
+  object-fit: cover;
 }
 
-.eye.right {
-  left: 85px;
+.profile-info h3 {
+  margin: 0;
+  font-size: 20px;
 }
 
-input {
-  width: 100%;
-  padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid #949494; /* Dark border */
-  border-radius: 5px;
-  background-color: #fff; /* Dark background for input */
-  color: #0a0a0a; /* White text for input */
+.profile-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #ddd;
 }
 
-button {
-  width: 100%;
-  padding: 15px;
-  background-color: orange; /* Orange background for button */
-  color: black; /* Black text for button */
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+.profile-card-body {
+  padding: 20px;
 }
 
-button:hover {
-  background-color: #ff8c00; /* Darker orange on hover */
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.info-item span {
+  font-weight: bold;
 }

@@ -4,7 +4,7 @@ import ExportDataTable from '../Buttons/ExportdataTable';
 
 const SimpleDataTable = ({ columns, data }) => {
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
+    const rowsPerPage = 5;
   
     const handlePageChange = (page) => {
       setCurrentPage(page);
@@ -17,7 +17,7 @@ const SimpleDataTable = ({ columns, data }) => {
 
   return (
     <>
-     <ExportDataTable tableId="datatable1" />
+   
      <div className="table-wrap">
       <div className="table-responsive">
         <table className="table table-hover display pb-30">
@@ -28,15 +28,9 @@ const SimpleDataTable = ({ columns, data }) => {
               ))}
             </tr>
           </thead>
-          <tfoot>
-            <tr>
-              {columns.map((col, index) => (
-                <th key={index}>{col.label}</th>
-              ))}
-            </tr>
-          </tfoot>
+      
           <tbody>
-            {data.map((item, rowIndex) => (
+            {paginatedData.map((item, rowIndex) => (
               <tr key={rowIndex}>
                 {columns.map((col, colIndex) => (
                   <td key={colIndex}>{item[col.field]}</td>
