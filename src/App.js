@@ -24,7 +24,7 @@ function App() {
 
           
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
-          <Route path="/pages/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
+          <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
 
           <Route path='/pages/newpage' element={< NewPage />} />
           <Route path='/hotelbooking' element={< HotelBookingCalendar />} />
