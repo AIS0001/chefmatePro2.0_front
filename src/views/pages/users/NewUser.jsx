@@ -76,14 +76,7 @@ export default function NewUser() {
         }
 
         // Clear form data and errors
-        setFormData({
-            name: "",
-            pass: "",
-            contact: "",
-            email: "",
-            type: "",
-            lastloggedin: currentDate,
-        });
+        setFormData({});
         setErrors({});
     };
 
@@ -98,6 +91,7 @@ export default function NewUser() {
         const fetchAndSetData = async () => {
             try {
                 await fetchData('users', setData, 'id', {});
+                console.log('Fetched data:', data); // Add this line for debugging
             } catch (error) {
                 console.error('Error in useEffect:', error);
             }
@@ -183,12 +177,13 @@ export default function NewUser() {
                     <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
                         <CardComponent 
                             title=""
-                            headerContent={
-                                    <ExportDataTable
-                                        tableId="datatable1"
-                                        tableData={data} // Pass complete dataset to export function
-                                    />
-                                }
+                            headerContent=
+                            {
+                            <ExportDataTable
+                                tableId="datatable1"
+                                tableData={data} // Pass complete dataset to export function
+                            />
+                            }
                             headerColor="primary"
                             pull="right"
                             bodyClass="panel-body">
@@ -196,7 +191,6 @@ export default function NewUser() {
                             {data.length === 0 ? (
                                 <p>No data available</p>
                             ) : (
-
                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
                             )}
 

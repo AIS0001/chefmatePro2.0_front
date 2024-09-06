@@ -14,10 +14,10 @@ const fetchData = async (tblname, setData, orderby, where) => {
     if (where) {
         const whereParams = new URLSearchParams(where).toString();
         url += `/${whereParams}`;
-       // alert(whereParams);
+        
        
     }
-   
+    alert(url);
     const response = await axios.get(url, getHeaders());
 
     // If a setData function is provided, update the state with the fetched data

@@ -56,7 +56,7 @@ const ComboBox = ({ id,name, onChange,tablename, groupby,value }) => {
             data-style='form-control btn-default btn-outline'
           >
             {options.map((option) => (
-              <option key={option.id} value={option.id}>
+              <option key={option.id} value={option.name}>
                 {option.name}
               </option>
 
