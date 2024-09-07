@@ -96,7 +96,7 @@ export default function Topbar() {
 													<Link to="index3.html">Project</Link>
 												</li>
 												<li>
-													<Link to="profile.html">profile</Link>
+													<Link to="/users/editprofile">profile</Link>
 												</li>
 											</ul>
 											<Link to="widgets.html"><div className="pull-left"><i class="zmdi zmdi-flag mr-20"></i><span class="right-nav-text">widgets</span></div><div class="pull-right"><span class="label label-warning">8</span></div><div class="clearfix"></div></Link>
@@ -266,7 +266,7 @@ export default function Topbar() {
 							<Link to="#" className="dropdown-toggle pr-0" data-toggle="dropdown"><img src="../../dist/img/user1.png" alt="user_auth" class="user-auth-img img-circle" /><span class="user-online-status"></span></Link>
 							<ul className="dropdown-menu user-auth-dropdown" data-dropdown-in="flipInX" data-dropdown-out="flipOutX">
 								<li>
-									<Link to="profile.html"><i className="zmdi zmdi-account"></i><span>Profile</span></Link>
+									<Link to="/users/editprofile"><i className="zmdi zmdi-account"></i><span>Profile</span></Link>
 								</li>
 								<li>
 									<Link to="#"><i className="zmdi zmdi-card"></i><span>my balance</span></Link>

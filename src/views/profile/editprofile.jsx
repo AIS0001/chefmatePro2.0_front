@@ -65,7 +65,7 @@ export default function EditProfile() {
 
         const fetchAndSetData = async () => {
             try {
-                await fetchData('users', setData, 'id', { uname: localStorage.getItem('uname') });
+                await fetchData('users', setData, 'id', { uname: localStorage.getItem('uname') || sessionStorage.getItem('uname') });
                 //console.log('Fetched data:', data); // Add this line for debugging
             } catch (error) {
                 console.error('Error in useEffect:', error);
