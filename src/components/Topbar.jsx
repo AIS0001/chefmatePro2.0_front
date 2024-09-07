@@ -294,7 +294,7 @@ export default function Topbar() {
 								</li>
 								<li className="divider"></li>
 								<li>
-									<Link to="#"><i className="zmdi zmdi-power"></i><span>Log Out</span></Link>
+									<Link to="/logout"><i className="zmdi zmdi-power"></i><span>Log Out</span></Link>
 								</li>
 							</ul>
 						</li>

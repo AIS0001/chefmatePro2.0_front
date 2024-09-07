@@ -10,6 +10,7 @@ const AdvanceInput = ({  onChange,  id, type, name, value,label}) => {
       <input type={type}
           name={name}
           id={id} 
+          
           value={value}
           onChange={onChange}
           // Spread any additional props passed to the input

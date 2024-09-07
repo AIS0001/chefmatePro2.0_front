@@ -17,14 +17,14 @@ const fetchData = async (tblname, setData, orderby, where) => {
         
        
     }
-    console.log(url);
+    //console.log(url);
     const response = await axios.get(url, getHeaders());
 
     // If a setData function is provided, update the state with the fetched data
     if (setData && typeof setData === 'function') {
         setData(response.data.data)
       
-      // console.log(response.data);
+       console.log(response.data);
     }
 
 }

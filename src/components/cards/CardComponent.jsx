@@ -35,7 +35,7 @@ CardComponent.propTypes = {
 };
 
 CardComponent.defaultProps = {
-    headerColor: 'card-header-light', // Default class for light header color
+    headerColor: 'card-header-lightblue', // Default class for light header color
     bodyClass: '',
 };
 

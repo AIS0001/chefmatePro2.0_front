@@ -6,7 +6,7 @@ import Pagination from '../Pagination/Pagination';
 const DataTable = ({ columns, data }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
-  const rowsPerPage = 5;
+  const rowsPerPage = 10;
   const fullData = data;
 
   // Sort data based on sortConfig

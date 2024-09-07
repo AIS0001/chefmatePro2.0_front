@@ -110,7 +110,7 @@ export default function NewUser() {
                 <div className='row'>
                     <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
 
-                        <CardComponent title="Fill User's Information" headerColor="primary" pull="left" bodyClass="panel-body">
+                        <CardComponent title="Fill User's Information" headerColor="lightblue" pull="left" bodyClass="panel-body">
                             <div class="row">
                                 <div class="col-md-12">
                                     <form onSubmit={handleSubmit}>
@@ -175,8 +175,17 @@ export default function NewUser() {
                         </CardComponent>
 
                     </div>
+                    {/* <ExportDataTable
+                                tableId="tableid"
+                                tableData={data} /> */}
+                    <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
+                    {/* {data.length === 0 ? (
+                                <p>No data available</p>
+                            ) : (
+                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
+                                //<SimpleDataTable columns={columns} data={data}/>
+                            )} */}
 
-                    <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
                         <CardComponent 
                             title=""
                             headerContent=
@@ -186,7 +195,7 @@ export default function NewUser() {
                                 tableData={data} // Pass complete dataset to export function
                             />
                             }
-                            headerColor="primary"
+                            headerColor="lightblue"
                             pull="right"
                             bodyClass="panel-body">
 

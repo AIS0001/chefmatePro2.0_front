@@ -330,14 +330,15 @@
   background-color: #dcf3dc; /* Parrot color for the header */
   color: #fbfdff; /* Darker color for the text */
 }
-.card-header-darkblue {
-  background-color: #284152; /* Parrot color for the header */
+.card-header-lightblue {
+  background-color: #66b2ff; /* Light Blue color for the header */
   color: #fbfdff; /* Darker color for the text */
 }
 .card-header-darkblue {
   background-color: #284152; /* Parrot color for the header */
   color: #fbfdff; /* Darker color for the text */
 }
+
 
 .card-body {
   padding: 15px;
@@ -359,7 +360,7 @@
 }
 
 .table th {
-  background-color: #e5fdc9; /* Dark background color */
+  background-color: #bdbdbd; /* Dark background color */
   color: #ffffff; /* White text color */
   font-weight: bold; /* Bold text */
   padding: 5px; /* Padding around text */
@@ -436,4 +437,38 @@
 
 .info-item span {
   font-weight: bold;
+}
+
+
+
+.btn.btn-darkblue,
+.wizard>.actions a.btn-darkblue,
+.dt-buttons .btn-darkblue.dt-button,
+.tablesaw-sortable th.tablesaw-sortable-head button.btn-darkblue,
+.sweet-alert button.btn-darkblue,
+.owl-theme .owl-nav .btn-darkblue[class*="owl-"],
+button.btn-darkblue.fc-agendaDay-button.fc-state-default.fc-corner-right,
+button.btn-darkblue.fc-month-button.fc-state-default.fc-corner-left,
+button.btn-darkblue.fc-agendaWeek-button,
+.btn-darkblue.fc-prev-button,
+.btn-darkblue.fc-next-button,
+.btn-darkblue.fc-today-button {
+  background: #284152;
+  border: solid 1px #284152;
+}
+
+.btn.btn-orange,
+.wizard>.actions a.btn-orange,
+.dt-buttons .btn-orange.dt-button,
+.tablesaw-sortable th.tablesaw-sortable-head button.btn-orange,
+.sweet-alert button.btn-orange,
+.owl-theme .owl-nav .btn-orange[class*="owl-"],
+button.btn-orange.fc-agendaDay-button.fc-state-default.fc-corner-right,
+button.btn-orange.fc-month-button.fc-state-default.fc-corner-left,
+button.btn-orange.fc-agendaWeek-button,
+.btn-orange.fc-prev-button,
+.btn-orange.fc-next-button,
+.btn-orange.fc-today-button {
+  background: #eea302;
+  border: solid 1px #eea302;
 }
