@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import ExportDataTable from '../Buttons/ExportdataTable';
 import Pagination from '../Pagination/Pagination';
+import Lightbox from 'react-image-lightbox';
+import 'react-image-lightbox/style.css'; // Import lightbox styles
+import { baseURL } from '../..';
+import { FaEdit, FaTrash } from 'react-icons/fa';
+import EditModal from '../Modals/EditModals';
 
 const DataTable = ({ columns, data }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [loading, setLoading] = useState(false); // Add loading state
+  const [editingRecord, setEditingRecord] = useState(null); // State for editing record
+  const [showModal, setShowModal] = useState(false); // State for showing modal
   const rowsPerPage = 10;
-  const fullData = data;
 
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
@@ -35,7 +44,15 @@ const DataTable = ({ columns, data }) => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
+  const handleEditClick = (item) => {
+    setEditingRecord(item);
+    setShowModal(true);
+  };
 
+  const handleDeleteClick = (itemId) => {
+    // Implement delete logic here
+    console.log('Delete record with ID:', itemId);
+  };
   const onSort = (columnKey) => {
     let direction = 'asc';
     if (sortConfig.key === columnKey && sortConfig.direction === 'asc') {
@@ -55,9 +72,23 @@ const DataTable = ({ columns, data }) => {
     return <FaSort />;
   };
 
+  const handleImageClick = (imageSrc) => {
+    setLoading(true); // Start loading
+    const imageUrl = `${baseURL}/${imageSrc}?t=${new Date().getTime()}`;
+    setLightboxImage(imageUrl);
+    setLightboxOpen(true);
+  };
+
   return (
     <>
-   
+      {lightboxOpen && lightboxImage && (
+        <Lightbox
+          mainSrc={lightboxImage}
+          onCloseRequest={() => setLightboxOpen(false)}
+          onImageLoad={() => setLoading(false)} // Stop loading when image is loaded
+        />
+      )}
+      {loading && <div className="loading-icon">Loading...</div>}
       <div className="table-wrap">
         <div className="table-responsive">
           <table className="table table-hover display pb-30" id="datatable1">
@@ -78,7 +109,29 @@ const DataTable = ({ columns, data }) => {
               {paginatedData.map((item, rowIndex) => (
                 <tr key={rowIndex}>
                   {columns.map((col, colIndex) => (
-                    <td key={colIndex}>{item[col.field]}</td>
+                    <td key={colIndex}>
+                      {col.field === 'path' && item[col.field] ? (
+                        <img
+                          src={`${baseURL}/${item[col.field]}?t=${new Date().getTime()}`} // Cache-busting
+                          alt="Thumbnail"
+                          style={{ width: '50px', height: '50px', cursor: 'pointer' }}
+                          onClick={() => handleImageClick(item[col.field])}
+                        />
+                      ) : col.field === 'actions' ? (
+                        <>
+                          <FaEdit
+                            style={{ cursor: 'pointer', marginRight: '10px' }}
+                            onClick={() => handleEditClick(item)}
+                          />
+                          <FaTrash
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleDeleteClick(item.id)}
+                          />
+                        </>
+                      ): (
+                        item[col.field]
+                      )}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -91,6 +144,17 @@ const DataTable = ({ columns, data }) => {
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
+          {showModal && (
+        <EditModal
+          record={editingRecord}
+          onClose={() => setShowModal(false)}
+          onSave={(updatedRecord) => {
+            // Implement save logic here
+            console.log('Updated record:', updatedRecord);
+            setShowModal(false);
+          }}
+        />
+      )}
     </>
   );
 };

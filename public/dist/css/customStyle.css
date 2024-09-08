@@ -69,7 +69,7 @@
 /* Input Group Styling */
 .input-group {
   position: relative;
-  margin: 20px 0;
+  margin: 10px 0;
   width: 100%;
   /* Change width to 100% for responsiveness */
   max-width: 400px;
@@ -77,14 +77,15 @@
 }
 
 .input-group input {
-  font-size: 16px;
+  font-size: 11px;
   border: none;
   border-bottom: 2px solid #ddd;
-  padding: 8px 0;
+  padding: 0 0;
   background: transparent;
   width: 100%;
   outline: none;
   color: #333;
+  margin-left: -11px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -98,7 +99,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  font-size: 16px;
+  font-size: 11px;
   color: #999;
   pointer-events: none;
   transition: 0.3s ease;
@@ -109,7 +110,7 @@
 .input-group input:not(:placeholder-shown)+label {
   top: -10px;
   left: 0;
-  font-size: 12px;
+  font-size: 11px;
   color: #009688;
 }
 
@@ -153,7 +154,7 @@
 .combo-box-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 16px;
+  font-size: 11px;
   color: #333;
 }
 
@@ -170,7 +171,7 @@
   padding: 10px 15px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 11px;
   color: #333;
   background-color: #fff;
   appearance: none;
@@ -208,15 +209,15 @@
   font-size: 14px;
   /* Reduced font size for the title */
   font-weight: 500;
-  color: #333;
+  color: #0a0a0a;
   border-bottom: 1px solid #ddd;
 }
 
 /* Body Styling */
 .card-body {
   padding: 15px;
-  font-size: 16px;
-  color: #666;
+  font-size: 11px;
+  color: #000000;
 }
 
 /* Footer Styling */
@@ -261,7 +262,7 @@
 
 .filter-btn:hover {
   background-color: #f0f0f0;
-  color: #333;
+  color: #050505;
 }
 
 
@@ -320,7 +321,7 @@
 
 .card-header-light {
   background-color: #ffffff; /* Light color for the header */
-  color: #343a40; /* Darker color for the text */
+  color: #080808; /* Darker color for the text */
 }
 .card-header-grey {
   background-color: #535353; /* Light color for the header */
@@ -415,7 +416,7 @@
 
 .profile-info h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 14px;
 }
 
 .profile-info p {
@@ -471,4 +472,49 @@ button.btn-orange.fc-agendaWeek-button,
 .btn-orange.fc-today-button {
   background: #eea302;
   border: solid 1px #eea302;
+}
+
+
+
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.preview-item {
+  position: relative;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.preview-item img {
+  width: 100px;
+  height: auto;
+}
+
+.delete-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+}
+
+.preview-item:hover .delete-icon {
+  display: block;
+}
+
+.loading-icon {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 20px;
+  border-radius: 5px;
 }

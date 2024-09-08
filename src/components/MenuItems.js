@@ -19,6 +19,17 @@ const menuItems = [
     ]
   },
   {
+    name: 'Products',
+    path: '/products/newproduct',
+    icon: 'account-store',
+    dataTargetId: '#users',
+    submenu: [
+      { name: 'New Product', path: '/products/newproduct' },
+      { name: ' Category Profile', path: '/products/newcategory' },
+      
+    ]
+  },
+  {
     name: 'Inventory',
     path: '/pages/users',
     icon: 'store',

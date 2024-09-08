@@ -9,6 +9,9 @@ import Logout from './views/Logout';
 import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
 import NewNotification from './views/pages/NewNotification';
+
+//Products
+import NewProduct from './views/products/newProduct';
 //Users
 import NewUser from './views/pages/users/NewUser';
 import EditProfile from './views/profile/editprofile';
@@ -24,7 +27,9 @@ function App() {
        
           {/* Protected Route */}
 
-          
+          {/* Products */}
+          <Route path="/products/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
+
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />

@@ -35,11 +35,12 @@ export default function NewUser() {
     });
     const columns = [
         { label: 'Name', field: 'name' },
-        { label: 'Username', field: 'uname' },
+        { label: 'Uname', field: 'uname' },
         { label: 'Contact', field: 'contact' },
         { label: 'Email', field: 'email' },
         { label: 'Type', field: 'type' },
-        { label: 'Last Logged in', field: 'last_loggedin' },
+        { label: 'Last Loggedin', field: 'last_loggedin' },
+        { label: "Actions", field: "actions" }
     ];
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -179,14 +180,14 @@ export default function NewUser() {
                                 tableId="tableid"
                                 tableData={data} /> */}
                     <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-                    {/* {data.length === 0 ? (
+                    {data.length === 0 ? (
                                 <p>No data available</p>
                             ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )} */}
+                                //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
+                                <SimpleDataTable columns={columns} data={data}/>
+                            )}
 
-                        <CardComponent 
+                        {/* <CardComponent 
                             title=""
                             headerContent=
                             {
@@ -206,7 +207,7 @@ export default function NewUser() {
                                 //<SimpleDataTable columns={columns} data={data}/>
                             )}
 
-                        </CardComponent>
+                        </CardComponent> */}
 
                     </div>
 

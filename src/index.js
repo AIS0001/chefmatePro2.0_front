@@ -6,6 +6,7 @@ import axios from "axios";
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { startOfDay } from 'date-fns';
+export const baseURL = "http://127.0.0.1:4401";  // Use export
 axios.defaults.baseURL = "http://127.0.0.1:4401/api";
 //axios.defaults.baseURL = "https://jdapi2.dhruvinnovations.in/api";
 
