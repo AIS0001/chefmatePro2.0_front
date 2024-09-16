@@ -154,22 +154,35 @@ export default function NewUser() {
                                                 lable="Email"
 
                                             />
-                                            <ComboBox
-                                                id="usertype"
-                                                onChange={(e) => handleInputChange(e)}
-                                                name="usertype"
-                                                value={formdata.usertype}
-                                                tablename="usertypes"
-                                                groupby="name"
-                                            />
-<label className='control-label mb-12'></label>
+                                            <div className="combo-box-container">
+                                            <div className='combo-box'>
+                                                <label className='control-label mb-10'>Type</label>
+                                                <select
+                                                    id="usertype"
+                                                    onChange={(e) => handleInputChange(e)}
+                                                    name="usertype"
+                                                    value={formdata.usertype}
+                                                    className='combo-box-select'
+                                                    data-style='form-control btn-default btn-outline'
+                                                >
+                                                    <option value="Admin">Admin </option>
+                                                    <option value="Agent">Agent </option>
+
+                                                </select>
+                                                <div className="combo-box-arrow"></div>
+                                            </div>
+                                            <div className="form-group">
+                                            <label className='control-label mb-12'></label>
                                             <SubmitButton
                                                 type="submit"
                                                 name="Save"
                                                 cls="btn btn-success btn-anim"
                                             />
+                                            </div>
+                                          
 
 
+                                        </div>
                                         </div>
                                     </form>
                                 </div>
@@ -181,12 +194,12 @@ export default function NewUser() {
                                 tableId="tableid"
                                 tableData={data} /> */}
                     <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-                    {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                <SimpleDataTable columns={columns} data={data}/>
-                            )}
+                        {data.length === 0 ? (
+                            <p>No data available</p>
+                        ) : (
+                            //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
+                            <SimpleDataTable columns={columns} data={data} />
+                        )}
 
                         {/* <CardComponent 
                             title=""

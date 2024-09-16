@@ -7,12 +7,11 @@ import CardComponent from "../../components/cards/CardComponent";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { AdvanceInput } from "../../components/Buttons/advanceinput";
 import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
 import { getHeaders } from "../../utility/getHeader";
 import ExportDataTable from "../../components/Buttons/ExportdataTable";
-import DataTable from "../../components/data-tables/dataTable";
+
 
 export default function NewProperty() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -54,14 +53,14 @@ export default function NewProperty() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const headers = {
       Authorization: `Bearer ${localStorage.getItem("token")}`,  // Check your token
       "Content-Type": "application/json"
     };
-  
+
     const formdata1 = e.target;
-  
+
     try {
       const post1 = await axios.post("/insertdata/listing", {
         agent_id: localStorage.getItem("uname"),
@@ -76,21 +75,21 @@ export default function NewProperty() {
         type: formdata1.property_type.value,
         description: formdata1.description.value,
       }, { headers });
-      
+
       const formData = new FormData();
       Array.from(formdata1.images.files).forEach((file) => {
         formData.append("images", file);
       });
       console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
-  
+
       const post2 = await axios.post("/addnewproduct/images", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${localStorage.getItem("token")}`,  // Again, make sure the token is correct
         },
       });
-  
+
       toast.success("Product and images added successfully!");
       setImages([]);
       setFormData({});
@@ -101,51 +100,19 @@ export default function NewProperty() {
       setLoading(false);
     }
   };
-  
-  
-  const handleSubmit1 = async (e) => {
-    e.preventDefault();
-    const formdata1 = e.target;
-    const formData = new FormData();
-    formData.append("agent_id", localStorage.getItem("uname"));
-    images.forEach((image) => {
-      formData.append("images", image);
-    });
 
-    try {
-        await axios.post("/addnewproduct/images", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            ...getHeaders(),
-          },
-        });
-      await axios.post("/insertdata/listing", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          ...getHeaders(),
-        },
-      });
-     // await fetchData("images", setData, "id", {});
-      toast.success("Property added successfully!");
-      setFormData({});
-      setImages([]); // Clear images after successful submission
-    } catch (err) {
-      toast.error("Error in adding Product");
-      console.error(err.message);
-    }
-  };
 
-//   useEffect(() => {
-//     const fetchAndSetData = async () => {
-//       try {
-//         await fetchData("listing", setData, "id", {});
-//       } catch (error) {
-//         console.error("Error in useEffect:", error);
-//       }
-//     };
+  //   useEffect(() => {
+  //     const fetchAndSetData = async () => {
+  //       try {
+  //         await fetchData("listing", setData, "id", {});
+  //       } catch (error) {
+  //         console.error("Error in useEffect:", error);
+  //       }
+  //     };
 
-//     fetchAndSetData();
-//   }, []);
+  //     fetchAndSetData();
+  //   }, []);
 
   return (
     <>
@@ -165,10 +132,10 @@ export default function NewProperty() {
               bodyClass="panel-body"
             >
               <form onSubmit={handleSubmit}>
-               
-                  <div className="panel panel-default card-view">
+
+                <div className="panel panel-default card-view">
                   <div className="row">
-                   
+
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
                       <TextfieldwithLabel
                         id="property_name"
@@ -180,35 +147,35 @@ export default function NewProperty() {
                       />
                     </div>
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                    <TextfieldwithLabel
+                      <TextfieldwithLabel
                         id="totalrooms"
                         onChange={(e) => handleInputChange(e)}
                         value={formdata.totalrooms}
                         type="text"
                         name="totalrooms"
                         lable="No. of Rooms"
-                        />
-                        </div>
-                        <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                    <TextfieldwithLabel
+                      />
+                    </div>
+                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                      <TextfieldwithLabel
                         id="totaltoilets"
                         onChange={(e) => handleInputChange(e)}
                         value={formdata.totaltoilets}
                         type="text"
                         name="totaltoilets"
                         lable="No. of Toilets"
-                        />
-                        </div>
-                        <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                    <TextfieldwithLabel
+                      />
+                    </div>
+                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                      <TextfieldwithLabel
                         id="address"
                         onChange={(e) => handleInputChange(e)}
                         value={formdata.address}
                         type="text"
                         name="address"
                         lable="Address"
-                        />
-                        </div>
+                      />
+                    </div>
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
                       <TextfieldwithLabel
                         id="building"
@@ -240,6 +207,7 @@ export default function NewProperty() {
                       />
                     </div>
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+
                       <ComboBox
                         id="property_type"
                         onChange={(e) => handleInputChange(e)}
@@ -250,70 +218,71 @@ export default function NewProperty() {
                         lable="Type"
                       />
                     </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                    <div className='form-group'>
-                    <label className='control-label mb-10'>Upload Images</label>
-                      <input
-                        type="file"
-                        name="images"
-                        multiple
-                        onChange={handleFileChange}
-                      />
-                    </div>
-                    </div>
-                    <div className="col-lg-8 col-md-6 col-sm-12 col-xs-12" >
-                    <div className='form-group'>
-                    <label className='control-label mb-10'>Description</label>
-                      <textarea
-                        id="description"
-                        onChange={(e) => handleInputChange(e)}
-                        name="description"
-                        className="form-control"
-                        value={formdata.description}
-                       
-                        
-                      />
-                    </div>
-                    </div>
-                  
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                   
+                    <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12" >
+                      <div className='form-group'>
+                        <label className='control-label mb-10'>Description</label>
+                        <textarea
+                          id="description"
+                          onChange={(e) => handleInputChange(e)}
+                          name="description"
+                          className="form-control"
+                          value={formdata.description}
 
-                    {/* Display image previews */}
-                    <div className="image-preview">
-                      {images.length > 0 &&
-                        images.map((image, index) => (
-                          <div key={index} className="preview-item">
-                            <img
-                              src={image.preview}
-                              alt="preview"
-                              style={{ width: "100px" }}
-                            />
-                          <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                          <div className='form-group'>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteImage(index)}
-                              className="delete-icon"
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
-                          </div>
-                          </div>
-                          </div>
-                          
-                        ))}
+
+                        />
+                      </div>
                     </div>
-                    </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12 ">
-                    <label className='control-label mb-12'></label>
-                    <SubmitButton
-                      type="submit"
-                      name="Add New Property"
-                      cls="btn btn-primary btn-anim "
-                    />
-                  </div>
-                  </div>
+                    <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+                      <div className='form-group'>
+                        <label className='control-label mb-10'>Upload Images</label>
+                        <input
+                          type="file"
+                          name="images"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                      </div>
                  
+                    </div>
+                    <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+                    <label className='control-label mb-12'> </label>
+                      <SubmitButton
+                        type="submit"
+                        name="Add New Property"
+                        cls="btn btn-primary btn-anim "
+                      />
+                    </div>
+                    <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <div className="image-preview">
+                        {images.length > 0 &&
+                          images.map((image, index) => (
+                            <div key={index} className="preview-item">
+                              <img
+                                src={image.preview}
+                                alt="preview"
+                                style={{ width: "100px" }}
+                              />
+                              <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                                <div className='form-group'>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteImage(index)}
+                                    className="delete-icon"
+                                  >
+                                    <i className="fas fa-times"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                          ))}
+                      </div>
+                    </div>
+                    </div>
+                    
+                   
+
                 </div>
               </form>
             </CardComponent>

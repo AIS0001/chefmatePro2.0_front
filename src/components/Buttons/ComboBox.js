@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComboData } from '../../services/api';
 
-const ComboBox = ({ id,name,lable, onChange,tablename, groupby,value }) => {
+const ComboBox = ({ id, name, lable, onChange, tablename, groupby, value }) => {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,9 +45,9 @@ const ComboBox = ({ id,name,lable, onChange,tablename, groupby,value }) => {
   if (error) return <p>{error}</p>;
   return (
     <>
-      <div className="combo-box-container">
+     
         <div className='combo-box'>
-        <label className='control-label mb-10'>{lable}</label>
+          <label className='control-label mb-10'>{lable}</label>
           <select
             id={id}
             name={name}
@@ -65,7 +65,7 @@ const ComboBox = ({ id,name,lable, onChange,tablename, groupby,value }) => {
 
           </select>
           <div className="combo-box-arrow"></div>
-        </div>
+      
       </div>
     </>
   )
