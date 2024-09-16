@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Textfield = ({ id, type, name, value, placeholder }) => {
+const Textfield = ({ id, type,onChange, name, value, placeholder }) => {
   return (
     <>
       <div className='form-group'>
@@ -8,6 +8,7 @@ const Textfield = ({ id, type, name, value, placeholder }) => {
           type={type}
           name={name}
           id={id}
+          onChange={onChange}
           className='form-control'
           value={value}
           placeholder={placeholder}
@@ -16,7 +17,7 @@ const Textfield = ({ id, type, name, value, placeholder }) => {
     </>
   )
 }
-const TextfieldwithLabel = ({ lable, type, id, name, value }) => {
+const TextfieldwithLabel = ({ lable, onChange,type, id, name, value }) => {
   return (
     <>
       <div className='form-group'>
@@ -25,6 +26,7 @@ const TextfieldwithLabel = ({ lable, type, id, name, value }) => {
           type={type}
           className='form-control'
           id={id}
+          onChange={onChange}
           name={name}
           value={value}
         />

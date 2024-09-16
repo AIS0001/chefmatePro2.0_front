@@ -16,7 +16,7 @@
   overflow: hidden;
   transition: max-height 1s ease;
   /* Slow down the transition */
-  background-color: white;
+  background-color: rgb(255, 255, 255);
 
 }
 
@@ -65,42 +65,38 @@
 
 
 
-
 /* Input Group Styling */
 .input-group {
   position: relative;
-  margin: 10px 0;
-  width: 100%;
-  /* Change width to 100% for responsiveness */
-  max-width: 400px;
-  /* Optional: Set a max-width to prevent it from growing too large */
+  margin: 15px 0;
+  width: 100%; /* Set width to 100% to make it responsive */
 }
 
 .input-group input {
-  font-size: 11px;
+  font-size: 14px; /* Increased font size for better readability */
   border: none;
-  border-bottom: 2px solid #ddd;
-  padding: 0 0;
+  border-bottom: 2px solid #ccc; /* Softened border color for a cleaner look */
+  padding: 8px 0; /* Added padding for better spacing */
   background: transparent;
-  width: 100%;
+  width: 100%; /* Make input responsive */
   outline: none;
   color: #333;
-  margin-left: -11px;
+  margin-left: 0; /* Removed negative margin for better alignment */
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .input-group input:focus {
-  border-color: #009688;
-  box-shadow: 0 2px 4px rgba(0, 150, 136, 0.2);
+  border-color: #00796b; /* Darkened focus color for a professional look */
+  box-shadow: 0 4px 6px rgba(0, 121, 107, 0.1); /* Subtle shadow effect */
 }
 
 /* Label Styling */
 .input-group label {
   position: absolute;
-  top: 0;
+  top: 12px; /* Adjusted for better alignment with input */
   left: 0;
-  font-size: 11px;
-  color: #999;
+  font-size: 14px; /* Increased font size for better readability */
+  color: #777; /* Softer color for the label */
   pointer-events: none;
   transition: 0.3s ease;
   transform-origin: left top;
@@ -108,17 +104,16 @@
 
 .input-group input:focus+label,
 .input-group input:not(:placeholder-shown)+label {
-  top: -10px;
-  left: 0;
-  font-size: 11px;
-  color: #009688;
+  top: -16px; /* Adjusted for better floating label effect */
+  font-size: 12px;
+  color: #00796b; /* Consistent with the focus color of the input */
 }
 
 /* Highlight Styling */
 .input-group .highlight {
   position: absolute;
   height: 2px;
-  background: #009688;
+  background: #00796b;
   left: 0;
   bottom: 0;
   width: 0;
@@ -133,7 +128,7 @@
 .input-group .bar {
   position: absolute;
   height: 2px;
-  background: #009688;
+  background: #00796b;
   left: 0;
   bottom: 0;
   width: 0;
@@ -144,12 +139,86 @@
   width: 100%;
 }
 
+/* Optional: Add rounded corners and hover effects for a modern look */
+.input-group input:hover {
+  border-color: #009688;
+}
+
+input::placeholder {
+  color: #aaa; /* Subtle placeholder color */
+}
+
+input:disabled {
+  background-color: #f5f5f5; /* Disabled input style for clarity */
+  cursor: not-allowed;
+}
+
+/* Optional: Add error and success styles */
+.input-group input.error {
+  border-color: #e53935;
+}
+
+.input-group input.success {
+  border-color: #43a047;
+}
+
+.input-group input.error~label {
+  color: #e53935;
+}
+
+.input-group input.success~label {
+  color: #43a047;
+}
+
+/* File input styling */
+.input-group input[type="file"] {
+  position: relative;
+  opacity: 1;
+  width: 100%; /* Make file input responsive */
+  height: auto;
+  cursor: pointer;
+}
+
+
+/* Custom File Upload Button Styling */
+.input-group .file-label {
+  display: block;
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background-color: #00796b;
+  border: 2px solid #00796b;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.input-group .file-label:hover {
+  background-color: #004d40;
+  border-color: #004d40;
+}
+
+.input-group .file-label:active {
+  background-color: #00332c;
+  border-color: #00332c;
+}
+
+/* Optional: Add a text display for selected file name */
+.input-group .file-name {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #333;
+  font-style: italic;
+}
+
 /* ComboBox Styling */
 .combo-box-container {
   width: 100%;
   /* Make the container responsive */
-  margin: 20px 0;
-}
+  /* margin: 20px 0;
+} */
 
 .combo-box-label {
   display: block;
@@ -336,7 +405,7 @@
   color: #fbfdff; /* Darker color for the text */
 }
 .card-header-darkblue {
-  background-color: #284152; /* Parrot color for the header */
+  background-color: #03416b; /* Dark blue color for the header */
   color: #fbfdff; /* Darker color for the text */
 }
 
@@ -361,7 +430,7 @@
 }
 
 .table th {
-  background-color: #bdbdbd; /* Dark background color */
+  background-color: #023c88; /* Dark background color */
   color: #ffffff; /* White text color */
   font-weight: bold; /* Bold text */
   padding: 5px; /* Padding around text */
@@ -371,6 +440,7 @@
 
 .table th:hover {
   background-color: #e2e2e4; /* Lighter background on hover */
+  color: #000; /* Lighter background on hover */
 }
 
 .table td {
@@ -384,6 +454,19 @@
 
 .table tr:hover {
   background-color: #e9ecef; /* Highlight row on hover */
+}
+/* Reduce table row height */
+.table-custom tr, 
+.table-custom td, 
+.table-custom th {
+  padding: 4px 8px;  /* Reduce padding */
+  line-height: 0.6;  /* Reduce line-height */
+}
+
+/* Optional: Adjust font size if necessary */
+.table-custom td, 
+.table-custom th {
+  font-size: 14px;
 }
 
 

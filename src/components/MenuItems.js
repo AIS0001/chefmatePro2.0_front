@@ -8,55 +8,28 @@ const menuItems = [
     icon: 'view-dashboard',
     dataTargetId: '#home'
   },
+
+
   {
-    name: 'Master',
-    path: '/pages/master',
-    icon: 'account-circle',
-    dataTargetId: '#master',
+    name: 'Property',
+    path: '/property/propertiess',
+    icon: 'home',
+    dataTargetId: '#property',
     submenu: [
-      { name: 'New User', path: '/pages/users/new-user' },
+      { name: 'New Property', path: '/property/newproperty' },
+      { name: ' View Properties', path: '/property/properties' },
       
     ]
   },
+
   {
-    name: 'Products',
-    path: '/products/newproduct',
-    icon: 'account-store',
-    dataTargetId: '#users',
+    name: 'Lent Property',
+    path: '/property/lent',
+    icon: 'money',
+    dataTargetId: '#lentproperty',
     submenu: [
-      { name: 'New Product', path: '/products/newproduct' },
-      { name: ' Category Profile', path: '/products/newcategory' },
-      
-    ]
-  },
-  {
-    name: 'Inventory',
-    path: '/pages/users',
-    icon: 'store',
-    dataTargetId: '#inventory',
-    submenu: [
-      { name: 'New User', path: '/pages/users/new-user' },
-      
-    ]
-  },
-  {
-    name: 'Accounts',
-    path: '/pages/users',
-    icon: 'accounts',
-    dataTargetId: '#accounts',
-    submenu: [
-      { name: 'New User', path: '/pages/users/new-user' },
-      
-    ]
-  },
-  {
-    name: 'Users',
-    path: '/pages/users',
-    icon: 'account-circle',
-    dataTargetId: '#users',
-    submenu: [
-      { name: 'New User', path: '/users/newuser' },
-      { name: 'Edit Profile', path: '/users/editprofile' },
+      { name: 'New Lent', path: '/lentproperty/newlent' },
+      { name: ' View Lent', path: '/lentproperty/viewlent' },
       
     ]
   },
@@ -66,9 +39,19 @@ const menuItems = [
     icon: 'file-text',
     dataTargetId: '#reports',
     submenu: [
-      { name: 'Sale Reports', path: '/pages/reports/sale-reports' },
-      { name: 'Monthly Sales', path: '/pages/reports/monthly-reports' },
-      { name: 'Weekly Sales', path: '/pages/reports/weekly-reports' },
+      { name: 'Room Status', path: '/reports/sroom-status' },
+      
+    ]
+  },
+  
+  {
+    name: 'Users',
+    path: '/pages/users',
+    icon: 'account-circle',
+    dataTargetId: '#users',
+    submenu: [
+      { name: 'New User', path: '/users/newuser' },
+      { name: 'Edit Profile', path: '/users/editprofile' },
       
     ]
   },

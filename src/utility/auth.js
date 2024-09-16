@@ -1,6 +1,6 @@
 // auth.js
 const isAuthenticated = () => {
-    return !!localStorage.getItem("token") || sessionStorage.getItem('token') ;
+    return !!localStorage.getItem("token") || !!sessionStorage.getItem('token') ;
 };
 
 // Function to get the auth token (this can be modified based on where you store the token)
@@ -25,7 +25,8 @@ const getAuthToken = () => {
 
   const isTokenExpired = () => {
     const expirationTime = localStorage.getItem('expirationTime');
-    if (!expirationTime) return true; // No expiration time means token is invalid
+    const sessexpirationTime = sessionStorage.getItem('expirationTime');
+    if (!expirationTime ) return true; // No expiration time means token is invalid
 
     const currentTime = Date.now();
     return currentTime > expirationTime; // Check if the current time has passed the expiration time

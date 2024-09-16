@@ -14,7 +14,8 @@ import Header from '../../../components/Header';
 import Layout from '../../../layout/Layout'
 import { format } from "date-fns";
 import { ComboBox, ComboBoxwithlabel } from '../../../components/Buttons/ComboBox';
-import { AdvanceInput } from '../../../components/Buttons/advanceinput';
+
+import { TextfieldwithLabel } from "../../../components/Buttons/Textfield";
 import { SubmitButton } from "../../../components/Buttons/Textfield";
 import DataTable from "../../../components/data-tables/dataTable";
 import SimpleDataTable from "../../../components/data-tables/SimpledataTable";
@@ -111,46 +112,46 @@ export default function NewUser() {
                 <div className='row'>
                     <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
 
-                        <CardComponent title="Fill User's Information" headerColor="lightblue" pull="left" bodyClass="panel-body">
+                        <CardComponent title="Fill User's Information" headerColor="darkblue" pull="left" bodyClass="panel-body">
                             <div class="row">
                                 <div class="col-md-12">
                                     <form onSubmit={handleSubmit}>
                                         <div class="panel panel-default card-view">
 
-                                            <AdvanceInput
+                                            <TextfieldwithLabel
                                                 id="name"
                                                 onChange={(e) => handleInputChange(e)}
                                                 value={formdata.name}
                                                 type="text"
                                                 name="name"
-                                                label="Name"
+                                                lable="Name"
 
                                             />
-                                            <AdvanceInput
+                                            <TextfieldwithLabel
                                                 id="pass"
                                                 onChange={(e) => handleInputChange(e)}
                                                 value={formdata.pass}
                                                 type="password"
                                                 name="pass"
-                                                label="Password"
+                                                lable="Password"
 
                                             />
-                                            <AdvanceInput
+                                            <TextfieldwithLabel
                                                 id="contact"
                                                 onChange={(e) => handleInputChange(e)}
                                                 value={formdata.contact}
                                                 type="text"
                                                 name="contact"
-                                                label="Contact"
+                                                lable="Contact"
 
                                             />
-                                            <AdvanceInput
+                                            <TextfieldwithLabel
                                                 id="email"
                                                 onChange={(e) => handleInputChange(e)}
                                                 value={formdata.email}
                                                 type="text"
                                                 name="email"
-                                                label="Email"
+                                                lable="Email"
 
                                             />
                                             <ComboBox
@@ -161,7 +162,7 @@ export default function NewUser() {
                                                 tablename="usertypes"
                                                 groupby="name"
                                             />
-
+<label className='control-label mb-12'></label>
                                             <SubmitButton
                                                 type="submit"
                                                 name="Save"

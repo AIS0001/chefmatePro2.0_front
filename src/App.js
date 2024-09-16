@@ -10,6 +10,8 @@ import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
 import NewNotification from './views/pages/NewNotification';
 
+import NewProperty from './views/Property/newProperty';
+import Properties from './views/Property/Properties';
 //Products
 import NewProduct from './views/products/newProduct';
 //Users
@@ -29,6 +31,9 @@ function App() {
 
           {/* Products */}
           <Route path="/products/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
+         
+          <Route path="/property/newproperty" element={<PrivateRoute element={<NewProperty />} />} />
+          <Route path="/property/properties" element={<PrivateRoute element={<Properties />} />} />
 
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />

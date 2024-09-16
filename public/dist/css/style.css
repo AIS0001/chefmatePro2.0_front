@@ -10037,7 +10037,7 @@ a#toggle_mobile_nav {
 
 .heading-bg {
   height: 50px;
-  margin: 0 -39px 0px;
+  margin: 0 -30px 0px;
   padding: 13px 15px;
 }
 
@@ -14208,11 +14208,12 @@ a.compose-mail {
 .panel-primary>.panel-heading {
   background-color: #2879ff;
 }
-.panel-darkblue>.panel-heading {
-  background-color: #284152;
-}
+
 .panel-lightblue>.panel-heading {
   background-color: #66b2ff;
+}
+.panel-darkblue>.panel-heading {
+  background-color: #062443;
 }
 .panel-inverse>.panel-heading {
   background-color: rgba(33, 33, 33, 0.1);

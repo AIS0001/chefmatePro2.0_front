@@ -9,8 +9,7 @@ export default function Layout({ children }) {
   return (
     <>
       <div
-        className="wrapper theme-5-active pimary-color-red"
-       
+        className="wrapper theme-4-active pimary-color-red"
       >
         <Topbar />
         <LeftSidebar />
