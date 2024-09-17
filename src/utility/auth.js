@@ -1,3 +1,5 @@
+
+
 // auth.js
 const isAuthenticated = () => {
     return !!localStorage.getItem("token") || !!sessionStorage.getItem('token') ;
@@ -23,7 +25,17 @@ const getAuthToken = () => {
     };
   };
 
-  const isTokenExpired = () => {
+   const isTokenExpired = (token) => {
+    if (!token) return true;
+    const expirationTime = localStorage.getItem('expirationTime');
+ 
+    const currentTime = Date.now() / 1000; // Current time in seconds
+  console.log(currentTime);
+    // Check if token is expired
+    return expirationTime < currentTime;
+  };
+
+  const isTokenExpired1 = () => {
     const expirationTime = localStorage.getItem('expirationTime');
     const sessexpirationTime = sessionStorage.getItem('expirationTime');
     if (!expirationTime ) return true; // No expiration time means token is invalid

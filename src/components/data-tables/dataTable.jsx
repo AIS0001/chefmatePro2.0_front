@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 import ExportDataTable from "../Buttons/ExportdataTable";
 import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
@@ -19,7 +20,7 @@ const DataTable = ({ columns, data, tablename }) => {
   const [showModal, setShowModal] = useState(false); // State for showing modal
   const [tableData, setTableData] = useState(data); // Manage the table data state
   const rowsPerPage = 10;
-
+const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
     let sortableItems = [...tableData];
@@ -46,9 +47,23 @@ const DataTable = ({ columns, data, tablename }) => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
+  const navigate = useNavigate();
   const handleEditClick = (item) => {
-    setEditingRecord(item);
-    setShowModal(true);
+    if(tablename=="listing")
+    {
+      navigate(`/property/editproperty/${item.id}/${agent_id}`);
+    }
+    else if(tablename=="images")
+    {
+
+    }
+    else{
+
+
+    }
+   
+    // setEditingRecord(item);
+    // setShowModal(true);
   };
 
   const handleDeleteClick = async (itemId) => {
@@ -163,17 +178,9 @@ const DataTable = ({ columns, data, tablename }) => {
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
-      {showModal && (
-        <EditModal
-          record={editingRecord}
-          onClose={() => setShowModal(false)}
-          onSave={(updatedRecord) => {
-            // Implement save logic here
-            console.log("Updated record:", updatedRecord);
-            setShowModal(false);
-          }}
-        />
-      )}
+    
+        
+      
     </>
   );
 };
