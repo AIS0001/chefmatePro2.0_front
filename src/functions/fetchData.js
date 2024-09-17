@@ -17,7 +17,7 @@ const fetchData = async (tblname, setData, orderby, where) => {
         
        
     }
-    //console.log(url);
+   // console.log(getHeaders());
     const response = await axios.get(url, getHeaders());
 
     // If a setData function is provided, update the state with the fetched data

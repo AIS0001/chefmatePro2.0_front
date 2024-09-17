@@ -1,17 +1,39 @@
-// Function to get the auth token (this can be modified based on where you store the token)
+
+  // Function to get the auth token from session storage
+// Function to get the auth token from either localStorage or sessionStorage
 const getAuthToken = () => {
-    return localStorage.getItem('token'); // Or wherever you store your token
+  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+  // Check if token is found in either storage
+  if (!token) {
+    console.error("Auth token not found in localStorage or sessionStorage.");
+    return null;
+  }
+
+  // Remove extra quotes if present
+  token = token.replace(/^"(.*)"$/, '$1'); // Removes surrounding quotes if they exist
+
+  return token;
+};
+
+
+// Function to set up headers
+const getHeaders = () => {
+  let token = getAuthToken();
+
+  // Ensure 'Bearer' is not added twice
+  if (!token.startsWith('Bearer ')) {
+    token = `Bearer ${token}`;
+  }
+
+  return {
+    headers: {
+      Authorization: token,
+    },
   };
-  
-  // Function to set up headers
-  const getHeaders = () => {
-    const token = getAuthToken();
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`, // Assuming Bearer token
-      },
-    };
-  };
+};
+
+
 
   export {
 getAuthToken,

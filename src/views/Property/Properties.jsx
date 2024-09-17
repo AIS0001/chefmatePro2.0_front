@@ -49,6 +49,7 @@ export default function Properties() {
     { label: "Floor", field: "floor"},
     { label: "Room No.", field: "room" },
     { label: "Type", field: "type" },
+    { label: "Action", field: "actions" },
   ];
 
   const handleInputChange = (e) => {
@@ -80,16 +81,14 @@ export default function Properties() {
         <small>You can see your listingg added by your agent ID</small>
         <ToastContainer />
         <div className="row">
-      
-
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12" id="tableid">
-          
           {data.length === 0 ? (
                 <p>No data available</p>
               ) : (
                 <DataTable
                   columns={columns}
                   data={data}
+                  tablename="listing"
                 />
               )}
             {/* <CardComponent

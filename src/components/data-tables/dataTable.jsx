@@ -1,39 +1,41 @@
-import React, { useState } from 'react';
-import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
-import ExportDataTable from '../Buttons/ExportdataTable';
-import Pagination from '../Pagination/Pagination';
-import Lightbox from 'react-image-lightbox';
-import 'react-image-lightbox/style.css'; // Import lightbox styles
-import { baseURL } from '../..';
-import { FaEdit, FaTrash } from 'react-icons/fa';
-import EditModal from '../Modals/EditModals';
+import React, { useState } from "react";
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import ExportDataTable from "../Buttons/ExportdataTable";
+import Pagination from "../Pagination/Pagination";
+import Lightbox from "react-image-lightbox";
+import "react-image-lightbox/style.css"; // Import lightbox styles
+import { baseURL } from "../..";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import EditModal from "../Modals/EditModals";
+import deleteRecord from "../../functions/delateData";
 
-const DataTable = ({ columns, data }) => {
+const DataTable = ({ columns, data, tablename }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
+  const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(false); // Add loading state
   const [editingRecord, setEditingRecord] = useState(null); // State for editing record
   const [showModal, setShowModal] = useState(false); // State for showing modal
+  const [tableData, setTableData] = useState(data); // Manage the table data state
   const rowsPerPage = 10;
 
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
-    let sortableItems = [...data];
+    let sortableItems = [...tableData];
     if (sortConfig.key) {
       sortableItems.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
+          return sortConfig.direction === "asc" ? -1 : 1;
         }
         if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
+          return sortConfig.direction === "asc" ? 1 : -1;
         }
         return 0;
       });
     }
     return sortableItems;
-  }, [data, sortConfig]);
+  }, [tableData, sortConfig]);
 
   // Pagination logic
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -49,23 +51,34 @@ const DataTable = ({ columns, data }) => {
     setShowModal(true);
   };
 
-  const handleDeleteClick = (itemId) => {
-    // Implement delete logic here
-    console.log('Delete record with ID:', itemId);
+  const handleDeleteClick = async (itemId) => {
+    try {
+      // Implement delete logic here
+      await deleteRecord(tablename, "id", itemId);
+      if (tablename === "listing") {
+        await deleteRecord("images", "id", itemId);
+      }
+      
+      //console.log("Delete record with ID:", itemId);
+      // Update the table data state after deletion
+      setTableData((prevData) => prevData.filter((item) => item.id !== itemId));
+    } catch (error) {
+      console.error("Error deleting record:", error);
+    }
   };
   const onSort = (columnKey) => {
-    let direction = 'asc';
-    if (sortConfig.key === columnKey && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction = "asc";
+    if (sortConfig.key === columnKey && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key: columnKey, direction });
   };
 
   const getSortIcon = (columnKey) => {
     if (sortConfig.key === columnKey) {
-      if (sortConfig.direction === 'asc') {
+      if (sortConfig.direction === "asc") {
         return <FaSortUp />;
-      } else if (sortConfig.direction === 'desc') {
+      } else if (sortConfig.direction === "desc") {
         return <FaSortDown />;
       }
     }
@@ -98,7 +111,7 @@ const DataTable = ({ columns, data }) => {
                   <th
                     key={index}
                     onClick={() => onSort(col.field)}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: "pointer" }}
                   >
                     {col.label} {getSortIcon(col.field)}
                   </th>
@@ -110,25 +123,31 @@ const DataTable = ({ columns, data }) => {
                 <tr key={rowIndex}>
                   {columns.map((col, colIndex) => (
                     <td key={colIndex}>
-                      {col.field === 'path' && item[col.field] ? (
+                      {col.field === "path" && item[col.field] ? (
                         <img
-                          src={`${baseURL}/${item[col.field]}?t=${new Date().getTime()}`} // Cache-busting
+                          src={`${baseURL}/${
+                            item[col.field]
+                          }?t=${new Date().getTime()}`} // Cache-busting
                           alt="Thumbnail"
-                          style={{ width: '50px', height: '50px', cursor: 'pointer' }}
+                          style={{
+                            width: "50px",
+                            height: "50px",
+                            cursor: "pointer",
+                          }}
                           onClick={() => handleImageClick(item[col.field])}
                         />
-                      ) : col.field === 'actions' ? (
+                      ) : col.field === "actions" ? (
                         <>
                           <FaEdit
-                            style={{ cursor: 'pointer', marginRight: '10px' }}
+                            style={{ cursor: "pointer", marginRight: "10px" }}
                             onClick={() => handleEditClick(item)}
                           />
                           <FaTrash
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: "pointer" }}
                             onClick={() => handleDeleteClick(item.id)}
                           />
                         </>
-                      ): (
+                      ) : (
                         item[col.field]
                       )}
                     </td>
@@ -144,13 +163,13 @@ const DataTable = ({ columns, data }) => {
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
-          {showModal && (
+      {showModal && (
         <EditModal
           record={editingRecord}
           onClose={() => setShowModal(false)}
           onSave={(updatedRecord) => {
             // Implement save logic here
-            console.log('Updated record:', updatedRecord);
+            console.log("Updated record:", updatedRecord);
             setShowModal(false);
           }}
         />
