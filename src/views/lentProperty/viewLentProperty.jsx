@@ -16,7 +16,7 @@ import { getHeaders } from "../../utility/getHeader";
 import ExportDataTable from "../../components/Buttons/ExportdataTable";
 import DataTable from "../../components/data-tables/dataTable";
 
-export default function Properties() {
+export default function ViewLentProperty() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   const [images, setImages] = useState([]);
   const [data, setData] = useState([]);
@@ -41,17 +41,17 @@ export default function Properties() {
   };
 
   const columns = [
-    { label: "Product Name", field: "property_name" },
-    { label: "Address", field: "address" },
-    { label: "Rooms", field: "totalrooms" },
-    { label: "Toilets", field: "totaltoilets" },
-    { label: "Building", field: "building" },
-    { label: "Floor", field: "floor"},
-    { label: "Room No.", field: "room" },
-    { label: "Type", field: "type" },
-    { label: "Status", field: "status" },
+    { label: "Created date", field: "created_date" },
+    { label: "Property ID", field: "property_id" },
+    { label: "Customer Name", field: "customer_name" },
+    { label: "Start", field: "startdate" },
+    { label: "End", field: "enddate" },
+    { label: "Months", field: "totalmonths" },
+    { label: "Advance", field: "advance"},
+    { label: "Rent", field: "rent" },
+    { label: "Desc", field: "description" },
     { label: "Action", field: "actions" },
-    { label: "", field: "bookingstatus" },
+    
   ];
 
   const handleInputChange = (e) => {
@@ -67,7 +67,7 @@ export default function Properties() {
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
-        await fetchData("listing", setData, "id", {});
+        await fetchData("contract", setData, "id", {});
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -79,8 +79,8 @@ export default function Properties() {
   return (
     <>
       <Layout>
-        <Header title="Property Listing" />
-        <small>You can see your listingg added by your agent ID</small>
+        <Header title="Tenant Occupied property Details" />
+        <small>You can see your tenant list added </small>
         <ToastContainer />
         <div className="row">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12" id="tableid">
@@ -90,7 +90,7 @@ export default function Properties() {
                 <DataTable
                   columns={columns}
                   data={data}
-                  tablename="listing"
+                  tablename="contract"
                 />
               )}
             {/* <CardComponent

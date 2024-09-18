@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
@@ -9,11 +10,12 @@ import Layout from "../../layout/Layout";
 import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
 import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
+import { getAuthToken } from "../../utility/getHeader";
 import { getHeaders } from "../../utility/getHeader";
 import ExportDataTable from "../../components/Buttons/ExportdataTable";
+import DateDiffCalculatorPrompt from "../../components/DateDiffcalculator";
 
-
-export default function NewProperty() {
+export default function NewLent() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   const [images, setImages] = useState([]);
   const [data, setData] = useState([]);
@@ -23,19 +25,8 @@ export default function NewProperty() {
     name: "",
     product_id: "",
     lastloggedin: currentDate,
-    property_name: "",
-    address: "",
-    totalrooms: "",
-    totaltoilets: "",
-    floor: "",
-    roomno: "",
-    property_type: "",
-    description: "",
-    ownername: "",
-    idproof: "",
-    owneraddress: "",
   });
-
+  const { id } = useParams(); // Extract the `id` from the URL
   // Handle file changes and set preview
   const handleFileChange = (event) => {
     const selectedImages = Array.from(event.target.files).map((file) =>
@@ -66,50 +57,53 @@ export default function NewProperty() {
     e.preventDefault();
 
     const headers = {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,  // Check your token
+      Authorization: `Bearer ${getAuthToken()}`,  // Check your token
       "Content-Type": "application/json"
     };
 
     const formdata1 = e.target;
 
     try {
-      const post1 = await axios.post("/insertdata/listing", {
+      const post1 = await axios.post("/insertdata/contract", {
         agent_id: localStorage.getItem("uname"),
+        property_id: id,
         created_date: currentDate,
-        property_name: formdata1.property_name.value,
-        address: formdata1.address.value,
-        totalrooms: formdata1.totalrooms.value,
-        totaltoilets: formdata1.totaltoilets.value,
-        building: formdata1.property_name.value,
-        floor: formdata1.floor.value,
-        room: formdata1.roomno.value,
-        type: formdata1.property_type.value,
+        customer_name: formdata1.customer_name.value,
+        startdate: formdata1.datefrom.value,
+        enddate: formdata1.datefrom.value,
+        totalmonths: formdata1.months.value,
+        advance: formdata1.advance_deposite.value,
+        rent: formdata1.rent.value,
         description: formdata1.description.value,
-        ownername: formdata1.ownername.value,
-        idproof: formdata1.idproof.value,
-        owneraddress: formdata1.owneraddress.value,
       }, { headers });
-
+//console.log(post1);
       const formData = new FormData();
       Array.from(formdata1.images.files).forEach((file) => {
         formData.append("images", file);
       });
-      console.log(post1.data.id);
+      //console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
 
-      const post2 = await axios.post("/addnewproduct/images", formData, {
+      const post2 = await axios.post("/addnewproduct/customer_images", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,  // Again, make sure the token is correct
+          Authorization: `Bearer ${getAuthToken()}`, // Again, make sure the token is correct
         },
       });
 
-      toast.success("Product and images added successfully!");
+     
+      const response =   await axios.put(
+        `/updatedata/listing/${id}/${localStorage.getItem("uname")}`, // Use PUT method to update
+        {
+            status: 'occupied',
+      },{headers});
+
+      toast.success("Contract created successfully!");
       setImages([]);
       setFormData({});
     } catch (err) {
       console.error("Error:", err);
-      toast.error("Error in creating new product or uploading images. Please check again.");
+      toast.error("Error in creating contract. Please check again.");
     } finally {
       setLoading(false);
     }
@@ -131,7 +125,7 @@ export default function NewProperty() {
   return (
     <>
       <Layout>
-        <Header title="Add New Property" />
+        <Header title="Rent property to Tenants" />
         {/* <small>
           Enter the details of the new property to add it to your rental
           portfolio.
@@ -140,7 +134,7 @@ export default function NewProperty() {
         <div className="row">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
             <CardComponent
-              title="Property  Information"
+              title="Customer Details"
               headerColor="darkblue"
               pull="left"
               bodyClass="panel-body"
@@ -152,84 +146,63 @@ export default function NewProperty() {
 
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
                       <TextfieldwithLabel
-                        id="property_name"
+                        id="customer_name"
                         onChange={(e) => handleInputChange(e)}
-                        value={formdata.property_name}
+                        value={formdata.customer_name}
                         type="text"
-                        name="property_name"
-                        lable=" Property Name"
+                        name="customer_name"
+                        lable=" Customer Name"
                       />
                     </div>
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
                       <TextfieldwithLabel
-                        id="totalrooms"
+                        id="datefrom"
                         onChange={(e) => handleInputChange(e)}
-                        value={formdata.totalrooms}
-                        type="text"
-                        name="totalrooms"
-                        lable="No. of Rooms"
+                        value={formdata.datefrom}
+                        type="date"
+                        name="datefrom"
+                        lable="Start"
                       />
                     </div>
                     <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
                       <TextfieldwithLabel
-                        id="totaltoilets"
+                        id="dateto"
                         onChange={(e) => handleInputChange(e)}
-                        value={formdata.totaltoilets}
-                        type="text"
-                        name="totaltoilets"
-                        lable="No. of Toilets"
+                        value={formdata.dateto}
+                        type="date"
+                        name="dateto"
+                        lable="End"
                       />
                     </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="address"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.address}
-                        type="text"
-                        name="address"
-                        lable="Address"
-                      />
-                    </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="building"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.building}
-                        type="text"
-                        name="building"
-                        lable="Building"
-                      />
-                    </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="floor"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.floor}
-                        type="text"
-                        name="floor"
-                        lable="Floor"
-                      />
-                    </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="roomno"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.roomno}
-                        type="text"
-                        name="roomno"
-                        lable="Room no."
-                      />
-                    </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
 
-                      <ComboBox
-                        id="property_type"
+                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                      <TextfieldwithLabel
+                        id="months"
                         onChange={(e) => handleInputChange(e)}
-                        name="property_type"
-                        value={formdata.property_type}
-                        tablename="property_type"
-                        groupby="type"
-                        lable="Type"
+                        value={formdata.months}
+                        type="text"
+                        name="months"
+                        lable="No. of Months"
+                      />
+                    </div>
+                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                      <TextfieldwithLabel
+                        id="advance_deposite"
+                        onChange={(e) => handleInputChange(e)}
+                        value={formdata.advance_deposite}
+                        type="text"
+                        name="advance_deposite"
+                        lable="Advance Deposite"
+                      />
+                    </div>
+                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                      <TextfieldwithLabel
+                        id="rent"
+                        onChange={(e) => handleInputChange(e)}
+                        value={formdata.rent}
+                        type="text"
+                        name="rent"
+                        lable="Rent per month"
                       />
                     </div>
                    
@@ -247,40 +220,9 @@ export default function NewProperty() {
                         />
                       </div>
                     </div>
-                   
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="ownername"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.ownername}
-                        type="text"
-                        name="ownername"
-                        lable="Owner name"
-                      />
-                    </div>
-                    <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="idproof"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.idproof}
-                        type="text"
-                        name="idproof"
-                        lable="ID/Passport no."
-                      />
-                    </div>
-                    <div className="col-lg-8 col-md-6 col-sm-12 col-xs-12">
-                      <TextfieldwithLabel
-                        id="owneraddress"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.owneraddress}
-                        type="text"
-                        name="owneraddress"
-                        lable="Owner Address"
-                      />
-                    </div>
                     <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
                       <div className='form-group'>
-                        <label className='control-label mb-10'>Upload Images</label>
+                        <label className='control-label mb-10'>Upload Document/Images</label>
                         <input
                           type="file"
                           name="images"
@@ -294,7 +236,7 @@ export default function NewProperty() {
                     <label className='control-label mb-12'> </label>
                       <SubmitButton
                         type="submit"
-                        name="Add New Property"
+                        name="Save Data"
                         cls="btn btn-primary btn-anim "
                       />
                     </div>

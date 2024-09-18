@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
-import { useNavigate } from 'react-router-dom';
+import { FaSort, FaSortUp, FaSortDown, FaAirbnb, FaAddressBook, FaBandcamp } from "react-icons/fa";
+import { useNavigate ,Link} from 'react-router-dom';
+import { Modal, Button, Table } from "react-bootstrap";
 import ExportDataTable from "../Buttons/ExportdataTable";
 import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
@@ -10,6 +11,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import EditModal from "../Modals/EditModals";
 import deleteRecord from "../../functions/delateData";
 
+
 const DataTable = ({ columns, data, tablename }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
@@ -17,10 +19,22 @@ const DataTable = ({ columns, data, tablename }) => {
   const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(false); // Add loading state
   const [editingRecord, setEditingRecord] = useState(null); // State for editing record
-  const [showModal, setShowModal] = useState(false); // State for showing modal
   const [tableData, setTableData] = useState(data); // Manage the table data state
   const rowsPerPage = 10;
 const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
+
+
+const [showModal, setShowModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  // Function to handle modal open and store selected customer data
+  const handleCustomerClick = (customer) => {
+    setSelectedCustomer(customer);
+    setShowModal(true);
+  };
+
+  const handleClose = () => setShowModal(false);
+
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
     let sortableItems = [...tableData];
@@ -53,9 +67,9 @@ const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
     {
       navigate(`/property/editproperty/${item.id}/${agent_id}`);
     }
-    else if(tablename=="images")
+    else if(tablename=="contract")
     {
-
+      navigate(`/contracts/editcontract/${item.id}/${agent_id}`);
     }
     else{
 
@@ -72,6 +86,9 @@ const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
       await deleteRecord(tablename, "id", itemId);
       if (tablename === "listing") {
         await deleteRecord("images", "id", itemId);
+      }
+      else  if (tablename === "contract") {
+        await deleteRecord("customer_images", "id", itemId);
       }
       
       //console.log("Delete record with ID:", itemId);
@@ -109,6 +126,9 @@ const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
 
   return (
     <>
+
+     
+
       {lightboxOpen && lightboxImage && (
         <Lightbox
           mainSrc={lightboxImage}
@@ -119,7 +139,7 @@ const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
       {loading && <div className="loading-icon">Loading...</div>}
       <div className="table-wrap">
         <div className="table-responsive">
-          <table className="table table-hover display pb-30" id="datatable1">
+        <table className="table table-hover display pb-30" id="datatable1">
             <thead>
               <tr>
                 {columns.map((col, index) => (
@@ -162,6 +182,17 @@ const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
                             onClick={() => handleDeleteClick(item.id)}
                           />
                         </>
+                      ) : col.field === "customer_name" ? (
+                        <span
+                          style={{ cursor: "pointer", color: "blue" }}
+                          onClick={() => handleCustomerClick(item)}
+                        >
+                          {item[col.field]}
+                        </span>
+                      ) :  col.field === "status" && item[col.field] === "vaccant" ? (
+                        <Link className="btn btn-primary btn-sm" to={`/lentproperty/newlent/${item.id}`}>
+                          Book Now
+                        </Link>
                       ) : (
                         item[col.field]
                       )}
@@ -173,6 +204,48 @@ const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
           </table>
         </div>
       </div>
+       {/* Modal to show customer details */}
+       <Modal show={showModal} onHide={handleClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Customer Information</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedCustomer ? (
+            <Table striped bordered hover>
+              <tbody>
+                <tr>
+                  <td>ID</td>
+                  <td>{selectedCustomer.id}</td>
+                </tr>
+                <tr>
+                  <td>Name</td>
+                  <td>{selectedCustomer.customer_name}</td>
+                </tr>
+                <tr>
+                  <td>Email</td>
+                  <td>{selectedCustomer.email}</td> {/* Add email in your data */}
+                </tr>
+                <tr>
+                  <td>Start Date</td>
+                  <td>{selectedCustomer.startdate}</td>
+                </tr>
+                <tr>
+                  <td>End Date</td>
+                  <td>{selectedCustomer.enddate}</td>
+                </tr>
+                {/* Add more fields as per your data */}
+              </tbody>
+            </Table>
+          ) : (
+            <p>No customer data available.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

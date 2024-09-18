@@ -35,14 +35,7 @@ const getAuthToken = () => {
     return expirationTime < currentTime;
   };
 
-  const isTokenExpired1 = () => {
-    const expirationTime = localStorage.getItem('expirationTime');
-    const sessexpirationTime = sessionStorage.getItem('expirationTime');
-    if (!expirationTime ) return true; // No expiration time means token is invalid
-
-    const currentTime = Date.now();
-    return currentTime > expirationTime; // Check if the current time has passed the expiration time
-};
+ 
 
   export {
     isAuthenticated,

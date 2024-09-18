@@ -18,21 +18,11 @@ const menuItems = [
     submenu: [
       { name: 'New Property', path: '/property/newproperty' },
       { name: ' View Properties', path: '/property/properties' },
+      { name: ' View Contracts', path: '/lentproperty/viewlent' },
       
     ]
   },
 
-  {
-    name: 'Lent Property',
-    path: '/property/lent',
-    icon: 'money',
-    dataTargetId: '#lentproperty',
-    submenu: [
-      { name: 'New Lent', path: '/lentproperty/newlent' },
-      { name: ' View Lent', path: '/lentproperty/viewlent' },
-      
-    ]
-  },
   {
     name: 'Reports',
     path: '/pages/reports',

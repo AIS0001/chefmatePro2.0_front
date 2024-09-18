@@ -13,6 +13,11 @@ import NewNotification from './views/pages/NewNotification';
 import NewProperty from './views/Property/newProperty';
 import Properties from './views/Property/Properties';
 import EditProperty from './views/Property/editProperty';
+
+//Lent Property
+import NewLent from './views/lentProperty/newLent';
+import ViewLentProperty from './views/lentProperty/viewLentProperty';
+import EditLentProperty from './views/lentProperty/editlentProperty';
 //Products
 import NewProduct from './views/products/newProduct';
 //Users
@@ -36,7 +41,11 @@ function App() {
           <Route path="/property/newproperty" element={<PrivateRoute element={<NewProperty />} />} />
           <Route path="/property/properties" element={<PrivateRoute element={<Properties />} />} />
           <Route path="/property/editproperty/:id/:agentid" element={<PrivateRoute element={<EditProperty />} />} />
-
+         
+          <Route path="/lentproperty/newlent/:id" element={<PrivateRoute element={<NewLent />} />} />
+          <Route path="/lentproperty/viewlent" element={<PrivateRoute element={<ViewLentProperty />} />} />
+          <Route path="/contracts/editcontract/:id/:agentid" element={<PrivateRoute element={<EditLentProperty />} />} />
+         
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
