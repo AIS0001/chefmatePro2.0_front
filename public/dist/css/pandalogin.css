@@ -104,7 +104,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: url('https://as1.ftcdn.net/v2/jpg/03/46/05/40/1000_F_346054030_8CGra5ucERPJNgOEDeHPNuQY60DxsZKr.jpg'); /* Full background image */
+  background-image: url('../img/chef.jpg'); /* Full background image */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

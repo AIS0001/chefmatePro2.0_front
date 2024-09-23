@@ -522,3 +522,158 @@ button.btn-orange.fc-agendaWeek-button,
   padding: 20px;
   border-radius: 5px;
 }
+
+
+.fixed-width-btn {
+  width: 150px; /* Adjust this value as needed */
+  display: inline-block; /* Ensure it respects the width */
+  margin-bottom: 10px; /* Adjust the value as needed */
+}
+
+.item-card {
+  border: 1px solid #ccc; /* Border for the item card */
+  border-radius: 8px; /* Rounded corners */
+  padding: 15px; /* Inner padding */
+  text-align: center; /* Centered text */
+  background-color: #fff; /* White background */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
+}
+
+.item-image {
+  width: 100%; /* Full width */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 8px; /* Rounded corners for image */
+}
+
+.item-name {
+  margin: 10px 0 5px; /* Spacing for item name */
+  font-size: 1.2em; /* Font size for item name */
+}
+
+.item-price {
+  color: #FFD700; /* Gold color for price */
+  font-weight: bold; /* Bold price */
+}
+
+
+.btn-info {
+  background-color: #007bff; /* Adjust to your desired blue shade */
+  border-color: #007bff; /* Consistent border color */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-info:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+  transform: scale(1.05); /* Scale effect on hover */
+}
+
+.item-card {
+  border: 1px solid #ccc; /* Border for the item card */
+  border-radius: 8px; /* Rounded corners */
+  padding: 15px; /* Inner padding */
+  margin-bottom: 10px;
+  text-align: center; /* Centered text */
+  background-color: #fff; /* White background */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
+  transition: transform 0.3s ease; /* Transition for hover effect */
+}
+
+.item-card:hover {
+  transform: scale(1.03); /* Scale effect on hover */
+}
+
+.item-image {
+  width: 100%; /* Full width */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 8px; /* Rounded corners for image */
+}
+
+.item-name {
+  margin: 10px 10px 5px; /* Spacing for item name */
+  font-size: 1.2em; /* Font size for item name */
+}
+
+.item-price {
+  color: #FFD700; /* Gold color for price */
+  font-weight: bold; /* Bold price */
+  background-color: black;
+}
+
+
+.order-item {
+  display: flex; /* Ensure items are flex containers */
+  justify-content: space-between; /* Space between item name and controls */
+  align-items: center; /* Center vertically */
+}
+
+.quantity-controls {
+  display: flex; /* Ensure buttons and quantity are in a row */
+  align-items: center; /* Center buttons vertically */
+}
+
+.quantity {
+  margin: 0 8px; /* Adjust spacing around quantity text */
+}
+
+.btn-outline-secondary {
+    border-color: #6c757d; /* Default border color */
+}
+
+.total-container {
+  display: flex; /* Use flexbox for layout */
+  justify-content: space-between; /* Space between total and button */
+  align-items: center; /* Center align items vertically */
+  margin-top: 20px; /* Space above total */
+}
+
+.total-amount {
+  font-weight: bold; /* Bold total amount */
+  color: #FFD700; /* Gold color for total */
+}
+
+.btn-dark-custom {
+  background-color: #343a40; /* Dark color */
+  color: #fff; /* White text */
+}
+
+.btn-dark-custom:hover {
+  background-color: #23272b; /* Darker on hover */
+  color: #fff; /* Keep white text */
+}
+
+.item-list-container {
+  max-height: 400px; /* Set your desired height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Enable vertical scrolling */
+}
+
+.table-card {
+  border-radius: 8px;
+  transition: box-shadow 0.3s;
+  margin-bottom: 10px;
+}
+
+.table-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.table-color-0 {
+  background-color: #f8d7da; /* Light red */
+}
+
+.table-color-1 {
+  background-color: #d1ecf1; /* Light cyan */
+}
+
+.table-color-2 {
+  background-color: #d4edda; /* Light green */
+}
+
+.table-color-3 {
+  background-color: #fff3cd; /* Light yellow */
+}
+
+/* Font Awesome Icon styles */
+.table-card .fa-table {
+  color: #007bff; /* Change color of the icon */
+}

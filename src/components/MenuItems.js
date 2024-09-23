@@ -8,7 +8,12 @@ const menuItems = [
     icon: 'view-dashboard',
     dataTargetId: '#home'
   },
-
+  {
+    name: 'POS',
+    path: '/pos/bill',
+    icon: 'view-dashboard',
+    dataTargetId: '#pos'
+  },
 
   {
     name: 'Property',
@@ -45,6 +50,7 @@ const menuItems = [
       
     ]
   },
+
   { name: 'Logout', 
     path: '/logout', 
     icon: 'sign-in', 

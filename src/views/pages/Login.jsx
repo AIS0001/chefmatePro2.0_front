@@ -117,7 +117,7 @@ export default function Login() {
                                     <div className="col-sm-12 col-xs-12">
                                         <div className="form-wrap">
                                             <form className="login-form" onSubmit={handleSubmit}>
-                                                <h3 className="text-center txt-dark mb-10">Sign in to CloudNet</h3>
+                                                <h3 className="text-center txt-dark mb-10">chefMate</h3>
                                                 <div className="form-group">
                                                     <label className="control-label mb-10" htmlFor="uname">UserID</label>
                                                     <input 

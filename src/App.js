@@ -8,8 +8,10 @@ import Login from './views/pages/Login';
 import Logout from './views/Logout';
 import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
-import NewNotification from './views/pages/NewNotification';
 
+
+import Pos from './views/pos/pos';
+import Bill from './views/pos/bill';
 import NewProperty from './views/Property/newProperty';
 import Properties from './views/Property/Properties';
 import EditProperty from './views/Property/editProperty';
@@ -42,6 +44,9 @@ function App() {
           <Route path="/property/properties" element={<PrivateRoute element={<Properties />} />} />
           <Route path="/property/editproperty/:id/:agentid" element={<PrivateRoute element={<EditProperty />} />} />
          
+          <Route path="/pos/newpos" element={<PrivateRoute element={<Pos/>} />} />
+          <Route path="/pos/bill" element={<PrivateRoute element={<Bill/>} />} />
+         
           <Route path="/lentproperty/newlent/:id" element={<PrivateRoute element={<NewLent />} />} />
           <Route path="/lentproperty/viewlent" element={<PrivateRoute element={<ViewLentProperty />} />} />
           <Route path="/contracts/editcontract/:id/:agentid" element={<PrivateRoute element={<EditLentProperty />} />} />
@@ -54,7 +59,7 @@ function App() {
           {/* <Route path='/users/newuser' element={< NewUser />} /> */}
           <Route path='/hotelbooking' element={< HotelBookingCalendar />} />
           <Route path='/details' element={< Details />} />
-          <Route path='/notification' element={< NewNotification />} />
+         
 
 
         </Routes>
