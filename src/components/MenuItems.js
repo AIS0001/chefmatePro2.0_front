@@ -8,20 +8,39 @@ const menuItems = [
     icon: 'view-dashboard',
     dataTargetId: '#home'
   },
+ 
   {
-    name: 'POS',
-    path: '/pos/bill',
-    icon: 'view-dashboard',
-    dataTargetId: '#pos'
+    name: 'Master',
+    path: '/master',
+    icon: 'folder',
+    dataTargetId: '#master',
+    submenu: [
+      { name: 'New Table', path: '/master/table' },
+      { name: 'New Category', path: '/master/newcategory' },
+      { name: 'New Sub Category', path: '/master/newsubcategory' },
+      
+    ]
   },
-
   {
-    name: 'Property',
-    path: '/property/propertiess',
-    icon: 'home',
+    name: 'Inventory',
+    path: '/inventory',
+    icon: 'store',
+    dataTargetId: '#inventory',
+    submenu: [
+      { name: 'New Item', path: '/inventory/newItem' },
+      { name: 'New Product', path: '/inventory/newproduct' },
+     
+      
+    ]
+  },
+  
+  {
+    name: 'Sale',
+    path: '/sale',
+    icon: 'menu',
     dataTargetId: '#property',
     submenu: [
-      { name: 'New Property', path: '/property/newproperty' },
+      { name: 'POS', path: '/sale/pos' },
       { name: ' View Properties', path: '/property/properties' },
       { name: ' View Contracts', path: '/lentproperty/viewlent' },
       
@@ -50,7 +69,17 @@ const menuItems = [
       
     ]
   },
-
+  {
+    name: 'Setting',
+    path: '/setting',
+    icon: 'gears',
+    dataTargetId: '#inventory',
+    submenu: [
+      { name: 'Taxes', path: '/setting/taxes' },
+      { name: 'Units', path: '/setting/units' },
+      
+    ]
+  },
   { name: 'Logout', 
     path: '/logout', 
     icon: 'sign-in', 

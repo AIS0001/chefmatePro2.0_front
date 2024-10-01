@@ -3,18 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComboData } from '../../services/api';
 
-const ComboBox = ({ id, name, lable, onChange, tablename, groupby, value }) => {
+const ComboBox = ({ id, name, lable, onChange, tablename, groupby, value, displayField,displayValue }) => {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchData = async () => {
-
     try {
       const data = await fetchComboData(tablename, groupby);
       setOptions(data);
     } catch (error) {
-      console.error('Error fetching user types:', error);
+      console.error('Error fetching data:', error);
       setError('An error occurred while fetching data.');
     } finally {
       setLoading(false);
@@ -24,7 +23,6 @@ const ComboBox = ({ id, name, lable, onChange, tablename, groupby, value }) => {
   const handleChange = async (event) => {
     const value = event.target.value;
     setSelectedValue(value);
-
 
     // Fetch data based on selected value
     try {
@@ -36,52 +34,49 @@ const ComboBox = ({ id, name, lable, onChange, tablename, groupby, value }) => {
   };
 
   useEffect(() => {
-
     fetchData();
-    $('#action').select2()
-  }, [])
+    $('#action').select2();
+  }, []);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
+
   return (
     <>
-     
-        <div className='combo-box'>
-          <label className='control-label mb-10'>{lable}</label>
-          <select
-            id={id}
-            name={name}
-            className='combo-box-select'
-            value={value}
-            onChange={onChange}
-            data-style='form-control btn-default btn-outline'
-          >
-            {options.map((option) => (
-              <option key={option.id} value={option.type}>
-                {option.type}
-              </option>
-
-            ))}
-
-          </select>
-          <div className="combo-box-arrow"></div>
-      
-      </div>
-    </>
-  )
-}
-
-const ComboBoxwithlabel = ({ lable, id, combodata }) => {
-  useEffect(() => {
-    $('#action').select2()
-  }, [])
-  return (
-    <>
-      <div class='form-group'>
-        <label class='control-label mb-10'>{lable}</label>
+      <div className='combo-box'>
+        <label className='control-label mb-10'>{lable}</label>
         <select
           id={id}
-          class='selectpicker'
+          name={name}
+          className='combo-box-select'
+          value={value}
+          onChange={onChange}
+          data-style='form-control btn-default btn-outline'
+        >
+          {options.map((option) => (
+            <option key={option.id} value={option[displayField]}>
+              {option[displayValue]}
+            </option>
+          ))}
+        </select>
+        <div className="combo-box-arrow"></div>
+      </div>
+    </>
+  );
+};
+
+const ComboBoxwithlabel = ({ label, id, combodata }) => {
+  useEffect(() => {
+    $('#action').select2();
+  }, []);
+
+  return (
+    <>
+      <div className='form-group'>
+        <label className='control-label mb-10'>{label}</label>
+        <select
+          id={id}
+          className='selectpicker'
           data-style='form-control btn-default btn-outline'
         >
           {combodata && <option value={combodata}>{combodata}</option>}
@@ -90,7 +85,7 @@ const ComboBoxwithlabel = ({ lable, id, combodata }) => {
         </select>
       </div>
     </>
-  )
-}
+  );
+};
 
-export { ComboBox, ComboBoxwithlabel }
+export { ComboBox, ComboBoxwithlabel };

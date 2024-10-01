@@ -57,7 +57,7 @@ export default function Login() {
                         toast.success("Logged in Successfully");
 
                         if (usertype === "admin") {
-                            navigate("/pages/newpage");
+                            navigate("/master/table");
                         } else if (usertype === "account") {
                             navigate("/dashboard/account");
                         } else if (usertype === "cashier") {

@@ -13,7 +13,7 @@ import { getHeaders } from "../../utility/getHeader";
 import ExportDataTable from "../../components/Buttons/ExportdataTable";
 import DataTable from "../../components/data-tables/dataTable";
 
-export default function NewProduct() {
+export default function NewProduct1() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   const [images, setImages] = useState([]);
   const [data, setData] = useState([]);
@@ -93,7 +93,7 @@ export default function NewProduct() {
   return (
     <>
       <Layout>
-        <Header title="Add New Product" />
+        <Header title="Add New Product with Image" />
         <ToastContainer />
         <div className="row">
           <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">

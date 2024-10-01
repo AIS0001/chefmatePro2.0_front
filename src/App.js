@@ -9,22 +9,28 @@ import Logout from './views/Logout';
 import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
 
+import Categories from './views/master/categories';
+import SubCategories from './views/master/subCategories';
+import TableList from './views/master/newTable';
 
-import Pos from './views/pos/pos';
-import Bill from './views/pos/bill';
-import NewProperty from './views/Property/newProperty';
-import Properties from './views/Property/Properties';
-import EditProperty from './views/Property/editProperty';
+import NewItem from './views/inventory/newItem';
+import EditItem from './views/inventory/editItem';
+import NewProduct from './views/inventory/newProduct1';
 
-//Lent Property
-import NewLent from './views/lentProperty/newLent';
-import ViewLentProperty from './views/lentProperty/viewLentProperty';
-import EditLentProperty from './views/lentProperty/editlentProperty';
-//Products
-import NewProduct from './views/products/newProduct';
+
+import NewPOS from './views/Property/newProperty';
+
+
+
 //Users
 import NewUser from './views/pages/users/NewUser';
 import EditProfile from './views/profile/editprofile';
+
+
+//settings
+import Taxes from './views/master/taxes';
+import Units from './views/master/units';
+
 function App() {
   return (
     <>
@@ -38,27 +44,27 @@ function App() {
           {/* Protected Route */}
 
           {/* Products */}
-          <Route path="/products/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
+          <Route path="/master/newcategory" element={<PrivateRoute element={<Categories />} />} />
+          <Route path="/master/newsubcategory" element={<PrivateRoute element={<SubCategories />} />} />
+          <Route path="/master/table" element={<PrivateRoute element={<TableList />} />} />
+
+          <Route path="/inventory/newitem" element={<PrivateRoute element={<NewItem />} />} />
+          <Route path="/inventory/edititem/:id" element={<PrivateRoute element={<EditItem />} />} />
+          <Route path="/inventory/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
          
-          <Route path="/property/newproperty" element={<PrivateRoute element={<NewProperty />} />} />
-          <Route path="/property/properties" element={<PrivateRoute element={<Properties />} />} />
-          <Route path="/property/editproperty/:id/:agentid" element={<PrivateRoute element={<EditProperty />} />} />
+          <Route path="/sale/pos" element={<PrivateRoute element={<NewPOS />} />} />
          
-          <Route path="/pos/newpos" element={<PrivateRoute element={<Pos/>} />} />
-          <Route path="/pos/bill" element={<PrivateRoute element={<Bill/>} />} />
+          
          
-          <Route path="/lentproperty/newlent/:id" element={<PrivateRoute element={<NewLent />} />} />
-          <Route path="/lentproperty/viewlent" element={<PrivateRoute element={<ViewLentProperty />} />} />
-          <Route path="/contracts/editcontract/:id/:agentid" element={<PrivateRoute element={<EditLentProperty />} />} />
          
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
 
-          <Route path='/pages/newpage' element={< NewPage />} />
+          <Route path='/setting/taxes' element={< Taxes />} />
+          <Route path='/setting/units' element={< Units />} />
           {/* <Route path='/users/newuser' element={< NewUser />} /> */}
-          <Route path='/hotelbooking' element={< HotelBookingCalendar />} />
-          <Route path='/details' element={< Details />} />
+        
          
 
 

@@ -24,9 +24,11 @@ const fetchData = async (tblname, setData, orderby, where) => {
     if (setData && typeof setData === 'function') {
         setData(response.data.data)
       
-      // console.log(response.data);
+      // console.log(response.data.data);
     }
     return response.data.data;
 }
+
+
 export default   fetchData;
 

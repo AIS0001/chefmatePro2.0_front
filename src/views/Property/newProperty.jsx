@@ -15,7 +15,7 @@ import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
 
 const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
-export default function NewProperty() {
+export default function NewPOS() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   const [images, setImages] = useState([]);
   const [data, setData] = useState([]);

@@ -14215,6 +14215,10 @@ a.compose-mail {
 .panel-darkblue>.panel-heading {
   background-color: #062443;
 }
+.panel-darkorange>.panel-heading {
+  background-color: #fd6008;
+}
+
 .panel-inverse>.panel-heading {
   background-color: rgba(33, 33, 33, 0.1);
   color: #212121 !important;

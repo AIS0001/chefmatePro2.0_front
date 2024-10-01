@@ -20,7 +20,7 @@ label {
   overflow: hidden;
   transition: max-height 1s ease;
   /* Slow down the transition */
-  background-color: white;
+  background-color: #212121;
 
 }
 
@@ -349,45 +349,66 @@ label {
   padding: 15px;
   background-color: #ffffff;
 }
-
-
-.table-wrap {
-  margin: 2px;
+.table th{
+  background-color:#fd6008;
+  height: 40px !important; /* Force row height */
 }
-
-.table-responsive {
-  overflow-x: auto;
+.table td{
+ 
+  height: 30px !important; /* Force row height */
 }
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th {
-  background-color: #eaebee; /* Dark background color */
-  color: #ffffff; /* White text color */
-  font-weight: bold; /* Bold text */
-  padding: 5px; /* Padding around text */
-  text-align: left; /* Align text to the left */
-  border-bottom: 2px solid #dee2e6; /* Bottom border */
-}
-
-.table th:hover {
-  background-color: #e2e2e4; /* Lighter background on hover */
-}
-
+.table th, 
 .table td {
-  padding: 10px; /* Padding around text */
-  border-bottom: 1px solid #dee2e6; /* Bottom border */
+  padding: 2px 5px !important; /* Force padding reduction */
+  vertical-align: middle; /* Center the text vertically */
+  text-align: center; /* Center the text horizontally */
 }
 
-.table tr:nth-child(even) {
-  background-color: #f2f2f2; /* Alternating row background color */
+.table tbody tr {
+  height: 15px; /* Set a specific row height */
 }
 
-.table tr:hover {
-  background-color: #e9ecef; /* Highlight row on hover */
+.table img {
+  width: 15px; /* Adjust image width */
+  height: 15px; /* Adjust image height */
+  border-radius: 4px; /* Rounded corners for images */
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f1f1f1; /* Hover effect */
+}
+
+.table thead th {
+  background-color: #f8f9fa; /* Light background for headers */
+  font-weight: bold;
+  color: #343a40; /* Dark text color */
+}
+
+.table-bordered {
+  border: 1px solid #dee2e6; /* Add border around the table */
+}
+
+.table-bordered td, 
+.table-bordered th {
+  border: 1px solid #dee2e6; /* Add borders to cells */
+}
+
+.fa-edit {
+  color: green; /* Edit icon color */
+  transition: color 0.3s ease;
+}
+
+.fa-trash {
+  color: red; /* Delete icon color */
+  transition: color 0.3s ease;
+}
+
+.fa-edit:hover {
+  color: #28a745; /* Hover color for edit icon */
+}
+
+.fa-trash:hover {
+  color: #dc3545; /* Hover color for delete icon */
 }
 
 
@@ -677,3 +698,27 @@ button.btn-orange.fc-agendaWeek-button,
 .table-card .fa-table {
   color: #007bff; /* Change color of the icon */
 }
+
+
+.modal {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.modal.show {
+  opacity: 1;
+  transform: scale(1);
+}
+/* Modal content scrolling */
+.modal-body-scrollable {
+  max-height: 400px; /* Set your desired max height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: 10px;
+}
+
+/* Optionally set scroll behavior for modal-dialog */
+.modal-dialog-scrollable {
+  max-height: calc(100vh - 100px); /* Ensure it does not exceed viewport height */
+}
+

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { FaSort, FaSortUp, FaSortDown, FaAirbnb, FaAddressBook, FaBandcamp } from "react-icons/fa";
 import { useNavigate ,Link} from 'react-router-dom';
 import { Modal, Button, Table } from "react-bootstrap";
@@ -20,7 +20,7 @@ const DataTable = ({ columns, data, tablename }) => {
   const [loading, setLoading] = useState(false); // Add loading state
   const [editingRecord, setEditingRecord] = useState(null); // State for editing record
   const [tableData, setTableData] = useState(data); // Manage the table data state
-  const rowsPerPage = 10;
+  const rowsPerPage = 50;
 const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
 
 
@@ -33,7 +33,6 @@ const [showModal, setShowModal] = useState(false);
     setShowModal(true);
   };
 
-  const handleClose = () => setShowModal(false);
 
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
@@ -63,9 +62,9 @@ const [showModal, setShowModal] = useState(false);
   };
   const navigate = useNavigate();
   const handleEditClick = (item) => {
-    if(tablename=="listing")
+    if(tablename=="items")
     {
-      navigate(`/property/editproperty/${item.id}/${agent_id}`);
+      navigate(`/inventory/edititem/${item.id}`);
     }
     else if(tablename=="contract")
     {
@@ -90,10 +89,13 @@ const [showModal, setShowModal] = useState(false);
       else  if (tablename === "contract") {
         await deleteRecord("customer_images", "id", itemId);
       }
-      
-      //console.log("Delete record with ID:", itemId);
-      // Update the table data state after deletion
-      setTableData((prevData) => prevData.filter((item) => item.id !== itemId));
+     
+     // Update the table data state after deletion
+     setTableData((prevData) => {
+      const updatedData = prevData.filter((item) => item.id !== itemId);
+      console.log('Updated Data:', updatedData); // Log updated data for debugging
+      return updatedData; // Ensure new reference is returned
+    });
     } catch (error) {
       console.error("Error deleting record:", error);
     }
@@ -123,7 +125,10 @@ const [showModal, setShowModal] = useState(false);
     setLightboxImage(imageUrl);
     setLightboxOpen(true);
   };
-
+  // Sync tableData with data prop
+  useEffect(() => {
+    setTableData(data);
+  }, [data]);
   return (
     <>
 
@@ -138,114 +143,74 @@ const [showModal, setShowModal] = useState(false);
       )}
       {loading && <div className="loading-icon">Loading...</div>}
       <div className="table-wrap">
-        <div className="table-responsive">
-        <table className="table table-hover display pb-30" id="datatable1">
-            <thead>
-              <tr>
-                {columns.map((col, index) => (
-                  <th
-                    key={index}
-                    onClick={() => onSort(col.field)}
-                    style={{ cursor: "pointer" }}
+  <div className="table-responsive">
+    <table className="table table-hover table-bordered display pb-30" id="datatable1">
+      <thead>
+        <tr>
+          {columns.map((col, index) => (
+            <th
+              key={index}
+              onClick={() => onSort(col.field)}
+              style={{ cursor: "pointer", textAlign: "center", color: "white",backgroundColor: "#fd6008" }} // Center text and add a background color
+            >
+              {col.label} {getSortIcon(col.field)}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {paginatedData.map((item, rowIndex) => (
+          <tr key={rowIndex} > {/* Adjust row height */}
+            {columns.map((col, colIndex) => (
+              <td key={colIndex} > {/* Center cell content */}
+                {col.field === "path" && item[col.field] ? (
+                  <img
+                    src={`${baseURL}/${item[col.field]}?t=${new Date().getTime()}`} // Cache-busting
+                    alt="Thumbnail"
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      cursor: "pointer",
+                      borderRadius: "4px", // Add rounded corners to image
+                      border: "1px solid #ddd", // Border for the image
+                    }}
+                    onClick={() => handleImageClick(item[col.field])}
+                  />
+                ) : col.field === "actions" ? (
+                  <>
+                    <FaEdit
+                      style={{ cursor: "pointer", marginRight: "10px", color: "green" }} // Green edit icon
+                      onClick={() => handleEditClick(item)}
+                    />
+                    <FaTrash
+                      style={{ cursor: "pointer", color: "red" }} // Red delete icon
+                      onClick={() => handleDeleteClick(item.id)}
+                    />
+                  </>
+                ) : col.field === "customer_name" ? (
+                  <span
+                    style={{ cursor: "pointer", color: "blue", fontWeight: "bold" }}
+                    onClick={() => handleCustomerClick(item)}
                   >
-                    {col.label} {getSortIcon(col.field)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((item, rowIndex) => (
-                <tr key={rowIndex}>
-                  {columns.map((col, colIndex) => (
-                    <td key={colIndex}>
-                      {col.field === "path" && item[col.field] ? (
-                        <img
-                          src={`${baseURL}/${
-                            item[col.field]
-                          }?t=${new Date().getTime()}`} // Cache-busting
-                          alt="Thumbnail"
-                          style={{
-                            width: "50px",
-                            height: "50px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => handleImageClick(item[col.field])}
-                        />
-                      ) : col.field === "actions" ? (
-                        <>
-                          <FaEdit
-                            style={{ cursor: "pointer", marginRight: "10px" }}
-                            onClick={() => handleEditClick(item)}
-                          />
-                          <FaTrash
-                            style={{ cursor: "pointer" }}
-                            onClick={() => handleDeleteClick(item.id)}
-                          />
-                        </>
-                      ) : col.field === "customer_name" ? (
-                        <span
-                          style={{ cursor: "pointer", color: "blue" }}
-                          onClick={() => handleCustomerClick(item)}
-                        >
-                          {item[col.field]}
-                        </span>
-                      ) :  col.field === "status" && item[col.field] === "vaccant" ? (
-                        <Link className="btn btn-primary btn-sm" to={`/lentproperty/newlent/${item.id}`}>
-                          Book Now
-                        </Link>
-                      ) : (
-                        item[col.field]
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-       {/* Modal to show customer details */}
-       <Modal show={showModal} onHide={handleClose} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Customer Information</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedCustomer ? (
-            <Table striped bordered hover>
-              <tbody>
-                <tr>
-                  <td>ID</td>
-                  <td>{selectedCustomer.id}</td>
-                </tr>
-                <tr>
-                  <td>Name</td>
-                  <td>{selectedCustomer.customer_name}</td>
-                </tr>
-                <tr>
-                  <td>Email</td>
-                  <td>{selectedCustomer.email}</td> {/* Add email in your data */}
-                </tr>
-                <tr>
-                  <td>Start Date</td>
-                  <td>{selectedCustomer.startdate}</td>
-                </tr>
-                <tr>
-                  <td>End Date</td>
-                  <td>{selectedCustomer.enddate}</td>
-                </tr>
-                {/* Add more fields as per your data */}
-              </tbody>
-            </Table>
-          ) : (
-            <p>No customer data available.</p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+                    {item[col.field]}
+                  </span>
+                ) : col.field === "status" && item[col.field] === "vaccant" ? (
+                  <Link className="btn btn-primary btn-sm" to={`/lentproperty/newlent/${item.id}`}>
+                    Book Now
+                  </Link>
+                ) : (
+                  item[col.field]
+                )}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+     
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

@@ -198,7 +198,7 @@ export default function NewUser() {
                             <p>No data available</p>
                         ) : (
                             //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                            <SimpleDataTable columns={columns} data={data} />
+                            <DataTable columns={columns} data={data} tablename="categories" />
                         )}
 
                         {/* <CardComponent 
