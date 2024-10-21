@@ -44,7 +44,7 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   const [reload, setReload] = useState(false);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
-
+  const [images, setImages] = useState([]);
   //   if (!customer) return null;
 
   const handleInputChange = (e) => {
@@ -54,12 +54,22 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       [name]: value,
     }));
   };
+  // Handle file changes and set preview
+  const handleFileChange = (event) => {
+    const selectedImages = Array.from(event.target.files).map((file) =>
+      Object.assign(file, { preview: URL.createObjectURL(file) })
+    );
+    setImages((prevImages) => [...prevImages, ...selectedImages]);
+  };
 
+  const handleDeleteImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     //console.log(formdata);
     try {
-      await axios.post(
+      const post1 = await axios.post(
         "/insertdata/items",
         {
           iname: formdata.iname,
@@ -73,10 +83,25 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
         },
         getHeaders()
       );
+      const formdata1 = e.target;
+      const formData = new FormData();
+      Array.from(formdata1.images.files).forEach((file) => {
+        formData.append("images", file);
+      });
+      console.log(post1.data.id);
+      formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
+
+      const post2 = await axios.post("/addnewproduct/item_images", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,  // Again, make sure the token is correct
+        },
+      });
       // Immediately fetch updated data after adding an item
      // await fetchData("items", setData, "id", {});
       onItemAdded(); // Call this to trigger the reload function in NewItem
       toast.success("Item added successfully!");
+      setImages([]);
       // Optionally add a delay before closing the modal to ensure the toast is visible
       setTimeout(() => {
         onClose(); // Close modal
@@ -349,7 +374,20 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 lable="Item Description"
               />
             </div>
-            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12"></div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+
+                      <div className='form-group'>
+                        <label className='control-label mb-10'>Upload Images</label>
+                        <input
+                          type="file"
+                          name="images"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                 
+                   
+            </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <label className="control-label mb-12"></label>
               <SubmitButton
@@ -358,6 +396,32 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 cls="btn btn-darkblue btn-anim"
               />
             </div>
+            <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <div className="image-preview">
+                        {images.length > 0 &&
+                          images.map((image, index) => (
+                            <div key={index} className="preview-item">
+                              <img
+                                src={image.preview}
+                                alt="preview"
+                                style={{ width: "100px" }}
+                              />
+                              <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                                <div className='form-group'>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteImage(index)}
+                                    className="delete-icon"
+                                  >
+                                    <i className="fas fa-times"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                          ))}
+                      </div>
+                    </div>
           </div>
         </form>
       </div>

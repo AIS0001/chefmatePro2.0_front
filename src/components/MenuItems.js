@@ -41,8 +41,7 @@ const menuItems = [
     dataTargetId: '#property',
     submenu: [
       { name: 'POS', path: '/sale/pos' },
-      { name: ' View Properties', path: '/property/properties' },
-      { name: ' View Contracts', path: '/lentproperty/viewlent' },
+     
       
     ]
   },

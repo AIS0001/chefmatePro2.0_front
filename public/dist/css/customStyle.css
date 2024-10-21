@@ -721,4 +721,17 @@ button.btn-orange.fc-agendaWeek-button,
 .modal-dialog-scrollable {
   max-height: calc(100vh - 100px); /* Ensure it does not exceed viewport height */
 }
+/* POS CSS */
 
+.btn-orange {
+  background-color: orange;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-orange:hover {
+  background-color: darkorange;
+}

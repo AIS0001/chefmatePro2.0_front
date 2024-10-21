@@ -18,7 +18,7 @@ import EditItem from './views/inventory/editItem';
 import NewProduct from './views/inventory/newProduct1';
 
 
-import NewPOS from './views/Property/newProperty';
+import NewPOS from './views/pos/newPOS';
 
 
 

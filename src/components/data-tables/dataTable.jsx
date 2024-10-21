@@ -101,12 +101,14 @@ const [showModal, setShowModal] = useState(false);
     }
   };
   const onSort = (columnKey) => {
-    let direction = "asc";
+    let direction ="asc"
     if (sortConfig.key === columnKey && sortConfig.direction === "asc") {
       direction = "desc";
     }
+    
     setSortConfig({ key: columnKey, direction });
   };
+
 
   const getSortIcon = (columnKey) => {
     if (sortConfig.key === columnKey) {
@@ -151,7 +153,7 @@ const [showModal, setShowModal] = useState(false);
             <th
               key={index}
               onClick={() => onSort(col.field)}
-              style={{ cursor: "pointer", textAlign: "center", color: "white",backgroundColor: "#fd6008" }} // Center text and add a background color
+              style={{ cursor: "pointer", textAlign: "center", color: "white",backgroundColor: "rgb(15 151 43)" }} // Center text and add a background color
             >
               {col.label} {getSortIcon(col.field)}
             </th>
