@@ -14,9 +14,11 @@ import {
 } from "../../components/Buttons/Textfield";
 import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
+import fetchDataFromTwoTables from "../../functions/fetchdatawithTwoTables";
 
 const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
+  const baseURL = 'http://localhost:4402';
   let currentDate = format(new Date(), "yyyy-MM-dd");
   const [images, setImages] = useState([]);
   const [data, setData] = useState([]);
@@ -43,7 +45,8 @@ export default function NewPOS() {
     idproof: "",
     owneraddress: "",
   });
-
+// Construct full image URLs
+const imageUrls = images.map(image => `${baseURL}/${image.path.replace(/\\/g, '/')}`);
   // Handle file changes and set preview
   const handleFileChange = (event) => {
     const selectedImages = Array.from(event.target.files).map((file) =>
@@ -134,6 +137,19 @@ export default function NewPOS() {
     setQuantities(newQuantities);
     updateTotal(newQuantities);
   };
+  // Fetch items when a subcategory is clicked
+const handleSubcategoryClick = async (subcategoryId) => {
+  try {
+    const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
+    const response1 = await fetchDataFromTwoTables("items","item_images","id","product_id",setData,"id",{subcatid:subcategoryId})
+    // Assuming the response returns a list of items with images
+    console.log(response1);
+    setData(response);
+  } catch (error) {
+    console.error("Error fetching items for subcategory:", error);
+  }
+};
+
   const handleTableSelect = (tableNumber) => {
     // Perform your action here, e.g., updating state or navigating to another page
     // console.log(`Table ${tableNumber} selected`);
@@ -163,7 +179,17 @@ export default function NewPOS() {
 
     fetchAndSetData();
   }, []);
+  // useEffect(() => {
+  //   const fetchAndSetData = async () => {
+  //     try {
+  //       await fetchData("item_images", setImages, "id", { "product_id": id });
+  //     } catch (error) {
+  //       console.error("Error fetching images:", error);
+  //     }
+  //   };
 
+  //   fetchAndSetData();
+  // }, [data.id]);
   return (
     <>
       <Layout>
@@ -298,11 +324,13 @@ export default function NewPOS() {
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (
                         <div
-                          className="col-2 col-md-2 col-sm-6 col-xs-12"
+                          className="col-12"
                           key={index}
                         >
-                          <button className="btn btn-danger btn-anim fixed-width-btn">
-                            {subcategory.name}{" "}
+                          <button 
+                           onClick={() => handleSubcategoryClick(subcategory.id)} // Pass category id
+                          className="btn btn-danger btn-anim fixed-width-btn">
+                            {subcategory.subcat}{" "}
                             {/* Assuming each subcategory object has a 'name' field */}
                           </button>
                         </div>
@@ -316,6 +344,46 @@ export default function NewPOS() {
             </CardComponent>
           </div>
           {/* Item list */}
+          {/* Item list */}
+<div className="col-lg-7 col-md-7 col-sm-8 col-xs-12">
+  <CardComponent
+    title="Items"
+    headerColor="darkblue"
+    pull="left"
+    bodyClass="panel-body"
+  >
+    <div className="panel panel-default card-view">
+      <div className="item-list-container">
+        <div className="row mt-3">
+          {data.length > 0 ? (
+            data.map((item, index) => (
+              <div
+                key={item.id}
+                className="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3"
+              >
+                <div className="item-card text-center">
+                  <img
+                    src={`${baseURL}/uploads/${item.filename}`} // Use correct image path from item
+                    alt={item.iname}
+                    onClick={() => addItemToOrder(index)}
+                    className="item-image"
+                  />
+                  <h5 className="item-name">{item.iname}</h5>
+                  <p className="item-price">฿ {item.offerprice}.00</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No items available for this subcategory.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  </CardComponent>
+</div>
+
+
+{/*           
           <div className="col-lg-7 col-md-7 col-sm-8 col-xs-12">
             <CardComponent
               title="Items"
@@ -347,7 +415,7 @@ export default function NewPOS() {
                 </div>
               </div>
             </CardComponent>
-          </div>
+          </div> */}
           {/* Order Summary */}
           <div className="col-lg-3 col-md-3 col-sm-4 col-xs-12">
             <CardComponent
