@@ -11,7 +11,8 @@ import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import fetchData from "../../functions/fetchData";
 import { Textfield } from "../../components/Buttons/Textfield";
-
+import getMax from "../../functions/getMax";
+import { getUserName } from "../../functions/storageUtils";
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
@@ -23,6 +24,7 @@ export default function NewPOS() {
   const [subcategories, setSubcategories] = useState([]);
   const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
+  const [maxNumber, setmaxNumber] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const columns = [
@@ -45,6 +47,7 @@ export default function NewPOS() {
     setSelectedTable(tableNumber); // Update the selected table number
     toast.success(`Selected Table: ${tableNumber}`); // Optional: Notify the user
   };
+  
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
       // Step 1: Update the orders table
@@ -87,6 +90,7 @@ export default function NewPOS() {
 
   // Add item to the cart
   const addItemToOrder = (index, item) => {
+
     const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
     const updatedCart = [...cart];
 
@@ -141,15 +145,17 @@ const handlePrintOrder = async () => {
   // Existing code for handling order saving...
   try {
     const response = await axios.post(`/insertdata/orders`, {
-      order_number: orderNumber,
+      userid:getUserName(),
+      order_number: maxNumber,
       table_number: selectedTable,
       total_amount: total
     },
     getHeaders()
   );
+  await getMax("orders",setmaxNumber,"userid",getUserName(),"order_number");
      // Prepare an array of order items to insert
      const orderItems = cart.map(item => ({
-      order_number: orderNumber,
+      order_number: maxNumber,
       table_number: selectedTable,
       item_name: item.iname,     // Assuming each item has a name property
       quantity: item.quantity,    // Quantity of the item
@@ -176,10 +182,13 @@ const handlePrintOrder = async () => {
     toast.error('Error saving order!');
   }
 };
+
+
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
         await fetchData("categories", setCategories, "id", {});
+        await getMax("orders",setmaxNumber,"userid",getUserName(),"order_number");
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -330,7 +339,7 @@ const handlePrintOrder = async () => {
           {/* Order Summary with quantity adjustment buttons and item total amount display */}
           <div className="col-lg-3 col-md-3 col-sm-4 col-xs-12">
             <CardComponent
-              title="Order Summary"
+              title={maxNumber}
               headerColor="info"
               pull="left"
               bodyClass="panel-body"
@@ -340,48 +349,47 @@ const handlePrintOrder = async () => {
                   <div className="col-12">
                     {cart.length > 0 ? (
                       cart.map((item, index) => (
-                        <div
-                          key={index}
-                          className="order-item mb-3 d-flex align-items-center justify-content-between"
-                          style={{ rowGap: "10px" }} // Adding gap between rows
-                        >
-                          <h6 className="mb-0">{item.iname}</h6>
-                          <div className="d-flex align-items-center" style={{ height: "30px" }}>
-                            {/* Decrease Button */}
-                            <button
-                              onClick={() => decreaseItemQuantity(index)}
-                              className="btn btn-sm btn-danger"
-                              style={{ width: "25px", height: "25px", fontSize: "10px" }} // Smaller button
-                            >
-                              -
-                            </button>
-
-                            {/* Quantity (Larger Text) */}
-                            <span className="mx-2" style={{ fontSize: "16px", fontWeight: "bold" }}>
-                              {item.quantity}
-                            </span>
-
-                            {/* Increase Button */}
-                            <button
-                              onClick={() => increaseItemQuantity(index)}
-                              className="btn btn-sm btn-success"
-                              style={{ width: "25px", height: "25px", fontSize: "10px" }} // Smaller button
-                            >
-                              +
-                            </button>
-
-                            {/* Total Amount for this item */}
-                            <span className="ms-3" style={{ fontSize: "14px", fontWeight: "bold" }}>
-                              ฿{(item.quantity * item.offerprice).toFixed(2)}
-                            </span>
-                          </div>
+                        <>
+                          <div
+                        className="order-item d-flex align-items-center justify-content-between mb-2"
+                        key={index}
+                      >
+                        <h5 className="item-name mb-0">
+                        {item.iname} x {item.quantity } = ฿{" "}
+                        ฿{(item.quantity * item.offerprice).toFixed(2)}
+                        </h5>
+                        <div className="quantity-controls d-flex align-items-center">
+                          <button
+                            className="btn btn-dark-custom btn-sm me-2"
+                            onClick={() => decreaseItemQuantity(index)}
+                          >
+                            -
+                          </button>
+                          <span className="quantity me-2">{item.quantity}</span>
+                          <button
+                            className="btn btn-dark-custom btn-sm"
+                            onClick={() => increaseItemQuantity(index)}
+                          >
+                            +
+                          </button>
                         </div>
+                      </div>
+
+
+                        </>
+                      
                       ))
                     ) : (
                       <p>Your cart is empty.</p>
                     )}
-                    <div className="total mt-4">
-                      <h6>Total: ฿{total}.00</h6>
+                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
+                      <h5>
+                        Total:{" "}
+                        <span className="total-amount">
+                          ฿ {total.toFixed(2)}
+                        </span>
+                      </h5>
+                      <button className="btn btn-primary" onClick={handlePrintOrder}>Print order</button>
                     </div>
                   </div>
                 </div>
