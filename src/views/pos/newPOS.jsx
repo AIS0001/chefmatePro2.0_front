@@ -51,6 +51,9 @@ export default function NewPOS() {
     );
     setImages((prevImages) => [...prevImages, ...selectedImages]);
   };
+  const handleDeleDataById= ()=>{
+    
+  }
 
   // Handle image deletion
   const handleDeleteImage = (index) => {
