@@ -280,7 +280,7 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 </select>
               </div>
             </div>
-            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+            {/* <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <TextfieldwithLabel
                 id="mrp"
                 onChange={(e) => handleInputChange(e)}
@@ -299,7 +299,7 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 name="offerprice"
                 lable="Selling Price"
               />
-            </div>
+            </div> */}
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <div className="form-group">
                 <label

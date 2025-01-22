@@ -12,7 +12,13 @@ import Layout from "../../layout/Layout";
 import fetchData from "../../functions/fetchData";
 import { Textfield } from "../../components/Buttons/Textfield";
 import getMax from "../../functions/getMax";
+import getRunningTable from "../../functions/getRunningTable";
 import { getUserName } from "../../functions/storageUtils";
+import updateData from "../../functions/updateData";
+import CheckBillModal from "../../components/Modals/CheckBillModal";
+
+
+
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
@@ -26,6 +32,21 @@ export default function NewPOS() {
   const [total, setTotal] = useState(0);
   const [maxNumber, setmaxNumber] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [Tablelist, settableList] = useState(null);
+  const [TotalTablelist, setTotaltablelist] = useState(0);
+
+ const [selectedContract, setSelectedContract] = useState(null);
+  const [tableshowModal, settableShowModal] = useState(false);
+
+
+  const showtableBillDetails = (contract) => {
+    // setSelectedContract(contract);
+    settableShowModal(true);
+  };
+
+  const [tableStatus, setTableStatus] = useState(
+    Array.from({ length: 20 }, () => "vacant") // Default all tables to "vacant"
+  );
 
   const columns = [
     { label: "Product Id", field: "product_id" },
@@ -44,10 +65,11 @@ export default function NewPOS() {
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   // Handle table selection
   const handleTableClick = (tableNumber) => {
-    setSelectedTable(tableNumber); // Update the selected table number
-    toast.success(`Selected Table: ${tableNumber}`); // Optional: Notify the user
+    setSelectedTable(tableNumber);
+
+    toast.success(`Selected Table: ${tableNumber}`);
   };
-  
+
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
       // Step 1: Update the orders table
@@ -71,7 +93,7 @@ export default function NewPOS() {
   // Print Order (Save to MySQL)
 
 
- 
+
 
   // Fetch items when a subcategory is clicked
   const handleSubcategoryClick = async (subcategoryId) => {
@@ -85,7 +107,7 @@ export default function NewPOS() {
       console.error("Error fetching items for subcategory:", error);
     }
   };
- 
+
 
 
   // Add item to the cart
@@ -135,60 +157,77 @@ export default function NewPOS() {
     );
     setTotal(newTotal);
   };
-// Function to handle printing the order
-const handlePrintOrder = async () => {
-  if (!selectedTable) {
-    toast.error('Please select a table!');
-    return;
-  }
-  
-  // Existing code for handling order saving...
-  try {
-    const response = await axios.post(`/insertdata/orders`, {
-      userid:getUserName(),
-      order_number: maxNumber,
-      table_number: selectedTable,
-      total_amount: total
-    },
-    getHeaders()
-  );
-  await getMax("orders",setmaxNumber,"userid",getUserName(),"order_number");
-     // Prepare an array of order items to insert
-     const orderItems = cart.map(item => ({
-      order_number: maxNumber,
-      table_number: selectedTable,
-      item_name: item.iname,     // Assuming each item has a name property
-      quantity: item.quantity,    // Quantity of the item
-      price: item.offerprice,      // Price per unit
-      total_amount: item.offerprice * item.quantity // Total for this item
-    }));
-  const response1 = await axios.post(`/insertdatabulk/order_items`, {
-    items: orderItems // Wrap in an object if your API expects this
-  },
-  getHeaders()
-);
-
-
-    if (response1.data.success) {
-      toast.success(response.data.message);
-      setOrderNumber(prevOrder => prevOrder + 1);
-      setCart([]);
-      setTotal(0);
-    } else {
-      toast.error('Failed to save the order!');
+  // Function to handle printing the order
+  const handlePrintOrder = async () => {
+    if (!selectedTable) {
+      toast.error('Please select a table!');
+      return;
     }
-  } catch (error) {
-    console.error('Error saving order:', error);
-    toast.error('Error saving order!');
-  }
-};
+
+    // Existing code for handling order saving...
+    try {
+      const response = await axios.post(`/insertdata/orders`, {
+        userid: getUserName(),
+        order_number: maxNumber,
+        table_number: selectedTable,
+        total_amount: total,
+        status: "1"
+      },
+        getHeaders()
+      );
+
+      // Prepare an array of order items to insert
+      const orderItems = cart.map(item => ({
+        order_number: maxNumber,
+        table_number: selectedTable,
+        item_name: item.iname,     // Assuming each item has a name property
+        quantity: item.quantity,    // Quantity of the item
+        price: item.offerprice,      // Price per unit
+        total_amount: item.offerprice * item.quantity, // Total for this item
+        status: "1" //running table status
+      }));
+      const response1 = await axios.post(`/insertdatabulk/order_items`, {
+        items: orderItems // Wrap in an object if your API expects this
+      },
+        getHeaders()
+      );
+
+      await updateData(
+        "tablelist",
+        { status: '1' },
+        { name: selectedTable } // Additional WHERE conditions
+      );
+
+      await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
+
+      if (response1.data.success) {
+        // Update the local table status to reflect the change
+        setTableStatus((prevStatus) =>
+          prevStatus.map((status, index) =>
+            index + 1 === selectedTable ? "running" : status
+          )
+        );
+        toast.success(response.data.message);
+        setOrderNumber(prevOrder => prevOrder + 1);
+        setCart([]);
+        setTotal(0);
+      } else {
+        toast.error('Failed to save the order!');
+      }
+    } catch (error) {
+      console.error('Error saving order:', error);
+      toast.error('Error saving order!');
+    }
+  };
 
 
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
         await fetchData("categories", setCategories, "id", {});
-        await getMax("orders",setmaxNumber,"userid",getUserName(),"order_number");
+        await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
+        await getRunningTable("orders", settableList);
+        await fetchData("tablelist", setTotaltablelist, "id", {})
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -213,23 +252,33 @@ const handlePrintOrder = async () => {
             >
               <div className="panel panel-default card-view">
                 <div className="row">
-                  {Array.from({ length: 20 }).map((_, index) => (
-                    <div
-                      key={index}
-                      onClick={() => handleTableClick(index + 1)} // Table click handler
-                      className="col-lg-2 col-md-4 col-sm-6 col-12 mb-3"
-                    >
-                      <div className={`table-card p-3 text-center border w-100 table-color-${index % 4}`}>
-                        <img
-                          src={`../../dist/img/tables/table.png`}
-                          alt={`Table ${index + 1}`}
-                          className="img-fluid mb-2"
-                          style={{ width: "50px", height: "50px" }}
-                        />
-                        <h6>Table {index + 1}</h6>
+                  {TotalTablelist.length > 0 ? (
+                    TotalTablelist.map((tables, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleTableClick(tables.name)}
+                        className={`col-lg-2 col-md-4 col-sm-6 col-12 mb-3 ${tables.status == "0"
+                          ? "bg-success"
+                          : "bg-danger"
+                          }`}
+                      >
+                        <div className="table-card p-3 text-center border w-100">
+                          <img
+                            src={`../../dist/img/tables/table.png`}
+                            alt={`Table ${index + 1}`}
+                            className="img-fluid mb-2"
+                            style={{ width: "50px", height: "50px" }}
+                          />
+                          <h6> {tables.name}</h6>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+
+                    ))
+                  ) : (
+                    <p>Loading tables...</p>
+                  )}
+
+
                 </div>
               </div>
             </CardComponent>
@@ -351,33 +400,33 @@ const handlePrintOrder = async () => {
                       cart.map((item, index) => (
                         <>
                           <div
-                        className="order-item d-flex align-items-center justify-content-between mb-2"
-                        key={index}
-                      >
-                        <h5 className="item-name mb-0">
-                        {item.iname} x {item.quantity } = ฿{" "}
-                        ฿{(item.quantity * item.offerprice).toFixed(2)}
-                        </h5>
-                        <div className="quantity-controls d-flex align-items-center">
-                          <button
-                            className="btn btn-dark-custom btn-sm me-2"
-                            onClick={() => decreaseItemQuantity(index)}
+                            className="order-item d-flex align-items-center justify-content-between mb-2"
+                            key={index}
                           >
-                            -
-                          </button>
-                          <span className="quantity me-2">{item.quantity}</span>
-                          <button
-                            className="btn btn-dark-custom btn-sm"
-                            onClick={() => increaseItemQuantity(index)}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
+                            <h5 className="item-name mb-0">
+                              {item.iname} x {item.quantity} = ฿{" "}
+                              ฿{(item.quantity * item.offerprice).toFixed(2)}
+                            </h5>
+                            <div className="quantity-controls d-flex align-items-center">
+                              <button
+                                className="btn btn-dark-custom btn-sm me-2"
+                                onClick={() => decreaseItemQuantity(index)}
+                              >
+                                -
+                              </button>
+                              <span className="quantity me-2">{item.quantity}</span>
+                              <button
+                                className="btn btn-dark-custom btn-sm"
+                                onClick={() => increaseItemQuantity(index)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
 
 
                         </>
-                      
+
                       ))
                     ) : (
                       <p>Your cart is empty.</p>
@@ -407,7 +456,13 @@ const handlePrintOrder = async () => {
               {" "}
               {/* Added mx-3 for equal horizontal spacing */}
               <button className="btn btn-success mb-2" onClick={handlePrintOrder}>Print Order</button>
-              <button className="btn btn-warning mb-2">Check Bill</button>
+              
+              
+              <button className="btn btn-warning mb-2" 
+              onClick={showtableBillDetails}
+              
+              >
+                Check Bill</button>
               <button className="btn btn-info mb-2">Last Order</button>
               <button className="btn btn-primary mb-2">Generate Bill</button>
               <button className="btn btn-darkblue mb-2">Save Bill</button>
@@ -419,6 +474,13 @@ const handlePrintOrder = async () => {
             </div>
           </div>
         </div>
+
+        <CheckBillModal
+          isOpen={tableshowModal}
+          customer={selectedContract}
+         // onItemAdded={triggerReload} // Pass the reload function
+          onClose={() => settableShowModal(false)} // Close the modal
+        />
       </Layout>
     </>
   );

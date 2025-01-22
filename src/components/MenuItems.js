@@ -28,6 +28,8 @@ const menuItems = [
     dataTargetId: '#inventory',
     submenu: [
       { name: 'New Item', path: '/inventory/newItem' },
+      { name: 'Item List', path: '/inventory/itemList' },
+      { name: 'Item Pricing', path: '/inventory/newItem' },
       { name: 'New Product', path: '/inventory/newproduct' },
      
       
