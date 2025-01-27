@@ -28,6 +28,8 @@ const menuItems = [
     dataTargetId: '#inventory',
     submenu: [
       { name: 'New Item', path: '/inventory/newItem' },
+      { name: 'Item List', path: '/inventory/itemList' },
+      { name: 'Item Pricing', path: '/inventory/newItem' },
       { name: 'New Product', path: '/inventory/newproduct' },
      
       
@@ -52,6 +54,7 @@ const menuItems = [
     icon: 'file-text',
     dataTargetId: '#reports',
     submenu: [
+      { name: 'Bill History', path: '/reports/billhistory' },
       { name: 'Room Status', path: '/reports/sroom-status' },
       
     ]

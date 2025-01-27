@@ -1,34 +1,33 @@
-/* eslint-disable no-undef */
-
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import Modal from "react-modal";
+import { FaTimes } from "react-icons/fa"; // Importing the close icon from react-icons
+import { TextfieldwithLabel } from "../Buttons/Textfield";
 import axios from "axios";
+import { fetchComboData, fetchComboDataWithWhere } from "../../services/api";
 import { getHeaders } from "../../utility/getHeader";
+import fetchData from "../../functions/fetchData";
+import { SubmitButton } from "../Buttons/Textfield";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import CardComponent from "../../components/cards/CardComponent";
+const customStyles = {
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    width: "100%",
+    maxWidth: "90%",
+    borderRadius: "10px",
+  },
+  overlay: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+};
 
-import Header from "../../components/Header";
-import Layout from "../../layout/Layout";
-import { format } from "date-fns";
-import { fetchComboData } from "../../services/api";
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { SubmitButton } from "../../components/Buttons/Textfield";
-import DataTable from "../../components/data-tables/dataTable";
-import SimpleDataTable from "../../components/data-tables/SimpledataTable";
-import fetchData from "../../functions/fetchData";
-import { useSearchParams } from "react-router-dom";
-
-export default function EditItem() {
-  let currentDate = format(new Date(), "yyyy-MM-dd");
-  //  const headers = { Authorization: authheader().access_token };
-  
-  const columns = [
-    { label: "ID", field: "id" },
-    { label: "Table name", field: "name" },
-    { label: "Actions", field: "actions" },
-  ];
+const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   const [formdata, setFormData] = useState({
     unit: "",
     tax: "",
@@ -45,8 +44,7 @@ export default function EditItem() {
   const [reload, setReload] = useState(false);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
-  const [searchParams] = useSearchParams();
-  const itemid = searchParams.get("id"); // Get the 'id' query parameter
+  const [images, setImages] = useState([]);
   //   if (!customer) return null;
 
   const handleInputChange = (e) => {
@@ -56,12 +54,22 @@ export default function EditItem() {
       [name]: value,
     }));
   };
+  // Handle file changes and set preview
+  const handleFileChange = (event) => {
+    const selectedImages = Array.from(event.target.files).map((file) =>
+      Object.assign(file, { preview: URL.createObjectURL(file) })
+    );
+    setImages((prevImages) => [...prevImages, ...selectedImages]);
+  };
 
+  const handleDeleteImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     //console.log(formdata);
     try {
-      await axios.post(
+      const post1 = await axios.post(
         "/insertdata/items",
         {
           iname: formdata.iname,
@@ -75,10 +83,25 @@ export default function EditItem() {
         },
         getHeaders()
       );
+      const formdata1 = e.target;
+      const formData = new FormData();
+      Array.from(formdata1.images.files).forEach((file) => {
+        formData.append("images", file);
+      });
+      console.log(post1.data.id);
+      formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
+
+      const post2 = await axios.post("/addnewproduct/item_images", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,  // Again, make sure the token is correct
+        },
+      });
       // Immediately fetch updated data after adding an item
      // await fetchData("items", setData, "id", {});
       onItemAdded(); // Call this to trigger the reload function in NewItem
       toast.success("Item added successfully!");
+      setImages([]);
       // Optionally add a delay before closing the modal to ensure the toast is visible
       setTimeout(() => {
         onClose(); // Close modal
@@ -148,34 +171,40 @@ export default function EditItem() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const fetchAndSetData = async () => {
-      try {
-        await fetchData("items", setData, "id", {"id":itemid});
-        console.log("Fetched data:", data); // Add this line for debugging
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
-    };
-
-    fetchAndSetData();
-  }, []);
   return (
-    <>
-      <Layout>
-        <Header title="Edit Item Information" />
-        <ToastContainer />
-        <div className="row">
-          <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Edit Record"
-              headerColor="darkorange"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div class="row">
-                <div class="col-md-12">
-                <form onSubmit={handleSubmit}>
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={onClose}
+      contentLabel="New Item Entry"
+      style={customStyles}
+      ariaHideApp={false}
+    >
+      <ToastContainer />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h4>Add New Item</h4>
+        <button
+          onClick={onClose}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <FaTimes size={20} color="red" /> {/* Close icon */}
+        </button>
+      </div>
+      <hr
+        style={{ width: "99%", border: "1px solid #ccc", margin: "10px 0" }}
+      />{" "}
+      {/* Horizontal rule */}
+      <div>
+        <form onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <TextfieldwithLabel
@@ -345,27 +374,59 @@ export default function EditItem() {
                 lable="Item Description"
               />
             </div>
-            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12"></div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+
+                      <div className='form-group'>
+                        <label className='control-label mb-10'>Upload Images</label>
+                        <input
+                          type="file"
+                          name="images"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                 
+                   
+            </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <label className="control-label mb-12"></label>
               <SubmitButton
                 type="submit"
-                name="Update Item"
+                name="Add Item"
                 cls="btn btn-darkblue btn-anim"
               />
             </div>
+            <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <div className="image-preview">
+                        {images.length > 0 &&
+                          images.map((image, index) => (
+                            <div key={index} className="preview-item">
+                              <img
+                                src={image.preview}
+                                alt="preview"
+                                style={{ width: "100px" }}
+                              />
+                              <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                                <div className='form-group'>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteImage(index)}
+                                    className="delete-icon"
+                                  >
+                                    <i className="fas fa-times"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                          ))}
+                      </div>
+                    </div>
           </div>
         </form>
-                </div>
-              </div>
-            </CardComponent>
-          </div>
-          {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-        
-        </div>
-      </Layout>
-    </>
+      </div>
+    </Modal>
   );
-}
+};
+
+export default NewItemPriceModal;

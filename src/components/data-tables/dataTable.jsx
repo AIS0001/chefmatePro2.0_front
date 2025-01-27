@@ -1,16 +1,23 @@
-import React, { useState,useEffect } from "react";
-import { FaSort, FaSortUp, FaSortDown, FaAirbnb, FaAddressBook, FaBandcamp } from "react-icons/fa";
-import { useNavigate ,Link} from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import {
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaAirbnb,
+  FaAddressBook,
+  FaBandcamp,
+} from "react-icons/fa";
+import { useNavigate, Link } from "react-router-dom";
 import { Modal, Button, Table } from "react-bootstrap";
 import ExportDataTable from "../Buttons/ExportdataTable";
 import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
 import "react-image-lightbox/style.css"; // Import lightbox styles
 import { baseURL } from "../..";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaTrash,FaPrint } from "react-icons/fa";
 import EditModal from "../Modals/EditModals";
 import deleteRecord from "../../functions/delateData";
-
+import fetchData from "../../functions/fetchData";
 
 const DataTable = ({ columns, data, tablename }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,11 +27,13 @@ const DataTable = ({ columns, data, tablename }) => {
   const [loading, setLoading] = useState(false); // Add loading state
   const [editingRecord, setEditingRecord] = useState(null); // State for editing record
   const [tableData, setTableData] = useState(data); // Manage the table data state
+  const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
+  const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
   const rowsPerPage = 50;
-const agent_id = localStorage.getItem('uname')|| sessionStorage.getItem('uname')
+  const agent_id =
+    localStorage.getItem("uname") || sessionStorage.getItem("uname");
 
-
-const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   // Function to handle modal open and store selected customer data
@@ -32,7 +41,6 @@ const [showModal, setShowModal] = useState(false);
     setSelectedCustomer(customer);
     setShowModal(true);
   };
-
 
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
@@ -62,53 +70,209 @@ const [showModal, setShowModal] = useState(false);
   };
   const navigate = useNavigate();
   const handleEditClick = (item) => {
-    if(tablename=="items")
-    {
+    if (tablename == "items") {
       navigate(`/inventory/edititem/${item.id}`);
-    }
-    else if(tablename=="contract")
-    {
+    } else if (tablename == "contract") {
       navigate(`/contracts/editcontract/${item.id}/${agent_id}`);
+    } else {
     }
-    else{
 
-
-    }
-   
     // setEditingRecord(item);
     // setShowModal(true);
   };
+  const handlePrintClick = async (itemId) => {
+    try {
+      // Fetch the final_bill and order_items details for the given itemId
+      const finalBillData = await fetchData("final_bill", setFinalBillData, "id", { id: itemId });
+      const orderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: itemId });
+   // Check if inv_time exists in finalBillData
+   const invTime = finalBillData[0].inv_time;
+   const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
 
+      // Format the data for printing using a similar structure
+      const printContent = `
+        <html>
+          <head>
+            <style>
+              html, body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Cambria', monospace;
+              }
+              body {
+                font-size: 18px;
+                width: 80mm;
+              }
+              .bill-header {
+                text-align: center;
+                margin-bottom: 2px;
+              }
+              .bill-header h2 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+              }
+              .bill-header p {
+                margin: 4px 0;
+                font-size: 18px;
+              }
+              .table {
+                width: 100%;
+                margin-top: 1px;
+                border-collapse: collapse;
+              }
+              .table th, .table td {
+                text-align: left;
+                padding: 5px 0;
+                font-size: 18px;
+                line-height: 1.6;
+              }
+              .table th {
+                font-weight: bold;
+                border-bottom: 1px solid #000;
+              }
+              .table th.header {
+                font-weight: bold;
+                
+              }
+              .table td {
+                border-bottom: 1px solid #ddd;
+              }
+              .table td.total {
+                font-weight: bold;
+                font-size: 18px;
+                margin-right: 2px;
+                border-bottom: 1px solid #000;
+              }
+              .total-row {
+                margin-top: 5px;
+                margin-right: 10px;
+                font-weight: bold;
+                text-align: right;
+                font-size: 18px;
+              }
+              .footer {
+                margin-top: 15px;
+                text-align: center;
+                font-size: 18px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="bill-header">
+            <h2>Restaurant Name</h2>
+           
+          
+          </div>
+            <div class="bill-bill-body">
+             
+              <table class="table">
+                
+                  <tr >
+                    <th class="header" >Bill ID: ${FinalBillData[0].id}</th>
+                   
+                    <th class="header" >${FinalBillData[0].table_number}</th>
+                    
+                  </tr>
+                   <tr >
+                    <th>Date: ${FinalBillData[0].inv_date}</th>
+                   
+                    <th>Time:${formattedTime}</th>
+                    
+                  </tr>
+                
+                <tbody> 
+                <tr>  </tr>
+                <tr>  </tr>
+                </tbody>
+                </table>
+             
+            </div>
+            <div class="bill-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Total </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${orderItemsData
+                    .map(
+                      (item) => `
+                        <tr>
+                          <td>${item.item_name}</td>
+                          <td>${item.quantity}</td>
+                          <td>฿ ${item.total_price / item.quantity}</td>
+                          <td>฿ ${item.total_price}</td>
+                        </tr>
+                      `
+                    )
+                    .join('')}
+                </tbody>
+              </table>
+               <div class="total-row">
+              <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
+              <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
+              <span>Round Off: ฿ ${FinalBillData[0].tax}</span><br>
+              <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
+            </div>
+              
+            </div>
+            <div class="footer">
+              <p>Printed on ${new Date().toLocaleString()}</p>
+              <p>Powered by Your Company Name</p>
+            </div>
+          </body>
+        </html>
+      `;
+  
+      // Open the print dialog with the formatted content
+      const newWindow = window.open("", "_blank");
+      newWindow.document.write(printContent);
+      newWindow.document.close();
+  
+      newWindow.onload = () => {
+        newWindow.print(); // Print the document
+        newWindow.close(); // Close the window after printing
+      };
+    } catch (error) {
+      console.error("Error fetching data for printing:", error);
+    }
+  };
+  
+  
+  
   const handleDeleteClick = async (itemId) => {
     try {
       // Implement delete logic here
       await deleteRecord(tablename, "id", itemId);
       if (tablename === "listing") {
         await deleteRecord("images", "id", itemId);
-      }
-      else  if (tablename === "contract") {
+      } else if (tablename === "contract") {
         await deleteRecord("customer_images", "id", itemId);
       }
-     
-     // Update the table data state after deletion
-     setTableData((prevData) => {
-      const updatedData = prevData.filter((item) => item.id !== itemId);
-      console.log('Updated Data:', updatedData); // Log updated data for debugging
-      return updatedData; // Ensure new reference is returned
-    });
+
+      // Update the table data state after deletion
+      setTableData((prevData) => {
+        const updatedData = prevData.filter((item) => item.id !== itemId);
+        console.log("Updated Data:", updatedData); // Log updated data for debugging
+        return updatedData; // Ensure new reference is returned
+      });
     } catch (error) {
       console.error("Error deleting record:", error);
     }
   };
   const onSort = (columnKey) => {
-    let direction ="asc"
+    let direction = "asc";
     if (sortConfig.key === columnKey && sortConfig.direction === "asc") {
       direction = "desc";
     }
-    
+
     setSortConfig({ key: columnKey, direction });
   };
-
 
   const getSortIcon = (columnKey) => {
     if (sortConfig.key === columnKey) {
@@ -133,9 +297,6 @@ const [showModal, setShowModal] = useState(false);
   }, [data]);
   return (
     <>
-
-     
-
       {lightboxOpen && lightboxImage && (
         <Lightbox
           mainSrc={lightboxImage}
@@ -145,82 +306,104 @@ const [showModal, setShowModal] = useState(false);
       )}
       {loading && <div className="loading-icon">Loading...</div>}
       <div className="table-wrap">
-  <div className="table-responsive">
-    <table className="table table-hover table-bordered display pb-30" id="datatable1">
-      <thead>
-        <tr>
-          {columns.map((col, index) => (
-            <th
-              key={index}
-              onClick={() => onSort(col.field)}
-              style={{ cursor: "pointer", textAlign: "center", color: "white",backgroundColor: "rgb(15 151 43)" }} // Center text and add a background color
-            >
-              {col.label} {getSortIcon(col.field)}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {paginatedData.map((item, rowIndex) => (
-          <tr key={rowIndex} > {/* Adjust row height */}
-            {columns.map((col, colIndex) => (
-              <td key={colIndex} > {/* Center cell content */}
-                {col.field === "path" && item[col.field] ? (
-                  <img
-                    src={`${baseURL}/${item[col.field]}?t=${new Date().getTime()}`} // Cache-busting
-                    alt="Thumbnail"
+        <div className="table-responsive">
+          <table
+            className="table table-hover table-bordered display pb-30"
+            id="datatable1"
+          >
+            <thead>
+              <tr>
+                {columns.map((col, index) => (
+                  <th
+                    key={index}
+                    onClick={() => onSort(col.field)}
                     style={{
-                      width: "50px",
-                      height: "50px",
                       cursor: "pointer",
-                      borderRadius: "4px", // Add rounded corners to image
-                      border: "1px solid #ddd", // Border for the image
-                    }}
-                    onClick={() => handleImageClick(item[col.field])}
-                  />
-                ) : col.field === "actions" ? (
-                  <>
-                    <FaEdit
-                      style={{ cursor: "pointer", marginRight: "10px", color: "green" }} // Green edit icon
-                      onClick={() => handleEditClick(item)}
-                    />
-                    <FaTrash
-                      style={{ cursor: "pointer", color: "red" }} // Red delete icon
-                      onClick={() => handleDeleteClick(item.id)}
-                    />
-                  </>
-                ) : col.field === "customer_name" ? (
-                  <span
-                    style={{ cursor: "pointer", color: "blue", fontWeight: "bold" }}
-                    onClick={() => handleCustomerClick(item)}
+                      textAlign: "center",
+                      color: "white",
+                      backgroundColor: "rgb(15 151 43)",
+                    }} // Center text and add a background color
                   >
-                    {item[col.field]}
-                  </span>
-                ) : col.field === "status" && item[col.field] === "vaccant" ? (
-                  <Link className="btn btn-primary btn-sm" to={`/lentproperty/newlent/${item.id}`}>
-                    Book Now
-                  </Link>
-                ) : (
-                  item[col.field]
-                )}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-</div>
+                    {col.label} {getSortIcon(col.field)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.map((item, rowIndex) => (
+                <tr key={rowIndex}>
+                  {" "}
+                  {/* Adjust row height */}
+                  {columns.map((col, colIndex) => (
+                    <td key={colIndex}>
+                      {" "}
+                      {/* Center cell content */}
+                      {col.field === "path" && item[col.field] ? (
+                        <img
+                          src={`${baseURL}/${
+                            item[col.field]
+                          }?t=${new Date().getTime()}`} // Cache-busting
+                          alt="Thumbnail"
+                          style={{
+                            width: "50px",
+                            height: "50px",
+                            cursor: "pointer",
+                            borderRadius: "4px", // Add rounded corners to image
+                            border: "1px solid #ddd", // Border for the image
+                          }}
+                          onClick={() => handleImageClick(item[col.field])}
+                        />
+                      ) : col.field === "actions" ? (
+                        <>
+                          {/* <FaEdit
+                            style={{
+                              cursor: "pointer",
+                              marginRight: "10px",
+                              color: "green",
+                            }} // Green edit icon
+                            onClick={() => handleEditClick(item)}
+                          /> */}
+                          <FaPrint
+                            style={{ cursor: "pointer", color: "red" }} // Red delete icon
+                            onClick={() => handlePrintClick(item.id)}
+                          />
+                        </>
+                      ) : col.field === "customer_name" ? (
+                        <span
+                          style={{
+                            cursor: "pointer",
+                            color: "blue",
+                            fontWeight: "bold",
+                          }}
+                          onClick={() => handleCustomerClick(item)}
+                        >
+                          {item[col.field]}
+                        </span>
+                      ) : col.field === "status" &&
+                        item[col.field] === "vaccant" ? (
+                        <Link
+                          className="btn btn-primary btn-sm"
+                          to={`/lentproperty/newlent/${item.id}`}
+                        >
+                          Book Now
+                        </Link>
+                      ) : (
+                        item[col.field]
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-     
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
-    
-        
-      
     </>
   );
 };

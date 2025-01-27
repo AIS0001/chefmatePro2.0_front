@@ -19,7 +19,7 @@ import NewProduct from './views/inventory/newProduct1';
 
 
 import NewPOS from './views/pos/newPOS';
-
+import BillHistory from './views/reports/billHistory';
 
 
 //Users
@@ -61,6 +61,8 @@ function App() {
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
 
+ {/* Reports */}
+          <Route path="/reports/billhistory" element={<PrivateRoute element={<BillHistory />} />} />
           <Route path='/setting/taxes' element={< Taxes />} />
           <Route path='/setting/units' element={< Units />} />
           {/* <Route path='/users/newuser' element={< NewUser />} /> */}

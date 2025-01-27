@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
 import NewItemModal from "../../components/Modals/NewItemModal";
+import NewItemPriceModal from "../../components/Modals/NewItemPriceModal";
 
 export default function NewItem() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -21,6 +22,7 @@ export default function NewItem() {
   const [errors, setErrors] = useState({});
   const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showModalItem, setShowModalItem] = useState(false);
   const [reload, setReload] = useState(false); // Define reload state
 
   const [formdata, setFormData] = useState({
@@ -37,6 +39,11 @@ export default function NewItem() {
     { label: "Actions", field: "actions" },
   ];
   const AddNewItemButton = (contract) => {
+    // setSelectedContract(contract);
+    setShowModalItem(true);
+  };
+
+  const AddNewItemPriceButton = (contract) => {
     // setSelectedContract(contract);
     setShowModal(true);
   };
@@ -67,28 +74,31 @@ export default function NewItem() {
         <Header title="Item Details" />
         <ToastContainer />
         <div className="row mb-4">
-        <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10" >
-          
+        <div className="col-lg-8 col-md-8 col-sm-8 col-xs-8" >
           </div>
-        <div className="col-1">
-         
-        </div>
-        <div className="col-1">
-          <Link
+        <div className="col-lg-2 col-md-2 col-sm-2 col-xs-2" >
+        <Link
             type="button"
             name="add"
             onClick={AddNewItemButton}
-            className="btn btn-primary btn-anim shadow-lg"
-            style={{
-              padding: "5px 8px",
-              borderRadius: "4px",
-              fontSize: "20px",
-              backgroundColor: "#e99c0e",
-              borderColor: "#c1820d",
-            }}
+            className="btn btn-success btn-anim shadow-sm"
+           
           >
             <i className="fas fa-plus-circle mr-2"></i> {/* Add an icon */}
-            Add New Item
+            + Add New Item
+          </Link>
+          </div>
+       
+          <div className="col-lg-2 col-md-2 col-sm-2 col-xs-2" >
+          <Link
+            type="button"
+            name="add"
+            onClick={AddNewItemPriceButton}
+            className="btn btn-primary category-btn"
+           
+          >
+            <i className="add_shopping_cart"></i> {/* Add an icon */}
+             + Item Price
           </Link>
         </div>
         </div>
@@ -104,6 +114,13 @@ export default function NewItem() {
         </div>
 
         <NewItemModal
+          isOpen={showModalItem}
+          customer={selectedContract}
+          onItemAdded={triggerReload} // Pass the reload function
+          onClose={() => setShowModalItem(false)} // Close the modal
+        />
+        
+        <NewItemPriceModal
           isOpen={showModal}
           customer={selectedContract}
           onItemAdded={triggerReload} // Pass the reload function

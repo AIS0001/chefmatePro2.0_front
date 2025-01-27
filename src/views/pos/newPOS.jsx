@@ -12,7 +12,13 @@ import Layout from "../../layout/Layout";
 import fetchData from "../../functions/fetchData";
 import { Textfield } from "../../components/Buttons/Textfield";
 import getMax from "../../functions/getMax";
+import getRunningTable from "../../functions/getRunningTable";
 import { getUserName } from "../../functions/storageUtils";
+import updateData from "../../functions/updateData";
+import CheckBillModal from "../../components/Modals/CheckBillModal";
+
+
+
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
@@ -26,6 +32,22 @@ export default function NewPOS() {
   const [total, setTotal] = useState(0);
   const [maxNumber, setmaxNumber] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [Tablelist, settableList] = useState(null);
+  const [TotalTablelist, setTotaltablelist] = useState(0);
+
+ const [selectedContract, setSelectedContract] = useState(null);
+  const [tableshowModal, settableShowModal] = useState(false);
+
+
+  const showtableBillDetails = (contract) => {
+    // setSelectedContract(contract);
+    // fetchData("tablelist", setTotaltablelist, "id", {  });
+    settableShowModal(true);
+  };
+
+  const [tableStatus, setTableStatus] = useState(
+    Array.from({ length: 20 }, () => "vacant") // Default all tables to "vacant"
+  );
 
   const columns = [
     { label: "Product Id", field: "product_id" },
@@ -44,10 +66,10 @@ export default function NewPOS() {
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   // Handle table selection
   const handleTableClick = (tableNumber) => {
-    setSelectedTable(tableNumber); // Update the selected table number
-    toast.success(`Selected Table: ${tableNumber}`); // Optional: Notify the user
+    setSelectedTable(tableNumber);
+    toast.success(`Selected Table: ${tableNumber}`);
   };
-  
+
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
       // Step 1: Update the orders table
@@ -71,7 +93,7 @@ export default function NewPOS() {
   // Print Order (Save to MySQL)
 
 
- 
+
 
   // Fetch items when a subcategory is clicked
   const handleSubcategoryClick = async (subcategoryId) => {
@@ -85,7 +107,7 @@ export default function NewPOS() {
       console.error("Error fetching items for subcategory:", error);
     }
   };
- 
+
 
 
   // Add item to the cart
@@ -135,60 +157,79 @@ export default function NewPOS() {
     );
     setTotal(newTotal);
   };
-// Function to handle printing the order
-const handlePrintOrder = async () => {
-  if (!selectedTable) {
-    toast.error('Please select a table!');
-    return;
-  }
-  
-  // Existing code for handling order saving...
-  try {
-    const response = await axios.post(`/insertdata/orders`, {
-      userid:getUserName(),
-      order_number: maxNumber,
-      table_number: selectedTable,
-      total_amount: total
-    },
-    getHeaders()
-  );
-  await getMax("orders",setmaxNumber,"userid",getUserName(),"order_number");
-     // Prepare an array of order items to insert
-     const orderItems = cart.map(item => ({
-      order_number: maxNumber,
-      table_number: selectedTable,
-      item_name: item.iname,     // Assuming each item has a name property
-      quantity: item.quantity,    // Quantity of the item
-      price: item.offerprice,      // Price per unit
-      total_amount: item.offerprice * item.quantity // Total for this item
-    }));
-  const response1 = await axios.post(`/insertdatabulk/order_items`, {
-    items: orderItems // Wrap in an object if your API expects this
-  },
-  getHeaders()
-);
-
-
-    if (response1.data.success) {
-      toast.success(response.data.message);
-      setOrderNumber(prevOrder => prevOrder + 1);
-      setCart([]);
-      setTotal(0);
-    } else {
-      toast.error('Failed to save the order!');
+  // Function to handle printing the order
+  const handlePrintOrder = async () => {
+    if (!selectedTable) {
+      toast.error('Please select a table!');
+      return;
     }
-  } catch (error) {
-    console.error('Error saving order:', error);
-    toast.error('Error saving order!');
-  }
-};
 
+    // Existing code for handling order saving...
+    try {
+      const response = await axios.post(`/insertdata/orders`, {
+        userid: getUserName(),
+        order_number: maxNumber,
+        table_number: selectedTable,
+        total_amount: total,
+        status: "1"
+      },
+        getHeaders()
+      );
+
+      // Prepare an array of order items to insert
+      const orderItems = cart.map(item => ({
+        order_number: maxNumber,
+        table_number: selectedTable,
+        item_name: item.iname,     // Assuming each item has a name property
+        quantity: item.quantity,    // Quantity of the item
+        price: item.offerprice,      // Price per unit
+        total_amount: item.offerprice * item.quantity, // Total for this item
+        status: "1" //running table status
+      }));
+      const response1 = await axios.post(`/insertdatabulk/order_items`, {
+        items: orderItems // Wrap in an object if your API expects this
+      },
+        getHeaders()
+      );
+
+      await updateData(
+        "tablelist",
+        { status: '1' },
+        { name: selectedTable } // Additional WHERE conditions
+      );
+      await fetchData("tablelist", setTotaltablelist, "id", {});
+      await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
+
+      if (response1.data.success) {
+        // Update the local table status to reflect the change
+        setTableStatus((prevStatus) =>
+          prevStatus.map((status, index) =>
+            index + 1 === selectedTable ? "running" : status
+          )
+        );
+        toast.success(response.data.message);
+        setOrderNumber(prevOrder => prevOrder + 1);
+        setCart([]);
+        setTotal(0);
+      } else {
+        toast.error('Failed to save the order!');
+      }
+    } catch (error) {
+      console.error('Error saving order:', error);
+      toast.error('Error saving order!');
+    }
+  };
+  const refreshTables = (event) => {
+    fetchData("tablelist", setTotaltablelist, "id", { });
+  };
 
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
         await fetchData("categories", setCategories, "id", {});
-        await getMax("orders",setmaxNumber,"userid",getUserName(),"order_number");
+        await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
+        await getRunningTable("orders", settableList);
+        await fetchData("tablelist", setTotaltablelist, "id", {})
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -212,25 +253,70 @@ const handlePrintOrder = async () => {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="row">
-                  {Array.from({ length: 20 }).map((_, index) => (
-                    <div
-                      key={index}
-                      onClick={() => handleTableClick(index + 1)} // Table click handler
-                      className="col-lg-2 col-md-4 col-sm-6 col-12 mb-3"
-                    >
-                      <div className={`table-card p-3 text-center border w-100 table-color-${index % 4}`}>
-                        <img
-                          src={`../../dist/img/tables/table.png`}
-                          alt={`Table ${index + 1}`}
-                          className="img-fluid mb-2"
-                          style={{ width: "50px", height: "50px" }}
-                        />
-                        <h6>Table {index + 1}</h6>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="row justify-content-center">
+  {TotalTablelist.length > 0 ? (
+    TotalTablelist.map((table, index) => (
+      <div
+        key={index}
+        onClick={() => handleTableClick(table.name)}
+        className="col-lg-2 col-md-4 col-sm-6 col-12 mb-4"
+        style={{
+          cursor: "pointer",
+          transition: "transform 0.3s, box-shadow 0.3s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.boxShadow = "0px 6px 15px rgba(0, 0, 0, 0.2)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        <div
+          className="table-card p-4 text-center rounded"
+          style={{
+            backgroundColor: table.status === 0 ? "#28a745" : "#dc3545",
+            color: "white",
+            border: "2px solid white",
+          }}
+        >
+          <img
+            src={`../../dist/img/tables/table.png`}
+            alt={`Table ${index + 1}`}
+            className="img-fluid mb-3"
+            style={{ width: "60px", height: "60px" }}
+          />
+          <h5
+            style={{
+              fontWeight: "bold",
+              textTransform: "uppercase",
+              margin: "0",
+              fontSize: "1rem",
+            }}
+          >
+            {table.name}
+          </h5>
+          <span
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: "500",
+              marginTop: "5px",
+              display: "block",
+            }}
+          >
+            {table.status === 0 ? "Available" : "Occupied"}
+          </span>
+        </div>
+      </div>
+    ))
+  ) : (
+    <p className="text-center text-muted" style={{ fontSize: "1.2rem" }}>
+      Loading tables...
+    </p>
+  )}
+</div>
+
               </div>
             </CardComponent>
           </div>
@@ -339,7 +425,7 @@ const handlePrintOrder = async () => {
           {/* Order Summary with quantity adjustment buttons and item total amount display */}
           <div className="col-lg-3 col-md-3 col-sm-4 col-xs-12">
             <CardComponent
-              title={maxNumber}
+              title={selectedTable}
               headerColor="info"
               pull="left"
               bodyClass="panel-body"
@@ -351,33 +437,33 @@ const handlePrintOrder = async () => {
                       cart.map((item, index) => (
                         <>
                           <div
-                        className="order-item d-flex align-items-center justify-content-between mb-2"
-                        key={index}
-                      >
-                        <h5 className="item-name mb-0">
-                        {item.iname} x {item.quantity } = ฿{" "}
-                        ฿{(item.quantity * item.offerprice).toFixed(2)}
-                        </h5>
-                        <div className="quantity-controls d-flex align-items-center">
-                          <button
-                            className="btn btn-dark-custom btn-sm me-2"
-                            onClick={() => decreaseItemQuantity(index)}
+                            className="order-item d-flex align-items-center justify-content-between mb-2"
+                            key={index}
                           >
-                            -
-                          </button>
-                          <span className="quantity me-2">{item.quantity}</span>
-                          <button
-                            className="btn btn-dark-custom btn-sm"
-                            onClick={() => increaseItemQuantity(index)}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
+                            <h5 className="item-name mb-0">
+                              {item.iname} x {item.quantity} = ฿{" "}
+                              ฿{(item.quantity * item.offerprice).toFixed(2)}
+                            </h5>
+                            <div className="quantity-controls d-flex align-items-center">
+                              <button
+                                className="btn btn-dark-custom btn-sm me-2"
+                                onClick={() => decreaseItemQuantity(index)}
+                              >
+                                -
+                              </button>
+                              <span className="quantity me-2">{item.quantity}</span>
+                              <button
+                                className="btn btn-dark-custom btn-sm"
+                                onClick={() => increaseItemQuantity(index)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
 
 
                         </>
-                      
+
                       ))
                     ) : (
                       <p>Your cart is empty.</p>
@@ -389,6 +475,9 @@ const handlePrintOrder = async () => {
                           ฿ {total.toFixed(2)}
                         </span>
                       </h5>
+                       </div>
+                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
+                     
                       <button className="btn btn-primary" onClick={handlePrintOrder}>Print order</button>
                     </div>
                   </div>
@@ -407,18 +496,44 @@ const handlePrintOrder = async () => {
               {" "}
               {/* Added mx-3 for equal horizontal spacing */}
               <button className="btn btn-success mb-2" onClick={handlePrintOrder}>Print Order</button>
-              <button className="btn btn-warning mb-2">Check Bill</button>
+              
+              
+              <button className="btn btn-warning mb-2" 
+              onClick={showtableBillDetails}
+              
+              >
+                Check Bill</button>
               <button className="btn btn-info mb-2">Last Order</button>
-              <button className="btn btn-primary mb-2">Generate Bill</button>
-              <button className="btn btn-darkblue mb-2">Save Bill</button>
-              <button className="btn btn-danger mb-2">Next Order</button>
+             
+             
               <button className="btn btn-darkblue mb-2">Previous Order</button>
               <button className="btn btn-warning mb-2">Save Bill</button>
-              <button className="btn btn-danger mb-2">Next Order</button>
-              <button className="btn btn-primary mb-2">Previous Order</button>
+            
+              <button onClick={refreshTables} className="btn btn-primary mb-2">Refresh Tables</button>
             </div>
           </div>
         </div>
+        {/* <CheckBillModal
+  isOpen={tableshowModal}
+  customer={selectedContract}
+  uptableList={Tablelist}
+  updateTableStatus={(tableNumber) => {
+    setTableStatus((prevStatus) => 
+      prevStatus.map((status, index) =>
+        index + 1 === tableNumber ? "vacant" : status
+      )
+    );
+  }}
+  onClose={() => settableShowModal(false)} // Close the modal
+/> */}
+
+        <CheckBillModal
+          isOpen={tableshowModal}
+          customer={selectedContract}
+          uptableList={Tablelist}
+         // onItemAdded={triggerReload} // Pass the reload function
+          onClose={() => settableShowModal(false)} // Close the modal
+        />
       </Layout>
     </>
   );
