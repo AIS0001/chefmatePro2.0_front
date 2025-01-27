@@ -1,0 +1,5 @@
+SELECT o.*, oi.*
+FROM orders o
+JOIN order_items oi ON o.order_number = oi.order_id
+WHERE oi.invoice_number IS NULL
+  AND o.table_number = 8;
