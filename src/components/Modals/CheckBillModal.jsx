@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Modal from "react-modal";
 import { FaTimes } from "react-icons/fa"; // Importing the close icon from react-icons
 import { TextfieldwithLabel } from "../Buttons/Textfield";
@@ -12,6 +12,10 @@ import "react-toastify/dist/ReactToastify.css";
 import CardComponent from "../../components/cards/CardComponent";
 import FinalBillModal from "./FinalBillModal";
 import fetchOrderDetails from "../../functions/fetchOrderDetails";
+import updateData from "../../functions/updateData";
+import { FaRedo } from "react-icons/fa"; // Import refresh icon
+
+
 
 const customStyles = {
   content: {
@@ -29,31 +33,47 @@ const customStyles = {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
 };
+const getCurrentDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const getCurrentTime = () => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
 
-const CheckBillModal = ({ isOpen, customer, onClose, onItemAdded }) => {
+console.log(getCurrentTime()); // Output: HH:MM:SS
+
+console.log(getCurrentDate()); // Output: YYYY-MM-DD
+
+const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [formdata, setFormData] = useState({
     unit: "",
     tax: "",
     subcat: "",
   });
-   const [TotalTablelist, setTotaltablelist] = useState(0);
-const [selectedTable, setSelectedTable] = useState(null); // Table selection
-     // Handle table selection
-     const handleTableClick = (tableNumber) => {
-       setSelectedTable(tableNumber);
-   
-       toast.success(`Selected Table: ${tableNumber}`);
-     };
+  const [TotalTablelist, setTotaltablelist] = useState(0);
+  const [selectedTable, setSelectedTable] = useState(null); // Table selection
+  // Handle table selection
+  const handleTableClick = (tableNumber) => {
+    setSelectedTable(tableNumber);
+
+    toast.success(`Selected Table: ${tableNumber}`);
+  };
   const [getTax, setTax] = useState([]);
   const [getUnit, setUnits] = useState([]);
   const [getCategory, setCategory] = useState([]);
-  const [FinalData, setFinalData] = useState([]);
+  const [finalData, setFinalData] = useState([]);
+  const [changeMoney, setChangeMoney] = useState("");
+  const printRef = useRef();
 
-  
-  const [SelectedCatID, setSelectedCatID] = useState([]);
-  const [getSubCategory, setSubCategory] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
+
   const [reload, setReload] = useState(false);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
@@ -74,6 +94,10 @@ const [selectedTable, setSelectedTable] = useState(null); // Table selection
     );
     setImages((prevImages) => [...prevImages, ...selectedImages]);
   };
+  const refreshTables = (event) => {
+    fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+  };
+
 
   const handleDeleteImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
@@ -111,8 +135,8 @@ const [selectedTable, setSelectedTable] = useState(null); // Table selection
         },
       });
       // Immediately fetch updated data after adding an item
-     // await fetchData("items", setData, "id", {});
-      onItemAdded(); // Call this to trigger the reload function in NewItem
+      // await fetchData("items", setData, "id", {});
+      //  onItemAdded(); // Call this to trigger the reload function in NewItem
       toast.success("Item added successfully!");
       setImages([]);
       // Optionally add a delay before closing the modal to ensure the toast is visible
@@ -129,7 +153,35 @@ const [selectedTable, setSelectedTable] = useState(null); // Table selection
     // setFormData({});
     setErrors({});
   };
- 
+
+  //handle change money
+  const handleChangeMoney = (e) => {
+    const paidAmount = parseFloat(e.target.value) || 0; // Convert to a number or set to 0 if empty
+    const grandTotal = Math.round(finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07); // Calculate the grand total
+    const change = paidAmount - grandTotal; // Calculate the change
+    setChangeMoney(change.toFixed(2)); // Update the state with the calculated change
+    setFormData((prevData) => ({
+      ...prevData,
+      paidAmount: e.target.value, // Update the paid amount in formdata
+    }));
+  };
+
+
+
+  const handleTableHistory = async (tableName) => {
+    setSelectedTable(tableName); // Set the selected table
+    setFormData((prevData) => ({
+      ...prevData,
+      paidAmount: "", // Reset the Paid Amount field
+    }));
+    setChangeMoney(""); // Reset the Change Money field
+
+    // Fetch order details for the selected table
+    fetchData("order_items", setFinalData, "id", { table_number: tableName, status: "1" });
+   // fetchOrderDetails("orders", "order_items", tableName, setFinalData);
+  };
+
+
   // Fetch subcategories based on selected category
   const handleCategoryChange = async (e) => {
     const { name, value } = e.target;
@@ -138,56 +190,199 @@ const [selectedTable, setSelectedTable] = useState(null); // Table selection
       [name]: value,
     }));
 
-    const selectedCategoryId = e.target.value;
-    setSelectedCategory(selectedCategoryId);
 
-    if (selectedCategoryId) {
-      try {
-        const whereClause = { cat_id: selectedCategoryId };
-        const data = await fetchComboDataWithWhere(
-          "subcategory",
-          "subcat",
-          whereClause
-        );
-        setSubCategories(data);
-      } catch (error) {
-        console.error("Error fetching subcategories:", error);
-      }
-    } else {
-      setSubCategories([]); // Clear subcategories if no category is selected
+  };
+
+
+  const handleSaveBill = async () => {
+    try {
+      // Calculate subtotal, tax, and grand total from finalData
+      const subtotal = finalData.reduce((acc, item) => acc + item.quantity * item.total_price, 0);
+      const tax = subtotal * 0.07; // Assuming 7% tax
+      const grandTotal = subtotal + tax;
+
+      // Save the final bill and retrieve the last inserted ID
+      const response = await axios.post(
+        "/insertdata/final_bill",
+        {
+          inv_date: getCurrentDate(), // Current date in YMD format
+          inv_time: getCurrentTime(), // Current time in HH:MM:SS format
+          table_number: selectedTable, // Selected table number
+          subtotal: subtotal.toFixed(2), // Format to 2 decimal places
+          tax: tax.toFixed(2),
+          grand_total: grandTotal.toFixed(2),
+        },
+        getHeaders()
+      );
+
+      // Extract the last inserted ID
+      const { id } = response.data; // Ensure `id` is accessed from `response.data`
+
+
+      // Update table status and assign the invoice number to related records
+      await updateData(
+        "tablelist",
+        { status: "0" }, // Mark table as "closed"
+        { name: selectedTable } // Match the table by name
+      );
+
+      await updateData(
+        "orders",
+        {
+          status: "0", // Mark orders as completed
+          invoice_number: id, // Attach the invoice number
+        },
+        {
+          table_number: selectedTable, // Match the table number
+          status: "1", // Only update active orders
+        }
+      );
+      await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      toast.success("Bill saved successfully!");
+      // onItemAdded(); // Trigger a refresh or reload if needed
+    } catch (err) {
+      console.error(err.message);
+      toast.error("Error saving bill.");
     }
   };
 
-  const handleComboChange = async (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+
+
+  const handleGenetotal_priceBill = () => {
+    const printContent = printRef.current.innerHTML;
+
+    const newWindow = window.open("", "_blank");
+
+    newWindow.document.write(`
+      <html>
+        <head>
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Cambria', monospace; /* Common font for receipts */
+            }
+            body {
+              font-size: 18px; /* Increased font size for better readability */
+              width: 80mm; /* Common thermal printer size */
+            }
+            .bill-header {
+              text-align: center;
+              margin-bottom: 2px;
+            }
+            .bill-header h2 {
+              margin: 0;
+              font-size: 24px; /* Larger header */
+              font-weight: bold;
+            }
+            .bill-header p {
+              margin: 4px 0;
+              font-size: 18px; /* Larger text for date and table info */
+            }
+            .table {
+              width: 100%;
+              margin-top: 1px;
+              border-collapse: collapse;
+            }
+            .table th, .table td {
+              text-align: left;
+              padding: 5px 0; /* Adjust padding to make text fit better */
+              font-size: 18px; /* Larger font size for readability */
+              line-height: 1.6; /* Increase line height for better readability */
+            }
+            .table th {
+              font-weight: bold;
+              border-bottom:1px solid #000;
+            }
+            .table td {
+              border-bottom: 1px solid #ddd;
+            }
+            .table td.total {
+              font-weight: bold;
+              font-size: 18px; /* Larger font for totals */
+              margin-right:2px;
+              border-bottom:1px solid #000;
+            }
+            .total-row {
+              margin-top: 5px;
+              margin-right: 10px;
+              font-weight: bold;
+              text-align: right;
+              font-size: 18px
+              line-height: 1.6;                                                                                                                                                                                                                        px; /* Larger font size for totals */
+            }
+            .total-row span {
+              margin-left: 0px;
+            }
+            .footer {
+              margin-top: 15px;
+              text-align: center;
+              font-size: 18px; /* Larger footer font */
+            }
+          </style>
+        </head>
+        <body>
+          <div class="bill-header">
+            <h2>Restaurant Name</h2>
+            <p>Order Summary - ${selectedTable}</p>
+            <p>${new Date().toLocaleString()}</p>
+          </div>
+          <div class="bill-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${finalData.map(item => `
+                  <tr>
+                    <td>${item.item_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>฿ ${item.total_price/item.quantity.toFixed(2)}</td>
+                    <td>฿ ${(item.total_price).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="total-row">
+              <span>Subtotal: ฿ ${finalData.reduce((acc, item) => acc + item.total_price, 0).toFixed(2)}</span><br>
+              <span>Tax (7%): ฿ ${(finalData.reduce((acc, item) => acc + item.total_price, 0) * 0.07).toFixed(2)}</span><br>
+              <span>Round Off: ฿ ${(
+          Math.round(finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07) - (finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07)
+        ).toFixed(2)}</span><br>
+              <span>Total Amount: ฿ ${Math.round(finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07)}</span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Powered by CloudPOS !! </p>
+          </div>
+        </body>
+      </html>
+    `);
+
+    newWindow.document.close();
+
+    newWindow.onload = () => {
+      newWindow.print(); // Print the document
+      newWindow.close();  // Close the window after printing
+    };
   };
 
- 
+
+
+
+
 
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
-       
-        await fetchData("tablelist", setTotaltablelist, "id", {})
 
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
-    };
+        await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
 
-    fetchAndSetData();
-  }, []);
-  useEffect(() => {
-    const fetchAndSetData = async () => {
-      try {
-       
-        await fetchOrderDetails("orders","order_items", selectedTable,setFinalData)
-        await fetchData("tablelist", setTotaltablelist, "id", {})
-        
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -205,124 +400,221 @@ const [selectedTable, setSelectedTable] = useState(null); // Table selection
     >
       <ToastContainer />
 
-         <div className="row mt-4">
-                <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                  <CardComponent
-                    title="View All Tables List"
-                    headerColor="darkblue"
-                    pull="left"
-                    bodyClass="panel-body"
-                  >
-                    <div className="panel panel-default card-view">
-                      <div className="row">
-                        {TotalTablelist.length > 0 ? (
-                          TotalTablelist.map((tables, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleTableClick(tables.name)}
-                              className={`col-lg-2 col-md-3 col-sm-3 col-12 mb-3 ${tables.status == "0"
-                                ? "bg-success"
-                                : "bg-danger"
-                                }`}
-                            >
-                              <div className="table-card p-3 text-center border w-100">
-                                <img
-                                  src={`../../dist/img/tables/table.png`}
-                                  alt={`Table ${index + 1}`}
-                                  className="img-fluid mb-2"
-                                  style={{ width: "30px", height: "30px" }}
-                                />
-                                <h6> {tables.name}</h6>
-                              </div>
-                            </div>
-      
-                          ))
-                        ) : (
-                          <p>Loading tables...</p>
-                        )}
-      
-      
+      <div className="row mt-4">
+        <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+          <CardComponent
+            title="Running Tables List"
+            headerColor="darkblue"
+            pull="left"
+            bodyClass="panel-body"
+          >
+            <div className="panel panel-default card-view">
+              <div className="row justify-content-center">
+                {TotalTablelist.length > 0 ? (
+                  TotalTablelist.map((tables, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleTableHistory(tables.name)}
+                      className={`col-lg-2 col-md-3 col-sm-4 col-6 mb-4`}
+                      style={{
+                        cursor: "pointer",
+                        transition: "transform 0.3s, box-shadow 0.3s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.05)";
+                        e.currentTarget.style.boxShadow =
+                          "0px 4px 8px rgba(17, 218, 33, 0.2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <div
+                        className={`table-card p-4 text-center border w-100 rounded`}
+                        style={{
+                          backgroundColor:
+                            tables.status === 0 ? "#bf0202" : "#dc3545", // Green for available, red for occupied
+                          color: "white",
+                        }}
+                      >
+                        <img
+                          src={`../../dist/img/tables/table.png`}
+                          alt={`Table ${index + 1}`}
+                          className="img-fluid mb-2"
+                          style={{ width: "50px", height: "50px" }}
+                        />
+                        <h6 className="font-weight-bold">{tables.name}</h6>
+                        <small
+                          style={{
+                            backgroundColor: "rgba(7, 194, 22, 0.3)",
+                            padding: "3px 8px",
+                            borderRadius: "5px",
+                            fontSize: "12px",
+                            color: 'white'
+                          }}
+                        >
+                          {tables.status === 0 ? "Available" : "Occupied"}
+                        </small>
                       </div>
                     </div>
-                  </CardComponent>
-                </div>
+                  ))
+                ) : (
+                  <p>Loading tables...</p>
+                )}
               </div>
+            </div>
+          </CardComponent>
+
+        </div>
+      </div>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          padding: "10px 0",  // Optional: adds some padding around the section
         }}
       >
-        <h4>Add New Item</h4>
-        <button
-          onClick={onClose}
-          style={{
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          <FaTimes size={20} color="red" /> {/* Close icon */}
-        </button>
+        <div className="row mt-4" style={{ flex: 1 }}>
+          <div className="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+            <h4>Final Summary - {selectedTable}</h4> {/* Left-aligned text */}
+          </div>
+        </div>
+
+        <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12" style={{ textAlign: "right" }}>
+          <button
+            onClick={refreshTables}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              marginRight: "10px", // Optional: adds space between the buttons
+            }}
+          >
+            <FaRedo size={20} color="green" /> {/* Refresh icon */}
+          </button>
+
+          <button
+            onClick={onClose}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <FaTimes size={20} color="red" /> {/* Close icon */}
+          </button>
+        </div>
       </div>
+
       <hr
         style={{ width: "99%", border: "1px solid #ccc", margin: "10px 0" }}
       />{" "}
       {/* Horizontal rule */}
-      <div>
+      <div ref={printRef}>
         <form onSubmit={handleSubmit}>
           <div className="row">
-          <table striped bordered hover>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Quantity</th>
-              <th>Unit Price</th>
-              <th>Total Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {FinalData.map((item, index) => (
-              <tr key={index}>
-                <td>{item.item_name}</td>
-                <td>{item.qty}</td>
-                <td>฿ {item.rate.toFixed(2)}</td>
-                <td>฿ {(item.qty * item.rate).toFixed(2)}</td>
-              </tr>
-            ))}
-            {/* <tr>
-              <td colSpan="3" className="text-end"><strong>Subtotal</strong></td>
-              <td>฿ {item.subtotal.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td colSpan="3" className="text-end"><strong>Tax (7%)</strong></td>
-              <td>฿ {item.tax.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td colSpan="3" className="text-end"><strong>Grand Total</strong></td>
-              <td>฿ {item.total.toFixed(2)}</td>
-            </tr> */}
-          </tbody>
-        </table>
-            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+
+          <table className="table table-bordered table-hover text-end">
+  <thead className="table-dark">
+    <tr>
+      <th className="text-start">Item</th>
+      <th>Qty</th>
+      <th>Unit Price</th>
+      <th>Total Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    {finalData.length > 0 ? (
+      finalData.map((item, index) => (
+        <tr key={index}>
+          <td className="text-start">{item.item_name}</td>
+          <td>{item.quantity}</td>
+          <td>฿ {(item.total_price / item.quantity).toFixed(2)}</td> {/* Corrected unit price */}
+          <td>฿ {item.total_price.toFixed(2)}</td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan="4" className="text-center">Table is Empty</td>
+      </tr>
+    )}
+  </tbody>
+  {finalData.length > 0 && (
+    <tfoot className="table-light">
+      <tr>
+        <td colSpan="3" className="text-end"><strong>Subtotal</strong></td>
+        <td>฿ {finalData.reduce((acc, item) => acc + item.total_price, 0).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td colSpan="3" className="text-end"><strong>Tax (7%)</strong></td>
+        <td>฿ {(finalData.reduce((acc, item) => acc + item.total_price, 0) * 0.07).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td colSpan="3" className="text-end"><strong>Total Amount</strong></td>
+        <td>฿ {(finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td colSpan="3" className="text-end"><strong>Round Off Amount</strong></td>
+        <td>฿ {(
+          Math.round(finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07) - (finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07)
+        ).toFixed(2)}</td> {/* Corrected Round Off Amount */}
+      </tr>
+      <tr>
+        <td colSpan="3" className="text-end"><strong>Grand Total</strong></td>
+        <td>฿ {Math.round(finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07)}</td>
+      </tr>
+    </tfoot>
+  )}
+</table>
+
+
+            <div className="col-lg-3 col-md-3 col-sm-3 col-xs-3">
               <TextfieldwithLabel
-                id="iname"
-                onChange={(e) => handleInputChange(e)}
-                value={formdata.iname}
+                id="paidAmount"
+                onChange={handleChangeMoney} // Call the function on input change
+                value={formdata.paidAmount}
                 type="text"
-                name="iname"
-                lable="Item Name"
+                name="paidAmount"
+                lable="Money Paid by Customer"
               />
             </div>
-         
+
+            <div className="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+              <TextfieldwithLabel
+                id="changeMoney"
+                value={`฿ ${changeMoney}`} // Display the change amount with currency formatting
+                type="text"
+                name="changeMoney"
+                lable="Change Money"
+                style={{
+                  color: changeMoney < 0 ? "red" : "green", // Red for insufficient payment, green for extra payment
+                  fontWeight: "bold",
+                }}
+                readOnly // Make it read-only as it's calculated dynamically
+              />
+            </div>
+
+
+
           </div>
         </form>
       </div>
+      <div className="d-flex justify-content-between mt-4">
 
+        <button
+          onClick={handleGenetotal_priceBill}
+          className="btn btn-danger mb-2">Genetotal_price Bill</button>
+        <button className="btn btn-primary mb-2">Save & Genetotal_price Bill</button>
+        <button onClick={handleSaveBill}
+
+          className="btn btn-darkblue mb-2">
+          Save Bill</button>
+      </div>
 
     </Modal>
-    
+
   );
 };
 

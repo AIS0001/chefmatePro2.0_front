@@ -41,6 +41,7 @@ export default function NewPOS() {
 
   const showtableBillDetails = (contract) => {
     // setSelectedContract(contract);
+    // fetchData("tablelist", setTotaltablelist, "id", {  });
     settableShowModal(true);
   };
 
@@ -66,7 +67,6 @@ export default function NewPOS() {
   // Handle table selection
   const handleTableClick = (tableNumber) => {
     setSelectedTable(tableNumber);
-
     toast.success(`Selected Table: ${tableNumber}`);
   };
 
@@ -197,7 +197,7 @@ export default function NewPOS() {
         { status: '1' },
         { name: selectedTable } // Additional WHERE conditions
       );
-
+      await fetchData("tablelist", setTotaltablelist, "id", {});
       await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
 
       if (response1.data.success) {
@@ -219,7 +219,9 @@ export default function NewPOS() {
       toast.error('Error saving order!');
     }
   };
-
+  const refreshTables = (event) => {
+    fetchData("tablelist", setTotaltablelist, "id", { });
+  };
 
   useEffect(() => {
     const fetchAndSetData = async () => {
@@ -251,35 +253,70 @@ export default function NewPOS() {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="row">
-                  {TotalTablelist.length > 0 ? (
-                    TotalTablelist.map((tables, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleTableClick(tables.name)}
-                        className={`col-lg-2 col-md-4 col-sm-6 col-12 mb-3 ${tables.status == "0"
-                          ? "bg-success"
-                          : "bg-danger"
-                          }`}
-                      >
-                        <div className="table-card p-3 text-center border w-100">
-                          <img
-                            src={`../../dist/img/tables/table.png`}
-                            alt={`Table ${index + 1}`}
-                            className="img-fluid mb-2"
-                            style={{ width: "50px", height: "50px" }}
-                          />
-                          <h6> {tables.name}</h6>
-                        </div>
-                      </div>
+              <div className="row justify-content-center">
+  {TotalTablelist.length > 0 ? (
+    TotalTablelist.map((table, index) => (
+      <div
+        key={index}
+        onClick={() => handleTableClick(table.name)}
+        className="col-lg-2 col-md-4 col-sm-6 col-12 mb-4"
+        style={{
+          cursor: "pointer",
+          transition: "transform 0.3s, box-shadow 0.3s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.boxShadow = "0px 6px 15px rgba(0, 0, 0, 0.2)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        <div
+          className="table-card p-4 text-center rounded"
+          style={{
+            backgroundColor: table.status === 0 ? "#28a745" : "#dc3545",
+            color: "white",
+            border: "2px solid white",
+          }}
+        >
+          <img
+            src={`../../dist/img/tables/table.png`}
+            alt={`Table ${index + 1}`}
+            className="img-fluid mb-3"
+            style={{ width: "60px", height: "60px" }}
+          />
+          <h5
+            style={{
+              fontWeight: "bold",
+              textTransform: "uppercase",
+              margin: "0",
+              fontSize: "1rem",
+            }}
+          >
+            {table.name}
+          </h5>
+          <span
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: "500",
+              marginTop: "5px",
+              display: "block",
+            }}
+          >
+            {table.status === 0 ? "Available" : "Occupied"}
+          </span>
+        </div>
+      </div>
+    ))
+  ) : (
+    <p className="text-center text-muted" style={{ fontSize: "1.2rem" }}>
+      Loading tables...
+    </p>
+  )}
+</div>
 
-                    ))
-                  ) : (
-                    <p>Loading tables...</p>
-                  )}
-
-
-                </div>
               </div>
             </CardComponent>
           </div>
@@ -388,7 +425,7 @@ export default function NewPOS() {
           {/* Order Summary with quantity adjustment buttons and item total amount display */}
           <div className="col-lg-3 col-md-3 col-sm-4 col-xs-12">
             <CardComponent
-              title={maxNumber}
+              title={selectedTable}
               headerColor="info"
               pull="left"
               bodyClass="panel-body"
@@ -438,6 +475,9 @@ export default function NewPOS() {
                           ฿ {total.toFixed(2)}
                         </span>
                       </h5>
+                       </div>
+                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
+                     
                       <button className="btn btn-primary" onClick={handlePrintOrder}>Print order</button>
                     </div>
                   </div>
@@ -464,20 +504,33 @@ export default function NewPOS() {
               >
                 Check Bill</button>
               <button className="btn btn-info mb-2">Last Order</button>
-              <button className="btn btn-primary mb-2">Generate Bill</button>
-              <button className="btn btn-darkblue mb-2">Save Bill</button>
-              <button className="btn btn-danger mb-2">Next Order</button>
+             
+             
               <button className="btn btn-darkblue mb-2">Previous Order</button>
               <button className="btn btn-warning mb-2">Save Bill</button>
-              <button className="btn btn-danger mb-2">Next Order</button>
-              <button className="btn btn-primary mb-2">Previous Order</button>
+            
+              <button onClick={refreshTables} className="btn btn-primary mb-2">Refresh Tables</button>
             </div>
           </div>
         </div>
+        {/* <CheckBillModal
+  isOpen={tableshowModal}
+  customer={selectedContract}
+  uptableList={Tablelist}
+  updateTableStatus={(tableNumber) => {
+    setTableStatus((prevStatus) => 
+      prevStatus.map((status, index) =>
+        index + 1 === tableNumber ? "vacant" : status
+      )
+    );
+  }}
+  onClose={() => settableShowModal(false)} // Close the modal
+/> */}
 
         <CheckBillModal
           isOpen={tableshowModal}
           customer={selectedContract}
+          uptableList={Tablelist}
          // onItemAdded={triggerReload} // Pass the reload function
           onClose={() => settableShowModal(false)} // Close the modal
         />

@@ -17,7 +17,8 @@ const fetchOrderDetails = async (table1, table2, tableNumber, setData) => {
 
         // If a setData function is provided, update the state with the fetched data
         if (setData && typeof setData === 'function') {
-            setData(response.data); // Assuming the response contains the full data
+          //  console.log(response.data.data);
+            setData(response.data.data); // Assuming the response contains the full data
         }
 
         return response.data;
