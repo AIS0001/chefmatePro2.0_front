@@ -14,6 +14,8 @@ import FinalBillModal from "./FinalBillModal";
 import fetchOrderDetails from "../../functions/fetchOrderDetails";
 import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
+import Layout from "../../layout/Layout";
+
 
 const customStyles = {
   content: {
@@ -30,8 +32,10 @@ const customStyles = {
     overflowY: "auto", // Enables scrolling if content overflows
   },
   overlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 1050, // Ensure this is higher than your sidebar's z-index
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: Overlay styling
   },
+ 
 };
 const getCurrentDate = () => {
   const today = new Date();
@@ -452,6 +456,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     fetchAndSetData();
   }, []);
   return (
+      <>
+          <Layout>
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
@@ -743,6 +749,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       </div>
       {/* Horizontal rule */}
     </Modal>
+    </Layout>
+    </>
   );
 };
 
