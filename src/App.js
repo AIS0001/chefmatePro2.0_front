@@ -9,6 +9,7 @@ import Logout from './views/Logout';
 import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
 
+import Customers from './views/master/customers';
 import Categories from './views/master/categories';
 import SubCategories from './views/master/subCategories';
 import TableList from './views/master/newTable';
@@ -28,6 +29,7 @@ import EditProfile from './views/profile/editprofile';
 
 
 //settings
+import CompanyInfo from './views/settings/companyInfo';
 import Taxes from './views/master/taxes';
 import Units from './views/master/units';
 
@@ -44,6 +46,7 @@ function App() {
           {/* Protected Route */}
 
           {/* Products */}
+          <Route path="/master/newcustomer" element={<PrivateRoute element={<Customers />} />} />
           <Route path="/master/newcategory" element={<PrivateRoute element={<Categories />} />} />
           <Route path="/master/newsubcategory" element={<PrivateRoute element={<SubCategories />} />} />
           <Route path="/master/table" element={<PrivateRoute element={<TableList />} />} />
@@ -63,7 +66,10 @@ function App() {
 
  {/* Reports */}
           <Route path="/reports/billhistory" element={<PrivateRoute element={<BillHistory />} />} />
-          <Route path='/setting/taxes' element={< Taxes />} />
+         
+         {/* Settings */}
+         <Route path='/setting/companyinfo' element={< CompanyInfo />} />
+         <Route path='/setting/taxes' element={< Taxes />} />
           <Route path='/setting/units' element={< Units />} />
           {/* <Route path='/users/newuser' element={< NewUser />} /> */}
         

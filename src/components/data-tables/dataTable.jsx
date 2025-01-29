@@ -14,7 +14,7 @@ import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
 import "react-image-lightbox/style.css"; // Import lightbox styles
 import { baseURL } from "../..";
-import { FaEdit, FaTrash,FaPrint } from "react-icons/fa";
+import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 import EditModal from "../Modals/EditModals";
 import deleteRecord from "../../functions/delateData";
 import fetchData from "../../functions/fetchData";
@@ -36,6 +36,10 @@ const DataTable = ({ columns, data, tablename }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
+
+  const editableTables = ["items", "customers"]; // Tables where edit is allowed
+  const printableTables = ["order_items", "final_bill","customers"]; // Tables where print is allowed
+  
   // Function to handle modal open and store selected customer data
   const handleCustomerClick = (customer) => {
     setSelectedCustomer(customer);
@@ -85,9 +89,9 @@ const DataTable = ({ columns, data, tablename }) => {
       // Fetch the final_bill and order_items details for the given itemId
       const finalBillData = await fetchData("final_bill", setFinalBillData, "id", { id: itemId });
       const orderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: itemId });
-   // Check if inv_time exists in finalBillData
-   const invTime = finalBillData[0].inv_time;
-   const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
+      // Check if inv_time exists in finalBillData
+      const invTime = finalBillData[0].inv_time;
+      const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
 
       // Format the data for printing using a similar structure
       const printContent = `
@@ -200,8 +204,8 @@ const DataTable = ({ columns, data, tablename }) => {
                 </thead>
                 <tbody>
                   ${orderItemsData
-                    .map(
-                      (item) => `
+          .map(
+            (item) => `
                         <tr>
                           <td>${item.item_name}</td>
                           <td>${item.quantity}</td>
@@ -209,8 +213,8 @@ const DataTable = ({ columns, data, tablename }) => {
                           <td>฿ ${item.total_price}</td>
                         </tr>
                       `
-                    )
-                    .join('')}
+          )
+          .join('')}
                 </tbody>
               </table>
                <div class="total-row">
@@ -228,12 +232,12 @@ const DataTable = ({ columns, data, tablename }) => {
           </body>
         </html>
       `;
-  
+
       // Open the print dialog with the formatted content
       const newWindow = window.open("", "_blank");
       newWindow.document.write(printContent);
       newWindow.document.close();
-  
+
       newWindow.onload = () => {
         newWindow.print(); // Print the document
         newWindow.close(); // Close the window after printing
@@ -242,9 +246,9 @@ const DataTable = ({ columns, data, tablename }) => {
       console.error("Error fetching data for printing:", error);
     }
   };
-  
-  
-  
+
+
+
   const handleDeleteClick = async (itemId) => {
     try {
       // Implement delete logic here
@@ -340,9 +344,8 @@ const DataTable = ({ columns, data, tablename }) => {
                       {/* Center cell content */}
                       {col.field === "path" && item[col.field] ? (
                         <img
-                          src={`${baseURL}/${
-                            item[col.field]
-                          }?t=${new Date().getTime()}`} // Cache-busting
+                          src={`${baseURL}/${item[col.field]
+                            }?t=${new Date().getTime()}`} // Cache-busting
                           alt="Thumbnail"
                           style={{
                             width: "50px",
@@ -355,17 +358,37 @@ const DataTable = ({ columns, data, tablename }) => {
                         />
                       ) : col.field === "actions" ? (
                         <>
-                          {/* <FaEdit
+                          {/* Edit Icon (Allowed only for specific tables) */}
+                          {editableTables.includes(tablename) && (
+                            <FaEdit
+                              style={{
+                                cursor: "pointer",
+                                marginRight: "10px",
+                                color: "green",
+                              }}
+                              onClick={() => handleEditClick(item)}
+                            />
+                          )}
+                      
+                          {/* Print Icon (Allowed only for specific tables) */}
+                          {printableTables.includes(tablename) && (
+                            <FaPrint
+                              style={{
+                                cursor: "pointer",
+                                marginRight: "10px",
+                                color: "blue",
+                              }}
+                              onClick={() => handlePrintClick(item.id)}
+                            />
+                          )}
+                      
+                          {/* Delete Icon (Allowed for ALL tables) */}
+                          <FaTrash
                             style={{
                               cursor: "pointer",
-                              marginRight: "10px",
-                              color: "green",
-                            }} // Green edit icon
-                            onClick={() => handleEditClick(item)}
-                          /> */}
-                          <FaPrint
-                            style={{ cursor: "pointer", color: "red" }} // Red delete icon
-                            onClick={() => handlePrintClick(item.id)}
+                              color: "red",
+                            }}
+                            onClick={() => handleDeleteClick(item.id)}
                           />
                         </>
                       ) : col.field === "customer_name" ? (

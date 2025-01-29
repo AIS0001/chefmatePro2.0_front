@@ -77,27 +77,7 @@ export default function BillHistory() {
               <DataTable columns={columns} data={data} tablename="final_bill" />
             )}
 
-            {/* <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="lightblue"
-                            pull="right"
-                            bodyClass="panel-body">
-
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
-
-                        </CardComponent> */}
+         
           </div>
         </div>
       </Layout>

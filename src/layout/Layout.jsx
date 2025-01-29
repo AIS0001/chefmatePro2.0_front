@@ -13,7 +13,7 @@ export default function Layout({ children }) {
       >
         <Topbar />
         <LeftSidebar />
-        <RightSidebar />
+        {/* <RightSidebar /> */}
         {/* Your main content goes here */}
         <MainContent>{children}</MainContent>
       

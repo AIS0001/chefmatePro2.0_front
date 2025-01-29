@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Modal from "react-modal";
+import { useNavigate, Link } from "react-router-dom";
 import { FaTimes } from "react-icons/fa"; // Importing the close icon from react-icons
 import { TextfieldwithLabel } from "../Buttons/Textfield";
 import axios from "axios";
@@ -35,8 +36,10 @@ const customStyles = {
     zIndex: 1050, // Ensure this is higher than your sidebar's z-index
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: Overlay styling
   },
- 
+
+
 };
+
 const getCurrentDate = () => {
   const today = new Date();
   const year = today.getFullYear();
@@ -62,8 +65,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     tax: "",
     subcat: "",
   });
+  const [companyInfo, setcompanyInfo] = useState([]);
   const [TotalTablelist, setTotaltablelist] = useState(0);
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
+  const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
+  const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+
+
   // Handle table selection
   const handleTableClick = (tableNumber) => {
     setSelectedTable(tableNumber);
@@ -155,7 +163,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     // setFormData({});
     setErrors({});
   };
-
+  const navigate = useNavigate();
   //handle change money
   const handleChangeMoney = (e) => {
     const paidAmount = parseFloat(e.target.value) || 0; // Convert to a number or set to 0 if empty
@@ -187,20 +195,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   };
 
   // Fetch subcategories based on selected category
-  const handleCategoryChange = async (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+
 
   const handleSaveBill1 = async () => {
     try {
       // Calculate subtotal, tax, and grand total from finalData
 
       const subtotal = finalData.reduce(
-        (acc, item) => acc + item.quantity * item.total_price,
+        (acc, item) => acc + item.total_price,
         0
       );
       const tax = subtotal * 0.07; // Assuming 7% tax
@@ -235,14 +237,180 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     }
   };
   const handleBillHistory = async () => {
-   
+    navigate(`/reports/billhistory`);
   };
-  
+  const handlePrintClick = async (itemId) => {
+    try {
+      alert(itemId);
+      const invId = itemId;
+      // Fetch the final_bill and order_items details for the given itemId
+     await fetchData("final_bill", setFinalBillData, "id", { id: invId });
+    await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
+      // Check if inv_time exists in finalBillData
+       const invTime = FinalBillData[0].inv_time;
+       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
+
+      // Format the data for printing using a similar structure
+      const printContent = `
+        <html>
+          <head>
+            <style>
+              html, body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Cambria', monospace;
+              }
+              body {
+                font-size: 18px;
+                width: 80mm;
+              }
+              .bill-header {
+                text-align: center;
+                margin-bottom: 2px;
+              }
+              .bill-header h2 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+              }
+              .bill-header p {
+                margin: 4px 0;
+                font-size: 18px;
+              }
+              .table {
+                width: 100%;
+                margin-top: 1px;
+                border-collapse: collapse;
+              }
+              .table th, .table td {
+                text-align: left;
+                padding: 5px 0;
+                font-size: 18px;
+                line-height: 1.6;
+              }
+              .table th {
+                font-weight: bold;
+                border-bottom: 1px solid #000;
+              }
+              .table th.header {
+                font-weight: bold;
+                
+              }
+              .table td {
+                border-bottom: 1px solid #ddd;
+              }
+              .table td.total {
+                font-weight: bold;
+                font-size: 18px;
+                margin-right: 2px;
+                border-bottom: 1px solid #000;
+              }
+              .total-row {
+                margin-top: 5px;
+                margin-right: 10px;
+                font-weight: bold;
+                text-align: right;
+                font-size: 18px;
+              }
+              .footer {
+                margin-top: 15px;
+                text-align: center;
+                font-size: 18px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="bill-header">
+            <h2>Restaurant Name</h2>
+           
+          
+          </div>
+            <div class="bill-bill-body">
+             
+              <table class="table">
+                
+                  <tr >
+                    <th class="header" >Bill ID: ${FinalBillData[0].id}</th>
+                   
+                    <th class="header" >${FinalBillData[0].table_number}</th>
+                    
+                  </tr>
+                   <tr >
+                    <th>Date: ${FinalBillData[0].inv_date}</th>
+                   
+                    <th>Time:${formattedTime}</th>
+                    
+                  </tr>
+                
+                <tbody> 
+                <tr>  </tr>
+                <tr>  </tr>
+                </tbody>
+                </table>
+             
+            </div>
+            <div class="bill-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Total </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${OrderItemsData
+          .map(
+            (item) => `
+                        <tr>
+                          <td>${item.item_name}</td>
+                          <td>${item.quantity}</td>
+                          <td>฿ ${item.total_price / item.quantity}</td>
+                          <td>฿ ${item.total_price}</td>
+                        </tr>
+                      `
+          )
+          .join('')}
+                </tbody>
+              </table>
+               <div class="total-row">
+              <span>ID: ฿ ${FinalBillData[0].id}</span><br>
+              <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
+              <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
+              <span>Round Off: ฿ ${FinalBillData[0].roundoff}</span><br>
+              <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
+            </div>
+              
+            </div>
+            <div class="footer">
+              <p>Printed on ${new Date().toLocaleString()}</p>
+              <p>Powered by Your Company Name</p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Open the print dialog with the formatted content
+      const newWindow = window.open("", "_blank");
+      newWindow.document.write(printContent);
+      newWindow.document.close();
+
+      newWindow.onload = () => {
+        newWindow.print(); // Print the document
+        newWindow.close(); // Close the window after printing
+      };
+    } catch (error) {
+      console.error("Error fetching data for printing:", error);
+    }
+  };
+
+
   const handleSaveBill = async () => {
     try {
       // Calculate subtotal, tax, and grand total from finalData
       const subtotal = finalData.reduce(
-        (acc, item) => acc + item.quantity * item.total_price,
+        (acc, item) => acc +  item.total_price,
         0
       );
       const tax = subtotal * 0.07; // Assuming 7% tax
@@ -294,7 +462,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
           status: "1", // Only update active orders
         }
       );
+    
+
       await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      handlePrintClick(id);
+     
       toast.success("Bill saved successfully!");
       // onItemAdded(); // Trigger a refresh or reload if needed
     } catch (err) {
@@ -322,17 +494,44 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               width: 80mm; /* Common thermal printer size */
             }
             .bill-header {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              grid-gap: 5px;
               text-align: center;
-              margin-bottom: 2px;
+              margin-bottom: 10px;
             }
             .bill-header h2 {
+              grid-column: span 2;
               margin: 0;
               font-size: 24px; /* Larger header */
               font-weight: bold;
             }
-            .bill-header p {
+            .bill-header .company-info {
+              grid-column: span 3;
+              text-align: center;
+            }
+            .bill-header .company-info p {
               margin: 4px 0;
-              font-size: 18px; /* Larger text for date and table info */
+              font-size: 18px; /* Larger text for better readability */
+            }
+            .bill-header .contact-info {
+              display: flex;
+              justify-content: center;
+              grid-column: span 2;
+            }
+            .bill-header .left-col {
+              text-align: left;
+            }
+            .bill-header .right-col {
+              text-align: right;
+              margin-right:20px;
+              
+            }
+            .bill-header .tax-id {
+              text-align: left;
+              grid-column: span 2;
+              font-size: 16px;
+              margin:0;
             }
             .table {
               width: 100%;
@@ -363,8 +562,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               margin-right: 10px;
               font-weight: bold;
               text-align: right;
-              font-size: 18px
-              line-height: 1.6;                                                                                                                                                                                                                        px; /* Larger font size for totals */
+              font-size: 18px;
+              line-height: 1.6; /* Larger font size for totals */
             }
             .total-row span {
               margin-left: 0px;
@@ -378,9 +577,22 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         </head>
         <body>
           <div class="bill-header">
-            <h2>Restaurant Name</h2>
-            <p>Order Summary - ${selectedTable}</p>
-            <p>${new Date().toLocaleString()}</p>
+            <h2>${companyInfo[0].name}</h2>
+            <div class="company-info">
+              <p>${companyInfo[0].address}</p>
+              <p>Tax:${companyInfo[0].tax_id}</p>
+               <div class="left-col">
+             
+              <p>${new Date().toLocaleString()}</p>
+            </div>
+            <div class="right-col">
+              <p>${selectedTable}</p>
+            
+            </div>
+            </div>
+             
+            
+          
           </div>
           <div class="bill-body">
             <table class="table">
@@ -394,8 +606,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               </thead>
               <tbody>
                 ${finalData
-                  .map(
-                    (item) => `
+        .map(
+          (item) => `
                   <tr>
                     <td>${item.item_name}</td>
                     <td>${item.quantity}</td>
@@ -403,30 +615,30 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                     <td>฿ ${item.total_price.toFixed(2)}</td>
                   </tr>
                 `
-                  )
-                  .join("")}
+        )
+        .join("")}
               </tbody>
             </table>
             <div class="total-row">
               <span>Subtotal: ฿ ${finalData
-                .reduce((acc, item) => acc + item.total_price, 0)
-                .toFixed(2)}</span><br>
+        .reduce((acc, item) => acc + item.total_price, 0)
+        .toFixed(2)}</span><br>
               <span>Tax (7%): ฿ ${(
-                finalData.reduce((acc, item) => acc + item.total_price, 0) *
-                0.07
-              ).toFixed(2)}</span><br>
+        finalData.reduce((acc, item) => acc + item.total_price, 0) *
+        0.07
+      ).toFixed(2)}</span><br>
               <span>Round Off: ฿ ${(
-                Math.round(
-                  finalData.reduce((acc, item) => acc + item.total_price, 0) *
-                    1.07
-                ) -
-                finalData.reduce((acc, item) => acc + item.total_price, 0) *
-                  1.07
-              ).toFixed(2)}</span><br>
+        Math.round(
+          finalData.reduce((acc, item) => acc + item.total_price, 0) *
+          1.07
+        ) -
+        finalData.reduce((acc, item) => acc + item.total_price, 0) *
+        1.07
+      ).toFixed(2)}</span><br>
               <span>Total Amount: ฿ ${Math.round(
-                finalData.reduce((acc, item) => acc + item.total_price, 0) *
-                  1.07
-              )}</span>
+        finalData.reduce((acc, item) => acc + item.total_price, 0) *
+        1.07
+      )}</span>
             </div>
           </div>
           <div class="footer">
@@ -435,6 +647,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         </body>
       </html>
     `);
+
+
 
     newWindow.document.close();
 
@@ -448,6 +662,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     const fetchAndSetData = async () => {
       try {
         await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+        await fetchData("companyinfo", setcompanyInfo, "id", {});
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -456,300 +671,312 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     fetchAndSetData();
   }, []);
   return (
-      <>
-          <Layout>
-    <Modal
-      isOpen={isOpen}
-      onRequestClose={onClose}
-      contentLabel="New Item Entry"
-      style={customStyles}
-      ariaHideApp={false}
-    >
-      <ToastContainer />
-      <div className="row mt-4">
-        <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-          <CardComponent
-            title="Running Tables List"
-            headerColor="darkblue"
-            pull="left"
-            bodyClass="panel-body"
-          >
-            <div className="panel panel-default card-view">
-              <div className="row justify-content-center">
-                {TotalTablelist.length > 0 ? (
-                  TotalTablelist.map((tables, index) => (
-                    <div
-                      key={index}
-                      onClick={() => handleTableHistory(tables.name)}
-                      className={`col-lg-2 col-md-3 col-sm-4 col-6 mb-4`}
-                      style={{
-                        cursor: "pointer",
-                        transition: "transform 0.3s, box-shadow 0.3s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "scale(1.05)";
-                        e.currentTarget.style.boxShadow =
-                          "0px 4px 8px rgba(17, 218, 33, 0.2)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "scale(1)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
+    <>
+
+      <Modal
+        isOpen={isOpen}
+        onRequestClose={onClose}
+        contentLabel="New Item Entry"
+        style={customStyles}
+        ariaHideApp={false}
+      >
+        <ToastContainer />
+        <div className="row mt-4">
+          <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <CardComponent
+              title="Running Tables List"
+              headerColor="darkblue"
+              pull="left"
+              bodyClass="panel-body"
+            >
+              <div className="panel panel-default card-view">
+                <div className="row justify-content-center">
+                  {TotalTablelist.length > 0 ? (
+                    TotalTablelist.map((tables, index) => (
                       <div
-                        className={`table-card p-4 text-center border w-100 rounded`}
+                        key={index}
+                        onClick={() => handleTableHistory(tables.name)}
+                        className={`col-lg-2 col-md-3 col-sm-4 col-6 mb-4`}
                         style={{
-                          backgroundColor:
-                            tables.status === 0 ? "#bf0202" : "#dc3545", // Green for available, red for occupied
-                          color: "white",
+                          cursor: "pointer",
+                          transition: "transform 0.3s, box-shadow 0.3s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "scale(1.05)";
+                          e.currentTarget.style.boxShadow =
+                            "0px 4px 8px rgba(17, 218, 33, 0.2)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.boxShadow = "none";
                         }}
                       >
-                        <img
-                          src={`../../dist/img/tables/table.png`}
-                          alt={`Table ${index + 1}`}
-                          className="img-fluid mb-2"
-                          style={{ width: "50px", height: "50px" }}
-                        />
-                        <h6 className="font-weight-bold">{tables.name}</h6>
-                        <small
+                        <div
+                          className={`table-card p-4 text-center border w-100 rounded`}
                           style={{
-                            backgroundColor: "rgba(7, 194, 22, 0.3)",
-                            padding: "3px 8px",
-                            borderRadius: "5px",
-                            fontSize: "12px",
+                            backgroundColor:
+                              tables.status === 0 ? "#bf0202" : "#dc3545", // Green for available, red for occupied
                             color: "white",
                           }}
                         >
-                          {tables.status === 0 ? "Available" : "Occupied"}
-                        </small>
+                          <img
+                            src={`../../dist/img/tables/table.png`}
+                            alt={`Table ${index + 1}`}
+                            className="img-fluid mb-2"
+                            style={{ width: "50px", height: "50px" }}
+                          />
+                          <h6 className="font-weight-bold">{tables.name}</h6>
+                          <small
+                            style={{
+                              backgroundColor: "rgba(7, 194, 22, 0.3)",
+                              padding: "3px 8px",
+                              borderRadius: "5px",
+                              fontSize: "12px",
+                              color: "white",
+                            }}
+                          >
+                            {tables.status === 0 ? "Available" : "Occupied"}
+                          </small>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p>Loading tables...</p>
-                )}
+                    ))
+                  ) : (
+                    <p>Loading tables...</p>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardComponent>
-        </div>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "10px 0", // Optional: adds some padding around the section
-        }}
-      >
-        <div className="row mt-4" style={{ flex: 1 }}>
-          <div className="col-lg-6 col-md-6 col-sm-6 col-xs-12">
-            <h4>Final Summary - {selectedTable}</h4> {/* Left-aligned text */}
+            </CardComponent>
           </div>
         </div>
-
         <div
-          className="col-lg-4 col-md-4 col-sm-6 col-xs-12"
-          style={{ textAlign: "right" }}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 0", // Optional: adds some padding around the section
+          }}
         >
-          <button
-            onClick={refreshTables}
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              marginRight: "10px", // Optional: adds space between the buttons
-            }}
-          >
-            <FaRedo size={20} color="green" /> {/* Refresh icon */}
-          </button>
+          <div className="row mt-4" style={{ flex: 1 }}>
+            <div className="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+              <h4>Final Summary - {selectedTable}</h4> {/* Left-aligned text */}
+            </div>
+          </div>
 
-          <button
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
+          <div
+            className="col-lg-4 col-md-4 col-sm-6 col-xs-12"
+            style={{ textAlign: "right" }}
           >
-            <FaTimes size={20} color="red" /> {/* Close icon */}
-          </button>
+            <button
+              onClick={refreshTables}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                marginRight: "10px", // Optional: adds space between the buttons
+              }}
+            >
+              <FaRedo size={20} color="green" /> {/* Refresh icon */}
+            </button>
+
+            <button
+              onClick={onClose}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <FaTimes size={20} color="red" /> {/* Close icon */}
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="row">
-        <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12">
-          <div ref={printRef}>
-            <form onSubmit={handleSubmit}>
-              <div className="row">
-                <table className="table table-bordered table-hover text-end">
-                  <thead className="table-dark">
-                    <tr>
-                      <th className="text-start">Item</th>
-                      <th>Qty</th>
-                      <th>Unit Price</th>
-                      <th>Total Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {finalData.length > 0 ? (
-                      finalData.map((item, index) => (
-                        <tr key={index}>
-                          <td className="text-start">{item.item_name}</td>
-                          <td>{item.quantity}</td>
-                          <td>
-                            ฿ {(item.total_price / item.quantity).toFixed(2)}
-                          </td>{" "}
-                          {/* Corrected unit price */}
-                          <td>฿ {item.total_price.toFixed(2)}</td>
+        <div className="row">
+          <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+            <div ref={printRef}>
+              <form onSubmit={handleSubmit}>
+                <div className="row">
+                  <table className="table table-bordered table-hover text-end">
+                    <thead className="table-dark">
+                      <tr>
+                        <th className="text-start">Item</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>Total Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {finalData.length > 0 ? (
+                        finalData.map((item, index) => (
+                          <tr key={index}>
+                            <td className="text-start">{item.item_name}</td>
+                            <td>{item.quantity}</td>
+                            <td>
+                              ฿ {(item.total_price / item.quantity).toFixed(2)}
+                            </td>{" "}
+                            {/* Corrected unit price */}
+                            <td>฿ {item.total_price.toFixed(2)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">
+                            Table is Empty
+                          </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="4" className="text-center">
-                          Table is Empty
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                  {finalData.length > 0 && (
-                    <tfoot className="table-light">
-                      <tr>
-                        <td colSpan="3" className="text-end">
-                          <strong>Subtotal</strong>
-                        </td>
-                        <td>
-                          ฿{" "}
-                          {finalData
-                            .reduce((acc, item) => acc + item.total_price, 0)
-                            .toFixed(2)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colSpan="3" className="text-end">
-                          <strong>Tax (7%)</strong>
-                        </td>
-                        <td>
-                          ฿{" "}
-                          {(
-                            finalData.reduce(
-                              (acc, item) => acc + item.total_price,
-                              0
-                            ) * 0.07
-                          ).toFixed(2)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colSpan="3" className="text-end">
-                          <strong>Total Amount</strong>
-                        </td>
-                        <td>
-                          ฿{" "}
-                          {(
-                            finalData.reduce(
-                              (acc, item) => acc + item.total_price,
-                              0
-                            ) * 1.07
-                          ).toFixed(2)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colSpan="3" className="text-end">
-                          <strong>Round Off Amount</strong>
-                        </td>
-                        <td>
-                          ฿{" "}
-                          {(
-                            Math.round(
+                      )}
+                    </tbody>
+                    
+                    {finalData.length > 0 && (
+                      <tfoot className="table-light">
+                        <tr>
+                          <td colSpan="3" className="text-end">
+                            <strong>Subtotal</strong>
+                          </td>
+                          <td>
+                            ฿{" "}
+                            {finalData
+                              .reduce((acc, item) => acc + item.total_price, 0)
+                              .toFixed(2)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan="3" className="text-end">
+                            <strong>Tax (7%)</strong>
+                          </td>
+                          <td>
+                            ฿{" "}
+                            {(
+                              finalData.reduce(
+                                (acc, item) => acc + item.total_price,
+                                0
+                              ) * 0.07
+                            ).toFixed(2)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan="3" className="text-end">
+                            <strong>Total Amount</strong>
+                          </td>
+                          <td>
+                            ฿{" "}
+                            {(
                               finalData.reduce(
                                 (acc, item) => acc + item.total_price,
                                 0
                               ) * 1.07
-                            ) -
-                            finalData.reduce(
-                              (acc, item) => acc + item.total_price,
-                              0
-                            ) *
+                            ).toFixed(2)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan="3" className="text-end">
+                            <strong>Round Off Amount</strong>
+                          </td>
+                          <td>
+                            ฿{" "}
+                            {(
+                              Math.round(
+                                finalData.reduce(
+                                  (acc, item) => acc + item.total_price,
+                                  0
+                                ) * 1.07
+                              ) -
+                              finalData.reduce(
+                                (acc, item) => acc + item.total_price,
+                                0
+                              ) *
                               1.07
-                          ).toFixed(2)}
-                        </td>{" "}
-                        {/* Corrected Round Off Amount */}
-                      </tr>
-                      <tr>
-                        <td colSpan="3" className="text-end">
-                          <strong>Grand Total</strong>
-                        </td>
-                        <td>
-                          ฿{" "}
-                          {Math.round(
-                            finalData.reduce(
-                              (acc, item) => acc + item.total_price,
-                              0
-                            ) * 1.07
-                          )}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
+                            ).toFixed(2)}
+                          </td>{" "}
+                          {/* Corrected Round Off Amount */}
+                        </tr>
+                        <tr>
+                          <td colSpan="3" className="text-end">
+                            <strong>Grand Total</strong>
+                          </td>
+                          <td>
+                            ฿{" "}
+                            {Math.round(
+                              finalData.reduce(
+                                (acc, item) => acc + item.total_price,
+                                0
+                              ) * 1.07
+                            )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
 
-                <div className="col-lg-3 col-md-3 col-sm-3 col-xs-3">
-                  <TextfieldwithLabel
-                    id="paidAmount"
-                    onChange={handleChangeMoney} // Call the function on input change
-                    value={formdata.paidAmount}
-                    type="text"
-                    name="paidAmount"
-                    lable="Money Paid by Customer"
-                  />
-                </div>
+                  <div className="col-lg-3 col-md-3 col-sm-3 col-xs-3">
+                    <TextfieldwithLabel
+                      id="paidAmount"
+                      onChange={handleChangeMoney} // Call the function on input change
+                      value={formdata.paidAmount}
+                      type="text"
+                      name="paidAmount"
+                      lable="Money Paid by Customer"
+                    />
+                  </div>
 
-                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-12">
-                  <TextfieldwithLabel
-                    id="changeMoney"
-                    value={`฿ ${changeMoney}`} // Display the change amount with currency formatting
-                    type="text"
-                    name="changeMoney"
-                    lable="Change Money"
-                    style={{
-                      color: changeMoney < 0 ? "red" : "green", // Red for insufficient payment, green for extra payment
-                      fontWeight: "bold",
-                    }}
-                    readOnly // Make it read-only as it's calculated dynamically
-                  />
+                  <div className="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+                    <TextfieldwithLabel
+                      id="changeMoney"
+                      value={`฿ ${changeMoney}`} // Display the change amount with currency formatting
+                      type="text"
+                      name="changeMoney"
+                      lable="Change Money"
+                      style={{
+                        color: changeMoney < 0 ? "red" : "green", // Red for insufficient payment, green for extra payment
+                        fontWeight: "bold",
+                      }}
+                      readOnly // Make it read-only as it's calculated dynamically
+                    />
+                  </div>
+                  <div className="col-lg-3 col-md-3 col-sm-3 col-xs-3">
+                    <TextfieldwithLabel
+                      id="discount"
+                      onChange={handleChangeMoney} // Call the function on input change
+                      value={formdata.discount}
+                      type="text"
+                      name="discount"
+                      lable="Discount"
+                    />
+                  </div>
                 </div>
-              </div>
-            </form>
+              </form>
+            </div>
+          </div>
+          <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+
+            <div className="d-flex justify-content-between mt-4">
+              <button
+                onClick={handleGenetotal_priceBill}
+                className="btn btn-danger mb-2 custom-btn"
+              >
+                Print Bill
+              </button>
+              <button onClick={handleSaveBill}
+              className="btn btn-primary mb-2 custom-btn">
+                Save & Print Bill
+              </button>
+              <button
+                onClick={handleSaveBill}
+                className="btn btn-darkblue mb-2 custom-btn"
+              >
+                Save Bill
+              </button>
+              <button
+                onClick={handleBillHistory}
+                className="btn btn-success mt-2 custom-btn"
+              >
+                Bill History
+              </button>
+            </div>
           </div>
         </div>
-        <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-          
-          <div className="d-flex justify-content-between mt-4">
-            <button
-              onClick={handleGenetotal_priceBill}
-              className="btn btn-danger mb-2 custom-btn"
-            >
-              Print Bill
-            </button>
-            <button className="btn btn-primary mb-2 custom-btn">
-              Save & Print Bill
-            </button>
-            <button
-              onClick={handleSaveBill}
-              className="btn btn-darkblue mb-2 custom-btn"
-            >
-              Save Bill
-            </button>
-            <button
-              onClick={handleBillHistory}
-              className="btn btn-success mt-2 custom-btn"
-            >
-              Bill History
-            </button>
-          </div>
-        </div>
-      </div>
-      {/* Horizontal rule */}
-    </Modal>
-    </Layout>
+        {/* Horizontal rule */}
+      </Modal>
+
     </>
   );
 };

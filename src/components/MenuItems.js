@@ -15,6 +15,7 @@ const menuItems = [
     icon: 'folder',
     dataTargetId: '#master',
     submenu: [
+      { name: 'New Customer', path: '/master/newcustomer' },
       { name: 'New Table', path: '/master/table' },
       { name: 'New Category', path: '/master/newcategory' },
       { name: 'New Sub Category', path: '/master/newsubcategory' },
@@ -77,6 +78,7 @@ const menuItems = [
     icon: 'gears',
     dataTargetId: '#inventory',
     submenu: [
+      { name: 'Company Info', path: '/setting/companyinfo' },
       { name: 'Taxes', path: '/setting/taxes' },
       { name: 'Units', path: '/setting/units' },
       
