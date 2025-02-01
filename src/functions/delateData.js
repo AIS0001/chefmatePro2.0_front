@@ -6,7 +6,7 @@ const deleteRecord  = async(tablename,colname,colval) => {
     //console.log(getHeaders());
     try{
         const res = await axios.delete( "/deletebyid/"+tablename+"/"+colname+"/"+colval,getHeaders());
-        console.log(res.data);
+        //console.log(res.data);
     }
     catch(err)
     {

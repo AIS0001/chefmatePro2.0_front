@@ -13,6 +13,7 @@ import Customers from './views/master/customers';
 import Categories from './views/master/categories';
 import SubCategories from './views/master/subCategories';
 import TableList from './views/master/newTable';
+import PaymentOptions from './views/master/paymentOptions';
 
 import NewItem from './views/inventory/newItem';
 import EditItem from './views/inventory/editItem';
@@ -50,6 +51,7 @@ function App() {
           <Route path="/master/newcategory" element={<PrivateRoute element={<Categories />} />} />
           <Route path="/master/newsubcategory" element={<PrivateRoute element={<SubCategories />} />} />
           <Route path="/master/table" element={<PrivateRoute element={<TableList />} />} />
+          <Route path="/master/paymentoptions" element={<PrivateRoute element={<PaymentOptions />} />} />
 
           <Route path="/inventory/newitem" element={<PrivateRoute element={<NewItem />} />} />
           <Route path="/inventory/edititem/:id" element={<PrivateRoute element={<EditItem />} />} />

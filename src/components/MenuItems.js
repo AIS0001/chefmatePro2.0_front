@@ -19,6 +19,7 @@ const menuItems = [
       { name: 'New Table', path: '/master/table' },
       { name: 'New Category', path: '/master/newcategory' },
       { name: 'New Sub Category', path: '/master/newsubcategory' },
+      { name: 'Payment Options', path: '/master/paymentoptions' },
       
     ]
   },
