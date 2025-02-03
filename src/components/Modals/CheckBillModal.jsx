@@ -85,6 +85,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [finalData, setFinalData] = useState([]);
   const [changeMoney, setChangeMoney] = useState("");
   const printRef = useRef();
+  const [latestBillId, setLatestBillId] = useState(null);
+
 
   const [reload, setReload] = useState(false);
   const [data, setData] = useState([]);
@@ -182,15 +184,15 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     const discount = parseFloat(e.target.value) || 0;
     setDiscAmount(discount);
 
-    // Calculate subtotal
-    const subtotalValue = finalData.reduce((acc, item) => acc + item.total_price, 0);
+    // Calculate subtotal safely
+    const subtotalValue = finalData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
     setSubtotal(subtotalValue.toFixed(2));
 
-    // Apply discount and calculate new subtotal after discount
-    const subtotalAfterDiscount = parseFloat(subtotalValue) - parseFloat(discount);
-    setsubtotalAfterDiscount(subtotalAfterDiscount);
+    // Apply discount
+    const subtotalAfterDiscount = subtotalValue - discount;
+    setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));
 
-    // Calculate tax (7%) based on the updated subtotal after discount
+    // Calculate tax (7%)
     const taxValue = subtotalAfterDiscount * 0.07;
     settaxAmount(taxValue.toFixed(2));
 
@@ -203,9 +205,10 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     const roundoffValue = roundedTotal - totalAmountValue;
     setroundoffAmount(roundoffValue.toFixed(2));
 
-    // Calculate grand total
+    // Set final grand total
     setgrandAmount(roundedTotal.toFixed(2));
   };
+
   const handleComboChange = (e) => {
     const { value } = e.target;
     setFormData((prevData) => ({ ...prevData, pmode: value }));
@@ -253,7 +256,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   };
   const handlePrintClick = async (itemId) => {
     try {
-      alert(itemId);
+
       const invId = itemId;
       // Fetch the final_bill and order_items details for the given itemId
       await fetchData("final_bill", setFinalBillData, "id", { id: invId });
@@ -333,7 +336,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
           </head>
           <body>
             <div class="bill-header">
-            <h2>Restaurant Name</h2>
+               <h2>${companyInfo[0].name}</h2>
+            <div class="company-info">
+              <p>${companyInfo[0].address}</p>
+              <p>Tax:${companyInfo[0].tax_id}</p>
+            
+           
+            </div>
+             
            
           
           </div>
@@ -387,8 +397,10 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                 </tbody>
               </table>
                <div class="total-row">
-              <span>ID: ฿ ${FinalBillData[0].id}</span><br>
               <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
+              <span>Subtotal: ฿ ${FinalBillData[0].discAmount}</span><br>
+              <span>Subtotal After Discount: ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
+
               <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
               <span>Round Off: ฿ ${FinalBillData[0].roundoff}</span><br>
               <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
@@ -397,7 +409,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
             </div>
             <div class="footer">
               <p>Printed on ${new Date().toLocaleString()}</p>
-              <p>Powered by Your Company Name</p>
+              <p>Powered by ${companyInfo[0].name}</p>
             </div>
           </body>
         </html>
@@ -418,82 +430,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   };
 
 
-  const handleSaveBill1 = async () => {
-    try {
-      if (formdata.pmode === "Credit" && (!customerDetails.name || !customerDetails.phone || !customerDetails.email)) {
-        alert("Please enter customer details before saving the bill.");
-        setCustomerModalOpen(true);
-        return;
-      }
-      // Calculate subtotal, tax, and grand total from finalData
-      const subtotal = finalData.reduce(
-        (acc, item) => acc + item.total_price,
-        0
-      );
-      const tax = subtotal * 0.07; // Assuming 7% tax
-      const grandTotal = subtotal + tax;
 
-      // Save the final bill and retrieve the last inserted ID
-      const response = await axios.post(
-        "/insertdata/final_bill",
-        {
-          inv_date: getCurrentDate(), // Current date in YMD format
-          inv_time: getCurrentTime(), // Current time in HH:MM:SS format
-          table_number: selectedTable, // Selected table number
-          subtotal: subtotal, // Format to 2 decimal places
-          discount: discAmount, // Format to 2 decimal places
-          subtotal_afterdiscount: subtotalAfterDiscount, // Format to 2 decimal places
-          tax: taxAmount,
-          roundoff: roundoffAmount,
-          grand_total: grandAmount,
-        },
-        getHeaders()
-      );
-
-      // Extract the last inserted ID
-      const { id } = response.data; // Ensure `id` is accessed from `response.data`
-      //add ledger entries|
-      // Update table status and assign the invoice number to related records
-      await updateData(
-        "tablelist",
-        { status: "0" }, // Mark table as "closed"
-        { name: selectedTable } // Match the table by name
-      );
-
-      // await updateData(
-      //   "orders",
-      //   {
-      //     status: "0", // Mark orders as completed
-      //     invoice_number: id, // Attach the invoice number
-      //   },
-      //   {
-      //     table_number: selectedTable, // Match the table number
-      //     status: "1", // Only update active orders
-      //   }
-      // );
-      await updateData(
-        "order_items",
-        {
-          status: "0", // Mark orders as completed
-          invoice_number: id, // Attach the invoice number
-        },
-        {
-          table_number: selectedTable, // Match the table number
-          status: "1", // Only update active orders
-        }
-      );
-
-
-      await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-      handlePrintClick(id);
-
-      toast.success("Bill saved successfully!");
-      // onItemAdded(); // Trigger a refresh or reload if needed
-    } catch (err) {
-      console.error(err.message);
-      toast.error("Error saving bill.");
-    }
-  };
   const handleSaveBill = async () => {
     try {
       // Validate customer details if payment mode is Credit
@@ -502,55 +439,57 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         setCustomerModalOpen(true);
         return;
       }
-  
+
       // Calculate subtotal, tax, discount, round off, and grand total
       const subtotal = finalData.reduce((acc, item) => acc + item.total_price, 0);
       const tax = subtotal * 0.07; // Assuming 7% tax
       const grandTotal = subtotal + tax;
-  
+
       // Calculate discount amount based on the type (percentage or amount)
       let discount_amount = formdata.discAmount;
       if (formdata.discountType === "percentage") {
         discount_amount = (subtotal * discount_amount) / 100; // Calculate percentage discount
       }
-  
+
       // Calculate net total after discount
       let netTotal = subtotal - discount_amount + tax + roundoffAmount;
-  
+
       // Prepare the request body
       const billData = {
         customer_id: formdata.pmode === "Credit" ? customerDetails.id : null, // Only include customer_id if Credit
-        subtotal: subtotalAfterDiscount,
+        tablenumber: selectedTable,
+        subtotal: subtotal,
         tax: tax,
         discount_type: formdata.discountType, // Include the discount type (percentage/amount)
         discount_value: formdata.discAmount,
         discount_amount: discAmount,
-        round_off: roundoffAmount,
+        subtotal_afterdiscount: subtotal - discount_amount,
+        round_off: roundoffAmount || 0,
         net_total: grandAmount,
         payment_mode: formdata.pmode,  // Corrected to use formdata.pmode
       };
-  
+
       // Log the bill data being sent to the API
       console.log('Sending bill data:', billData);
-  
+
       // Save the final bill and ledger entries simultaneously in one request
       const response = await axios.post(
         "/savebill",  // Change to the API route that saves both bill & ledger
         billData,
         getHeaders() // Assuming you have a function for headers
       );
-  
+
       console.log('API Response:', response.data);  // Log the response from the API
-  
+
+
       const { bill_id } = response.data; // Get the inserted bill ID
-  
       // Update the table status
       await updateData(
         "tablelist",
         { status: "0" }, // Mark table as "closed"
         { name: selectedTable }
       );
-  
+
       // Update order items status and attach invoice number
       await updateData(
         "order_items",
@@ -563,13 +502,24 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
           status: "1", // Only update active orders
         }
       );
-  
+
       // Refresh the table list
       await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-  
+
+
+      // 🔥 **Update the state to hold the new bill_id**
+      setLatestBillId(bill_id);  // State update for latest bill
+      //
       // Trigger the print functionality for the saved bill
-      handlePrintClick(bill_id);
-  
+      // if (bill_id) {
+      //   alert(bill_id);
+      //   //handleGenetotal_priceBill(bill_id);
+      // handlePrintClick(bill_id);
+      // } else {
+      //   console.error("Bill ID is missing, cannot print.");
+      // }
+
+      setDiscAmount([0]);
       // Show success toast message
       toast.success("Bill saved successfully!");
     } catch (err) {
@@ -577,9 +527,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       toast.error("Error saving bill.");
     }
   };
-  
-  const handleGenetotal_priceBill = () => {
+
+  const handleGenetotal_priceBill = async () => {
     const printContent = printRef.current.innerHTML;
+    // alert(billId);
+    // await fetchData("final_bill", setFinalBillData, "id", { id: billId });
+    // await fetchData("order_items", setOrderItemsData, "id", { invoice_number: billId });
+    // Check if inv_time exists in finalBillData
 
     const newWindow = window.open("", "_blank");
 
@@ -684,17 +638,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
             <div class="company-info">
               <p>${companyInfo[0].address}</p>
               <p>Tax:${companyInfo[0].tax_id}</p>
-               <div class="left-col">
-             
-              <p>${new Date().toLocaleString()}</p>
-            </div>
-            <div class="right-col">
-              <p>${selectedTable}</p>
             
-            </div>
+           
             </div>
              
-            
+                
           
           </div>
           <div class="bill-body">
@@ -714,8 +662,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                   <tr>
                     <td>${item.item_name}</td>
                     <td>${item.quantity}</td>
-                    <td>฿ ${item.total_price / item.quantity.toFixed(2)}</td>
-                    <td>฿ ${item.total_price.toFixed(2)}</td>
+                    <td>฿ ${Number(item.total_price / item.quantity).toFixed(2)}</td>
+                    <td>฿ ${Number(item.total_price).toFixed(2)}</td>
+                 
                   </tr>
                 `
         )
@@ -723,25 +672,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               </tbody>
             </table>
             <div class="total-row">
-              <span>Subtotal: ฿ ${finalData
-        .reduce((acc, item) => acc + item.total_price, 0)
-        .toFixed(2)}</span><br>
-              <span>Tax (7%): ฿ ${(
-        finalData.reduce((acc, item) => acc + item.total_price, 0) *
-        0.07
-      ).toFixed(2)}</span><br>
-              <span>Round Off: ฿ ${(
-        Math.round(
-          finalData.reduce((acc, item) => acc + item.total_price, 0) *
-          1.07
-        ) -
-        finalData.reduce((acc, item) => acc + item.total_price, 0) *
-        1.07
-      ).toFixed(2)}</span><br>
-              <span>Total Amount: ฿ ${Math.round(
-        finalData.reduce((acc, item) => acc + item.total_price, 0) *
-        1.07
-      )}</span>
+              <span>Subtotal: ฿ ${subtotal}</span><br>
+              <span>Subtotal after Discount: ฿ ${subtotalAfterDiscount}</span><br>
+              <span>Tax (7%): ฿ ${taxAmount}</span><br>
+              <span>Round Off: ฿ ${roundoffAmount}</span><br>
+              <span>Total Amount: ฿ ${grandAmount}</span>
             </div>
           </div>
           <div class="footer">
@@ -781,6 +716,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       handlediscount({ target: { value: discAmount.toString() } });
     }
   }, [finalData]); // Dependency array ensures it runs only when finalData updates
+  // Runs only when `latestBillId` updates
 
   return (
     <>
@@ -926,7 +862,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                               ฿ {(item.total_price / item.quantity).toFixed(2)}
                             </td>{" "}
                             {/* Corrected unit price */}
-                            <td>฿ {item.total_price.toFixed(2)}</td>
+                            <td>฿ {Number(item.total_price).toFixed(2)}</td>
                           </tr>
                         ))
                       ) : (
@@ -1069,7 +1005,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                   ))}
                 </select>
               </div>
-            
+
             </div>
             <div className="col-12">
               <div className="form-group">
@@ -1109,7 +1045,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
             </div>
             <div className="d-flex justify-content-between mt-4">
               <button
-                onClick={handleGenetotal_priceBill}
+                onClick={handlePrintClick(latestBillId)}
                 className="btn btn-danger mb-2 custom-btn"
               >
                 Print Bill
