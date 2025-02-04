@@ -183,31 +183,32 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const handlediscount = (e) => {
     const discount = parseFloat(e.target.value) || 0;
     setDiscAmount(discount);
-
+  
     // Calculate subtotal safely
     const subtotalValue = finalData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
-    setSubtotal(subtotalValue.toFixed(2));
-
+    setSubtotal(subtotalValue.toFixed(2));  // Format only for display
+  
     // Apply discount
     const subtotalAfterDiscount = subtotalValue - discount;
-    setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));
-
+    setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));  // Format only for display
+  
     // Calculate tax (7%)
     const taxValue = subtotalAfterDiscount * 0.07;
-    settaxAmount(taxValue.toFixed(2));
-
-    // Calculate total amount after tax
+    settaxAmount(taxValue.toFixed(2));  // Format only for display
+  
+    // Calculate total amount after tax (Ensure numbers are used, not strings)
     const totalAmountValue = subtotalAfterDiscount + taxValue;
-    settotalAmount(totalAmountValue.toFixed(2));
-
-    // Calculate round-off amount
-    const roundedTotal = Math.round(totalAmountValue);
+    settotalAmount(totalAmountValue.toFixed(2));  // Format only for display
+  
+    // Calculate round-off amount (Again, ensure we're working with numbers)
+    const roundedTotal = Math.round(totalAmountValue);  // Round to nearest integer
     const roundoffValue = roundedTotal - totalAmountValue;
-    setroundoffAmount(roundoffValue.toFixed(2));
-
-    // Set final grand total
-    setgrandAmount(roundedTotal.toFixed(2));
+    setroundoffAmount(roundoffValue.toFixed(2));  // Format only for display
+  
+    // Set final grand total (Again, format for display)
+    setgrandAmount(roundedTotal.toFixed(2));  // Final rounded amount
   };
+  
 
   const handleComboChange = (e) => {
     const { value } = e.target;
@@ -232,23 +233,16 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
   // Fetch subcategories based on selected category
   const handleTableHistory = async (tableName) => {
-    setSelectedTable(tableName); // Set the selected table
-    setFormData((prevData) => ({
-      ...prevData,
-      paidAmount: "", // Reset the Paid Amount field
-    }));
-    setChangeMoney(""); // Reset the Change Money field
-    setDiscAmount("0"); // Reset the Change Money field
+    setSelectedTable(tableName);
+    setFormData((prevData) => ({ ...prevData, paidAmount: "" }));
+    setChangeMoney(""); 
+    setDiscAmount("0");
 
-    // Fetch order details for the selected table
-    fetchData("order_items", setFinalData, "id", {
-      table_number: tableName,
-      status: "1",
-    });
+    fetchData("order_items", setFinalData, "id", { table_number: tableName, status: "1" });
 
-    // Call handlediscount manually with a default discount of 0
     handlediscount({ target: { value: "0" } });
-  };
+};
+
 
 
   const handleBillHistory = async () => {
@@ -398,7 +392,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               </table>
                <div class="total-row">
               <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
-              <span>Subtotal: ฿ ${FinalBillData[0].discAmount}</span><br>
+              <span>Discount: ฿ ${FinalBillData[0].disc_amount}</span><br>
               <span>Subtotal After Discount: ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
 
               <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
@@ -446,28 +440,26 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       const grandTotal = subtotal + tax;
 
       // Calculate discount amount based on the type (percentage or amount)
-      let discount_amount = formdata.discAmount;
+      let discount_amount = discAmount;
       if (formdata.discountType === "percentage") {
-        discount_amount = (subtotal * discount_amount) / 100; // Calculate percentage discount
+        discount_amount = (subtotal * discAmount) / 100; // Calculate percentage discount
       }
-
-      // Calculate net total after discount
-      let netTotal = subtotal - discount_amount + tax + roundoffAmount;
-
-      // Prepare the request body
+//epare the request body
       const billData = {
-        customer_id: formdata.pmode === "Credit" ? customerDetails.id : null, // Only include customer_id if Credit
-        tablenumber: selectedTable,
-        subtotal: subtotal,
-        tax: tax,
-        discount_type: formdata.discountType, // Include the discount type (percentage/amount)
-        discount_value: formdata.discAmount,
-        discount_amount: discAmount,
-        subtotal_afterdiscount: subtotal - discount_amount,
-        round_off: roundoffAmount || 0,
-        net_total: grandAmount,
-        payment_mode: formdata.pmode,  // Corrected to use formdata.pmode
-      };
+        customer_id: formdata.pmode === "Credit" ? customerDetails?.id || null : null, // ✅ Fix: Use null if undefined
+        tablenumber: selectedTable || "", // ✅ Fix: Ensure table number is assigned
+        subtotal: subtotal || 0, // ✅ Default to 0 if undefined
+       
+        discount_type: formdata.discountType || "amount", // ✅ Ensure default value
+        discount_value:discount_amount || 0, // ✅ Default discount
+        discount_amount: discAmount || 0, // ✅ Default to 0
+        subtotal_afterdiscount: subtotalAfterDiscount || 0, // ✅ Default to 0
+        tax: taxAmount || 0, // ✅ Default to 0 if undefined
+        round_off: roundoffAmount || 0, // ✅ Default to 0
+        grand_total: totalAmount || 0, // ✅ Default to 0
+        payment_mode: formdata.pmode || "Cash", // ✅ Default to Cash
+    };
+    
 
       // Log the bill data being sent to the API
       console.log('Sending bill data:', billData);
@@ -514,16 +506,85 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       // if (bill_id) {
       //   alert(bill_id);
       //   //handleGenetotal_priceBill(bill_id);
-      // handlePrintClick(bill_id);
+       //handlePrintClick(bill_id);
       // } else {
       //   console.error("Bill ID is missing, cannot print.");
       // }
 
-      setDiscAmount([0]);
+    //  setDiscAmount([0]);
       // Show success toast message
       toast.success("Bill saved successfully!");
     } catch (err) {
       console.error("Error occurred during bill save:", err.message);  // Log the error
+      toast.error("Error saving bill.");
+    }
+  };
+  const handleSaveBillnew = async () => {
+    try {
+      // Validate customer details if payment mode is Credit
+      if (formdata.pmode === "Credit" && (!customerDetails.name || !customerDetails.phone || !customerDetails.email)) {
+        alert("Please enter customer details before saving the bill.");
+        setCustomerModalOpen(true);
+        return;
+      }
+
+      // Prepare customer data if payment mode is Credit
+      let customerId = null;
+      if (formdata.pmode === "Credit") {
+        const customerResponse = await axios.post(
+          "/saveCustomer",  // Replace with your actual API endpoint for saving customer
+          customerDetails,
+          getHeaders()
+        );
+        customerId = customerResponse.data.customer_id; // Assume API returns the ID
+      }
+
+      // Calculate totals
+      const subtotal = finalData.reduce((acc, item) => acc + item.total_price, 0);
+      const tax = subtotal * 0.07; // Assuming 7% tax
+      const grandTotal = subtotal + tax;
+
+      // Calculate discount amount based on the type (percentage or amount)
+      let discount_amount = formdata.discAmount;
+      if (formdata.discountType === "percentage") {
+        discount_amount = (subtotal * discount_amount) / 100;
+      }
+
+      // Calculate net total
+      let netTotal = subtotal - discount_amount + tax + roundoffAmount;
+
+      // Prepare the bill data
+      const billData = {
+        customer_id: customerId, // Attach customer ID if Credit
+        tablenumber: selectedTable,
+        subtotal: subtotal,
+        tax: tax,
+        discount_type: formdata.discountType,
+        discount_value: formdata.discAmount,
+        discount_amount: discount_amount,
+        subtotal_afterdiscount: subtotal - discount_amount,
+        round_off: roundoffAmount || 0,
+        net_total: grandAmount,
+        payment_mode: formdata.pmode,
+      };
+
+      // Save bill
+      const response = await axios.post("/savebill", billData, getHeaders());
+      const { bill_id } = response.data; // Get the inserted bill ID
+
+      // Update table and order items
+      await updateData("tablelist", { status: "0" }, { name: selectedTable });
+      await updateData("order_items", { status: "0", invoice_number: bill_id }, { table_number: selectedTable, status: "1" });
+
+      // Refresh table list
+      await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+
+      // Save the latest bill ID
+      setLatestBillId(bill_id);
+
+      toast.success("Bill saved successfully!");
+    } catch (err) {
+      console.error("Error occurred during bill save:", err.message);
       toast.error("Error saving bill.");
     }
   };
@@ -696,26 +757,27 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     };
   };
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchAndSetData = async () => {
-      try {
-        await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-        await fetchData("companyinfo", setcompanyInfo, "id", {});
-        await setpaymentOptions(await fetchComboData("paymentoptions", "name"));
-
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
+        try {
+            await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+            await fetchData("companyinfo", setcompanyInfo, "id", {});
+            await setpaymentOptions(await fetchComboData("paymentoptions", "name"));
+        } catch (error) {
+            console.error("Error in useEffect:", error);
+        }
     };
 
     fetchAndSetData();
-  }, []);
+}, []);  // ✅ This ensures it runs only once when the component mounts
+
   // Runs whenever finalData changes
   useEffect(() => {
     if (finalData.length > 0) {
-      handlediscount({ target: { value: discAmount.toString() } });
+        handlediscount({ target: { value: discAmount.toString() } });
     }
-  }, [finalData]); // Dependency array ensures it runs only when finalData updates
+}, [finalData, discAmount]); 
+ // Dependency array ensures it runs only when finalData updates
   // Runs only when `latestBillId` updates
 
   return (
@@ -1045,7 +1107,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
             </div>
             <div className="d-flex justify-content-between mt-4">
               <button
-                onClick={handlePrintClick(latestBillId)}
+            
+                onClick={() => handlePrintClick(latestBillId)} 
                 className="btn btn-danger mb-2 custom-btn"
               >
                 Print Bill

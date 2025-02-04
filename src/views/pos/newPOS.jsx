@@ -241,6 +241,7 @@ export default function NewPOS() {
       printKOT(orderItems); // Call function to print the KOT
       setCart([]);
       setTotal(0);
+      
     } else {
       toast.error("Failed to save the order!");
     }
