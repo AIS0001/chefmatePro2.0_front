@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import Modal from "react-modal";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaPhone, FaUser, FaEnvelope, FaSearch } from "react-icons/fa";
 import { TextfieldwithLabel } from "../Buttons/Textfield";
 import axios from "axios";
 import { fetchComboData } from "../../services/api";
+import fetchData from "../../functions/fetchData";
 import { getHeaders } from "../../utility/getHeader";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -30,9 +31,9 @@ const customStyles = {
 
 const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "" });
+  const [CustomerDetails,setCustomerDetails] = useState([]);
   const [CustomersData, setCustomersData] = useState([]);
 
-  // ✅ Fetch customer list when modal opens
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -42,108 +43,93 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
         console.error("Error fetching customers:", error);
       }
     };
-
     fetchCustomers();
   }, []);
 
-  // ✅ Handle customer selection from dropdown
-  const handleCustomerSelect = (e) => {
-    const selectedId = e.target.value;
-
-    if (selectedId) {
-        // Find the selected customer object
-        const selectedCustomer = CustomersData.find(c => c.id === selectedId);
-
-        if (selectedCustomer) {
-            setCustomer(prevCustomer => ({
-                ...prevCustomer,  // Preserve other customer details
-                id: selectedCustomer.id,   
-                name: selectedCustomer.name,  // Set correct name
-                phone: selectedCustomer.phone || "", // Prevent undefined values
-                email: selectedCustomer.email || "",
-            }));
-        }
-    } else {
-        // Reset customer fields if no selection
-        setCustomer({ id: "", name: "", phone: "", email: "" });
+  const handlePhoneSearch = async () => {
+    if (typeof customer.phone !== "string" || !customer.phone.trim()) {
+      toast.error("Please enter a phone number to search");
+      return;
     }
-};
-
-
+    try {
+      const response = await fetchData("customers", (data) => {
+        if (data.length > 0) {
+          setCustomer({
+            name: data[0].name,
+            phone: data[0].contact,
+            email: data[0].email,
+          });
+        } else {
+          toast.error("Record not found");
+          setCustomer({ name: "", phone: customer.phone, email: "" });
+        }
+      }, "id", { contact: customer.phone.trim() });
+    } catch (error) {
+      console.error("Error searching customer:", error);
+      toast.error("Error searching customer data");
+    }
+  };
 
 
   return (
     <Modal isOpen={isOpen} onRequestClose={onClose} style={customStyles}>
       <h3>Enter Customer Details</h3>
       <form>
-        {/* ✅ Dropdown for selecting a customer */}
         <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
-          Customer Name
+          Customer Phone Number
         </label>
-        <select
-    id="customerSelect"
-    name="customerSelect"
-    className="form-select custom-select"
-    style={{
-        borderRadius: "4px",
-        border: "2px solid #17a2b8",
-        height: "45px",
-        width: "95%",
-        marginLeft: "15px",
-    }}
-    onChange={handleCustomerSelect}  // ✅ Fix: Now updates the customer state properly
-    value={customer.id}  // ✅ Ensures correct selection
->
-    <option value="">Select Customer</option>
-    {CustomersData.map((cust) => (
-        <option key={cust.id} value={cust.id}>
-            {cust.name}
-        </option>
-    ))}
-</select>
+        <div className="search-container" style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "15px" }}>
+          <FaPhone color="#17a2b8" />
+          <input
+            type="text"
+            value={customer.phone}
+            onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+            className="form-control"
+            style={{ borderRadius: "4px", border: "2px solid #17a2b8", height: "45px", width: "85%" }}
+            placeholder="Enter phone number"
+          />
+          <button type="button" onClick={handlePhoneSearch} className="btn btn-info">
+            <FaSearch />
+          </button>
+        </div>
 
-
-
-        {/* ✅ Phone Number Input */}
         <TextfieldwithLabel
-          id="phone"
-          onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+          id="name"
+          value={customer.name}
+          onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
           required
-          value={customer.phone}
           type="text"
-          name="phone"
-          lable="Phone Number"
+          name="name"
+          lable="Customer Name"
+          icon={<FaUser />}
         />
 
-        {/* ✅ Email Input */}
         <TextfieldwithLabel
           id="email"
+          value={customer.email}
           onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
           required
-          value={customer.email}
           type="text"
           name="email"
           lable="Email"
+          icon={<FaEnvelope />}
         />
 
-        {/* ✅ Save & Continue Button */}
-        <button
-    className="btn btn-success mb-2 custom-btn"
-    type="button"
-    onClick={() => {
-        console.log("Customer Data Before Save:", customer); // ✅ Debugging
-
-        if (!customer.name.trim() || !customer.phone.trim() || !customer.email.trim()) {
-            alert("Please fill all fields!"); // ❌ Prevent empty submission
-        } else {
-            onSaveCustomerDetails(customer);  // ✅ Pass correct customer details
-        }
-    }}
->
-    Save & Continue
-</button>
-
+<button
+          className="btn btn-success mb-2 custom-btn"
+          type="button"
+          onClick={() => {
+            if (!customer.name.trim() || !String(customer.phone || "").trim() || !customer.email.trim()) {
+              toast.error("Please fill all fields!");
+            } else {
+              onSaveCustomerDetails(customer);
+            }
+          }}
+        >
+          Save & Continue
+        </button>
       </form>
+      <ToastContainer />
     </Modal>
   );
 };
