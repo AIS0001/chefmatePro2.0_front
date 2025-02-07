@@ -21,7 +21,10 @@ import NewProduct from './views/inventory/newProduct1';
 
 
 import NewPOS from './views/pos/newPOS';
+
+//Reports
 import BillHistory from './views/reports/billHistory';
+import SaleLedger from './views/reports/saleLedger';
 
 
 //Users
@@ -68,6 +71,7 @@ function App() {
 
  {/* Reports */}
           <Route path="/reports/billhistory" element={<PrivateRoute element={<BillHistory />} />} />
+          <Route path="/reports/saleledger" element={<PrivateRoute element={<SaleLedger />} />} />
          
          {/* Settings */}
          <Route path='/setting/companyinfo' element={< CompanyInfo />} />

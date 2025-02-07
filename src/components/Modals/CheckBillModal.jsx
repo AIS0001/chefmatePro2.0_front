@@ -457,6 +457,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         tax: taxAmount || 0, // ✅ Default to 0 if undefined
         round_off: roundoffAmount || 0, // ✅ Default to 0
         grand_total: totalAmount || 0, // ✅ Default to 0
+      //  grand_total_: totalAmount || 0, // ✅ Default to 0
         payment_mode: formdata.pmode || "Cash", // ✅ Default to Cash
     };
     

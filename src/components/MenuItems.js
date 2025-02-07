@@ -57,6 +57,7 @@ const menuItems = [
     dataTargetId: '#reports',
     submenu: [
       { name: 'Bill History', path: '/reports/billhistory' },
+      { name: 'Sales Ledger', path: '/reports/saleledger' },
       { name: 'Room Status', path: '/reports/sroom-status' },
       
     ]
