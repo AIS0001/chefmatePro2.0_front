@@ -55,6 +55,7 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
       const response = await fetchData("customers", (data) => {
         if (data.length > 0) {
           setCustomer({
+            custid: data[0].id,
             name: data[0].name,
             phone: data[0].contact,
             email: data[0].email,
@@ -75,6 +76,7 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
     <Modal isOpen={isOpen} onRequestClose={onClose} style={customStyles}>
       <h3>Enter Customer Details</h3>
       <form>
+        
         <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
           Customer Phone Number
         </label>
@@ -92,7 +94,16 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
             <FaSearch />
           </button>
         </div>
-
+        <TextfieldwithLabel
+          id="custid"
+          value={customer.custid}
+          onChange={(e) => setCustomer({ ...customer, custid: e.target.value })}
+          required
+          type="text"
+          name="custid"
+          lable="Customer ID"
+          icon={<FaUser />}
+        />
         <TextfieldwithLabel
           id="name"
           value={customer.name}

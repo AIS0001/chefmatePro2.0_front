@@ -49,6 +49,17 @@ const menuItems = [
       
     ]
   },
+  {
+    name: 'Vouchers',
+    path: '/pages/vouchers',
+    icon: 'file-text',
+    dataTargetId: '#reports',
+    submenu: [
+      { name: 'Reciept Voucher', path: '/vouchers/recieptvoucher' },
+      { name: 'Payment Voucher', path: '/vouchers/paymentvoucher' },
+      
+    ]
+  },
 
   {
     name: 'Reports',

@@ -444,9 +444,15 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       if (formdata.discountType === "percentage") {
         discount_amount = (subtotal * discAmount) / 100; // Calculate percentage discount
       }
+      let billstatus=0;
+      if(formdata.pmode==="Credit")
+      {
+        billstatus=1;
+      }
+
 //epare the request body
       const billData = {
-        customer_id: formdata.pmode === "Credit" ? customerDetails?.id || null : null, // ✅ Fix: Use null if undefined
+        customer_id: formdata.pmode === "Credit" ? customerDetails.custid || null : null, // ✅ Fix: Use null if undefined
         tablenumber: selectedTable || "", // ✅ Fix: Ensure table number is assigned
         subtotal: subtotal || 0, // ✅ Default to 0 if undefined
        
@@ -459,6 +465,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         grand_total: totalAmount || 0, // ✅ Default to 0
       //  grand_total_: totalAmount || 0, // ✅ Default to 0
         payment_mode: formdata.pmode || "Cash", // ✅ Default to Cash
+        status: billstatus // ✅ Default to 0
     };
     
 

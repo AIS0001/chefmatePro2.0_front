@@ -22,6 +22,8 @@ import NewProduct from './views/inventory/newProduct1';
 
 import NewPOS from './views/pos/newPOS';
 
+//Vouchers
+import Vouchers from './views/vouchers/vouchers';
 //Reports
 import BillHistory from './views/reports/billHistory';
 import SaleLedger from './views/reports/saleLedger';
@@ -68,6 +70,9 @@ function App() {
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
+
+          //Vouchers
+          <Route path="/vouchers/recieptvoucher" element={<PrivateRoute element={<Vouchers />} />} />
 
  {/* Reports */}
           <Route path="/reports/billhistory" element={<PrivateRoute element={<BillHistory />} />} />

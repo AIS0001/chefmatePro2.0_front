@@ -29,14 +29,14 @@ export default function BillHistory() {
 
     });
     const columns = [
-        { label: "Transaction ID", field: "transaction_id" },
+        { label: "Txn ID", field: "transaction_id" },
         { label: "Date", field: "date" },
         { label: "A/C Type", field: "account_type" },
         { label: "A/C ID", field: "account_id" },
         { label: "Description", field: "description" },
         { label: "Debit", field: "debit_amount" },
         { label: "Credit", field: "credit_amount" },
-        { label: "Action", field: "actions" }
+        // { label: "Action", field: "actions" }
     ];
 
 
