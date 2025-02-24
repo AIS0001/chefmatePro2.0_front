@@ -89,12 +89,12 @@ export default function SubCategories() {
   return (
     <>
       <Layout>
-        <Header title="Add New Category" />
+        <Header title="Add New Sub Category" />
         <ToastContainer />
         <div className="row">
           <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
             <CardComponent
-              title="Add main Category for the product List"
+              title="Add Sub Category for the product List"
               headerColor="darkorange"
               pull="left"
               bodyClass="panel-body"

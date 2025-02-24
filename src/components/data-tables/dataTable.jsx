@@ -21,6 +21,7 @@ import fetchData from "../../functions/fetchData";
 
 const DataTable = ({ columns, data, tablename }) => {
   const [currentPage, setCurrentPage] = useState(1);
+   const [companyInfo, setcompanyInfo] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -88,13 +89,14 @@ const DataTable = ({ columns, data, tablename }) => {
     try {
       // Fetch the final_bill and order_items details for the given itemId
       const finalBillData = await fetchData("final_bill", setFinalBillData, "id", { id: itemId });
+      await fetchData("companyinfo", setcompanyInfo, "id", {});
       const orderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: itemId });
       // Check if inv_time exists in finalBillData
       const invTime = finalBillData[0].inv_time;
       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
 
       // Format the data for printing using a similar structure
-      const printContent = `
+      const printContent1 = `
         <html>
           <head>
             <style>
@@ -232,7 +234,154 @@ const DataTable = ({ columns, data, tablename }) => {
           </body>
         </html>
       `;
+      const printContent = `
+      <html>
+        <head>
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Cambria', monospace;
+            }
+            body {
+              font-size: 18px;
+              width: 80mm;
+            }
+            .bill-header {
+              text-align: center;
+              margin-bottom: 2px;
+            }
+            .bill-header h2 {
+              margin: 0;
+              font-size: 24px;
+              font-weight: bold;
+            }
+            .bill-header p {
+              margin: 4px 0;
+              font-size: 18px;
+            }
+            .table {
+              width: 100%;
+              margin-top: 1px;
+              border-collapse: collapse;
+            }
+            .table th, .table td {
+              text-align: left;
+              padding: 5px 0;
+              font-size: 18px;
+              line-height: 1.6;
+            }
+            .table th {
+              font-weight: bold;
+              border-bottom: 1px solid #000;
+            }
+            .table th.header {
+              font-weight: bold;
+              
+            }
+            .table td {
+              border-bottom: 1px solid #ddd;
+            }
+            .table td.total {
+              font-weight: bold;
+              font-size: 18px;
+              margin-right: 2px;
+              border-bottom: 1px solid #000;
+            }
+            .total-row {
+              margin-top: 5px;
+              margin-right: 10px;
+              font-weight: bold;
+              text-align: right;
+              font-size: 18px;
+            }
+            .footer {
+              margin-top: 15px;
+              text-align: center;
+              font-size: 18px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="bill-header">
+             <h2>${companyInfo[0].name}</h2>
+          <div class="company-info">
+            <p>${companyInfo[0].address}</p>
+            <p>Tax:${companyInfo[0].tax_id}</p>
+          
+         
+          </div>
+           
+         
+        
+        </div>
+          <div class="bill-bill-body">
+           
+            <table class="table">
+              
+                <tr >
+                  <td class="header" >Bill ID: ${FinalBillData[0].id}</td>
+                 
+                  <td class="header" >${FinalBillData[0].table_number}</td>
+                  
+                </tr>
+                 <tr >
+                  <td>Date: ${FinalBillData[0].inv_date}</td>
+                 
+                  <td>Time:${formattedTime}</td>
+                  
+                </tr>
+              
+              <tbody> 
+              <tr>  </tr>
+              <tr>  </tr>
+              </tbody>
+              </table>
+           
+          </div>
+          <div class="bill-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Total </th>
+                </tr>
+              </thead>
+              <tbody>
+                ${OrderItemsData
+        .map(
+          (item) => `
+                      <tr>
+                        <td>${item.item_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>฿ ${item.total_price / item.quantity}</td>
+                        <td>฿ ${item.total_price}</td>
+                      </tr>
+                    `
+        )
+        .join('')}
+              </tbody>
+            </table>
+             <div class="total-row">
+            <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
+            <span>Discount: ฿ ${FinalBillData[0].discount_amount}</span><br>
+            <span>Subtotal After Discount: ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
 
+            <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
+            <span>Round Off: ฿ ${FinalBillData[0].roundoff}</span><br>
+            <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
+          </div>
+            
+          </div>
+          <div class="footer">
+            <p>Printed on ${new Date().toLocaleString()}</p>
+            <p>Powered by ${companyInfo[0].name}</p>
+          </div>
+        </body>
+      </html>
+    `;
       // Open the print dialog with the formatted content
       const newWindow = window.open("", "_blank");
       newWindow.document.write(printContent);

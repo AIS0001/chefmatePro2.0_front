@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
@@ -47,7 +47,7 @@ export default function NewPOS() {
   const [tableStatus, setTableStatus] = useState(
     Array.from({ length: 20 }, () => "vacant") // Default all tables to "vacant"
   );
-
+  const navigate = useNavigate();
   const columns = [
     { label: "Product Id", field: "product_id" },
     { label: "Image", field: "filename" },
@@ -90,7 +90,9 @@ export default function NewPOS() {
   };
 
   // Print Order (Save to MySQL)
-
+  const handleBillHistory = async () => {
+    navigate(`/reports/billhistory`);
+  };
 
 
 
@@ -357,7 +359,7 @@ export default function NewPOS() {
         <div className="row mt-4">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
             <CardComponent
-              title="View All Categories"
+              title="Choose Category"
               headerColor="darkblue"
               pull="left"
               bodyClass="panel-body"
@@ -539,7 +541,10 @@ export default function NewPOS() {
 
 
               <button className="btn btn-darkblue mb-2">Previous Order</button>
-              <button className="btn btn-warning mb-2">Save Bill</button>
+              <button  onClick={handleBillHistory}className="btn btn-success mt-2 custom-btn" >
+                Bill History
+              </button>
+              {/* <button className="btn btn-warning mb-2">Save Bill</button> */}
 
               <button onClick={refreshTables} className="btn btn-primary mb-2">Refresh Tables</button>
             </div>

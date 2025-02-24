@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import fetchData from "../../functions/fetchData";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import axios from "axios";
+import { getHeaders } from "../../utility/getHeader";
 import CardComponent from "../../components/cards/CardComponent";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
@@ -33,13 +34,26 @@ export default function Vouchers() {
     // Fetch outstanding balance & invoices when a customer is selected
     useEffect(() => {
         if (selectedCustomer) {
-            fetchData(`/getOutstandingBalance/${selectedCustomer}`, (res) => {
-                setOutstandingAmount(res.outstanding_balance);
+            // Fetch ledger balance from API
+            fetchData("customers", setCustomers, "id", {});
+            axios.get(`/getoutstandingbalance/${selectedCustomer}`,getHeaders(), (res) => {
+                if (res.success) {
+                    setOutstandingAmount(res.outstanding_balance);
+                            <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
+                    console.log(outstandingAmount);
+                } else {
+                    toast.error("Failed to fetch ledger balance");
+                }
             });
-
-            fetchData(`getCustomerInvoices/${selectedCustomer}`, setInvoices);
+    
+            // Fetch invoices related to the customer
+          //  fetchData(`/getCustomerInvoices/${selectedCustomer}`, setInvoices);
+        } else {
+            setOutstandingAmount(0);
+            setInvoices([]);
         }
     }, [selectedCustomer]);
+    
 
     // Update remaining balance after payment
     useEffect(() => {
