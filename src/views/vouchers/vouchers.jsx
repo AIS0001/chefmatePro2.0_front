@@ -27,33 +27,62 @@ export default function Vouchers() {
 
     // Fetch customers when component loads
     useEffect(() => {
-       // fetchData("customers", setCustomers);
+        // fetchData("customers", setCustomers);
         fetchData("customers", setCustomers, "id", {});
     }, []);
+    const getOutStandingBalance = async (e) => {
+        const customerId = e.target.value;
+        setSelectedCustomer(customerId); // Update selected customer state
+
+        if (!customerId) {
+            setOutstandingAmount(0);
+            return;
+        }
+
+        try {
+            const res = await axios.get(`/getoutstandingbalance/${customerId}`, getHeaders());
+            if (res.data.success) {
+                setOutstandingAmount(res.data.outstanding_balance);
+            } else {
+                toast.error("Failed to fetch ledger balance");
+            }
+        } catch (error) {
+            console.error("Error fetching outstanding balance:", error);
+            toast.error("Error fetching outstanding balance.");
+        }
+    };
+    useEffect(() => {
+        const remaining = outstandingAmount - (parseFloat(paymentAmount) || 0);
+        setBalanceAfterPayment(remaining >= 0 ? remaining : 0);
+    }, [paymentAmount, outstandingAmount]);
 
     // Fetch outstanding balance & invoices when a customer is selected
     useEffect(() => {
+        // alert(selectedCustomer);
         if (selectedCustomer) {
             // Fetch ledger balance from API
             fetchData("customers", setCustomers, "id", {});
-            axios.get(`/getoutstandingbalance/${selectedCustomer}`,getHeaders(), (res) => {
+            axios.get(`/getoutstandingbalance/${selectedCustomer}`, getHeaders(), (res) => {
                 if (res.success) {
                     setOutstandingAmount(res.outstanding_balance);
-                            <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
+                    alert(res.outstanding_balance);
+                    <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
                     console.log(outstandingAmount);
                 } else {
+                    alert("error");
+                    console.log("error");
                     toast.error("Failed to fetch ledger balance");
                 }
             });
-    
+
             // Fetch invoices related to the customer
-          //  fetchData(`/getCustomerInvoices/${selectedCustomer}`, setInvoices);
+            //  fetchData(`/getCustomerInvoices/${selectedCustomer}`, setInvoices);
         } else {
             setOutstandingAmount(0);
             setInvoices([]);
         }
     }, [selectedCustomer]);
-    
+
 
     // Update remaining balance after payment
     useEffect(() => {
@@ -67,14 +96,17 @@ export default function Vouchers() {
         const paymentData = {
             customer_id: selectedCustomer,
             amount_paid: paymentAmount,
+            reference_number:referenceNumber,
             payment_mode: paymentMode,
-            reference_id: selectedInvoice,
-            reference_number: referenceNumber,
-            remarks: remarks,
         };
 
         try {
-            await fetchData("savePayment", null, "POST", paymentData);
+            await axios.post(
+                "/savepayment", paymentData, getHeaders()
+            );
+            // Send the data to the backend using POST
+            //await fetchData("receipt_vouchers", null, "POST", paymentData);
+
             toast.success("Payment recorded successfully!");
         } catch (error) {
             console.error("Error saving payment:", error);
@@ -82,19 +114,22 @@ export default function Vouchers() {
         }
     };
 
+
     return (
         <Layout>
-            <Header title="Payment Vouchers" />
+            <Header title="Reciept Vouchers" />
             <ToastContainer />
 
             <div className="row">
                 {/* Left Panel - Payment Form */}
                 <div className="col-lg-4 col-md-4 col-sm-12">
-                    <CardComponent title="Create Payment Voucher" headerColor="darkblue">
+                    <CardComponent title="Create Reciept Voucher" headerColor="darkblue">
                         <form onSubmit={handleSubmit}>
                             {/* Customer Selection */}
                             <label>Customer Name:</label>
-                            <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="form-control">
+                            <select value={selectedCustomer} onChange={getOutStandingBalance} className="form-control">
+
+
                                 <option value="">Select Customer</option>
                                 {customers.map((customer) => (
                                     <option key={customer.id} value={customer.id}>
@@ -108,15 +143,7 @@ export default function Vouchers() {
                             <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
 
                             {/* Invoice Selection */}
-                            <label>Invoice Number:</label>
-                            <select value={selectedInvoice} onChange={(e) => setSelectedInvoice(e.target.value)} className="form-control">
-                                <option value="">Select Invoice</option>
-                                {invoices.map((invoice) => (
-                                    <option key={invoice.id} value={invoice.id}>
-                                        {invoice.transaction_id}
-                                    </option>
-                                ))}
-                            </select>
+
 
                             {/* Payment Mode */}
                             <label>Payment Mode:</label>
@@ -153,7 +180,7 @@ export default function Vouchers() {
                             {/* Balance After Payment */}
                             <label>Balance After Payment:</label>
                             <input type="text" value={`₹ ${balanceAfterPayment}`} readOnly className="form-control" />
-
+                            <label></label>
                             {/* Submit Button */}
                             <div className="mt-3">
                                 <button type="submit" className="btn btn-darkblue btn-block">
