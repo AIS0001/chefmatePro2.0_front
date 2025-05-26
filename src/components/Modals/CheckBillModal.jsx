@@ -267,12 +267,12 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     try {
 
       const invId = itemId;
-     //  alert(invId);
+       //alert(invId);
       // Fetch the final_bill and order_items details for the given itemId
-      await fetchData("final_bill", setFinalBillData, "id", { id: invId });
+      const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
       await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
       // Check if inv_time exists in finalBillData
-      const invTime = FinalBillData[0].inv_time;
+      const invTime = myfinalbilldata[0].inv_time;
       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
 
       // Format the data for printing using a similar structure
@@ -362,13 +362,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               <table class="table">
                 
                   <tr >
-                    <td class="header" >Bill ID: ${FinalBillData[0].id}</td>
+                    <td class="header" >Bill ID: ${myfinalbilldata[0].id}</td>
                    
-                    <td class="header" >${FinalBillData[0].table_number}</td>
+                    <td class="header" >${myfinalbilldata[0].table_number}</td>
                     
                   </tr>
                    <tr >
-                    <td>Date: ${FinalBillData[0].inv_date}</td>
+                    <td>Date: ${myfinalbilldata[0].inv_date}</td>
                    
                     <td>Time:${formattedTime}</td>
                     
@@ -407,13 +407,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                 </tbody>
               </table>
                <div class="total-row">
-              <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
-              <span>Discount: ฿ ${FinalBillData[0].discount_amount}</span><br>
-              <span>Subtotal After Discount: ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
+              <span>Subtotal: ฿ ${myfinalbilldata[0].subtotal}</span><br>
+              <span>Discount: ฿ ${myfinalbilldata[0].discount_amount}</span><br>
+              <span>Subtotal After Discount: ฿ ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
 
-              <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
-              <span>Round Off: ฿ ${FinalBillData[0].roundoff}</span><br>
-              <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
+              <span>Tax (7%): ฿ ${myfinalbilldata[0].tax}</span><br>
+              <span>Round Off: ฿ ${myfinalbilldata[0].roundoff}</span><br>
+              <span>Total Amount: ฿ ${myfinalbilldata[0].grand_total}</span>
             </div>
               
             </div>
@@ -498,8 +498,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
 
       const { bill_id } = response.data; // Get the inserted bill ID
-  //alert(bill_id);
-      setLatestBillId(bill_id);
+ // alert(bill_id);
+  setLatestBillId(bill_id);
+  // ✅ Call print function directly
+  handlePrintClick(bill_id);
+  
       // 🔥 **Update the state to hold the new bill_id**
       // ✅ Use functional update to ensure latest state
      
@@ -536,11 +539,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       toast.error("Error saving bill.");
     }
   };
-  useEffect(() => {
-    if (latestBillId) {
-      handlePrintClick(latestBillId);
-    }
-  }, [latestBillId]);
+  // useEffect(() => {
+  //   if (latestBillId) {
+  //     handlePrintClick(latestBillId);
+  //   }
+  // }, [latestBillId]);
 
 
 
@@ -1059,6 +1062,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
             </div>
             <div className="d-flex justify-content-between mt-4">
+             
               <button
 
                 onClick={() => handlePrintClick(latestBillId)}
@@ -1066,16 +1070,18 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               >
                 Print Bill
               </button>
+              {/* This button help to save and print bill together on one click */}
               <button onClick={handleSaveBill}
                 className="btn btn-primary mb-2 custom-btn">
                 Save & Print Bill
               </button>
-              <button
+               {/* this button used only when user dont want to print bill only make save bill */}
+              {/* <button
                 onClick={handleSaveBill}
                 className="btn btn-darkblue mb-2 custom-btn"
               >
                 Save Bill
-              </button>
+              </button> */}
               <button
                 onClick={handleBillHistory}
                 className="btn btn-success mt-2 custom-btn"
