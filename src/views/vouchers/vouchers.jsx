@@ -24,7 +24,14 @@ export default function Vouchers() {
     const [invoices, setInvoices] = useState([]);
     const [selectedInvoice, setSelectedInvoice] = useState("");
     const [data, setData] = useState([]);
-
+    const columns = [
+        { label: "Txn ID", field: "transaction_id" },
+        { label: "Cust ID", field: "customer_id" },
+        { label: "Date", field: "payment_date" },
+        { label: "Mode", field: "payment_mode" },
+        { label: "Paid Amount", field: "amount_paid" },
+        { label: "Ref ID", field: "reference_id" }
+      ];
     // Fetch customers when component loads
     useEffect(() => {
         // fetchData("customers", setCustomers);
@@ -113,7 +120,18 @@ export default function Vouchers() {
             toast.error("Error recording payment.");
         }
     };
-
+    useEffect(() => {
+        const fetchAndSetData = async () => {
+          try {
+            await fetchData("receipt_vouchers", setData, "id", {});
+            console.log("Fetched data:", data); // Add this line for debugging
+          } catch (error) {
+            console.error("Error in useEffect:", error);
+          }
+        };
+    
+        fetchAndSetData();
+      }, []);
 
     return (
         <Layout>
@@ -196,7 +214,7 @@ export default function Vouchers() {
                     {data.length === 0 ? (
                         <p>No data available</p>
                     ) : (
-                        <DataTable columns={columns} data={data} tablename="payment_vouchers" />
+                        <DataTable columns={columns} data={data} tablename="receipt_vouchers" />
                     )}
                 </div>
             </div>

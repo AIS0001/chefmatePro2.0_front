@@ -29,9 +29,8 @@ const menuItems = [
     icon: 'store',
     dataTargetId: '#inventory',
     submenu: [
-      { name: 'New Item', path: '/inventory/newItem' },
-      { name: 'Item List', path: '/inventory/itemList' },
-      { name: 'Item Pricing', path: '/inventory/newItem' },
+      { name: 'Add New Item', path: '/inventory/newItem' },
+      { name: 'Add New Stock', path: '/inventory/newItem' },
       { name: 'New Product', path: '/inventory/newproduct' },
      
       
