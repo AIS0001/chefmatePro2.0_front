@@ -32,6 +32,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     unit: "",
     tax: "",
     subcat: "",
+    isstockable: false,
   });
  
   const [getTax, setTax] = useState([]);
@@ -80,6 +81,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
           catid: formdata.category,
           subcatid: formdata.subcat,
           description: formdata.desc,
+          isstockable: formdata.isstockable,  // <-- new field added
         },
         getHeaders()
       );
@@ -388,6 +390,39 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                  
                    
             </div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+
+<div className='form-group'>
+  <label className='control-label'>Is Stockable
+
+  <input
+        type="checkbox"
+        id="isstockable"
+        name="isstockable"
+        checked={formdata.isstockable}
+        onChange={(e) =>
+          setFormData((prevData) => ({
+            ...prevData,
+            isstockable: e.target.checked,
+          }))
+        }
+        style={{
+          transform: "scale(1.5)", // Makes the checkbox 1.5x larger
+          marginRight: "10px",
+          cursor: "pointer",
+        }}
+      />
+      
+  </label>
+
+</div>
+
+
+</div>
+    
+
+
+
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <label className="control-label mb-12"></label>
               <SubmitButton

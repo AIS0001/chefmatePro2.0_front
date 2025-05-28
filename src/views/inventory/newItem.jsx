@@ -74,20 +74,9 @@ export default function NewItem() {
         <Header title="Item Details" />
         <ToastContainer />
         <div className="row mb-4">
-        <div className="col-lg-8 col-md-8 col-sm-8 col-xs-8" >
+        <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10" >
           </div>
-        <div className="col-lg-2 col-md-2 col-sm-2 col-xs-2" >
-        <Link
-            type="button"
-            name="add"
-            onClick={AddNewItemButton}
-            className="btn btn-success btn-anim shadow-sm"
-           
-          >
-            <i className="fas fa-plus-circle mr-2"></i> {/* Add an icon */}
-            + Add New Item
-          </Link>
-          </div>
+    
        
           <div className="col-lg-2 col-md-2 col-sm-2 col-xs-2" >
           <Link
@@ -98,7 +87,7 @@ export default function NewItem() {
            
           >
             <i className="add_shopping_cart"></i> {/* Add an icon */}
-             + Item Price
+             Add New Item
           </Link>
         </div>
         </div>

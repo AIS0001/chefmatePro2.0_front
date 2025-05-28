@@ -38,6 +38,7 @@ import EditProfile from './views/profile/editprofile';
 import CompanyInfo from './views/settings/companyInfo';
 import Taxes from './views/master/taxes';
 import Units from './views/master/units';
+import NewStock from './views/inventory/newStock';
 
 function App() {
   return (
@@ -59,6 +60,7 @@ function App() {
           <Route path="/master/paymentoptions" element={<PrivateRoute element={<PaymentOptions />} />} />
 
           <Route path="/inventory/newitem" element={<PrivateRoute element={<NewItem />} />} />
+          <Route path="/inventory/newstock" element={<PrivateRoute element={<NewStock />} />} />
           <Route path="/inventory/edititem/:id" element={<PrivateRoute element={<EditItem />} />} />
           <Route path="/inventory/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
          
