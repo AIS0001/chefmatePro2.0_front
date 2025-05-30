@@ -33,8 +33,9 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     tax: "",
     subcat: "",
     isstockable: false,
+    min_stock: "",  // <-- added,
   });
- 
+
   const [getTax, setTax] = useState([]);
   const [getUnit, setUnits] = useState([]);
   const [getCategory, setCategory] = useState([]);
@@ -82,6 +83,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
           subcatid: formdata.subcat,
           description: formdata.desc,
           isstockable: formdata.isstockable,  // <-- new field added
+          min_stock: formdata.min_stock, // <-- added
         },
         getHeaders()
       );
@@ -100,7 +102,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
         },
       });
       // Immediately fetch updated data after adding an item
-     // await fetchData("items", setData, "id", {});
+      // await fetchData("items", setData, "id", {});
       onItemAdded(); // Call this to trigger the reload function in NewItem
       toast.success("Item added successfully!");
       setImages([]);
@@ -118,7 +120,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     // setFormData({});
     setErrors({});
   };
- 
+
   // Fetch subcategories based on selected category
   const handleCategoryChange = async (e) => {
     const { name, value } = e.target;
@@ -377,49 +379,60 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
               />
             </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+              <TextfieldwithLabel
+                id="min_stock"
+                onChange={(e) => handleInputChange(e)}
+                value={formdata.min_stock}
+                type="number"
+                name="min_stock"
+                lable="Minimum Stock Level"
+              />
+            </div>
 
-                      <div className='form-group'>
-                        <label className='control-label mb-10'>Upload Images</label>
-                        <input
-                          type="file"
-                          name="images"
-                          multiple
-                          onChange={handleFileChange}
-                        />
-                      </div>
-                 
-                   
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+
+              <div className='form-group'>
+                <label className='control-label mb-10'>Upload Images</label>
+                <input
+                  type="file"
+                  name="images"
+                  multiple
+                  onChange={handleFileChange}
+                />
+              </div>
+
+
             </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
 
-<div className='form-group'>
-  <label className='control-label'>Is Stockable
+              <div className='form-group'>
+                <label className='control-label'>Is Stockable
 
-  <input
-        type="checkbox"
-        id="isstockable"
-        name="isstockable"
-        checked={formdata.isstockable}
-        onChange={(e) =>
-          setFormData((prevData) => ({
-            ...prevData,
-            isstockable: e.target.checked,
-          }))
-        }
-        style={{
-          transform: "scale(1.5)", // Makes the checkbox 1.5x larger
-          marginRight: "10px",
-          cursor: "pointer",
-        }}
-      />
-      
-  </label>
+                  <input
+                    type="checkbox"
+                    id="isstockable"
+                    name="isstockable"
+                    checked={formdata.isstockable}
+                    onChange={(e) =>
+                      setFormData((prevData) => ({
+                        ...prevData,
+                        isstockable: e.target.checked,
+                      }))
+                    }
+                    style={{
+                      transform: "scale(1.5)", // Makes the checkbox 1.5x larger
+                      marginRight: "10px",
+                      cursor: "pointer",
+                    }}
+                  />
 
-</div>
+                </label>
+
+              </div>
 
 
-</div>
-    
+            </div>
+
 
 
 
@@ -432,31 +445,31 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
               />
             </div>
             <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                    <div className="image-preview">
-                        {images.length > 0 &&
-                          images.map((image, index) => (
-                            <div key={index} className="preview-item">
-                              <img
-                                src={image.preview}
-                                alt="preview"
-                                style={{ width: "100px" }}
-                              />
-                              <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
-                                <div className='form-group'>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteImage(index)}
-                                    className="delete-icon"
-                                  >
-                                    <i className="fas fa-times"></i>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                          ))}
+              <div className="image-preview">
+                {images.length > 0 &&
+                  images.map((image, index) => (
+                    <div key={index} className="preview-item">
+                      <img
+                        src={image.preview}
+                        alt="preview"
+                        style={{ width: "100px" }}
+                      />
+                      <div className="col-lg-4 col-md-3 col-sm-12 col-xs-12">
+                        <div className='form-group'>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteImage(index)}
+                            className="delete-icon"
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
+
+                  ))}
+              </div>
+            </div>
           </div>
         </form>
       </div>

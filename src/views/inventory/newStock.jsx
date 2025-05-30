@@ -17,7 +17,7 @@ export default function NewStock() {
     stock_in: "",
     stock_out: "",
     unit: "",
-    min_stock_level: "",
+  //  min_stock_level: "",
     purchase_price: "",
     subtotal: "",
     vat: "",
@@ -36,7 +36,7 @@ export default function NewStock() {
     { label: "Stock In", field: "stock_in" },
     { label: "Stock Out", field: "stock_out" },
     { label: "Unit", field: "unit" },
-    { label: "Min Stock", field: "min_stock_level" },
+    // { label: "Min Stock", field: "min_stock_level" },
     { label: "Purchase Price", field: "purchase_price" },
     { label: "Subtotal", field: "subtotal" },
     { label: "VAT %", field: "vat" },
@@ -50,42 +50,72 @@ export default function NewStock() {
       ...formData,
       [name]: value,
     };
-
+  
+    const stockQty = parseFloat(updatedForm.stock_in || 0);
+    const price = parseFloat(updatedForm.purchase_price || 0);
+    const vatRate = parseFloat(updatedForm.vat || 0);
+  
+    let subtotal = 0;
+    let vatAmount = 0;
+    let netAmount = 0;
+  
     if (autoVat) {
-      const stockQty = parseFloat(updatedForm.stock_in || 0);
-      const price = parseFloat(updatedForm.purchase_price || 0);
-      const vatRate = parseFloat(updatedForm.vat || 0);
-      const subtotal = stockQty * price;
-      const vatAmount = (subtotal * vatRate) / 100;
-      const netAmount = subtotal + vatAmount;
-
-      updatedForm.subtotal = subtotal.toFixed(2);
-      updatedForm.vatAmount = vatAmount.toFixed(2);
-      updatedForm.netAmount = netAmount.toFixed(2);
+      // VAT INCLUDED in purchase price
+      const priceExclVat = price / (1 + vatRate / 100);
+      vatAmount = price - priceExclVat;
+      subtotal = priceExclVat * stockQty;
+      vatAmount = vatAmount * stockQty;
+      netAmount = price * stockQty;
+    } else {
+      // VAT EXCLUDED, add VAT
+      subtotal = price * stockQty;
+      vatAmount = (subtotal * vatRate) / 100;
+      netAmount = subtotal + vatAmount;
     }
-
+  
+    updatedForm.subtotal = subtotal.toFixed(2);
+    updatedForm.vatAmount = vatAmount.toFixed(2);
+    updatedForm.netAmount = netAmount.toFixed(2);
+  
     setFormData(updatedForm);
   };
+  
 
   const handleCheckboxChange = () => {
     const checked = !autoVat;
     setAutoVat(checked);
   
-    // Recalculate VAT if enabled
-    if (checked) {
-      const price = parseFloat(formData.purchase_price) || 0;
-      const vatRate = parseFloat(formData.vat) || 0;
-      const vatAmount = (price * vatRate) / 100;
-      const netAmount = price + vatAmount;
+    const stockQty = parseFloat(formData.stock_in || 0);
+    const price = parseFloat(formData.purchase_price || 0);
+    const vatRate = parseFloat(formData.vat || 0);
   
-      setFormData((prev) => ({
-        ...prev,
-        subtotal: price.toFixed(2),
-        vatAmount: vatAmount.toFixed(2),
-        netAmount: netAmount.toFixed(2),
-      }));
+    let subtotal = 0;
+    let vatAmount = 0;
+    let netAmount = 0;
+  
+    if (checked) {
+      // VAT is INCLUDED in price
+      const priceExclVat = price / (1 + vatRate / 100);
+      const singleVatAmount = price - priceExclVat;
+  
+      subtotal = priceExclVat * stockQty;
+      vatAmount = singleVatAmount * stockQty;
+      netAmount = price * stockQty;
+    } else {
+      // VAT is EXCLUDED from price (add it)
+      subtotal = price * stockQty;
+      vatAmount = (subtotal * vatRate) / 100;
+      netAmount = subtotal + vatAmount;
     }
+  
+    setFormData((prev) => ({
+      ...prev,
+      subtotal: subtotal.toFixed(2),
+      vatAmount: vatAmount.toFixed(2),
+      netAmount: netAmount.toFixed(2),
+    }));
   };
+  
   
 
   const handleSubmit = async (e) => {
@@ -97,14 +127,14 @@ export default function NewStock() {
         item_id: "",
         opening_stock: "",
         stock_in: "",
-        stock_out: "",
+        stock_out: "0",
         unit: "",
-        min_stock_level: "",
+        // min_stock_level: "",
         purchase_price: "",
         subtotal: "",
         vat: "7",
-        vatAmount: "",
-        netAmount: ""
+        vatAmount: "0",
+        netAmount: "0"
       });
       fetchData("inventory", setData, "id", {});
     } catch (error) {
@@ -117,7 +147,56 @@ export default function NewStock() {
     fetchData("inventory", setData, "id", {});
     fetchData("items", setStockable, "id", { isstockable: 'true' });
   }, []);
+  useEffect(() => {
+    if (formData.item_id) {
+      const selectedItem = stockable.find(
+        (item) => item.id.toString() === formData.item_id.toString()
+      );
+      if (selectedItem) {
+        setFormData((prev) => ({
+          ...prev,
+          unit: selectedItem.unit || "",
+          vat: selectedItem.tax || "0", // assuming `vat` is stored as a number or string like "7"
+        }));
+      }
+    }
+  }, [formData.item_id, stockable]);
+  
 
+
+  useEffect(() => {
+    const fetchLastClosingStock = async (itemId) => {
+      try {
+        const response = await axios.get(`/getclosingstock/:item_id/${itemId}`, getHeaders());
+        const closing = response.data?.closing_stock || 0;
+        setFormData((prev) => ({
+          ...prev,
+          opening_stock: closing.toFixed(2),
+        }));
+      } catch (err) {
+        console.error("Error fetching closing stock:", err);
+        setFormData((prev) => ({
+          ...prev,
+          opening_stock: "0.00",
+        }));
+      }
+    };
+  
+    if (formData.item_id) {
+      const selectedItem = stockable.find(
+        (item) => item.id.toString() === formData.item_id.toString()
+      );
+      if (selectedItem) {
+        setFormData((prev) => ({
+          ...prev,
+          unit: selectedItem.unit || "",
+        }));
+      }
+  
+      fetchLastClosingStock(formData.item_id);
+    }
+  }, [formData.item_id, stockable]);
+  
   return (
     <Layout>
       <Header title="Add Stock Entry" />
@@ -141,7 +220,7 @@ export default function NewStock() {
             >
               <option value="">Select Item</option>
               {stockable.map((item) => (
-                <option key={item.id} value={item.id}>
+                <option key={item.iname} value={item.iname}>
                   {item.iname}
                 </option>
               ))}
@@ -158,13 +237,32 @@ export default function NewStock() {
           </div>
           <div className="form-group col-md-4">
             <TextfieldwithLabel
+              name="refno"
+              value={formData.refno}
+              onChange={handleInputChange}
+              type="text"
+              lable="Ref. No."
+            />
+          </div>
+          <div className="form-group col-md-4">
+            <TextfieldwithLabel
+              name="pdate"
+              value={formData.pdate}
+              onChange={handleInputChange}
+              type="date"
+              lable="Purchase date"
+            />
+          </div>
+          
+          {/* <div className="form-group col-md-4">
+            <TextfieldwithLabel
               name="min_stock_level"
               value={formData.min_stock_level}
               onChange={handleInputChange}
               type="number"
               lable="Minimum Stock Level"
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Row 2 */}
@@ -210,7 +308,7 @@ export default function NewStock() {
             />
           </div>
           <div className="form-group col-md-4">
-            <label className="d-block">Auto VAT Calculation</label>
+            <label className="d-block">Include  VAT </label>
             <div className="form-check">
               <input
                 type="checkbox"
