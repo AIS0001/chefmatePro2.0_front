@@ -13,16 +13,16 @@ import "react-toastify/dist/ReactToastify.css";
 export default function NewStock() {
   const [formData, setFormData] = useState({
     item_id: "",
-    opening_stock: "",
-    stock_in: "",
-    stock_out: "",
+    opening_stock: "0",
+    stock_in: "0",
+    stock_out: "0",
     unit: "",
   //  min_stock_level: "",
-    purchase_price: "",
-    subtotal: "",
+    purchase_price: "0",
+    subtotal: "0",
     vat: "",
-    vatAmount: "",
-    netAmount: ""
+    vatAmount: "0",
+    netAmount: "0"
   });
 
   const [autoVat, setAutoVat] = useState(true);
@@ -31,10 +31,12 @@ export default function NewStock() {
 
   const columns = [
     { label: "ID", field: "id" },
-    { label: "Item", field: "item_id" },
+    { label: "Item Name", field: "item_name" }, // from JOIN
+  //  { label: "Item", field: "item_id" },
     { label: "Opening Stock", field: "opening_stock" },
     { label: "Stock In", field: "stock_in" },
     { label: "Stock Out", field: "stock_out" },
+    { label: "Closing balance", field: "closing_stock" },
     { label: "Unit", field: "unit" },
     // { label: "Min Stock", field: "min_stock_level" },
     { label: "Purchase Price", field: "purchase_price" },
@@ -136,7 +138,14 @@ export default function NewStock() {
         vatAmount: "0",
         netAmount: "0"
       });
-      fetchData("inventory", setData, "id", {});
+      //fetchData("inventory", setData, "id", {});
+      axios
+      .get("/inventory/joined", getHeaders())
+      .then((res) => setData(res.data))
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to fetch joined inventory data");
+      });
     } catch (error) {
       console.error(error);
       toast.error("Failed to add stock entry.");
@@ -144,7 +153,7 @@ export default function NewStock() {
   };
 
   useEffect(() => {
-    fetchData("inventory", setData, "id", {});
+  //  fetchData("inventory", setData, "id", {});
     fetchData("items", setStockable, "id", { isstockable: 'true' });
   }, []);
   useEffect(() => {
@@ -167,7 +176,7 @@ export default function NewStock() {
   useEffect(() => {
     const fetchLastClosingStock = async (itemId) => {
       try {
-        const response = await axios.get(`/getclosingstock/:item_id/${itemId}`, getHeaders());
+        const response = await axios.get(`/getclosingstock/${itemId}`, getHeaders());
         const closing = response.data?.closing_stock || 0;
         setFormData((prev) => ({
           ...prev,
@@ -196,7 +205,17 @@ export default function NewStock() {
       fetchLastClosingStock(formData.item_id);
     }
   }, [formData.item_id, stockable]);
-  
+
+
+  useEffect(() => {
+    axios
+      .get("/inventory/joined", getHeaders())
+      .then((res) => setData(res.data))
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to fetch joined inventory data");
+      });
+  }, []);
   return (
     <Layout>
       <Header title="Add Stock Entry" />
@@ -220,7 +239,7 @@ export default function NewStock() {
             >
               <option value="">Select Item</option>
               {stockable.map((item) => (
-                <option key={item.iname} value={item.iname}>
+                <option key={item.id} value={item.id}>
                   {item.iname}
                 </option>
               ))}
