@@ -32,6 +32,7 @@ const menuItems = [
       { name: 'Add New Item', path: '/inventory/newItem' },
       { name: 'Add New Stock', path: '/inventory/newStock' },
       { name: 'New Product', path: '/inventory/newproduct' },
+      { name: 'Stock Report', path: '/inventory/stockreports' },
      
       
     ]

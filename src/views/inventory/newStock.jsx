@@ -263,15 +263,7 @@ export default function NewStock() {
               lable="Ref. No."
             />
           </div>
-          <div className="form-group col-md-4">
-            <TextfieldwithLabel
-              name="pdate"
-              value={formData.pdate}
-              onChange={handleInputChange}
-              type="date"
-              lable="Purchase date"
-            />
-          </div>
+         
           
           {/* <div className="form-group col-md-4">
             <TextfieldwithLabel
@@ -286,6 +278,15 @@ export default function NewStock() {
 
         {/* Row 2 */}
         <div className="form-row row">
+           <div className="form-group col-md-4">
+            <TextfieldwithLabel
+              name="pdate"
+              value={formData.pdate}
+              onChange={handleInputChange}
+              type="date"
+              lable="Purchase date"
+            />
+          </div>
           <div className="form-group col-md-4">
             <TextfieldwithLabel
               name="opening_stock"
@@ -304,7 +305,12 @@ export default function NewStock() {
               lable="Stock In"
             />
           </div>
-          <div className="form-group col-md-4">
+        
+        </div>
+
+        {/* Row 3 */}
+        <div className="form-row row">
+            <div className="form-group col-md-4">
             <TextfieldwithLabel
               name="stock_out"
               value={formData.stock_out}
@@ -313,10 +319,6 @@ export default function NewStock() {
               lable="Stock Out"
             />
           </div>
-        </div>
-
-        {/* Row 3 */}
-        <div className="form-row row">
           <div className="form-group col-md-4">
             <TextfieldwithLabel
               name="purchase_price"
@@ -326,7 +328,7 @@ export default function NewStock() {
               lable="Purchase Price"
             />
           </div>
-          <div className="form-group col-md-4">
+          <div className="form-group col-md-1">
             <label className="d-block">Include  VAT </label>
             <div className="form-check">
               <input
@@ -341,7 +343,12 @@ export default function NewStock() {
               </label>
             </div>
           </div>
-          <div className="form-group col-md-4">
+       
+        </div>
+
+        {/* Row 4 */}
+        <div className="form-row row">
+             <div className="form-group col-md-4">
             <TextfieldwithLabel
               name="vat"
               value={formData.vat}
@@ -350,10 +357,6 @@ export default function NewStock() {
               lable="VAT (%)"
             />
           </div>
-        </div>
-
-        {/* Row 4 */}
-        <div className="form-row row">
           <div className="form-group col-md-4">
             <TextfieldwithLabel
               name="subtotal"

@@ -16,8 +16,10 @@ import TableList from './views/master/newTable';
 import PaymentOptions from './views/master/paymentOptions';
 
 import NewItem from './views/inventory/newItem';
+import NewStock from './views/inventory/newStock';
 import EditItem from './views/inventory/editItem';
 import NewProduct from './views/inventory/newProduct1';
+import StockReport from './views/inventory/stockReport';
 
 
 import NewPOS from './views/pos/newPOS';
@@ -38,7 +40,7 @@ import EditProfile from './views/profile/editprofile';
 import CompanyInfo from './views/settings/companyInfo';
 import Taxes from './views/master/taxes';
 import Units from './views/master/units';
-import NewStock from './views/inventory/newStock';
+
 
 function App() {
   return (
@@ -63,6 +65,7 @@ function App() {
           <Route path="/inventory/newstock" element={<PrivateRoute element={<NewStock />} />} />
           <Route path="/inventory/edititem/:id" element={<PrivateRoute element={<EditItem />} />} />
           <Route path="/inventory/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
+          <Route path="/inventory/stockreports" element={<PrivateRoute element={<StockReport />} />} />
          
           <Route path="/sale/pos" element={<PrivateRoute element={<NewPOS />} />} />
          
