@@ -19,7 +19,7 @@ import DataTable from "../../components/data-tables/dataTable";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
 
-export default function Customers() {
+export default function Suppliers() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   //  const headers = { Authorization: authheader().access_token };
   const [data, setData] = useState([]);
@@ -35,6 +35,7 @@ export default function Customers() {
   const columns = [
     { label: "ID", field: "id" },
     { label: "Name", field: "name" },
+    { label: "Company Name", field: "company_name" },
     { label: "Contact", field: "contact" },
     { label: "Email", field: "email" },
     { label: "Tax ID", field: "taxid" },
@@ -54,9 +55,10 @@ export default function Customers() {
 
     try {
       await axios.post(
-        "/insertdata/customers",
+        "/insertdata/suppliers",
         {
           name: formdata.name,
+          company_name: formdata.company_name,
           contact: formdata.contact,
           email: formdata.email,
           taxid: formdata.taxid,
@@ -66,9 +68,9 @@ export default function Customers() {
       );
 
       // Fetch the updated data after successful submission
-      await fetchData("customers", setData, "id", {});
+      await fetchData("suppliers", setData, "id", {});
 
-      toast.success("customer added successfully!");
+      toast.success("Supplier added successfully!");
       setFormData([]);
     } catch (err) {
       toast.error("Error in adding category");
@@ -78,6 +80,7 @@ export default function Customers() {
     // Clear form data and errors
     setFormData({
       name: "",
+      company_name: "",
       contact: "",
       email: "",
       taxid: "",
@@ -96,7 +99,7 @@ export default function Customers() {
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
-        await fetchData("customers", setData, "id", {});
+        await fetchData("suppliers", setData, "id", {});
         console.log("Fetched data:", data); // Add this line for debugging
       } catch (error) {
         console.error("Error in useEffect:", error);
@@ -108,12 +111,12 @@ export default function Customers() {
   return (
     <>
       <Layout>
-        <Header title="Add New Customer" />
+        <Header title="Add New Supplier" />
         <ToastContainer />
         <div className="row">
           <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
             <CardComponent
-              title="Add Customer for new Ledger"
+              title="Add Supplier for new Ledger"
               headerColor="darkblue"
               pull="left"
               bodyClass="panel-body"
@@ -128,7 +131,15 @@ export default function Customers() {
                         value={formdata.name}
                         type="text"
                         name="name"
-                        lable="Customer Name"
+                        lable="Supplier Name"
+                      />
+                      <TextfieldwithLabel
+                        id="company_name"
+                        onChange={(e) => handleInputChange(e)}
+                        value={formdata.company_name}
+                        type="text"
+                        name="company_name"
+                        lable="Comapany Name"
                       />
                       <TextfieldwithLabel
                         id="contact"

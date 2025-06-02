@@ -16,6 +16,7 @@ const menuItems = [
     dataTargetId: '#master',
     submenu: [
       { name: 'New Customer', path: '/master/newcustomer' },
+      { name: 'New Supplier', path: '/master/newsupplier' },
       { name: 'New Table', path: '/master/table' },
       { name: 'New Category', path: '/master/newcategory' },
       { name: 'New Sub Category', path: '/master/newsubcategory' },
@@ -60,16 +61,25 @@ const menuItems = [
       
     ]
   },
-
   {
-    name: 'Reports',
+        name: 'Reports',
     path: '/pages/reports',
     icon: 'file-text',
     dataTargetId: '#reports',
     submenu: [
-      { name: 'Bill History', path: '/reports/billhistory' },
-      { name: 'Sales Ledger', path: '/reports/saleledger' },
-      { name: 'Room Status', path: '/reports/sroom-status' },
+      { name: 'Reciept Voucher', path: '/vouchers/recieptvoucher' },
+      { name: 'Payment Voucher', path: '/vouchers/paymentvoucher' },
+      
+    ]
+  },
+  {
+
+      name: 'Expenses',
+    path: '/pages/expenses',
+    icon: 'file-text',
+    dataTargetId: '#expense',
+    submenu: [
+      { name: 'Add New Expense', path: '/expenses/suppliersexpenses' },
       
     ]
   },

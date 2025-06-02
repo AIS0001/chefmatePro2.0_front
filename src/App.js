@@ -10,6 +10,7 @@ import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
 
 import Customers from './views/master/customers';
+import Suppliers from './views/master/suppliers';
 import Categories from './views/master/categories';
 import SubCategories from './views/master/subCategories';
 import TableList from './views/master/newTable';
@@ -23,12 +24,16 @@ import StockReport from './views/inventory/stockReport';
 
 
 import NewPOS from './views/pos/newPOS';
+//expenses
+import SupplierLedgerEntry from './views/expenses/supplierLedgerEntry';
 
 //Vouchers
 import Vouchers from './views/vouchers/vouchers';
+import PaymentVouchers from './views/vouchers/paymentVouchers';
 //Reports
 import BillHistory from './views/reports/billHistory';
 import SaleLedger from './views/reports/saleLedger';
+import SupplierLedger from './views/reports/suppliersLedger';
 
 
 //Users
@@ -55,6 +60,7 @@ function App() {
           {/* Protected Route */}
 
           {/* Products */}
+          <Route path="/master/newsupplier" element={<PrivateRoute element={<Suppliers />} />} />
           <Route path="/master/newcustomer" element={<PrivateRoute element={<Customers />} />} />
           <Route path="/master/newcategory" element={<PrivateRoute element={<Categories />} />} />
           <Route path="/master/newsubcategory" element={<PrivateRoute element={<SubCategories />} />} />
@@ -68,6 +74,8 @@ function App() {
           <Route path="/inventory/stockreports" element={<PrivateRoute element={<StockReport />} />} />
          
           <Route path="/sale/pos" element={<PrivateRoute element={<NewPOS />} />} />
+
+          <Route path="/expenses/suppliersexpenses" element={<PrivateRoute element={<SupplierLedgerEntry />} />} />
          
           
          
@@ -76,12 +84,14 @@ function App() {
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
 
-          
+          {/* Vouchers */}
           <Route path="/vouchers/recieptvoucher" element={<PrivateRoute element={<Vouchers />} />} />
+          <Route path="/vouchers/paymentvoucher" element={<PrivateRoute element={<PaymentVouchers />} />} />
 
  {/* Reports */}
           <Route path="/reports/billhistory" element={<PrivateRoute element={<BillHistory />} />} />
           <Route path="/reports/saleledger" element={<PrivateRoute element={<SaleLedger />} />} />
+          <Route path="/reports/supplierledger" element={<PrivateRoute element={<SupplierLedger />} />} />
          
          {/* Settings */}
          <Route path='/setting/companyinfo' element={< CompanyInfo />} />

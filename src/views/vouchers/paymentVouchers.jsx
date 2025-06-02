@@ -12,8 +12,8 @@ import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import DataTable from "../../components/data-tables/dataTable";
 
-export default function Vouchers() {
-    const [customers, setCustomers] = useState([]);
+export default function PaymentVouchers() {
+    const [suppliers, setsuppliers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState("");
     const [outstandingAmount, setOutstandingAmount] = useState(0);
     const [paymentAmount, setPaymentAmount] = useState("");
@@ -31,12 +31,13 @@ export default function Vouchers() {
         { label: "Mode", field: "payment_mode" },
         { label: "Paid Amount", field: "amount_paid" },
         { label: "Ref ID", field: "reference_id" }
-      ];
-    // Fetch customers when component loads
+    ];
+    // Fetch suppliers when component loads
     useEffect(() => {
-        // fetchData("customers", setCustomers);
-        fetchData("customers", setCustomers, "id", {});
+        // fetchData("suppliers", setsuppliers);
+        fetchData("suppliers", setsuppliers, "id", {});
     }, []);
+
     const getOutStandingBalance = async (e) => {
         const customerId = e.target.value;
         setSelectedCustomer(customerId); // Update selected customer state
@@ -45,9 +46,10 @@ export default function Vouchers() {
             setOutstandingAmount(0);
             return;
         }
-//testing update upto 15may 2025
+
+        //testing update upto 15may 2025
         try {
-            const res = await axios.get(`/getoutstandingbalance/Account Recievable/${customerId}`, getHeaders());
+            const res = await axios.get(`/getoutstandingbalance/Purchase/${customerId}`, getHeaders());
             if (res.data.success) {
                 setOutstandingAmount(res.data.outstanding_balance);
             } else {
@@ -58,6 +60,7 @@ export default function Vouchers() {
             toast.error("Error fetching outstanding balance.");
         }
     };
+
     useEffect(() => {
         const remaining = outstandingAmount - (parseFloat(paymentAmount) || 0);
         setBalanceAfterPayment(remaining >= 0 ? remaining : 0);
@@ -68,8 +71,8 @@ export default function Vouchers() {
         // alert(selectedCustomer);
         if (selectedCustomer) {
             // Fetch ledger balance from API
-            fetchData("customers", setCustomers, "id", {});
-            axios.get(`/getoutstandingbalance/Account Recievable/${selectedCustomer}`, getHeaders(), (res) => {
+            fetchData("suppliers", setsuppliers, "id", {});
+            axios.get(`/getoutstandingbalance/Purchase/${selectedCustomer}`, getHeaders(), (res) => {
                 if (res.success) {
                     setOutstandingAmount(res.outstanding_balance);
                     alert(res.outstanding_balance);
@@ -103,7 +106,7 @@ export default function Vouchers() {
         const paymentData = {
             customer_id: selectedCustomer,
             amount_paid: paymentAmount,
-            reference_number:referenceNumber,
+            reference_number: referenceNumber,
             payment_mode: paymentMode,
         };
 
@@ -112,7 +115,7 @@ export default function Vouchers() {
                 "/savepayment", paymentData, getHeaders()
             );
             // Send the data to the backend using POST
-            //await fetchData("receipt_vouchers", null, "POST", paymentData);
+            //await fetchData("payment_vouchers", null, "POST", paymentData);
 
             toast.success("Payment recorded successfully!");
         } catch (error) {
@@ -122,26 +125,26 @@ export default function Vouchers() {
     };
     useEffect(() => {
         const fetchAndSetData = async () => {
-          try {
-            await fetchData("receipt_vouchers", setData, "id", {});
-            console.log("Fetched data:", data); // Add this line for debugging
-          } catch (error) {
-            console.error("Error in useEffect:", error);
-          }
+            try {
+                await fetchData("payment_vouchers", setData, "id", {});
+                console.log("Fetched data:", data); // Add this line for debugging
+            } catch (error) {
+                console.error("Error in useEffect:", error);
+            }
         };
-    
+
         fetchAndSetData();
-      }, []);
+    }, []);
 
     return (
         <Layout>
-            <Header title="Reciept Vouchers" />
+            <Header title="Payment Vouchers" />
             <ToastContainer />
 
             <div className="row">
                 {/* Left Panel - Payment Form */}
                 <div className="col-lg-4 col-md-4 col-sm-12">
-                    <CardComponent title="Create Reciept Voucher" headerColor="darkblue">
+                    <CardComponent title="Create Payment Voucher" headerColor="darkblue">
                         <form onSubmit={handleSubmit}>
                             {/* Customer Selection */}
                             <label>Customer Name:</label>
@@ -149,7 +152,7 @@ export default function Vouchers() {
 
 
                                 <option value="">Select Customer</option>
-                                {customers.map((customer) => (
+                                {suppliers.map((customer) => (
                                     <option key={customer.id} value={customer.id}>
                                         {customer.name}
                                     </option>
@@ -214,7 +217,7 @@ export default function Vouchers() {
                     {data.length === 0 ? (
                         <p>No data available</p>
                     ) : (
-                        <DataTable columns={columns} data={data} tablename="receipt_vouchers" />
+                        <DataTable columns={columns} data={data} tablename="payment_vouchers" />
                     )}
                 </div>
             </div>
