@@ -72,11 +72,11 @@ function App() {
           
          
          
-          <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+          <Route path="/dashboard/admin" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
           <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
 
-          //Vouchers
+          
           <Route path="/vouchers/recieptvoucher" element={<PrivateRoute element={<Vouchers />} />} />
 
  {/* Reports */}
