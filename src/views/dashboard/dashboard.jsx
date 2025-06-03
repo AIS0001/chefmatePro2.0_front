@@ -26,14 +26,36 @@ import {
   CartesianGrid,
   AreaChart,
   Area,
-  ComposedChart
+  ComposedChart,
+  RadialBarChart,
+  RadialBar
 } from "recharts";
+
+// Custom color palette
+const COLORS = {
+  primary: "#4e73df",
+  secondary: "#858796",
+  success: "#1cc88a",
+  info: "#36b9cc",
+  warning: "#f6c23e",
+  danger: "#e74a3b",
+  light: "#f8f9fc",
+  dark: "#5a5c69",
+  purple: "#6f42c1",
+  pink: "#e83e8c",
+  teal: "#20c9a6"
+};
+
+const CHART_COLORS = [
+  "#4e73df", "#1cc88a", "#36b9cc", "#f6c23e",
+  "#e74a3b", "#6f42c1", "#e83e8c", "#20c9a6"
+];
 
 export default function Dashboard() {
   const [salesData, setSalesData] = useState([]);
   const [purchaseData, setPurchaseData] = useState([]);
-  const [summary, setSummary] = useState({ 
-    totalSales: 0, 
+  const [summary, setSummary] = useState({
+    totalSales: 0,
     totalPurchase: 0,
     todaySales: 0,
     todayPurchases: 0,
@@ -47,7 +69,14 @@ export default function Dashboard() {
     topCustomers: [],
     lowStockItems: []
   });
-
+  const [todaySummary, setTodaySummary] = useState({
+    todaySales: 0,
+    yesterdaySales: 0,
+    todayPurchases: 0,
+    yesterdayPurchases: 0
+  });
+  const [toptenProducts, setTopProducts] = useState([]);
+  const [lowStockAlerts, setLowStockAlerts] = useState([]);
   const [dateRange, setDateRange] = useState('week');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -55,19 +84,42 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        const [salesRes, purchaseRes, summaryRes] = await Promise.all([
+        const [salesRes, purchaseRes, summaryRes, todaysummaryRes, lowStock,getTopproducts] = await Promise.all([
           axios.get(`/report/sale?range=${dateRange}`, getHeaders()),
           axios.get(`/report/purchase?range=${dateRange}`, getHeaders()),
           axios.get("/report/summary", getHeaders()),
+          axios.get("/report/todaysummary", getHeaders()),
+          axios.get("/report/getlowstockalert", getHeaders()),
+          axios.get("/report/gettopproducts", getHeaders()),
         ]);
 
         setSalesData(salesRes.data);
         setPurchaseData(purchaseRes.data);
-        setSummary({
-          ...summaryRes.data,
-          profitMargin: summaryRes.data.totalSales > 0 ? 
-            ((summaryRes.data.totalSales - summaryRes.data.totalPurchase) / summaryRes.data.totalSales * 100).toFixed(2) : 0
-        });
+
+        setSummary(prev => ({
+          ...prev,
+           totalSales: summaryRes.data.totalSales,
+          totalPurchase: summaryRes.data.totalPurchase,
+          topProduct: summaryRes.data.topProduct,
+          profitMargin: summaryRes.data.totalSales > 0
+            ? ((summaryRes.data.totalSales - summaryRes.data.totalPurchase) / summaryRes.data.totalSales * 100).toFixed(2)
+            : 0,
+          lowStockItems: lowStock.data.map(item => ({
+            ...item,
+            stock: item.closing_stock
+          })),
+          topProductList: getTopproducts.data.map(item => ({
+            ...item,
+            stock: item.closing_stock
+          })),
+        }));
+
+        setTodaySummary(todaysummaryRes.data);
+
+        // Set low stock alerts data here
+        setLowStockAlerts(lowStock.data);
+        setTopProducts(getTopproducts.data);
+
       } catch (error) {
         toast.error("Failed to load dashboard data");
         console.error("Error:", error);
@@ -79,8 +131,6 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [dateRange]);
 
-  const COLORS = ["#4B6587", "#FC5C65", "#45AAF2", "#F7B731", "#26DE81"];
-  const CUSTOMER_COLORS = ["#FC427B", "#2D98DA"];
 
   const combinedData = salesData.map((sale, index) => ({
     date: sale.date,
@@ -89,98 +139,180 @@ export default function Dashboard() {
     transactions: Math.floor(sale.amount / 100)
   }));
 
+  // Radial chart data for customer stats
+  const customerRadialData = [
+    {
+      name: 'Repeat',
+      value: summary.customerStats?.repeat || 0,
+      fill: COLORS.success
+    },
+    {
+      name: 'New',
+      value: summary.customerStats?.new || 0,
+      fill: COLORS.info
+    }
+  ];
+
   return (
     <Layout>
       <Header title="POS Dashboard" />
       <ToastContainer />
 
       {/* Date Range Filter */}
-       <div className="mb-3 text-right">
-        <select 
-          className="form-control form-control-sm d-inline-block w-auto border border-secondary rounded-pill"
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-        >
-          <option value="day">Today</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="year">This Year</option>
-        </select>
-      </div>
+
 
       {/* Key Metrics Cards */}
       <div className="row mb-4">
-        <div className="col-md-2 col-6">
-          <CardComponent title="Today's Sales" headerColor="green" small>
-            <div className="h4">${summary.todaySales}</div>
+        <div className="col-md-2 col-6 mb-3">
+          <CardComponent
+            title="Today's Sales"
+            headerColor='primary'
+            small
+            gradient
+          >
+            <div className="h4 text-white">฿{todaySummary.todaySales}</div>
             {summary.todaySales > 0 && (
-              <small className="text-success">
-                ↑ {((summary.todaySales - summary.yesterdaySales) / summary.yesterdaySales * 100).toFixed(1)}% from yesterday
+              <small className="text-white opacity-75">
+                ↑ {((todaySummary.todaySales - todaySummary.yesterdaySales) / todaySummary.yesterdaySales * 100).toFixed(1)}% from yesterday
               </small>
             )}
           </CardComponent>
         </div>
 
-        <div className="col-md-2 col-6">
-          <CardComponent title="Today's Purchases" headerColor="orange" small>
-            <div className="h4">${summary.todayPurchases}</div>
+        <div className="col-md-2 col-6 mb-3">
+          <CardComponent
+            title="Today's Purchases"
+            headerColor='warning'
+            small
+            gradient
+          >
+            <div className="h4 text-white">฿{todaySummary.todayPurchases}</div>
           </CardComponent>
         </div>
 
-        <div className="col-md-2 col-6">
-          <CardComponent title="Net Profit" headerColor="blue" small>
-            <div className="h4">${(summary.todaySales - summary.todayPurchases).toFixed(2)}</div>
-            <small>Margin: {summary.profitMargin}%</small>
+        <div className="col-md-2 col-6 mb-3">
+          <CardComponent
+            title="Net Profit"
+            headerColor='success'
+            small
+            gradient
+          >
+            <div className="h4 text-white">฿{(todaySummary.todaySales - todaySummary.todayPurchases).toFixed(2)}</div>
+            <small className="text-white opacity-75">Margin: {todaySummary.profitMargin}%</small>
           </CardComponent>
         </div>
 
-        <div className="col-md-2 col-6">
-          <CardComponent title="Transactions" headerColor="purple" small>
-            <div className="h4">{summary.transactionsCount}</div>
+        <div className="col-md-2 col-6 mb-3">
+          <CardComponent
+            title="Transactions"
+            headerColor='info'
+            small
+            gradient
+          >
+            <div className="h4 text-white">{todaySummary.todayTransactionCount}</div>
           </CardComponent>
         </div>
 
-        <div className="col-md-2 col-6">
-          <CardComponent title="Top Product" headerColor="teal" small>
-            <div className="h6 text-truncate">{summary.topProduct || 'N/A'}</div>
+        <div className="col-md-2 col-6 mb-3">
+          <CardComponent
+            title="Top Product"
+            headerColor='danger'
+            small
+            gradient
+          >
+            <div className="h6 text-white text-truncate">{summary.topProduct || "N/A"}</div>
           </CardComponent>
         </div>
 
-        <div className="col-md-2 col-6">
-          <CardComponent title="Stock Alerts" headerColor="red" small>
-            <div className="h4">{summary.lowStockItems?.length || 0}</div>
-            <small>Items low in stock</small>
+        <div className="col-md-2 col-6 mb-3">
+          <CardComponent
+            title="Stock Alerts"
+            headerColor='info'
+            small
+            gradient
+          >
+            <div className="h4 text-white">{summary.lowStockItems?.length || 0}</div>
+            <small className="text-white opacity-75">Items low in stock</small>
           </CardComponent>
         </div>
       </div>
 
       {/* Main Charts Row */}
       <div className="row">
-        <div className="col-lg-6">
-          <CardComponent title="Sales Overview" headerColor="green">
+        <div className="col-lg-6 mb-4">
+          <CardComponent
+            title="Sales Overview"
+            headerColor={COLORS.primary}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Sales Overview</h6>
+                <i className="fas fa-chart-line fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
+              <LineChart data={salesData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: COLORS.dark }}
+                />
+                <YAxis tick={{ fill: COLORS.dark }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
                 <Legend />
-                <Line type="monotone" dataKey="amount" stroke="#8884d8" name="Sales" />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke={COLORS.primary}
+                  strokeWidth={2}
+                  dot={{ fill: COLORS.primary, r: 4 }}
+                  activeDot={{ r: 6, fill: COLORS.primary }}
+                  name="Sales ($)"
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardComponent>
         </div>
 
-        <div className="col-lg-6">
-          <CardComponent title="Purchase Overview" headerColor="orange">
+        <div className="col-lg-6 mb-4">
+          <CardComponent
+            title="Purchase Overview"
+            headerColor={COLORS.warning}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Purchase Overview</h6>
+                <i className="fas fa-shopping-cart fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={purchaseData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
+              <BarChart data={purchaseData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: COLORS.dark }}
+                />
+                <YAxis tick={{ fill: COLORS.dark }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
                 <Legend />
-                <Bar dataKey="amount" fill="#82ca9d" name="Purchases" />
+                <Bar
+                  dataKey="amount"
+                  fill={COLORS.warning}
+                  radius={[4, 4, 0, 0]}
+                  name="Purchases ($)"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardComponent>
@@ -188,87 +320,186 @@ export default function Dashboard() {
       </div>
 
       {/* Second Row */}
-      <div className="row mt-4">
-        <div className="col-lg-4">
-          <CardComponent title="Sales vs Purchase" headerColor="blue">
+      <div className="row mb-4">
+        <div className="col-lg-4 mb-4">
+          <CardComponent
+            title="Sales vs Purchase"
+            headerColor={COLORS.success}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Sales vs Purchase</h6>
+                <i className="fas fa-percentage fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  dataKey="value"
-                  data={[
-                    { name: "Sales", value: summary.totalSales },
-                    { name: "Purchase", value: summary.totalPurchase },
-                  ]}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  label
-                >
-                  {[
-                    { name: "Sales", value: summary.totalSales },
-                    { name: "Purchase", value: summary.totalPurchase },
-                  ].map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `$${value}`} />
-              </PieChart>
+              {summary.totalSales > 0 || summary.totalPurchase > 0 ? (
+                <PieChart width={300} height={300}>
+                  <Pie
+                    dataKey="value"
+                    data={[
+                      { name: "Sales", value: summary.totalSales },
+                      { name: "Purchase", value: summary.totalPurchase },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    <Cell fill={COLORS.primary} />
+                    <Cell fill={COLORS.warning} />
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => `$${value}`}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              ) : (
+                <div>No sales or purchase data</div>
+              )}
+
             </ResponsiveContainer>
           </CardComponent>
         </div>
 
-        <div className="col-lg-4">
-          <CardComponent title="Customer Insights" headerColor="purple">
+        <div className="col-lg-4 mb-4">
+          <CardComponent
+            title="Customer Insights"
+            headerColor={COLORS.purple}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Customer Insights</h6>
+                <i className="fas fa-users fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <div className="row">
               <div className="col-md-6">
                 <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: "Repeat", value: summary.customerStats?.repeat || 0 },
-                        { name: "New", value: summary.customerStats?.new || 0 }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
+                  <RadialBarChart
+                    innerRadius="30%"
+                    outerRadius="100%"
+                    data={customerRadialData}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    <RadialBar
+                      minAngle={15}
+                      label={{ position: 'insideStart', fill: '#fff' }}
+                      background
+                      clockWise
                       dataKey="value"
-                      label
-                    >
-                      <Cell fill="#FF6384" />
-                      <Cell fill="#36A2EB" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
+                    />
+                    <Legend
+                      iconSize={10}
+                      layout="vertical"
+                      verticalAlign="middle"
+                      wrapperStyle={{
+                        paddingLeft: '10px'
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                  </RadialBarChart>
                 </ResponsiveContainer>
               </div>
               <div className="col-md-6">
-                <h6>Top Customers</h6>
-                <ul className="list-group">
+                <h6 className="font-weight-bold text-gray-800 mb-3">Top Customers</h6>
+                <div className="list-group">
                   {summary.topCustomers?.slice(0, 3).map((customer, i) => (
-                    <li key={i} className="list-group-item d-flex justify-content-between align-items-center py-1">
-                      <span className="text-truncate" style={{maxWidth: '100px'}}>{customer.name}</span>
-                      <span className="badge badge-primary badge-pill">${customer.total}</span>
-                    </li>
+                    <div
+                      key={i}
+                      className="list-group-item d-flex justify-content-between align-items-center py-2 px-3 mb-2 rounded shadow-sm"
+                      style={{
+                        borderLeft: `4px solid ${CHART_COLORS[i % CHART_COLORS.length]}`
+                      }}
+                    >
+                      <span className="text-truncate" style={{ maxWidth: '100px' }}>
+                        {customer.name}
+                      </span>
+                      <span
+                        className="badge badge-pill"
+                        style={{
+                          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                          color: 'white'
+                        }}
+                      >
+                        ${customer.total}
+                      </span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             </div>
           </CardComponent>
         </div>
 
-        <div className="col-lg-4">
-          <CardComponent title="Transactions & Profit" headerColor="teal">
+        <div className="col-lg-4 mb-4">
+          <CardComponent
+            title="Transactions & Profit"
+            headerColor={COLORS.teal}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Transactions & Profit</h6>
+                <i className="fas fa-exchange-alt fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={combinedData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis yAxisId="left" orientation="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: COLORS.dark }}
+                />
+                <YAxis
+                  yAxisId="left"
+                  orientation="left"
+                  tick={{ fill: COLORS.dark }}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fill: COLORS.dark }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
                 <Legend />
-                <Bar yAxisId="left" dataKey="transactions" fill="#413ea0" name="Transactions" />
-                <Line yAxisId="right" type="monotone" dataKey="salesAmount" stroke="#ff7300" name="Sales ($)" />
+                <Bar
+                  yAxisId="left"
+                  dataKey="transactions"
+                  fill={COLORS.purple}
+                  name="Transactions"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="salesAmount"
+                  stroke={COLORS.teal}
+                  strokeWidth={2}
+                  dot={{ fill: COLORS.teal, r: 4 }}
+                  activeDot={{ r: 6, fill: COLORS.teal }}
+                  name="Sales ($)"
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </CardComponent>
@@ -276,66 +507,177 @@ export default function Dashboard() {
       </div>
 
       {/* Third Row */}
-      <div className="row mt-4">
-        <div className="col-lg-6">
-          <CardComponent title="Monthly Comparison" headerColor="indigo">
+      <div className="row mb-4">
+        <div className="col-lg-6 mb-4">
+          <CardComponent
+            title="Monthly Comparison"
+            headerColor={COLORS.info}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Monthly Comparison</h6>
+                <i className="fas fa-balance-scale fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={combinedData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorPurchases" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.warning} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={COLORS.warning} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: COLORS.dark }}
+                />
+                <YAxis tick={{ fill: COLORS.dark }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
                 <Legend />
-                <Area type="monotone" dataKey="salesAmount" stackId="1" stroke="#8884d8" fill="#8884d8" name="Sales" />
-                <Area type="monotone" dataKey="purchaseAmount" stackId="2" stroke="#82ca9d" fill="#82ca9d" name="Purchases" />
+                <Area
+                  type="monotone"
+                  dataKey="salesAmount"
+                  stroke={COLORS.primary}
+                  fillOpacity={1}
+                  fill="url(#colorSales)"
+                  name="Sales ($)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="purchaseAmount"
+                  stroke={COLORS.warning}
+                  fillOpacity={1}
+                  fill="url(#colorPurchases)"
+                  name="Purchases ($)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </CardComponent>
         </div>
 
-        <div className="col-lg-6">
-          <CardComponent title="Summary & Alerts" headerColor="red">
+        <div className="col-lg-4 mb-4">
+          <CardComponent
+            title="Summary & Alerts"
+            headerColor={COLORS.danger}
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Summary & Alerts</h6>
+                <i className="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
             <div className="row">
-              <div className="col-md-6">
-                <ul className="list-group">
-                  <li className="list-group-item d-flex justify-content-between align-items-center">
-                    Total Sales
-                    <span className="badge badge-success badge-pill">${summary.totalSales}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between align-items-center">
-                    Total Purchases
-                    <span className="badge badge-primary badge-pill">${summary.totalPurchase}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between align-items-center">
-                    Gross Profit
-                    <span className="badge badge-info badge-pill">
-                      ${(summary.totalSales - summary.totalPurchase).toFixed(2)}
-                    </span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between align-items-center">
-                    Profit Margin
-                    <span className="badge badge-dark badge-pill">
-                      {summary.profitMargin}%
-                    </span>
-                  </li>
-                </ul>
-              </div>
-              <div className="col-md-6">
-                <h6>Low Stock Alerts</h6>
-                {summary.lowStockItems?.length > 0 ? (
-                  <ul className="list-group">
-                    {summary.lowStockItems.map((item, i) => (
-                      <li key={i} className="list-group-item d-flex justify-content-between align-items-center py-1">
-                        <span>{item.name}</span>
-                        <span className="badge badge-danger badge-pill">{item.stock} left</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="alert alert-success">All items are well stocked</div>
-                )}
-              </div>
-            </div>
+  <div className="col-lg-4 col-md-6 col-sm-12 mb-3">
+    <div className="card border-0 shadow-sm h-100">
+      <div className="card-header bg-white py-2">
+        <h6 className="m-0 font-weight-bold text-gray-800">Financial Summary</h6>
+      </div>
+      <div className="card-body p-0">
+        <ul className="list-group list-group-flush">
+          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Total Sales</span>
+            <span className="badge badge-primary badge-pill">${summary.totalSales}</span>
+          </li>
+          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Total Purchases</span>
+            <span className="badge badge-info badge-pill">${summary.totalPurchase}</span>
+          </li>
+          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Gross Profit</span>
+            <span className="badge badge-success badge-pill">
+              ${(summary.totalSales - summary.totalPurchase).toFixed(2)}
+            </span>
+          </li>
+          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Profit Margin</span>
+            <span className="badge badge-dark badge-pill">{summary.profitMargin}%</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div className="col-lg-8 col-md-6 col-sm-12 mb-3">
+    <div className="card border-0 shadow-sm h-100">
+      <div className="card-header bg-white py-2">
+        <h6 className="m-0 font-weight-bold text-gray-800">Low Stock Alerts</h6>
+      </div>
+      <div className="card-body p-0">
+        {lowStockAlerts.length > 0 ? (
+          <ul className="list-group list-group-flush">
+            {lowStockAlerts.map((item, i) => (
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center py-2"
+              >
+                <span>{item.iname}</span>
+                <span
+                  className="badge badge-pill"
+                  style={{
+                    backgroundColor:
+                      item.closing_stock < 5 ? COLORS.danger : COLORS.warning,
+                    color: 'white'
+                  }}
+                >
+                  {item.closing_stock} left
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="alert alert-success m-2">All items are well stocked</div>
+        )}
+      </div>
+    </div>
+  </div>
+  
+</div>
+ <div className="row">
+  <div className="col-12 mb-3">
+    <div className="card border-0 shadow-sm h-100">
+      <div className="card-header bg-white py-2">
+        <h6 className="m-0 font-weight-bold text-gray-800">Top Selling Products</h6>
+      </div>
+      <div className="card-body p-0">
+        {toptenProducts.length > 0 ? (
+          <ul className="list-group list-group-flush">
+            {toptenProducts.map((item, i) => (
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center py-2"
+              >
+                <span>{item.item_name}</span>
+                <span
+                  className="badge badge-pill"
+                  style={{
+                    backgroundColor:
+                      item.closing_stock < 5 ? COLORS.success : COLORS.success,
+                    color: 'white'
+                  }}
+                >
+                  {item.totalSold} 
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="alert alert-success m-2">All items are well stocked</div>
+        )}
+      </div>
+    </div>
+  </div>
+  </div>
           </CardComponent>
         </div>
       </div>

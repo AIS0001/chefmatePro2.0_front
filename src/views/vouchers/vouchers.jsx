@@ -106,11 +106,9 @@ export default function Vouchers() {
             reference_number:referenceNumber,
             payment_mode: paymentMode,
         };
-
+            //alert(paymentData.payment_mode);
         try {
-            await axios.post(
-                "/savepayment", paymentData, getHeaders()
-            );
+            await axios.post( "/savepayment", paymentData, getHeaders());
             // Send the data to the backend using POST
             //await fetchData("receipt_vouchers", null, "POST", paymentData);
 

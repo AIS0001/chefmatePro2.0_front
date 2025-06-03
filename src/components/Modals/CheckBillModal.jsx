@@ -103,6 +103,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
   const refreshTables = (event) => {
     fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+    setIsBillSaved(false);
   };
 
 
@@ -178,6 +179,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [grandAmount, setgrandAmount] = useState(0);
   const [totalAmount, settotalAmount] = useState(0);
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
+const [isBillSaved, setIsBillSaved] = useState(false);
 
 
 
@@ -214,6 +216,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     setFormData((prevData) => ({ ...prevData, paidAmount: "" }));
     setChangeMoney("");
     setDiscAmount("0");
+setIsBillSaved(false);
 
     fetchData("order_items", setFinalData, "id", { table_number: tableName, status: "1" });
 
@@ -270,7 +273,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
        //alert(invId);
       // Fetch the final_bill and order_items details for the given itemId
       const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
-      await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
+      const myOrderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
       // Check if inv_time exists in finalBillData
       const invTime = myfinalbilldata[0].inv_time;
       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
@@ -392,7 +395,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  ${OrderItemsData
+                  ${myOrderItemsData
           .map(
             (item) => `
                         <tr>
@@ -485,7 +488,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
 
       // Log the bill data being sent to the API
-      console.log('Sending bill data:', billData);
+      //console.log('Sending bill data:', billData);
 
       // Save the final bill and ledger entries simultaneously in one request
       const response = await axios.post(
@@ -494,14 +497,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         getHeaders() // Assuming you have a function for headers
       );
 
-      console.log('API Response:', response.data);  // Log the response from the API
+      //console.log('API Response:', response.data);  // Log the response from the API
 
 
       const { bill_id } = response.data; // Get the inserted bill ID
  // alert(bill_id);
   setLatestBillId(bill_id);
   // ✅ Call print function directly
-  handlePrintClick(bill_id);
+  //handlePrintClick(bill_id);
   
       // 🔥 **Update the state to hold the new bill_id**
       // ✅ Use functional update to ensure latest state
@@ -534,6 +537,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
       // Show success toast message
       toast.success("Bill saved successfully!");
+      setIsBillSaved(true);
     } catch (err) {
       console.error("Error occurred during bill save:", err.message);  // Log the error
       toast.error("Error saving bill.");
@@ -714,6 +718,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       newWindow.close(); // Close the window after printing
     };
   };
+useEffect(() => {
+  if (finalData.length > 0) {
+    setIsBillSaved(false);
+  }
+}, [finalData]);
 
   useEffect(() => {
     const fetchAndSetData = async () => {
@@ -1071,10 +1080,12 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                 Print Bill
               </button>
               {/* This button help to save and print bill together on one click */}
-              <button onClick={handleSaveBill}
-                className="btn btn-primary mb-2 custom-btn">
-                Save & Print Bill
-              </button>
+              {!isBillSaved && (
+  <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
+    Save & Print Bill
+  </button>
+)}
+            
                {/* this button used only when user dont want to print bill only make save bill */}
               {/* <button
                 onClick={handleSaveBill}
