@@ -8,6 +8,11 @@ import DataTable from "../../components/data-tables/dataTable";
 import { getHeaders } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import "react-toastify/dist/ReactToastify.css";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { CSVLink } from "react-csv";
+import logo from "../../assets/logo.png"
+
 
 export default function StockReport() {
   const [data, setData] = useState([]);
@@ -24,25 +29,25 @@ export default function StockReport() {
 
   const columns = viewingClosingStock
     ? [
-        { label: "S.No.", field: "sno" },
-        { label: "Item Name", field: "item_name" },
-        { label: "Closing Stock", field: "closing_stock" },
-      ]
+      { label: "S.No.", field: "sno" },
+      { label: "Item Name", field: "item_name" },
+      { label: "Closing Stock", field: "closing_stock" },
+    ]
     : [
-        { label: "ID", field: "id" },
-        { label: "Item Name", field: "item_name" },
-        { label: "Supplier Name", field: "supplier_name" },
-        { label: "Opening Stock", field: "opening_stock" },
-        { label: "Stock In", field: "stock_in" },
-        { label: "Stock Out", field: "stock_out" },
-        { label: "Closing Stock", field: "closing_stock" },
-        { label: "Unit", field: "unit" },
-        { label: "Purchase Price", field: "purchase_price" },
-        { label: "Subtotal", field: "subtotal" },
-        { label: "VAT %", field: "vat" },
-        { label: "VAT Amount", field: "vatAmount" },
-        { label: "Net Amount", field: "netAmount" },
-      ];
+      { label: "ID", field: "id" },
+      { label: "Item Name", field: "item_name" },
+      { label: "Supplier Name", field: "supplier_name" },
+      { label: "Opening Stock", field: "opening_stock" },
+      { label: "Stock In", field: "stock_in" },
+      { label: "Stock Out", field: "stock_out" },
+      { label: "Closing Stock", field: "closing_stock" },
+      { label: "Unit", field: "unit" },
+      { label: "Purchase Price", field: "purchase_price" },
+      { label: "Subtotal", field: "subtotal" },
+      { label: "VAT %", field: "vat" },
+      { label: "VAT Amount", field: "vatAmount" },
+      { label: "Net Amount", field: "netAmount" },
+    ];
 
   const fetchInventory = async () => {
     try {
@@ -58,10 +63,8 @@ export default function StockReport() {
   useEffect(() => {
     fetchInventory();
     fetchData("items", setItems, "id", { isstockable: 'true' });
-    axios
-      .get("/suppliers", getHeaders())
-      .then((res) => setSuppliers(res.data))
-      .catch((err) => console.error("Failed to fetch suppliers", err));
+    fetchData("suppliers", setSuppliers, "id", {});
+   
   }, []);
 
   const handleFilterChange = (e) => {
@@ -100,49 +103,49 @@ export default function StockReport() {
     setViewingClosingStock(false);
   };
 
-const viewClosingStock = () => {
-  const closingStockMap = {};
-  data.forEach((entry) => {
-    // For each item, keep the entry with the highest id (last entry)
-    if (!closingStockMap[entry.item_id] || closingStockMap[entry.item_id].id < entry.id) {
-      closingStockMap[entry.item_id] = entry;
+  const viewClosingStock = () => {
+    const closingStockMap = {};
+    data.forEach((entry) => {
+      // For each item, keep the entry with the highest id (last entry)
+      if (!closingStockMap[entry.item_id] || closingStockMap[entry.item_id].id < entry.id) {
+        closingStockMap[entry.item_id] = entry;
+      }
+    });
+
+    let final = Object.values(closingStockMap).map((item, index) => ({
+      sno: index + 1,
+      item_name: item.item_name,
+      closing_stock: item.closing_stock,
+    }));
+
+    // Sort alphabetically by item_name
+    final = final.sort((a, b) => a.item_name.localeCompare(b.item_name));
+
+    // Reassign serial numbers after sorting
+    final = final.map((item, index) => ({ ...item, sno: index + 1 }));
+
+    setFilteredData(final);
+    setViewingClosingStock(true);
+  };
+  const handlePrint = () => {
+    const companyName = "Your Company Name"; // Replace with your company name
+    const reportTitle = "Stock Report";
+
+    const tableContainer = document.getElementById("tableid");
+    if (!tableContainer) {
+      toast.error("No data available to print.");
+      return;
     }
-  });
 
-  let final = Object.values(closingStockMap).map((item, index) => ({
-    sno: index + 1,
-    item_name: item.item_name,
-    closing_stock: item.closing_stock,
-  }));
+    // Find the table inside the container
+    const table = tableContainer.querySelector("table");
+    if (!table) {
+      toast.error("No table found to print.");
+      return;
+    }
 
-  // Sort alphabetically by item_name
-  final = final.sort((a, b) => a.item_name.localeCompare(b.item_name));
-
-  // Reassign serial numbers after sorting
-  final = final.map((item, index) => ({ ...item, sno: index + 1 }));
-
-  setFilteredData(final);
-  setViewingClosingStock(true);
-};
-const handlePrint = () => {
-  const companyName = "Your Company Name"; // Replace with your company name
-  const reportTitle = "Stock Report";
-
-  const tableContainer = document.getElementById("tableid");
-  if (!tableContainer) {
-    toast.error("No data available to print.");
-    return;
-  }
-
-  // Find the table inside the container
-  const table = tableContainer.querySelector("table");
-  if (!table) {
-    toast.error("No table found to print.");
-    return;
-  }
-
-  const printWindow = window.open("", "_blank", "width=900,height=700");
-  printWindow.document.write(`
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    printWindow.document.write(`
     <html>
       <head>
         <title>${reportTitle}</title>
@@ -163,11 +166,69 @@ const handlePrint = () => {
     </html>
   `);
 
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+const exportToPDF = () => {
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const logoImg = new Image();
+  logoImg.src = "/logo.png"; // ✅ Use root path for public assets
+
+  logoImg.onload = () => {
+    doc.addImage(logoImg, "PNG", 240, 10, 40, 15); // x, y, width, height
+    doc.setFontSize(16);
+    doc.text("Stock Report", 14, 20);
+
+    const tableColumn = columns.map((col) => col.label);
+    const tableRows = filteredData.map((row) =>
+      columns.map((col) => row[col.field] || "")
+    );
+
+doc.autoTable({
+  startY: 30,
+  head: [tableColumn],
+  body: tableRows,
+  styles: { fontSize: 8 },
+  columnStyles: {
+    [tableColumn.length - 1]: {
+      cellWidth: 40,      // wider to fit total text
+      halign: "center",   // ✅ center align values
+    },
+  },
+  foot: [
+    tableColumn.map((col, index) => {
+      if (col === "Grand Total" || col === "Net Amount") {
+        const total = filteredData.reduce((acc, item) => acc + parseFloat(item.netAmount || 0), 0);
+        return `Total: THB ${total.toFixed(2)}`;
+      }
+      return "";
+    }),
+  ],
+  footStyles: {
+    fontStyle: "bold",
+    halign: "center", // ✅ center align total value
+  },
+});
+
+
+
+
+    doc.save("stock_report.pdf");
+  };
+
+  logoImg.onerror = () => {
+    toast.error("Logo image failed to load. Make sure it is in the /public folder.");
+  };
 };
+
 
 
 
@@ -231,20 +292,41 @@ const handlePrint = () => {
                   onChange={handleFilterChange}
                 />
               </div>
-              <div className="form-group col-md-2 d-flex align-items-end">
-                <button onClick={applyFilters} className="btn btn-primary mr-2">
+              <div className="form-group col-md-2"></div>
+           <button onClick={applyFilters} className="btn btn-primary mr-2">
                   Apply
                 </button>
-                <button onClick={resetFilters} className="btn btn-secondary mr-2">
-                  Reset
-                </button>
-                <button onClick={viewClosingStock} className="btn btn-info">
+            </div>
+            <div className="row">
+              <div className="col-12">
+    
+               
+                 <button onClick={viewClosingStock} className="btn btn-info">
                   View Closing Stock
                 </button>
+                <button onClick={resetFilters} className="btn btn-warning mr-2">
+                  Reset
+                </button>
+                
+               
+                 
                 <button onClick={handlePrint} className="btn btn-success">
-    Print
-  </button>
+                  Print
+                </button>
+                <button onClick={exportToPDF} className="btn btn-danger mr-2">
+  Export PDF
+</button>
+
+<CSVLink
+  data={filteredData}
+  filename="stock_report.csv"
+  className="btn btn-success mr-2"
+>
+  Export Excel
+</CSVLink>
               </div>
+
+            
             </div>
           </CardComponent>
         </div>
@@ -256,6 +338,17 @@ const handlePrint = () => {
             <DataTable columns={columns} data={filteredData} tablename="inventory" />
           )}
         </div>
+        {filteredData.length > 0 && (
+  <div className="mt-3 text-right pr-4">
+    <h5>
+      Total Grand Amount: ฿
+      {filteredData
+        .reduce((acc, item) => acc + parseFloat(item.netAmount || 0), 0)
+        .toFixed(2)}
+    </h5>
+  </div>
+)}
+
       </div>
     </Layout>
   );

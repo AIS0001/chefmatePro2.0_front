@@ -16,6 +16,7 @@ import fetchOrderDetails from "../../functions/fetchOrderDetails";
 import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
+import LineQRDiscountModal from "./LineQRDiscountModal";
 
 
 const customStyles = {
@@ -71,6 +72,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
 
 
   // Handle table selection
@@ -93,6 +95,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [errors, setErrors] = useState({});
   const [images, setImages] = useState([]);
   const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
+  const [isCustomerModalOpen1, setCustomerModalOpen1] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
     name: "",
     phone: "",
@@ -180,6 +183,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [totalAmount, settotalAmount] = useState(0);
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
 const [isBillSaved, setIsBillSaved] = useState(false);
+const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
+
 
 
 
@@ -741,6 +746,31 @@ useEffect(() => {
 
   // Dependency array ensures it runs only when finalData updates
   // Runs only when `latestBillId` updates
+const [showLineQR, setShowLineQR] = useState(false);
+const [lineDiscountEligible, setLineDiscountEligible] = useState(false);
+
+const handleLineDiscount = async () => {
+  if (!customerDetails.phone) {
+    toast.warning("Please enter customer phone number first.");
+    setCustomerModalOpen1(true);
+    return;
+  }
+
+  try {
+    const res = await axios.post('/checkline', {
+      phone: customerDetails.phone
+    });
+
+    if (res.data.eligible) {
+      setShowLineQR(true);
+    } else {
+      toast.error("You have already claimed the LINE discount.");
+    }
+  } catch (err) {
+    toast.error("Error checking LINE discount eligibility.");
+    console.error(err);
+  }
+};
 
   return (
     <>
@@ -1084,8 +1114,37 @@ useEffect(() => {
   <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
     Save & Print Bill
   </button>
+  
 )}
-            
+   <div className="col-12">
+  <button
+    className="btn btn-warning"
+    onClick={() => {
+      if (!customerDetails.phone) {
+        toast.error("Please enter customer phone first.");
+        setIsCustomerPhoneModalOpen(true);
+        return;
+      }
+      // Simulate check with backend — or do it in real
+      axios.post('/checkline', { phone: customerDetails.phone })
+        .then(res => {
+          if (res.data.eligible) {
+            setCustomerModalOpen1(true);
+          } else {
+            toast.error("Discount already claimed for this number.");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          toast.error("Error checking discount eligibility.");
+        });
+    }}
+  >
+    Get Discount via LINE
+  </button>
+</div>
+
+      
                {/* this button used only when user dont want to print bill only make save bill */}
               {/* <button
                 onClick={handleSaveBill}
@@ -1106,7 +1165,19 @@ useEffect(() => {
 
 
 
+
+
       </Modal>
+   <LineQRDiscountModal
+  isOpen={isLineQRModalOpen}
+  onClose={() => setLineQRModalOpen(false)}
+  onConfirm={() => {
+    setDiscAmount(10);
+    setFormData(prev => ({ ...prev, discountType: "percentage" })); // ✅ SAFE UPDATE
+  }}
+/>
+
+
       <CustomerDetailsModal
         isOpen={isCustomerModalOpen}
         customer={customerDetails}

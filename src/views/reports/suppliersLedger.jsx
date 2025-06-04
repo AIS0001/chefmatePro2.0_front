@@ -99,7 +99,9 @@ export default function SuppliersLedger() {
               onChange={(e) => setFormData({ ...formData, accountid: e.target.value })}
             />
           </div>
-          <div className="col-md-3">
+          </div>
+                 <div className="row">
+          <div className="col-md-12">
             <button className="btn btn-primary mt-4" onClick={() => filterByDate(formData.from, formData.to)}>
               <FaSearch /> Filter by Date
             </button>

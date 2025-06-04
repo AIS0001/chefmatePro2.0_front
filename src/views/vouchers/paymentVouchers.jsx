@@ -112,7 +112,7 @@ export default function PaymentVouchers() {
 
         try {
             await axios.post(
-                "/savepayment", paymentData, getHeaders()
+                "/saveSupplierPayment", paymentData, getHeaders()
             );
             // Send the data to the backend using POST
             //await fetchData("payment_vouchers", null, "POST", paymentData);

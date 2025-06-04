@@ -62,24 +62,26 @@ const menuItems = [
     ]
   },
   {
-        name: 'Reports',
-    path: '/pages/reports',
+    name: 'Expenses',
+    path: '/pages/expenses',
     icon: 'file-text',
     dataTargetId: '#reports',
     submenu: [
-      { name: 'Reciept Voucher', path: '/vouchers/recieptvoucher' },
-      { name: 'Payment Voucher', path: '/vouchers/paymentvoucher' },
+       { name: 'Add Expense', path: '/expenses/suppliersexpenses' },
       
     ]
   },
   {
-
-      name: 'Expenses',
-    path: '/pages/expenses',
+    name: 'Reports',
+    path: '/pages/reports',
     icon: 'file-text',
-    dataTargetId: '#expense',
+    dataTargetId: '#reports',
     submenu: [
-      { name: 'Add New Expense', path: '/expenses/suppliersexpenses' },
+      { name: 'Sale Report', path: '/reports/billhistory' },
+      { name: 'Purchase Report', path: '/inventory/stockreports' },
+     
+      { name: 'Supplier Ledger', path: '/reports/supplierledger' },
+      { name: 'Customer Ledger', path: '/reports/saleledger' },
       
     ]
   },

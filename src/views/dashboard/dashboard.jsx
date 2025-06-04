@@ -273,7 +273,7 @@ export default function Dashboard() {
                   strokeWidth={2}
                   dot={{ fill: COLORS.primary, r: 4 }}
                   activeDot={{ r: 6, fill: COLORS.primary }}
-                  name="Sales ($)"
+                  name="Sales (฿)"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -311,7 +311,7 @@ export default function Dashboard() {
                   dataKey="amount"
                   fill={COLORS.warning}
                   radius={[4, 4, 0, 0]}
-                  name="Purchases ($)"
+                  name="Purchases (฿)"
                 />
               </BarChart>
             </ResponsiveContainer>
