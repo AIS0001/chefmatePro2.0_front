@@ -196,7 +196,7 @@ export default function BillHistory() {
                 await fetchData("ledger_entries", setAllData, "id", {});
                 //setAllData(fetchedData); // Ensure Alldata gets a proper value
 
-                console.log("Fetched Data:", fetchedData); // Debugging
+                //console.log("Fetched Data:", fetchedData); // Debugging
             } catch (error) {
                 console.error("Error in useEffect:", error);
             }
@@ -205,7 +205,7 @@ export default function BillHistory() {
         fetchAndSetData();
     }, []);
     useEffect(() => {
-        console.log("Updated Data in State:", data);
+        //console.log("Updated Data in State:", data);
     }, [data]);  // This runs whenever `data` changes
 
     return (

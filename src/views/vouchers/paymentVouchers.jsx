@@ -10,7 +10,7 @@ import { getHeaders } from "../../utility/getHeader";
 import CardComponent from "../../components/cards/CardComponent";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import DataTable from "../../components/data-tables/dataTable";
+import DataTable from "../../components/data-tables/datatwoTable";
 
 export default function PaymentVouchers() {
     const [suppliers, setsuppliers] = useState([]);
@@ -25,8 +25,8 @@ export default function PaymentVouchers() {
     const [selectedInvoice, setSelectedInvoice] = useState("");
     const [data, setData] = useState([]);
     const columns = [
-        { label: "Txn ID", field: "transaction_id" },
-        { label: "Cust ID", field: "customer_id" },
+ 
+        { label: "Supplier ID", field: "supplier_id" },
         { label: "Date", field: "payment_date" },
         { label: "Mode", field: "payment_mode" },
         { label: "Paid Amount", field: "amount_paid" },
@@ -71,6 +71,7 @@ export default function PaymentVouchers() {
         // alert(selectedCustomer);
         if (selectedCustomer) {
             // Fetch ledger balance from API
+            
             fetchData("suppliers", setsuppliers, "id", {});
             axios.get(`/getoutstandingbalance/Purchase/${selectedCustomer}`, getHeaders(), (res) => {
                 if (res.success) {
@@ -93,9 +94,22 @@ export default function PaymentVouchers() {
         }
     }, [selectedCustomer]);
 
+useEffect(() => {
+  const fetchAndSetData = async () => {
+    try {
+      await fetchData("payment_vouchers", setData, "id", {});
+      console.log("Fetched data:", data);
+    } catch (error) {
+      console.error("Error in useEffect:", error);
+    }
+  };
+
+  fetchAndSetData();
+}, []);
 
     // Update remaining balance after payment
     useEffect(() => {
+
         const remaining = outstandingAmount - paymentAmount;
         setBalanceAfterPayment(remaining >= 0 ? remaining : 0);
     }, [paymentAmount, outstandingAmount]);
@@ -104,11 +118,17 @@ export default function PaymentVouchers() {
         e.preventDefault();
 
         const paymentData = {
-            customer_id: selectedCustomer,
-            amount_paid: paymentAmount,
+            supplier_id: selectedCustomer,
+            amount_paid: parseFloat(paymentAmount) || 0,
             reference_number: referenceNumber,
             payment_mode: paymentMode,
+            remarks, remarks// ✅ add this
         };
+if (!selectedCustomer || !paymentAmount || !paymentMode) {
+  toast.error("Please fill in all required fields.");
+  return;
+}
+console.log("Sending payment data:", paymentData);
 
         try {
             await axios.post(
@@ -116,25 +136,21 @@ export default function PaymentVouchers() {
             );
             // Send the data to the backend using POST
             //await fetchData("payment_vouchers", null, "POST", paymentData);
-
+ await fetchVoucherData();
             toast.success("Payment recorded successfully!");
         } catch (error) {
             console.error("Error saving payment:", error);
-            toast.error("Error recording payment.");
+            toast.error("Error recording payment."+error);
         }
     };
-    useEffect(() => {
-        const fetchAndSetData = async () => {
-            try {
-                await fetchData("payment_vouchers", setData, "id", {});
-                console.log("Fetched data:", data); // Add this line for debugging
-            } catch (error) {
-                console.error("Error in useEffect:", error);
-            }
-        };
+const fetchVoucherData = async () => {
+  try {
+    await fetchData("payment_vouchers", setData, "id", {});
+  } catch (error) {
+    console.error("Error fetching payment vouchers:", error);
+  }
+};
 
-        fetchAndSetData();
-    }, []);
 
     return (
         <Layout>
@@ -217,7 +233,11 @@ export default function PaymentVouchers() {
                     {data.length === 0 ? (
                         <p>No data available</p>
                     ) : (
-                        <DataTable columns={columns} data={data} tablename="payment_vouchers" />
+                      <DataTable
+                        columns={columns}
+                        data={data}
+                        tablename={{ main: "payment_vouchers", join: "suppliers" }}
+                        />
                     )}
                 </div>
             </div>

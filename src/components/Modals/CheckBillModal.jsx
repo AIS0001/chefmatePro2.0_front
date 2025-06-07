@@ -65,6 +65,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     pmode: "",
     discAmount: 0,
     discountType: "percentage", // Default to "percentage"
+    phones:""
     // other fields
   });
   const [companyInfo, setcompanyInfo] = useState([]);
@@ -86,6 +87,7 @@ const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
   const [paymentOptions, setpaymentOptions] = useState([]);
   const [finalData, setFinalData] = useState([]);
   const [changeMoney, setChangeMoney] = useState("");
+  const [phones, setphones] = useState("");
   const printRef = useRef();
   const [latestBillId, setLatestBillId] = useState(null);
 
@@ -95,7 +97,6 @@ const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [images, setImages] = useState([]);
   const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
-  const [isCustomerModalOpen1, setCustomerModalOpen1] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
     name: "",
     phone: "",
@@ -752,7 +753,7 @@ const [lineDiscountEligible, setLineDiscountEligible] = useState(false);
 const handleLineDiscount = async () => {
   if (!customerDetails.phone) {
     toast.warning("Please enter customer phone number first.");
-    setCustomerModalOpen1(true);
+    setLineQRModalOpen(true);
     return;
   }
 
@@ -1004,6 +1005,17 @@ const handleLineDiscount = async () => {
             </div>
           </div>
           <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+             <div className="col-12">
+              <TextfieldwithLabel
+                id="phones"
+              //  value={` ${formdata.phones}`} // Display the change amount with currency formatting
+                onChange={(e) => setphones(e.target.value)} // Only update state
+                value={phones}
+                type="number"
+                name="phones"
+                lable="Customer Mobile Number"
+              />
+            </div>
             <div className="col-12">
               <TextfieldwithLabel
                 id="paidAmount"
@@ -1120,16 +1132,17 @@ const handleLineDiscount = async () => {
   <button
     className="btn btn-warning"
     onClick={() => {
-      if (!customerDetails.phone) {
+      if (!customerDetails.phones) {
         toast.error("Please enter customer phone first.");
-        setIsCustomerPhoneModalOpen(true);
+        setLineQRModalOpen(true);
         return;
       }
       // Simulate check with backend — or do it in real
-      axios.post('/checkline', { phone: customerDetails.phone })
+      alert(phones);
+      axios.post('/checkline', { phone: phones })
         .then(res => {
           if (res.data.eligible) {
-            setCustomerModalOpen1(true);
+            setLineQRModalOpen(true);
           } else {
             toast.error("Discount already claimed for this number.");
           }
@@ -1141,6 +1154,31 @@ const handleLineDiscount = async () => {
     }}
   >
     Get Discount via LINE
+  </button>
+    <button
+    className="btn btn-info"
+    onClick={() => {
+      if (!customerDetails.phone) {
+        toast.error("Please enter customer phone first.");
+        setLineQRModalOpen(true);
+        return;
+      }
+      // Simulate check with backend — or do it in real
+      axios.post('/checkline', { phone: customerDetails.phone })
+        .then(res => {
+          if (res.data.eligible) {
+            setLineQRModalOpen(true);
+          } else {
+            toast.error("Discount already claimed for this number.");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          toast.error("Error checking discount eligibility.");
+        });
+    }}
+  >
+    Get Discount via Whatsapp
   </button>
 </div>
 

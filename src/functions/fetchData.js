@@ -17,7 +17,7 @@ const fetchData = async (tblname, setData, orderby, where) => {
         
        
     }
-    console.log(url);
+    //console.log(url);
     // if(tblname==="final_bill")
     // {
     //     console.log("Fetch url data");

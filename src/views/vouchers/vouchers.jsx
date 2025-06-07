@@ -106,7 +106,9 @@ export default function Vouchers() {
             reference_number:referenceNumber,
             payment_mode: paymentMode,
         };
-            //alert(paymentData.payment_mode);
+            // alert(paymentData.customer_id);
+            // alert(paymentData.amount_paid);
+            // alert(paymentData.reference_number);
         try {
             await axios.post( "/savepayment", paymentData, getHeaders());
             // Send the data to the backend using POST
@@ -115,7 +117,8 @@ export default function Vouchers() {
             toast.success("Payment recorded successfully!");
         } catch (error) {
             console.error("Error saving payment:", error);
-            toast.error("Error recording payment.");
+          toast.error(`Error recording payment: ${error?.response?.data?.message || error.message}`);
+
         }
     };
     useEffect(() => {
