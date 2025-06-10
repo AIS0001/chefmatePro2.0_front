@@ -1124,7 +1124,7 @@ const handleLineDiscount = async () => {
               {/* This button help to save and print bill together on one click */}
               {!isBillSaved && (
   <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
-    Save & Print Bill
+    Save  Bill
   </button>
   
 )}
@@ -1153,8 +1153,14 @@ const handleLineDiscount = async () => {
         });
     }}
   >
-    Get Discount via LINE
+     Discount via LINE
   </button>
+   <button
+                onClick={handleBillHistory}
+                className="btn btn-success mt-2 custom-btn"
+              >
+                Bill History
+              </button>
     <button
     className="btn btn-info"
     onClick={() => {
@@ -1178,7 +1184,7 @@ const handleLineDiscount = async () => {
         });
     }}
   >
-    Get Discount via Whatsapp
+     Discount via Whatsapp
   </button>
 </div>
 
@@ -1190,12 +1196,7 @@ const handleLineDiscount = async () => {
               >
                 Save Bill
               </button> */}
-              <button
-                onClick={handleBillHistory}
-                className="btn btn-success mt-2 custom-btn"
-              >
-                Bill History
-              </button>
+             
             </div>
           </div>
         </div>

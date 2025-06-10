@@ -92,7 +92,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       Array.from(formdata1.images.files).forEach((file) => {
         formData.append("images", file);
       });
-      console.log(post1.data.id);
+      //console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
 
       const post2 = await axios.post("/addnewproduct/item_images", formData, {

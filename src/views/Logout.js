@@ -1,32 +1,30 @@
+// components/Logout.js
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuthToken, getUserType } from '../utility/auth'; // Import your auth functions
+import { logout } from '../utility/auth';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Logout = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        // Clear authentication data
-        localStorage.removeItem('token');
-        localStorage.removeItem('usertype');
-        localStorage.removeItem('uname');
-        localStorage.removeItem('expirationTime');
+  useEffect(() => {
+    logout(); // Clear localStorage and sessionStorage
+    toast.info("You have been logged out.");
+    setTimeout(() => {
+      navigate('/', { replace: true }); // Redirect to login page
+    }, 1500); // Optional delay to show toast
+  }, [navigate]);
 
-        // Optionally, you can clear sessionStorage as well
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('expirationTime');
-        sessionStorage.removeItem('usertype');
-        sessionStorage.removeItem('uname');
-
-        // Redirect to login page or home page
-        navigate('/');
-    }, [navigate]);
-
-    return (
-        <div>
-            <h2>Logging out...</h2>
-        </div>
-    );
+  return (
+    <>
+      <ToastContainer />
+      <div className="text-center mt-5">
+        <h2>Logging out...</h2>
+      </div>
+    </>
+  );
 };
 
 export default Logout;

@@ -184,6 +184,7 @@ export default function NewPOS() {
     newWindow.document.write(`<pre>${kotContent}</pre>`);
     newWindow.document.close();
     newWindow.print();
+     newWindow.close();
   };
 
   

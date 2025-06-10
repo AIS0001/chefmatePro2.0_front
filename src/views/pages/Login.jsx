@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import { getAuthToken,isTokenExpired,getUserType } from "../../utility/auth";
+import { getAuthToken, isTokenExpired, getUserType, logout } from "../../utility/auth";
+
 
 
 export default function Login() {
@@ -20,7 +21,7 @@ export default function Login() {
         }, 3000); // Close the toaster after 3 seconds
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit1 = (e) => {
         e.preventDefault();
         const empdata = { uname, pass };
 
@@ -30,32 +31,25 @@ export default function Login() {
                 if (res.status === 200) {
                     const data = res.data;
                     if (data.token) {
-                        const modifytoken = `Bearer ` + data.token;
+                        const token = data.token; // do NOT prepend 'Bearer ' when storing
                         const usertype = data.data.type;
+                        const expirationTime = Date.now() + 3 * 60 * 60 * 1000; // 3 hours
 
-                        // Calculate token expiration time
-                        const expirationTime = keepLoggedIn 
-                            ? new Date().getTime() + 7 * 24 * 60 * 60 * 1000 // 7 days
-                            : new Date().getTime() + 60 * 60 * 1000; // 1 hour
-
-                        // Store token and expiration time
                         if (keepLoggedIn) {
-                            localStorage.setItem("token", JSON.stringify(modifytoken));
+                            localStorage.setItem("token", token);
                             localStorage.setItem("expirationTime", expirationTime);
                             localStorage.setItem("uname", data.data.uname);
                             localStorage.setItem("usertype", data.data.type);
                         } else {
-                          
-                            sessionStorage.setItem("token", JSON.stringify(modifytoken));
+                            sessionStorage.setItem("token", token);
                             sessionStorage.setItem("expirationTime", expirationTime);
                             sessionStorage.setItem("uname", data.data.uname);
                             sessionStorage.setItem("usertype", data.data.type);
                         }
-                        
-                        
 
                         toast.success("Logged in Successfully");
 
+                        // Redirect based on user type
                         if (usertype === "admin") {
                             navigate("/dashboard/admin");
                         } else if (usertype === "account") {
@@ -65,7 +59,10 @@ export default function Login() {
                         } else if (usertype === "manager") {
                             navigate("/dashboard/manager");
                         }
-                    } else {
+                    }
+
+
+                    else {
                         toast.error("Wrong username/Password");
                     }
                 } else if (res.status === 401) {
@@ -77,32 +74,85 @@ export default function Login() {
                 console.log(err.message);
             });
     };
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const empdata = { uname, pass };
 
-    useEffect(() => {
-        // Check if user is already authenticated
-        const token = getAuthToken();
-        const userType = getUserType();
-        if (token && !isTokenExpired()) {
-            // Redirect based on user type
-            switch (userType) {
-                case "admin":
-                    navigate("/users/editprofile");
-                    break;
-                case "account":
-                    navigate("/dashboard/account");
-                    break;
-                case "cashier":
-                    navigate("/sale/makeinvoice");
-                    break;
-                case "manager":
-                    navigate("/dashboard/manager");
-                    break;
-                default:
-                    navigate("/");
-                    break;
+  axios.post("/login", empdata)
+    .then((res) => {
+      if (res.status === 200) {
+        const data = res.data;
+        if (data.token) {
+          const token = data.token;
+          const usertype = data.data.type;
+          const expirationTime = Date.now() + 3 * 60 * 60 * 1000; // 3 hours
+
+          if (keepLoggedIn) {
+            localStorage.setItem("token", token);
+            localStorage.setItem("expirationTime", expirationTime);
+            localStorage.setItem("uname", data.data.uname);
+            localStorage.setItem("usertype", data.data.type);
+          } else {
+            sessionStorage.setItem("token", token);
+            sessionStorage.setItem("expirationTime", expirationTime);
+            sessionStorage.setItem("uname", data.data.uname);
+            sessionStorage.setItem("usertype", data.data.type);
+          }
+
+          toast.success("Logged in Successfully");
+
+          // Add delay before redirect
+          setTimeout(() => {
+            if (usertype === "admin") {
+              navigate("/dashboard/admin");
+            } else if (usertype === "account") {
+              navigate("/dashboard/account");
+            } else if (usertype === "cashier") {
+              navigate("/sale/makeinvoice");
+            } else if (usertype === "manager") {
+              navigate("/dashboard/manager");
             }
+          }, 500); // 200ms delay
+
+        } else {
+          toast.error("Wrong username/Password");
         }
-    }, [navigate]);
+      } else if (res.status === 401) {
+        toast.error("Wrong username/Password");
+      }
+    })
+    .catch((err) => {
+      toast.error("Wrong username/Password");
+      console.log(err.message);
+    });
+};
+useEffect(() => {
+  const token = getAuthToken();
+  const userType = getUserType();
+  console.log("Token:", token);
+  console.log("Is expired:", isTokenExpired());
+  console.log("User type:", userType);
+
+  if (token && !isTokenExpired()) {
+    switch (userType) {
+      case "admin":
+        navigate("/dashboard/admin");
+        break;
+      case "account":
+        navigate("/dashboard/account");
+        break;
+      case "cashier":
+        navigate("/sale/makeinvoice");
+        break;
+      case "manager":
+        navigate("/dashboard/manager");
+        break;
+      default:
+        navigate("/");
+        break;
+    }
+  }
+}, [navigate]);
 
     return (
         <>
@@ -120,37 +170,37 @@ export default function Login() {
                                                 <h3 className="text-center txt-dark mb-10">chefMate</h3>
                                                 <div className="form-group">
                                                     <label className="control-label mb-10" htmlFor="uname">UserID</label>
-                                                    <input 
-                                                        type="text" 
-                                                        className="form-control" 
-                                                        required 
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        required
                                                         id="uname"
                                                         value={uname}
-                                                        onChange={(e) => unamechange(e.target.value)} 
-                                                        placeholder="Enter Username" 
+                                                        onChange={(e) => unamechange(e.target.value)}
+                                                        placeholder="Enter Username"
                                                     />
                                                 </div>
                                                 <div className="form-group">
                                                     <label className="pull-left control-label mb-10" htmlFor="pass">Password</label>
                                                     <Link className="capitalize-font txt-primary block mb-10 pull-right font-12" to="/forgot-password">Forgot password?</Link>
                                                     <div className="clearfix"></div>
-                                                    <input 
-                                                        type="password" 
-                                                        className="form-control" 
-                                                        required 
+                                                    <input
+                                                        type="password"
+                                                        className="form-control"
+                                                        required
                                                         id="pass"
                                                         value={pass}
-                                                        onChange={(e) => passchange(e.target.value)} 
-                                                        placeholder="Enter Password" 
+                                                        onChange={(e) => passchange(e.target.value)}
+                                                        placeholder="Enter Password"
                                                     />
                                                 </div>
                                                 <div className="form-group">
                                                     <div className="checkbox checkbox-primary pr-10 pull-left">
-                                                        <input 
-                                                            id="checkbox_2" 
-                                                            type="checkbox" 
+                                                        <input
+                                                            id="checkbox_2"
+                                                            type="checkbox"
                                                             checked={keepLoggedIn}
-                                                            onChange={() => setKeepLoggedIn(!keepLoggedIn)} 
+                                                            onChange={() => setKeepLoggedIn(!keepLoggedIn)}
                                                         />
                                                         <label htmlFor="checkbox_2"> Keep me logged in</label>
                                                     </div>

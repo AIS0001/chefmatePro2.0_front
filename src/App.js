@@ -52,58 +52,48 @@ function App() {
     <>
 
       <Router>
-
         <Routes>
-          <Route path='/' element={< Login />} />
-          <Route path='/logout' element={< Logout />} />
-       
-          {/* Protected Route */}
+          <Route path="/" element={<Login />} />
+          <Route path="/logout" element={<Logout />} />
 
-          {/* Products */}
-          <Route path="/master/newsupplier" element={<PrivateRoute element={<Suppliers />} />} />
-          <Route path="/master/newcustomer" element={<PrivateRoute element={<Customers />} />} />
-          <Route path="/master/newcategory" element={<PrivateRoute element={<Categories />} />} />
-          <Route path="/master/newsubcategory" element={<PrivateRoute element={<SubCategories />} />} />
-          <Route path="/master/table" element={<PrivateRoute element={<TableList />} />} />
-          <Route path="/master/paymentoptions" element={<PrivateRoute element={<PaymentOptions />} />} />
+          {/* Protected Routes */}
+          <Route path="/master/newsupplier" element={<PrivateRoute><Suppliers /></PrivateRoute>} />
+          <Route path="/master/newcustomer" element={<PrivateRoute><Customers /></PrivateRoute>} />
+          <Route path="/master/newcategory" element={<PrivateRoute><Categories /></PrivateRoute>} />
+          <Route path="/master/newsubcategory" element={<PrivateRoute><SubCategories /></PrivateRoute>} />
+          <Route path="/master/table" element={<PrivateRoute><TableList /></PrivateRoute>} />
+          <Route path="/master/paymentoptions" element={<PrivateRoute><PaymentOptions /></PrivateRoute>} />
 
-          <Route path="/inventory/newitem" element={<PrivateRoute element={<NewItem />} />} />
-          <Route path="/inventory/newstock" element={<PrivateRoute element={<NewStock />} />} />
-          <Route path="/inventory/edititem/:id" element={<PrivateRoute element={<EditItem />} />} />
-          <Route path="/inventory/newproduct" element={<PrivateRoute element={<NewProduct />} />} />
-          <Route path="/inventory/stockreports" element={<PrivateRoute element={<StockReport />} />} />
-         
-          <Route path="/sale/pos" element={<PrivateRoute element={<NewPOS />} />} />
+          <Route path="/inventory/newitem" element={<PrivateRoute><NewItem /></PrivateRoute>} />
+          <Route path="/inventory/newstock" element={<PrivateRoute><NewStock /></PrivateRoute>} />
+          <Route path="/inventory/edititem/:id" element={<PrivateRoute><EditItem /></PrivateRoute>} />
+          <Route path="/inventory/newproduct" element={<PrivateRoute><NewProduct /></PrivateRoute>} />
+          <Route path="/inventory/stockreports" element={<PrivateRoute><StockReport /></PrivateRoute>} />
 
-          <Route path="/expenses/suppliersexpenses" element={<PrivateRoute element={<SupplierLedgerEntry />} />} />
-         
-          
-         
-         
-          <Route path="/dashboard/admin" element={<PrivateRoute element={<Dashboard />} />} />
-          <Route path="/users/newuser" element={<PrivateRoute element={<NewUser />} />} />
-          <Route path="/users/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
+          <Route path="/sale/pos" element={<PrivateRoute><NewPOS /></PrivateRoute>} />
+
+          <Route path="/expenses/suppliersexpenses" element={<PrivateRoute><SupplierLedgerEntry /></PrivateRoute>} />
+
+          <Route path="/dashboard/admin" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/users/newuser" element={<PrivateRoute><NewUser /></PrivateRoute>} />
+          <Route path="/users/editprofile" element={<PrivateRoute><EditProfile /></PrivateRoute>} />
 
           {/* Vouchers */}
-          <Route path="/vouchers/recieptvoucher" element={<PrivateRoute element={<Vouchers />} />} />
-          <Route path="/vouchers/paymentvoucher" element={<PrivateRoute element={<PaymentVouchers />} />} />
+          <Route path="/vouchers/recieptvoucher" element={<PrivateRoute><Vouchers /></PrivateRoute>} />
+          <Route path="/vouchers/paymentvoucher" element={<PrivateRoute><PaymentVouchers /></PrivateRoute>} />
 
- {/* Reports */}
-          <Route path="/reports/billhistory" element={<PrivateRoute element={<BillHistory />} />} />
-          <Route path="/reports/saleledger" element={<PrivateRoute element={<SaleLedger />} />} />
-          <Route path="/reports/supplierledger" element={<PrivateRoute element={<SupplierLedger />} />} />
-         
-         {/* Settings */}
-         <Route path='/setting/companyinfo' element={< CompanyInfo />} />
-         <Route path='/setting/taxes' element={< Taxes />} />
-          <Route path='/setting/units' element={< Units />} />
-          {/* <Route path='/users/newuser' element={< NewUser />} /> */}
-        
-         
+          {/* Reports */}
+          <Route path="/reports/billhistory" element={<PrivateRoute><BillHistory /></PrivateRoute>} />
+          <Route path="/reports/saleledger" element={<PrivateRoute><SaleLedger /></PrivateRoute>} />
+          <Route path="/reports/supplierledger" element={<PrivateRoute><SupplierLedger /></PrivateRoute>} />
 
-
+          {/* Settings - Unprotected (or protect if needed) */}
+          <Route path="/setting/companyinfo" element={<CompanyInfo />} />
+          <Route path="/setting/taxes" element={<Taxes />} />
+          <Route path="/setting/units" element={<Units />} />
         </Routes>
       </Router>
+
 
     </>
   );

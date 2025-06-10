@@ -25,17 +25,23 @@ const getAuthToken = () => {
     };
   };
 
-   const isTokenExpired = (token) => {
-    if (!token) return true;
-    const expirationTime = localStorage.getItem('expirationTime');
- 
-    const currentTime = Date.now() / 1000; // Current time in seconds
-  console.log(currentTime);
-    // Check if token is expired
-    return expirationTime < currentTime;
-  };
+const isTokenExpired=()=> {
+  const expirationTime = localStorage.getItem("expirationTime") || sessionStorage.getItem("expirationTime");
+  if (!expirationTime) return true;
+  return Date.now() > parseInt(expirationTime);
+}
 
- 
+const logout=() =>{
+  localStorage.removeItem("token");
+  localStorage.removeItem("expirationTime");
+  localStorage.removeItem("uname");
+  localStorage.removeItem("usertype");
+
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("expirationTime");
+  sessionStorage.removeItem("uname");
+  sessionStorage.removeItem("usertype");
+}
 
   export {
     isAuthenticated,
@@ -43,6 +49,7 @@ const getAuthToken = () => {
     getHeaders,
     isTokenExpired,
     getUserType,
+    logout,
     
       }
 
