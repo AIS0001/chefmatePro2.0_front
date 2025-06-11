@@ -105,10 +105,10 @@ const handleSubmit = (e) => {
           setTimeout(() => {
             if (usertype === "admin") {
               navigate("/dashboard/admin");
-            } else if (usertype === "account") {
+            } else if (usertype === "Account") {
               navigate("/dashboard/account");
-            } else if (usertype === "cashier") {
-              navigate("/sale/makeinvoice");
+            } else if (usertype === "Cashier") {
+              navigate("/dashboard/cashier");
             } else if (usertype === "manager") {
               navigate("/dashboard/manager");
             }

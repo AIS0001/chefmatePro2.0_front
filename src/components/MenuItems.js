@@ -1,14 +1,14 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-const menuItems = [
+const fullMenu = [
   {
     name: 'Dashboard',
     path: '/dashboard/admin',
     icon: 'view-dashboard',
     dataTargetId: '#home'
   },
- 
+
   {
     name: 'Master',
     path: '/master',
@@ -109,12 +109,48 @@ const menuItems = [
       
     ]
   },
-  { name: 'Logout', 
-    path: '/logout', 
-    icon: 'sign-in', 
-    dataTargetId: '#logout' ,
-    "signOut": true
- }
-]
+//   { name: 'Logout', 
+//     path: '/logout', 
+//     icon: 'sign-in', 
+//     dataTargetId: '#logout' ,
+//     "signOut": true
+//  }
+];
+const getMenuItems = (usertype) => {
+  if (usertype === "Cashier") {
+    return fullMenu
+      .filter(item => ["Dashboard", "Sale", "Reports","Vouchers", "Logout"].includes(item.name))
+      .map(item => {
+        if (item.submenu) {
+          const allowedSubmenuNames = {
+            Sale: ["POS"],
+            Reports: ["Sale Report", "Supplier Ledger", "Customer Ledger","Reciept Voucher","Payment Voucher"],
+          };
+          const filteredSubmenu = allowedSubmenuNames[item.name]
+            ? item.submenu.filter(sub => allowedSubmenuNames[item.name].includes(sub.name))
+            : item.submenu;
 
-export default menuItems
+          return { ...item, submenu: filteredSubmenu };
+        }
+        return item;
+      });
+  }
+
+  if (usertype === "Account") {
+    return fullMenu
+      .filter(item => ["Account Dashboard","Reports", "Logout"].includes(item.name))
+      .map(item => {
+        if (item.name === "Reports" && item.submenu) {
+          // Show full Reports submenu for Account
+          return { ...item };
+        }
+        return item;
+      });
+  }
+
+  // Default for Admin or other full-access users
+  return fullMenu;
+};
+
+
+export default getMenuItems;

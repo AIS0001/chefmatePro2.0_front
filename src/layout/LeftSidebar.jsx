@@ -1,69 +1,63 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import menuItems from "../components/MenuItems";
+import getMenuItems from "../components/MenuItems";  // Import the function
 
-export default function LeftSidebar() {
+export default function LeftSidebar({ usertype }) {   // Receive userType as a prop
 
   const [activeMenu, setActiveMenu] = useState(null);
 
+  const menuItems = getMenuItems(usertype);  // Get filtered menu based on userType
+
   const handleMenuClick = (index) => {
     setActiveMenu(activeMenu === index ? null : index);
-
   };
 
-
   return (
-    <>
+    <div className="fixed-sidebar-left">
+      <ul className="nav navbar-nav side-nav nicescroll-bar">
+        <li className="navigation-header">
+          <span>Main</span>
+          <i className="zmdi zmdi-more"></i>
+        </li>
 
-      <div className="fixed-sidebar-left">
-        <ul className="nav navbar-nav side-nav nicescroll-bar">
-          <li className="navigation-header">
-            <span>Main</span>
-            <i className="zmdi zmdi-more"></i>
-          </li>
-
-          {/* Menu Json Array values started */}
-          {menuItems.map((item, index) => (
-            <li
-              key={index}
-
+        {menuItems.map((item, index) => (
+          <li key={index}>
+            <Link
+              to="#!"
+              onClick={() => item.submenu && handleMenuClick(index)}
+              data-toggle="collapse"
+              data-target={item.dataTargetId}
             >
-              <Link
-                to="#!"
-                onClick={() => item.submenu && handleMenuClick(index)}
-                data-toggle="collapse"
-                data-target={item.dataTargetId}
-              >
-                <div className="pull-left">
-                  <i className={`zmdi zmdi-${item.icon} mr-20`}></i>
-                  <span className="right-nav-text">{item.name}</span>
-                </div>
-                {item.submenu && (
-                  <div className="pull-right">
-                    <i className={`zmdi zmdi-caret-${activeMenu === index ? 'up' : 'down'}`}></i>
-                  </div>
-                )}
-                <div class="clearfix"></div>
-              </Link>
+              <div className="pull-left">
+                <i className={`zmdi zmdi-${item.icon} mr-20`}></i>
+                <span className="right-nav-text">{item.name}</span>
+              </div>
               {item.submenu && (
-                <ul className={`submenu ${activeMenu === index ? 'show' : ''}`}>
-                  {item.submenu.map((subItem, subIndex) => (
-                    <li key={subIndex}>
-                      <Link to={subItem.path}>{subItem.name}</Link>
-                    </li>
-                  ))}
-                </ul>
+                <div className="pull-right">
+                  <i
+                    className={`zmdi zmdi-caret-${activeMenu === index ? "up" : "down"}`}
+                  ></i>
+                </div>
               )}
-            </li>
-          ))}
-
-          <li className="navigation-header">
-            <span>Settings</span>
-            <i className="zmdi zmdi-more"></i>
+              <div className="clearfix"></div>
+            </Link>
+            {item.submenu && (
+              <ul className={`submenu ${activeMenu === index ? "show" : ""}`}>
+                {item.submenu.map((subItem, subIndex) => (
+                  <li key={subIndex}>
+                    <Link to={subItem.path}>{subItem.name}</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
+        ))}
 
-        </ul>
-      </div>
-    </>
+        <li className="navigation-header">
+          <span>Settings</span>
+          <i className="zmdi zmdi-more"></i>
+        </li>
+      </ul>
+    </div>
   );
 }

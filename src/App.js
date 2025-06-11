@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import React, { useState } from 'react'
 import Dashboard from "./views/dashboard/dashboard";
+import CashierDashboard from "./views/dashboard/cashierDashboard";
+import AccoiuntDashboard from "./views/dashboard/dashboardAccount";
+
+import AccessDenied from "./views/pages/accessDenied";
 
 import NewPage from './views/pages/NewPage';
 import PrivateRoute from './utility/PrivateRoute';
@@ -24,6 +28,7 @@ import StockReport from './views/inventory/stockReport';
 
 
 import NewPOS from './views/pos/newPOS';
+import NewSale from './views/pos/sale';
 //expenses
 import SupplierLedgerEntry from './views/expenses/supplierLedgerEntry';
 
@@ -45,6 +50,7 @@ import EditProfile from './views/profile/editprofile';
 import CompanyInfo from './views/settings/companyInfo';
 import Taxes from './views/master/taxes';
 import Units from './views/master/units';
+import { Views } from 'react-big-calendar';
 
 
 function App() {
@@ -55,6 +61,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
+          <Route path="/accessdenied" element={<AccessDenied />} />
 
           {/* Protected Routes */}
           <Route path="/master/newsupplier" element={<PrivateRoute><Suppliers /></PrivateRoute>} />
@@ -71,10 +78,15 @@ function App() {
           <Route path="/inventory/stockreports" element={<PrivateRoute><StockReport /></PrivateRoute>} />
 
           <Route path="/sale/pos" element={<PrivateRoute><NewPOS /></PrivateRoute>} />
+          <Route path="/sale/newsale" element={<PrivateRoute><NewSale /></PrivateRoute>} />
 
           <Route path="/expenses/suppliersexpenses" element={<PrivateRoute><SupplierLedgerEntry /></PrivateRoute>} />
 
           <Route path="/dashboard/admin" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/dashboard/cashier" element={<PrivateRoute><CashierDashboard /></PrivateRoute>} />
+          <Route path="/dashboard/account" element={<PrivateRoute><AccoiuntDashboard /></PrivateRoute>} />
+        
+        
           <Route path="/users/newuser" element={<PrivateRoute><NewUser /></PrivateRoute>} />
           <Route path="/users/editprofile" element={<PrivateRoute><EditProfile /></PrivateRoute>} />
 

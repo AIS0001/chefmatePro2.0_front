@@ -19,9 +19,9 @@ import EditModal from "../Modals/EditModals";
 import deleteRecord from "../../functions/delateData";
 import fetchData from "../../functions/fetchData";
 
-const DataTable = ({ columns, data, tablename }) => {
+const DataTable = ({ columns, data, tablename,onEditClick  }) => {
   const [currentPage, setCurrentPage] = useState(1);
-   const [companyInfo, setcompanyInfo] = useState([]);
+  const [companyInfo, setcompanyInfo] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -38,9 +38,9 @@ const DataTable = ({ columns, data, tablename }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
 
-  const editableTables = ["items", "customers"]; // Tables where edit is allowed
-  const printableTables = ["order_items", "final_bill","customers"]; // Tables where print is allowed
-  
+  const editableTables = ["items", "customers", "taxes"]; // Tables where edit is allowed
+  const printableTables = ["order_items", "final_bill", "customers"]; // Tables where print is allowed
+
   // Function to handle modal open and store selected customer data
   const handleCustomerClick = (customer) => {
     setSelectedCustomer(customer);
@@ -73,18 +73,34 @@ const DataTable = ({ columns, data, tablename }) => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
-  const navigate = useNavigate();
-  const handleEditClick = (item) => {
-    if (tablename == "items") {
-      navigate(`/inventory/edititem/${item.id}`);
-    } else if (tablename == "contract") {
-      navigate(`/contracts/editcontract/${item.id}/${agent_id}`);
-    } else {
-    }
+  const [editId, setEditId] = useState(null);
+  const [formdata, setFormData] = useState({
+    taxname: "",
+    taxvalue: "",
+    included: false,
+  });
 
-    // setEditingRecord(item);
-    // setShowModal(true);
+  const navigate = useNavigate();
+
+  const handleEditClick = (item) => {
+    if (tablename === "items") {
+      navigate(`/inventory/edititem/${item.id}`);
+    } else if (tablename === "contract") {
+      navigate(`/contracts/editcontract/${item.id}/${agent_id}`);
+    } else if (tablename === "taxes") {
+      console.log("Editing item:", item);
+
+      // ❌ DO NOT navigate
+      // ✅ Instead, fill the form on the same page
+      setFormData({
+        taxname: item.taxname,
+        taxvalue: item.taxvalue,
+        included: item.included,
+      });
+      setEditId(item.id); // switch to edit mode
+    }
   };
+
   const handlePrintClick = async (itemId) => {
     try {
       // Fetch the final_bill and order_items details for the given itemId
@@ -351,8 +367,8 @@ const DataTable = ({ columns, data, tablename }) => {
               </thead>
               <tbody>
                 ${myorderItemsData
-        .map(
-          (item) => `
+          .map(
+            (item) => `
                       <tr>
                         <td>${item.item_name}</td>
                         <td>${item.quantity}</td>
@@ -360,8 +376,8 @@ const DataTable = ({ columns, data, tablename }) => {
                         <td>฿ ${item.total_price}</td>
                       </tr>
                     `
-        )
-        .join('')}
+          )
+          .join('')}
               </tbody>
             </table>
              <div class="total-row">
@@ -474,7 +490,7 @@ const DataTable = ({ columns, data, tablename }) => {
                       cursor: "pointer",
                       textAlign: "center",
                       color: "white",
-                      backgroundColor: "rgb(15 151 43)",
+                      backgroundColor: "#050505",
                     }} // Center text and add a background color
                   >
                     {col.label} {getSortIcon(col.field)}
@@ -508,7 +524,7 @@ const DataTable = ({ columns, data, tablename }) => {
                       ) : col.field === "actions" ? (
                         <>
                           {/* Edit Icon (Allowed only for specific tables) */}
-                          {editableTables.includes(tablename) && (
+                          {editableTables.includes(tablename) && onEditClick && (
                             <FaEdit
                               style={{
                                 cursor: "pointer",
@@ -518,7 +534,7 @@ const DataTable = ({ columns, data, tablename }) => {
                               onClick={() => handleEditClick(item)}
                             />
                           )}
-                      
+
                           {/* Print Icon (Allowed only for specific tables) */}
                           {printableTables.includes(tablename) && (
                             <FaPrint
@@ -530,7 +546,7 @@ const DataTable = ({ columns, data, tablename }) => {
                               onClick={() => handlePrintClick(item.id)}
                             />
                           )}
-                      
+
                           {/* Delete Icon (Allowed for ALL tables) */}
                           <FaTrash
                             style={{

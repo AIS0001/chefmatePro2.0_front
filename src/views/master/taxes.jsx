@@ -24,50 +24,87 @@ export default function Taxes() {
   //  const headers = { Authorization: authheader().access_token };
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
+  const [editId, setEditId] = useState(null);
+
   const [formdata, setFormData] = useState({
-    name: "",
+    taxname: "",
+    taxvalue: "",
+    included: false,
   });
+
   const columns = [
     { label: "ID", field: "id" },
     { label: "Tax Name", field: "taxname" },
     { label: "Tax Value", field: "taxvalue" },
+    { label: "Tax Included", field: "included" },
+    { label: "Status", field: "status" },
     { label: "Actions", field: "actions" },
   ];
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    // alert(e.target);
+    const { name, value, type, checked } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
+const handleEditClick = (item) => {
+  alert(item);
+  const newForm = {
+    taxname: item.taxname,
+    taxvalue: item.taxvalue,
+    included: item.included,
+  };
+  setFormData(newForm);
+  setEditId(item.id);
+  console.log("Form data updated:", newForm);
+};
+useEffect(() => {
+  console.log("Formdata changed:", formdata);
+}, [formdata]);
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await axios.post(
-        "/insertdata/taxes",
-        {
-          taxname: formdata.taxname,
-          taxvalue: formdata.taxvalue,
-        },
-        getHeaders()
-      );
+      if (editId) {
+        // Update logic
+        await axios.put(
+          `/updatedata/taxes/${editId}`,
+          {
+            taxname: formdata.taxname,
+            taxvalue: formdata.taxvalue,
+            included: formdata.included,
+          },
+          getHeaders()
+        );
+        toast.success("Tax updated successfully!");
+      } else {
+        // Add logic
+        await axios.post(
+          "/insertdata/taxes",
+          {
+            taxname: formdata.taxname,
+            taxvalue: formdata.taxvalue,
+            included: formdata.included,
+          },
+          getHeaders()
+        );
+        toast.success("Tax added successfully!");
+      }
 
-      // Fetch the updated data after successful submission
       await fetchData("taxes", setData, "id", {});
-      //console.log("Fetched data after add:", data); 
-      toast.success("Taxes added successfully!");
-      
+      setFormData({ taxname: "", taxvalue: "", included: false });
+      setEditId(null); // reset to add mode
+      setErrors({});
     } catch (err) {
-      toast.error("Error in adding table");
+      toast.error("Error submitting form");
       console.error(err.message);
     }
-
-    // Clear form data and errors
-    // setFormData({});
-    setErrors({});
   };
+
+
 
   useEffect(() => {
     const fetchAndSetData = async () => {
@@ -98,31 +135,45 @@ export default function Taxes() {
                 <div class="col-md-12">
                   <form onSubmit={handleSubmit}>
                     <div class="panel panel-default card-view">
+
                       <TextfieldwithLabel
                         id="taxname"
                         onChange={(e) => handleInputChange(e)}
-                        value={formdata.taxname}
+                        value={formdata.taxname || ""}
                         type="text"
                         name="taxname"
                         lable="Tax Name"
                       />
-                        <TextfieldwithLabel
+                      <TextfieldwithLabel
                         id="taxvalue"
                         onChange={(e) => handleInputChange(e)}
-                        value={formdata.taxvalue}
+                        value={formdata.taxvalue || ""}
                         type="number"
                         name="taxvalue"
                         lable="Tax Value"
                       />
+                    </div>
+                    <div className="form-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="included"
+                          checked={formdata.included}
+                          onChange={handleInputChange}
+                        />{" "}
+                        Included Tax?
+                      </label>
                     </div>
 
                     <div className="form-group">
                       <label className="control-label mb-12"></label>
                       <SubmitButton
                         type="submit"
-                        name="Save"
+                        name={editId ? "Update" : "Save"}
                         cls="btn btn-darkblue btn-anim"
                       />
+
+
                     </div>
                   </form>
                 </div>
@@ -137,10 +188,15 @@ export default function Taxes() {
               <p>No data available</p>
             ) : (
               //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-              <DataTable columns={columns} data={data} tablename="taxes" />
+              <DataTable
+                columns={columns}
+                data={data}
+                tablename="taxes"
+                onEditClick={handleEditClick}
+              />
             )}
 
-      
+
           </div>
         </div>
       </Layout>

@@ -65,15 +65,16 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     pmode: "",
     discAmount: 0,
     discountType: "percentage", // Default to "percentage"
-    phones:""
+    phones: ""
     // other fields
   });
   const [companyInfo, setcompanyInfo] = useState([]);
   const [TotalTablelist, setTotaltablelist] = useState(0);
+  const [TaxesData, setTaxesData] = useState(0);
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
-const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
+  const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
 
 
   // Handle table selection
@@ -183,8 +184,8 @@ const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
   const [grandAmount, setgrandAmount] = useState(0);
   const [totalAmount, settotalAmount] = useState(0);
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
-const [isBillSaved, setIsBillSaved] = useState(false);
-const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
+  const [isBillSaved, setIsBillSaved] = useState(false);
+  const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
 
 
 
@@ -222,7 +223,7 @@ const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
     setFormData((prevData) => ({ ...prevData, paidAmount: "" }));
     setChangeMoney("");
     setDiscAmount("0");
-setIsBillSaved(false);
+    setIsBillSaved(false);
 
     fetchData("order_items", setFinalData, "id", { table_number: tableName, status: "1" });
 
@@ -252,20 +253,43 @@ setIsBillSaved(false);
     setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));
 
     // Calculate tax (7%)
-    const taxValue = subtotalAfterDiscount * 0.07;
-    settaxAmount(taxValue.toFixed(2));
+    //calculate tax bases on setting include or exclude
+    let taxValue = 0;
+    if (TaxesData[0].included === "true") {
+      taxValue = (subtotalAfterDiscount * TaxesData[0].taxvalue) / (100 + TaxesData[0].taxvalue);
+      settaxAmount(taxValue.toFixed(2));
 
-    // Calculate total amount after tax
-    const totalAmountValue = subtotalAfterDiscount + taxValue;
-    settotalAmount(totalAmountValue.toFixed(2));
+      // Calculate total amount after tax
+      //const totalAmountValue = subtotalAfterDiscount + taxValue;
+      settotalAmount(subtotalAfterDiscount.toFixed(2));
 
-    // Round-off amount
-    const roundedTotal = Math.round(totalAmountValue);
-    const roundoffValue = roundedTotal - totalAmountValue;
-    setroundoffAmount(roundoffValue.toFixed(2));
+      // Round-off amount
+      const roundedTotal = Math.round(subtotalAfterDiscount);
+      const roundoffValue = roundedTotal - subtotalAfterDiscount;
+      setroundoffAmount(roundoffValue.toFixed(2));
 
-    // Set final grand total
-    setgrandAmount(roundedTotal.toFixed(2));
+      // Set final grand total
+      setgrandAmount(roundedTotal.toFixed(2));
+    }
+    else {
+      taxValue = subtotalAfterDiscount * (TaxesData[0].taxvalue / 100);
+      settaxAmount(taxValue.toFixed(2));
+
+      // Calculate total amount after tax
+      const totalAmountValue = subtotalAfterDiscount + taxValue;
+      settotalAmount(totalAmountValue.toFixed(2));
+
+      // Round-off amount
+      const roundedTotal = Math.round(totalAmountValue);
+      const roundoffValue = roundedTotal - totalAmountValue;
+      setroundoffAmount(roundoffValue.toFixed(2));
+
+      // Set final grand total
+      setgrandAmount(roundedTotal.toFixed(2));
+
+    }
+
+
   }, [discAmount, formdata.discountType, finalData]); // Dependencies prevent infinite looping
 
 
@@ -276,7 +300,7 @@ setIsBillSaved(false);
     try {
 
       const invId = itemId;
-       //alert(invId);
+      //alert(invId);
       // Fetch the final_bill and order_items details for the given itemId
       const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
       const myOrderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
@@ -448,6 +472,52 @@ setIsBillSaved(false);
     }
   };
 
+  const calculateTaxedTotal = async (subtotal) => {
+    try {
+      // const response = await axios.get("/api/taxes/active", getHeaders());
+      const response = await fetchData("taxes", setTotaltablelist, "id", { status: "active" });
+      const taxes = response.data;
+
+      let finalSubtotal = subtotal;
+      let total = subtotal;
+      const taxDetails = [];
+
+      taxes.forEach((tax) => {
+        const rate = parseFloat(tax.taxvalue);
+
+        if (tax.included) {
+          const taxAmount = (subtotal * rate) / (100 + rate);
+          finalSubtotal -= taxAmount;
+          taxDetails.push({
+            name: tax.taxname,
+            amount: taxAmount.toFixed(2),
+            included: true,
+          });
+        } else {
+          const taxAmount = (finalSubtotal * rate) / 100;
+          total += taxAmount;
+          taxDetails.push({
+            name: tax.taxname,
+            amount: taxAmount.toFixed(2),
+            included: false,
+          });
+        }
+      });
+
+      return {
+        subtotal: finalSubtotal.toFixed(2),
+        total: total.toFixed(2),
+        taxes: taxDetails,
+      };
+    } catch (err) {
+      console.error("Failed to fetch or calculate taxes", err);
+      return {
+        subtotal: subtotal.toFixed(2),
+        total: subtotal.toFixed(2),
+        taxes: [],
+      };
+    }
+  };
 
 
   const handleSaveBill = async () => {
@@ -507,14 +577,14 @@ setIsBillSaved(false);
 
 
       const { bill_id } = response.data; // Get the inserted bill ID
- // alert(bill_id);
-  setLatestBillId(bill_id);
-  // ✅ Call print function directly
-  //handlePrintClick(bill_id);
-  
+      // alert(bill_id);
+      setLatestBillId(bill_id);
+      // ✅ Call print function directly
+      //handlePrintClick(bill_id);
+
       // 🔥 **Update the state to hold the new bill_id**
       // ✅ Use functional update to ensure latest state
-     
+
       // Update the table status
       await updateData(
         "tablelist",
@@ -724,15 +794,16 @@ setIsBillSaved(false);
       newWindow.close(); // Close the window after printing
     };
   };
-useEffect(() => {
-  if (finalData.length > 0) {
-    setIsBillSaved(false);
-  }
-}, [finalData]);
+  useEffect(() => {
+    if (finalData.length > 0) {
+      setIsBillSaved(false);
+    }
+  }, [finalData]);
 
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
+        await fetchData("taxes", setTaxesData, "id", { status: "Active" });
         await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
         await fetchData("companyinfo", setcompanyInfo, "id", {});
         await setpaymentOptions(await fetchComboData("paymentoptions", "name"));
@@ -747,31 +818,31 @@ useEffect(() => {
 
   // Dependency array ensures it runs only when finalData updates
   // Runs only when `latestBillId` updates
-const [showLineQR, setShowLineQR] = useState(false);
-const [lineDiscountEligible, setLineDiscountEligible] = useState(false);
+  const [showLineQR, setShowLineQR] = useState(false);
+  const [lineDiscountEligible, setLineDiscountEligible] = useState(false);
 
-const handleLineDiscount = async () => {
-  if (!customerDetails.phone) {
-    toast.warning("Please enter customer phone number first.");
-    setLineQRModalOpen(true);
-    return;
-  }
-
-  try {
-    const res = await axios.post('/checkline', {
-      phone: customerDetails.phone
-    });
-
-    if (res.data.eligible) {
-      setShowLineQR(true);
-    } else {
-      toast.error("You have already claimed the LINE discount.");
+  const handleLineDiscount = async () => {
+    if (!customerDetails.phone) {
+      toast.warning("Please enter customer phone number first.");
+      setLineQRModalOpen(true);
+      return;
     }
-  } catch (err) {
-    toast.error("Error checking LINE discount eligibility.");
-    console.error(err);
-  }
-};
+
+    try {
+      const res = await axios.post('/checkline', {
+        phone: customerDetails.phone
+      });
+
+      if (res.data.eligible) {
+        setShowLineQR(true);
+      } else {
+        toast.error("You have already claimed the LINE discount.");
+      }
+    } catch (err) {
+      toast.error("Error checking LINE discount eligibility.");
+      console.error(err);
+    }
+  };
 
   return (
     <>
@@ -960,7 +1031,7 @@ const handleLineDiscount = async () => {
                         </tr>
                         <tr>
                           <td colSpan="3" className="text-end">
-                            <strong>Tax (7%)</strong>
+                            <strong>Tax ({TaxesData[0].taxvalue}%)</strong>
                           </td>
                           <td>
                             ฿{" "}
@@ -1005,10 +1076,10 @@ const handleLineDiscount = async () => {
             </div>
           </div>
           <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-             <div className="col-12">
+            <div className="col-12">
               <TextfieldwithLabel
                 id="phones"
-              //  value={` ${formdata.phones}`} // Display the change amount with currency formatting
+                //  value={` ${formdata.phones}`} // Display the change amount with currency formatting
                 onChange={(e) => setphones(e.target.value)} // Only update state
                 value={phones}
                 type="number"
@@ -1113,7 +1184,7 @@ const handleLineDiscount = async () => {
 
             </div>
             <div className="d-flex justify-content-between mt-4">
-             
+
               <button
 
                 onClick={() => handlePrintClick(latestBillId)}
@@ -1123,80 +1194,80 @@ const handleLineDiscount = async () => {
               </button>
               {/* This button help to save and print bill together on one click */}
               {!isBillSaved && (
-  <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
-    Save  Bill
-  </button>
-  
-)}
-   <div className="col-12">
-  <button
-    className="btn btn-warning"
-    onClick={() => {
-      if (!customerDetails.phones) {
-        toast.error("Please enter customer phone first.");
-        setLineQRModalOpen(true);
-        return;
-      }
-      // Simulate check with backend — or do it in real
-      alert(phones);
-      axios.post('/checkline', { phone: phones })
-        .then(res => {
-          if (res.data.eligible) {
-            setLineQRModalOpen(true);
-          } else {
-            toast.error("Discount already claimed for this number.");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          toast.error("Error checking discount eligibility.");
-        });
-    }}
-  >
-     Discount via LINE
-  </button>
-   <button
-                onClick={handleBillHistory}
-                className="btn btn-success mt-2 custom-btn"
-              >
-                Bill History
-              </button>
-    <button
-    className="btn btn-info"
-    onClick={() => {
-      if (!customerDetails.phone) {
-        toast.error("Please enter customer phone first.");
-        setLineQRModalOpen(true);
-        return;
-      }
-      // Simulate check with backend — or do it in real
-      axios.post('/checkline', { phone: customerDetails.phone })
-        .then(res => {
-          if (res.data.eligible) {
-            setLineQRModalOpen(true);
-          } else {
-            toast.error("Discount already claimed for this number.");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          toast.error("Error checking discount eligibility.");
-        });
-    }}
-  >
-     Discount via Whatsapp
-  </button>
-</div>
+                <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
+                  Save  Bill
+                </button>
 
-      
-               {/* this button used only when user dont want to print bill only make save bill */}
+              )}
+              <div className="col-12">
+                <button
+                  className="btn btn-warning"
+                  onClick={() => {
+                    if (!customerDetails.phones) {
+                      toast.error("Please enter customer phone first.");
+                      setLineQRModalOpen(true);
+                      return;
+                    }
+                    // Simulate check with backend — or do it in real
+                    alert(phones);
+                    axios.post('/checkline', { phone: phones })
+                      .then(res => {
+                        if (res.data.eligible) {
+                          setLineQRModalOpen(true);
+                        } else {
+                          toast.error("Discount already claimed for this number.");
+                        }
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        toast.error("Error checking discount eligibility.");
+                      });
+                  }}
+                >
+                  Discount via LINE
+                </button>
+                <button
+                  onClick={handleBillHistory}
+                  className="btn btn-success mt-2 custom-btn"
+                >
+                  Bill History
+                </button>
+                <button
+                  className="btn btn-info"
+                  onClick={() => {
+                    if (!customerDetails.phone) {
+                      toast.error("Please enter customer phone first.");
+                      setLineQRModalOpen(true);
+                      return;
+                    }
+                    // Simulate check with backend — or do it in real
+                    axios.post('/checkline', { phone: customerDetails.phone })
+                      .then(res => {
+                        if (res.data.eligible) {
+                          setLineQRModalOpen(true);
+                        } else {
+                          toast.error("Discount already claimed for this number.");
+                        }
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        toast.error("Error checking discount eligibility.");
+                      });
+                  }}
+                >
+                  Discount via Whatsapp
+                </button>
+              </div>
+
+
+              {/* this button used only when user dont want to print bill only make save bill */}
               {/* <button
                 onClick={handleSaveBill}
                 className="btn btn-darkblue mb-2 custom-btn"
               >
                 Save Bill
               </button> */}
-             
+
             </div>
           </div>
         </div>
@@ -1207,14 +1278,14 @@ const handleLineDiscount = async () => {
 
 
       </Modal>
-   <LineQRDiscountModal
-  isOpen={isLineQRModalOpen}
-  onClose={() => setLineQRModalOpen(false)}
-  onConfirm={() => {
-    setDiscAmount(10);
-    setFormData(prev => ({ ...prev, discountType: "percentage" })); // ✅ SAFE UPDATE
-  }}
-/>
+      <LineQRDiscountModal
+        isOpen={isLineQRModalOpen}
+        onClose={() => setLineQRModalOpen(false)}
+        onConfirm={() => {
+          setDiscAmount(10);
+          setFormData(prev => ({ ...prev, discountType: "percentage" })); // ✅ SAFE UPDATE
+        }}
+      />
 
 
       <CustomerDetailsModal

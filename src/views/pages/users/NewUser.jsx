@@ -166,7 +166,8 @@ export default function NewUser() {
                                                     data-style='form-control btn-default btn-outline'
                                                 >
                                                     <option value="Admin">Admin </option>
-                                                    <option value="Agent">Agent </option>
+                                                    <option value="Cashier">Cashier </option>
+                                                    <option value="Account">Account </option>
 
                                                 </select>
                                                 <div className="combo-box-arrow"></div>
@@ -198,7 +199,7 @@ export default function NewUser() {
                             <p>No data available</p>
                         ) : (
                             //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                            <DataTable columns={columns} data={data} tablename="categories" />
+                            <DataTable columns={columns} data={data} tablename="users" />
                         )}
 
                         {/* <CardComponent 
