@@ -16,6 +16,7 @@
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
     "dayjs-plugin-utc": "^0.1.2",
+    "file-saver": "^2.0.5",
     "firebase": "^10.13.1",
     "jquery": "^3.7.1",
     "jspdf": "^2.5.2",

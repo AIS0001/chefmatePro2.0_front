@@ -13,15 +13,13 @@ import ExportDataTable from "../Buttons/ExportdataTable";
 import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
 import "react-image-lightbox/style.css"; // Import lightbox styles
-import { ToastContainer, toast } from "react-toastify";
 import { baseURL } from "../..";
 import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 import EditModal from "../Modals/EditModals";
 import deleteRecord from "../../functions/delateData";
-import cancelRecord from "../../functions/cancelBill";
 import fetchData from "../../functions/fetchData";
 
-const DataTable = ({ columns, data, tablename, onEditClick }) => {
+const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [companyInfo, setcompanyInfo] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
@@ -41,8 +39,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
 
 
   const editableTables = ["items", "customers", "taxes"]; // Tables where edit is allowed
-  const printableTables = ["order_items", "final_bill", "customers"]; // Tables where print is allowed
-  const CancelBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill", "customers"]; // Tables where print is allowed
+  const printableTables = ["order_items_gst", "final_bill", "customers"]; // Tables where print is allowed
 
   // Function to handle modal open and store selected customer data
   const handleCustomerClick = (customer) => {
@@ -106,10 +103,10 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
 
   const handlePrintClick = async (itemId) => {
     try {
-      // Fetch the final_bill and order_items details for the given itemId
+      // Fetch the final_bill and order_items_gst details for the given itemId
       const finalBillData = await fetchData("final_bill", setFinalBillData, "id", { id: itemId });
       await fetchData("companyinfo", setcompanyInfo, "id", {});
-      const myorderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: itemId });
+      const myorderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: itemId });
       // Check if inv_time exists in finalBillData
       const invTime = finalBillData[0].inv_time;
       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
@@ -194,7 +191,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
               <table class="table">
                 
                   <tr >
-                    <th class="header" >Bill ID: ${FinalBillData[0].id}</th>
+                    <th class="header" >Inv No.: ${FinalBillData[0].id}</th>
                    
                     <th class="header" >${FinalBillData[0].table_number}</th>
                     
@@ -220,6 +217,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
                     <th>Item Name</th>
                     <th>Qty</th>
                     <th>Rate</th>
+                    <th>GST%</th>
                     <th>Total </th>
                   </tr>
                 </thead>
@@ -231,6 +229,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
                           <td>${item.item_name}</td>
                           <td>${item.quantity}</td>
                           <td>฿ ${item.total_price / item.quantity}</td>
+                          <td> ${item.cgst+item.sgst+item.igst} %</td>
                           <td>฿ ${item.total_price}</td>
                         </tr>
                       `
@@ -240,8 +239,10 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
               </table>
                <div class="total-row">
               <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
-              <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
-              <span>Round Off: ฿ ${FinalBillData[0].tax}</span><br>
+              <span>Discount: ฿ ${FinalBillData[0].discount_value}</span><br>
+             
+              <span>After Discount : ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
+              <span>Round Off: ฿ ${FinalBillData[0].roundoff}</span><br>
               <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
             </div>
               
@@ -339,7 +340,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
             <table class="table">
               
                 <tr >
-                  <td class="header" >Bill ID: ${FinalBillData[0].id}</td>
+                  <td class="header" >Inv No.: ${FinalBillData[0].id}</td>
                  
                   <td class="header" >${FinalBillData[0].table_number}</td>
                   
@@ -437,22 +438,6 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
       console.error("Error deleting record:", error);
     }
   };
-  const handlecancelClick = async (itemId) => {
-    try {
-      // Implement delete logic here
-      await cancelRecord(tablename, "id", itemId);
-
-      // Update the table data state after deletion
-      setTableData((prevData) => {
-        const updatedData = prevData.filter((item) => item.id !== itemId);
-        //console.log("Updated Data:", updatedData); // Log updated data for debugging
-        toast.success("Invoice No."+itemId+" cancelled successfully");
-        return updatedData; // Ensure new reference is returned
-      });
-    } catch (error) {
-      console.error("Error deleting record:", error);
-    }
-  };
   const onSort = (columnKey) => {
     let direction = "asc";
     if (sortConfig.key === columnKey && sortConfig.direction === "asc") {
@@ -485,7 +470,6 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   }, [data]);
   return (
     <>
-      <ToastContainer />
       {lightboxOpen && lightboxImage && (
         <Lightbox
           mainSrc={lightboxImage}
@@ -566,16 +550,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
                               onClick={() => handlePrintClick(item.id)}
                             />
                           )}
-                          {CancelBillTables.includes(tablename) && (
-                            <FaTrash
-                              style={{
-                                cursor: "pointer",
-                                marginRight: "10px",
-                                color: "green",
-                              }}
-                              onClick={() => handlecancelClick(item.id)}
-                            />
-                          )}
+
                           {/* Delete Icon (Allowed for ALL tables) */}
                           <FaTrash
                             style={{
@@ -625,4 +600,4 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   );
 };
 
-export default DataTable;
+export default DataTableGst;

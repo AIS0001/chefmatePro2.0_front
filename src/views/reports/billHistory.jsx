@@ -24,6 +24,7 @@ import { SubmitButton } from "../../components/Buttons/Textfield";
 import DataTable from "../../components/data-tables/dataTable";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
+import fetchDatanotequal from "../../functions/viewAllData";
 
 export default function BillHistory() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -49,40 +50,50 @@ export default function BillHistory() {
     { label: "Grand Total", field: "grand_total" },
     { label: "Action", field: "actions" }
   ];
-const exportPDF = () => {
-  const doc = new jsPDF();
+   const exportPDF = () => {
+        const doc = new jsPDF();
 
-  // Add logo (x, y, width, height)
-  doc.addImage(logo, "PNG", 150, 10, 40, 15); // adjust as needed
+        doc.addImage(logo, "PNG", 150, 10, 40, 15);
+        doc.setFontSize(16);
+        doc.text("Bill History", 14, 20);
 
-  doc.setFontSize(16);
-  doc.text("Bill History", 14, 20);
+        const tableColumn = ["Invoice No", "Date", "Time", "Table","Tax", "Subtotal",  "Grand Total", "Payment Mode"];
+        const tableRows = [];
 
-  const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Tax", "Grand Total", "Payment Mode"];
-  const tableRows = [];
+        const exportData = filteredData.length > 0 ? filteredData : data;
 
-  (filteredData.length > 0 ? filteredData : data).forEach((item) => {
-    const rowData = [
-      item.id,
-      item.inv_date,
-      item.inv_time,
-      item.table_number,
-      item.subtotal,
-      item.tax,
-      item.grand_total,
-      item.payment_mode,
-    ];
-    tableRows.push(rowData);
-  });
+        exportData.forEach((item) => {
+            const rowData = [
+                item.id,
+                item.inv_date,
+                item.inv_time,
+                item.table_number,
+                item.subtotal,
+                item.tax,
+                item.grand_total,
+                item.payment_mode,
+            ];
+            tableRows.push(rowData);
+        });
 
-  doc.autoTable({
-    startY: 30,
-    head: [tableColumn],
-    body: tableRows,
-  });
+        // Calculate total
+        const totalAmount = exportData.reduce(
+            (acc, item) => acc + parseFloat(item.grand_total || 0),
+            0
+        ).toFixed(2);
 
-  doc.save("bill_history.pdf");
-};
+        // Add total row (empty cells except last column)
+        const totalRow = ["", "",  "", "","", "Total:", `INR ${totalAmount}`,""];
+        tableRows.push(totalRow);
+
+        doc.autoTable({
+            startY: 30,
+            head: [tableColumn],
+            body: tableRows,
+        });
+
+        doc.save("salereport.pdf");
+    };
 
   const generateMonthlySummary = (dataArray) => {
     const summary = {};
@@ -110,7 +121,7 @@ const exportPDF = () => {
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
-        await fetchData("final_bill", setData, "id", {});
+        await fetchDatanotequal("final_bill", setData, "id", {"status":2});
         setpaymentOptions(await fetchComboData("paymentoptions", "name"));
         //console.log("Fetched data:", data); // Add this line for debugging
       } catch (error) {
@@ -133,6 +144,9 @@ const exportPDF = () => {
 
     setFilteredData(filtered);
   };
+  useEffect(() => {
+    applyFilter();
+  }, [data, startDate, endDate, formdata.name, paymentMode]);
   const clearFilters = () => {
     setStartDate("");
     setEndDate("");
@@ -140,7 +154,10 @@ const exportPDF = () => {
     localStorage.removeItem("billFilters");
     setFilteredData(data); // Show all data again
   };
-
+ const totalAmount = () =>
+        (filteredData.length > 0 ? filteredData : data)
+            .reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0)
+            .toFixed(2);
   return (
     <>
       <Layout>
@@ -172,13 +189,38 @@ const exportPDF = () => {
             </div>
             {(filteredData.length > 0 || data.length > 0) && (
               <div className="col-md-3 d-flex align-items-end">
-                <CSVLink
-                  data={filteredData.length > 0 ? filteredData : data}
-                  filename="bill_history.csv"
-                  className="btn btn-success w-100"
-                >
-                  Export CSV
-                </CSVLink>
+                 <CSVLink
+                 data={[
+                   ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
+                     id: item.id,
+                     inv_date: item.inv_date,
+                     inv_time: item.inv_time,
+                     subtotal: item.subtotal,
+                     discount_value: item.discount_value,
+                     discount_amount: item.discount_amount,
+                     subtotal_afterdiscount: item.subtotal_afterdiscount,
+                     tax: item.tax,
+                     roundoff: item.roundoff,
+                     grand_total: item.grand_total,
+                   })),
+                   {
+                     id: "",
+                     inv_date: "",
+                     inv_time: "",
+                     subtotal: "",
+                     discount_value: "",
+                     discount_amount: "",
+                     subtotal_afterdiscount: "",
+                     tax: "",
+                     roundoff: "Total",
+                     grand_total: totalAmount(), // helper function below
+                   },
+                 ]}
+                 filename="salereport.csv"
+                 className="btn btn-success w-100"
+               >
+                 Export CSV
+               </CSVLink>
               </div>
 
 
@@ -201,34 +243,34 @@ const exportPDF = () => {
         </CardComponent>
 
 
-        <CardComponent>
 
-          <div className="row">
 
-            {/* <ExportDataTable
+        <div className="row">
+
+          {/* <ExportDataTable
                                 tableId="tableid"
                                 tableData={data} /> */}
-            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" id="tableid">
-              {data.length === 0 ? (
-                <p>No data available</p>
-              ) : (
-                //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                // <DataTable columns={columns} data={data} tablename="final_bill" />
-                <DataTable columns={columns} data={filteredData.length > 0 ? filteredData : data} tablename="final_bill" />
+          <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" id="tableid">
+            {data.length === 0 ? (
+              <p>No data available</p>
+            ) : (
+              //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
+              // <DataTable columns={columns} data={data} tablename="final_bill" />
+              <DataTable columns={columns} data={filteredData.length > 0 ? filteredData : data} tablename="final_bill" />
 
-              )}
-              <div className="mt-3">
-                <h5>
-                  Total Sale: ฿{(filteredData.length > 0 ? filteredData : data)
-                    .reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0)
-                    .toFixed(2)}
-                </h5>
-              </div>
-
-
+            )}
+            <div className="mt-3">
+              <h5>
+                Total Sale: ฿{(filteredData.length > 0 ? filteredData : data)
+                  .reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0)
+                  .toFixed(2)}
+              </h5>
             </div>
+
+
           </div>
-        </CardComponent>
+        </div>
+
 
 
 

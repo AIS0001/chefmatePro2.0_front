@@ -132,7 +132,7 @@ const handleFinalSave = async () => {
        //fetchData("inventory", setinvoiceItems, "id", { refno: formData.refno });
       const invoiceItems = await axios.get(`/getinvoiceitems/${formData.refno}`, getHeaders());
       const totalNet = invoiceItems.data.reduce((sum, item) => sum + parseFloat(item.netAmount || 0), 0);
-      alert(totalNet);
+    //  alert(totalNet);
   
 
       setFormData({
@@ -203,7 +203,7 @@ const handleFinalSave = async () => {
                   <label>Supplier</label>
                   <select className="form-control" name="supplier_id" value={formData.supplier_id} onChange={handleInputChange} required>
                     <option value="">Select Supplier</option>
-                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.company_name}</option>)}
                   </select>
                 </div>
                 <div className="form-group col-md-4">
@@ -267,8 +267,12 @@ const handleFinalSave = async () => {
                 </div>
               </div>
                      <div className="form-row row mt-3">
-  <div className="form-group col-md-6 d-flex">
+  <div className="form-group col-md-3 d-flex">
     <SubmitButton type="submit" name="Add Item" cls="btn btn-darkblue btn-anim mr-2" />
+   
+  </div>
+  <div className="form-group col-md-6 d-flex">
+   
     <button type="button" className="btn btn-success ml-2" onClick={handleFinalSave}>
       Final Save (Create Ledger Entry)
     </button>

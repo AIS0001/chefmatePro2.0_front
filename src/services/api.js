@@ -8,6 +8,7 @@ import { getHeaders } from '../utility/getHeader';
 //   console.log("/combolist/"+tblname+"/"+groupby);
   try {
     const response = await axios.get("/combolist/"+tblname+"/"+groupby, getHeaders());
+    console.log(response.data);
     return response.data;
   } catch (error) {
     throw new Error('Error fetching combo data');

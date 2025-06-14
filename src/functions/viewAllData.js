@@ -2,9 +2,9 @@ import axios from "axios";
 import { getHeaders } from "../utility/getHeader";
 
 
-const viewalldata = async (tblname, setData, orderby, where) => {
+const fetchdatanotequal = async (tblname, setData, orderby, where) => {
     // Build the URL dynamically based on the provided parameters
-    let url = `/fetchdata`;
+    let url = `/fetchdatanotequal`;
     if (tblname) {
         url += `/${tblname}`;
     }
@@ -17,18 +17,29 @@ const viewalldata = async (tblname, setData, orderby, where) => {
         
        
     }
-   // console.log(getHeaders());
+    //console.log(url);
+    // if(tblname==="final_bill")
+    // {
+    //     console.log("Fetch url data");
+    //     console.log(url);
+
+    // }
+    
     const response = await axios.get(url, getHeaders());
 
     // If a setData function is provided, update the state with the fetched data
     if (setData && typeof setData === 'function') {
         setData(response.data.data)
-      
-      // console.log(response.data.data);
+      //  console.log(response.data.data);
+    //     if(tblname==="final_bill")
+    //         {
+    //             console.log("getch final bill data:");
+    //    console.log(response.data.data);
+    //         }
     }
     return response.data.data;
 }
 
 
-export default   fetchData;
+export default   fetchdatanotequal;
 

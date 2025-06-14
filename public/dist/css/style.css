@@ -14215,6 +14215,29 @@ a.compose-mail {
 .panel-darkblue>.panel-heading {
   background-color: #062443;
 }
+.panel-darkblue1>.panel-heading {
+  background-color: #0e63bb;
+}
+.panel-green1>.panel-heading {
+  background-color: rgb(65 217 154);
+}
+.panel-green2>.panel-heading {
+  background-color: rgb(86 171 124);
+}
+.panel-green3>.panel-heading {
+  background-color: rgb(65 217 154);
+}
+.panel-purple1>.panel-heading {
+  background-color: rgb(199 17 143);
+}
+.panel-purple2>.panel-heading {
+  background-color: rgb(173 7 122);
+}
+.panel-purple3>.panel-heading {
+  background-color: rgb(235 99 194);
+}
+
+
 .panel-darkorange>.panel-heading {
   background-color: #fd6008;
 }

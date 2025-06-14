@@ -44,8 +44,8 @@ export default function StockReport() {
       { label: "Unit", field: "unit" },
       { label: "Purchase Price", field: "purchase_price" },
       { label: "Subtotal", field: "subtotal" },
-      { label: "VAT %", field: "vat" },
-      { label: "VAT Amount", field: "vatAmount" },
+      { label: "Tax %", field: "tax" },
+      { label: "Tax Amount", field: "taxAmount" },
       { label: "Net Amount", field: "netAmount" },
     ];
 
@@ -267,7 +267,7 @@ doc.autoTable({
                   <option value="">All</option>
                   {suppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
-                      {supplier.supplier_name}
+                      {supplier.company_name}
                     </option>
                   ))}
                 </select>

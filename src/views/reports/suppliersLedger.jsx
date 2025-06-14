@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { format } from "date-fns";
-import { FaSearch } from "react-icons/fa";
+import { CSVLink } from "react-csv";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 import Layout from "../../layout/Layout";
 import Header from "../../components/Header";
@@ -16,7 +17,8 @@ import fetchData from "../../functions/fetchData";
 export default function SuppliersLedger() {
   const [data, setData] = useState([]);
   const [allData, setAllData] = useState([]);
-  const [formData, setFormData] = useState({});
+  const [suppliers, setSuppliers] = useState([]);
+  const [formData, setFormData] = useState({ from: "", to: "", accountid: "", supplier_id: "" });
   const [totals, setTotals] = useState({ credit: 0, debit: 0, balance: 0 });
 
   const columns = [
@@ -26,27 +28,10 @@ export default function SuppliersLedger() {
     { label: "A/C ID", field: "account_id" },
     { label: "Description", field: "description" },
     { label: "Debit", field: "debit_amount" },
-    { label: "Credit", field: "credit_amount" }
+    { label: "Credit", field: "credit_amount" },
   ];
 
   const formatDate = (d) => new Date(d).toISOString().split("T")[0];
-
-  const filterByAccountType = (accountType) => {
-    const filtered = allData.filter((r) => r.account_type === accountType);
-    calculateTotals(filtered);
-  };
-
-  const filterByDate = (from, to) => {
-    const f = formatDate(from);
-    const t = formatDate(to);
-    const filtered = allData.filter((r) => formatDate(r.date) >= f && formatDate(r.date) <= t);
-    calculateTotals(filtered);
-  };
-
-  const filterByAccountId = (id) => {
-    const filtered = allData.filter((r) => r.account_id.toString() === id);
-    calculateTotals(filtered);
-  };
 
   const calculateTotals = (records) => {
     const credit = records.reduce((sum, r) => sum + parseFloat(r.credit_amount || 0), 0);
@@ -55,13 +40,68 @@ export default function SuppliersLedger() {
     setTotals({ credit, debit, balance: credit - debit });
   };
 
+  const applyFilters = () => {
+    const { from, to, accountid } = formData;
+    const f = from ? formatDate(from) : null;
+    const t = to ? formatDate(to) : null;
+
+    const filtered = allData.filter((r) => {
+      const date = formatDate(r.date);
+      const dateInRange = (!f || date >= f) && (!t || date <= t);
+      const accountMatch = !accountid || r.account_id?.toString() === accountid?.toString();
+      return dateInRange && accountMatch;
+    });
+
+    calculateTotals(filtered);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "supplier_id") {
+      const selected = suppliers.find((s) => s.id.toString() === value);
+      setFormData((prev) => ({
+        ...prev,
+        supplier_id: value,
+        accountid: selected ? selected.id : "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    const tableColumn = columns.map((c) => c.label);
+    const tableRows = data.map((r) => [
+      r.transaction_id,
+      formatDate(r.date),
+      r.account_type,
+      r.account_id,
+      r.description,
+      r.debit_amount,
+      r.credit_amount,
+    ]);
+    tableRows.push(["", "", "", "", "Total", totals.debit.toFixed(2), totals.credit.toFixed(2)]);
+
+    doc.text("Supplier Ledger Report", 14, 15);
+    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+    doc.text(`Balance: ${totals.balance.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 10);
+    doc.save("SupplierLedger.pdf");
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      await fetchData("ledger_entries", setAllData, "id", {});
-      await fetchData("ledger_entries", setData, "id", {});
-    };
-    loadData();
+    fetchData("ledger_entries", (res) => {
+      setAllData(res);
+      setData(res);
+      calculateTotals(res);
+    }, "id", {});
+
+    fetchData("suppliers", setSuppliers, "id", {});
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [formData.from, formData.to, formData.accountid]);
 
   return (
     <Layout>
@@ -70,47 +110,48 @@ export default function SuppliersLedger() {
       <CardComponent title="Filter Supplier Ledger" headerColor="dark" bodyClass="panel-body">
         <div className="row">
           <div className="col-md-3">
-            <TextfieldwithLabel
-              id="from"
-              name="from"
-              type="date"
-              lable="From Date"
-              value={formData.from || ""}
-              onChange={(e) => setFormData({ ...formData, from: e.target.value })}
-            />
+            <TextfieldwithLabel id="from" name="from" type="date" lable="From Date" value={formData.from || ""} onChange={handleInputChange} />
           </div>
           <div className="col-md-3">
-            <TextfieldwithLabel
-              id="to"
-              name="to"
-              type="date"
-              lable="To Date"
-              value={formData.to || ""}
-              onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-            />
+            <TextfieldwithLabel id="to" name="to" type="date" lable="To Date" value={formData.to || ""} onChange={handleInputChange} />
           </div>
           <div className="col-md-3">
-            <TextfieldwithLabel
-              id="accountid"
-              name="accountid"
-              type="text"
-              lable="Supplier ID"
-              value={formData.accountid || ""}
-              onChange={(e) => setFormData({ ...formData, accountid: e.target.value })}
-            />
+            <TextfieldwithLabel id="accountid" name="accountid" type="text" lable="Supplier ID" value={formData.accountid || ""} onChange={handleInputChange} />
           </div>
+          <div className="col-md-3">
+            <label>Supplier</label>
+            <select className="form-control" name="supplier_id" value={formData.supplier_id || ""} onChange={handleInputChange}>
+              <option value="">Select Supplier</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.company_name}</option>
+              ))}
+            </select>
           </div>
-                 <div className="row">
-          <div className="col-md-12">
-            <button className="btn btn-primary mt-4" onClick={() => filterByDate(formData.from, formData.to)}>
-              <FaSearch /> Filter by Date
+         
+          <div className="row">
+            <div className="col-md-12">
+            <CSVLink
+              data={[
+                ...data,
+                {
+                  transaction_id: "",
+                  date: "",
+                  account_type: "",
+                  account_id: "",
+                  description: "Total",
+                  debit_amount: totals.debit.toFixed(2),
+                  credit_amount: totals.credit.toFixed(2),
+                },
+              ]}
+              filename="SupplierLedger.csv"
+              className="btn btn-success me-2"
+            >
+              Export CSV
+            </CSVLink>
+            <button className="btn btn-danger" onClick={exportPDF}>
+              Export PDF
             </button>
-            <button className="btn btn-success mt-4" onClick={() => filterByAccountType("Purchase")}>
-              <FaSearch /> Filter by A/C Type: Purchase
-            </button>
-            <button className="btn btn-warning mt-4" onClick={() => filterByAccountId(formData.accountid)}>
-              <FaSearch /> Filter by Supplier ID
-            </button>
+          </div>
           </div>
         </div>
       </CardComponent>
@@ -122,10 +163,10 @@ export default function SuppliersLedger() {
           ) : (
             <DataTable columns={columns} data={data} tablename="ledger_entries" />
           )}
-          <div className="mt-3">
-            <strong>Total Credit:</strong> {totals.credit} |{" "}
-            <strong>Total Debit:</strong> {totals.debit} |{" "}
-            <strong>Balance:</strong> {totals.balance}
+           <div className="mt-3">
+            <strong>Total Credit:</strong> {totals.credit.toFixed(2)} | {" "}
+            <strong>Total Debit:</strong> {totals.debit.toFixed(2)} | {" "}
+            <strong>Balance:</strong> {totals.balance.toFixed(2)}
           </div>
         </div>
       </div>

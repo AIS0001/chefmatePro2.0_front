@@ -128,7 +128,7 @@ if (!selectedCustomer || !paymentAmount || !paymentMode) {
   toast.error("Please fill in all required fields.");
   return;
 }
-console.log("Sending payment data:", paymentData);
+//console.log("Sending payment data:", paymentData);
 
         try {
             await axios.post(
