@@ -40,6 +40,7 @@ export default function BillHistory() {
   const [paymentMode, setPaymentMode] = useState("");
   const [filteredData, setFilteredData] = useState([]);
   const [paymentOptions, setpaymentOptions] = useState([]);
+   const [orderNoSearch, setOrderNoSearch] = useState("");
   const columns = [
     { label: "Inv. No.", field: "id" },
     { label: "Date", field: "inv_date" },
@@ -131,26 +132,45 @@ export default function BillHistory() {
 
     fetchAndSetData();
   }, []);
-  const applyFilter = () => {
-    const filtered = data.filter((item) => {
-      const itemDate = new Date(item.inv_date);
-      const isWithinDateRange =
-        (!startDate || new Date(startDate) <= itemDate) &&
-        (!endDate || itemDate <= new Date(endDate));
-      const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
 
-      return isWithinDateRange && matchesPaymentMode;
-    });
 
-    setFilteredData(filtered);
-  };
+const applyFilter = () => {
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            toast.error("Invalid date range: Start Date is after End Date");
+            clearFilters();
+            return;
+        }
+
+        const filtered = data.filter((item) => {
+            if (!item.inv_date) return false;
+
+            const itemDate = new Date(item.inv_date);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+
+            const isInRange =
+                (!start || itemDate >= start) &&
+                (!end || itemDate <= end);
+
+            const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
+            const matchesName = !formdata.name || item.name === formdata.name;
+
+            const matchesOrderNo = !orderNoSearch || item.id?.toString().includes(orderNoSearch);
+
+            return isInRange && matchesPaymentMode && matchesName && matchesOrderNo;
+        });
+
+        setFilteredData(filtered);
+    };
   useEffect(() => {
     applyFilter();
-  }, [data, startDate, endDate, formdata.name, paymentMode]);
+  }, [data, startDate, endDate, formdata.name, paymentMode,orderNoSearch]);
   const clearFilters = () => {
     setStartDate("");
     setEndDate("");
     setPaymentMode("");
+    setOrderNoSearch("");
+    
     localStorage.removeItem("billFilters");
     setFilteredData(data); // Show all data again
   };
@@ -182,6 +202,15 @@ export default function BillHistory() {
                 <option value="Entertainment">Entertainment</option>
               </select>
             </div>
+               <div className="col-md-3">
+                            <label>Order No.</label>
+                            <input
+                                type="text"
+                                placeholder="Search Order No"
+                                value={orderNoSearch}
+                                onChange={(e) => setOrderNoSearch(e.target.value)}
+                                className="form-control mb-2" />
+                        </div>
           </div>
           <div className="row mb-3">
             <div className="col-md-3 d-flex align-items-end">
@@ -285,7 +314,7 @@ export default function BillHistory() {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="total" fill="#8884d8" />
+                  <Bar dataKey="total" fill="#2334d8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

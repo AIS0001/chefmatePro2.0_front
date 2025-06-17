@@ -39,19 +39,20 @@ const fullMenu = [
     ]
   },
 
-
   {
-    name: 'Sale GST',
+    name: 'Sale',
     path: '/sale',
     icon: 'menu',
     dataTargetId: '#property',
     submenu: [
-      { name: 'Advance Order', path: '/sale/advanceordergstt' },
-      { name: 'POS', path: '/sale/posgst' },
+       { name: 'Advance Order', path: '/sale/advanceorder' },
+      { name: 'POS', path: '/sale/pos' },
+
 
 
     ]
   },
+
   {
     name: 'Vouchers',
     path: '/pages/vouchers',
@@ -73,23 +74,22 @@ const fullMenu = [
 
     ]
   },
-
   {
-    name: 'Reports GST',
+    name: 'Reports',
     path: '/pages/reports',
     icon: 'file-text',
     dataTargetId: '#reports',
     submenu: [
-
-      { name: 'Sale Report-GST', path: '/reports/billhistorygst' },
-      { name: 'PreOrders-GST', path: '/reports/advanceorderreportgst' },
-      { name: 'Item Wise GST', path: '/reports/itemwisesalegst' },
+      { name: 'Sale Report', path: '/reports/billhistory' },
+      { name: 'Item Wise', path: '/reports/itemwisesale' },
+      { name: 'Preorders', path: '/reports/advanceorderreport' },
       { name: 'Purchase Report', path: '/inventory/stockreports' },
       { name: 'Supplier Ledger', path: '/reports/supplierledger' },
       { name: 'Customer Ledger', path: '/reports/saleledger' },
 
     ]
   },
+  
 
   {
     name: 'Users',

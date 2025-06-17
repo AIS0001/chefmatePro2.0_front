@@ -112,7 +112,7 @@ export default function Vouchers() {
         try {
             await axios.post( "/savepayment", paymentData, getHeaders());
             // Send the data to the backend using POST
-            //await fetchData("receipt_vouchers", null, "POST", paymentData);
+            await fetchData("receipt_vouchers", setData, "id", {});
 
             toast.success("Payment recorded successfully!");
         } catch (error) {

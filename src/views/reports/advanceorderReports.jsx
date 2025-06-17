@@ -24,6 +24,7 @@ import { SubmitButton } from "../../components/Buttons/Textfield";
 import DataTable from "../../components/data-tables/dataTableGst";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
+import fetchDatanotequal from "../../functions/viewAllData";
 
 export default function AdvanceOrderReports() {
     let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -39,6 +40,8 @@ export default function AdvanceOrderReports() {
     const [paymentMode, setPaymentMode] = useState("");
     const [filteredData, setFilteredData] = useState([]);
     const [paymentOptions, setpaymentOptions] = useState([]);
+ const [orderNoSearch, setOrderNoSearch] = useState("");
+
     const columns = [
         { label: "Order No.", field: "id" },
         { label: "Date", field: "pickup_date" },
@@ -92,7 +95,17 @@ export default function AdvanceOrderReports() {
 
         doc.save("advance_order.pdf");
     };
-
+const showcancelorders = async () => {
+    try {
+        // Fetch orders where status is NOT equal to 2 (i.e., cancelled or others)
+        await fetchData("advance_final_bill", setData, "id", { status: 2 });
+        setFilteredData([]); // Clear current filter to show all fetched cancel data
+        toast.success("Showing cancelled orders");
+    } catch (error) {
+        console.error("Error fetching cancelled orders:", error);
+        toast.error("Failed to load cancelled orders");
+    }
+};
 
   const generateMonthlySummary = (dataArray) => {
   const summary = {};
@@ -125,7 +138,8 @@ export default function AdvanceOrderReports() {
     useEffect(() => {
         const fetchAndSetData = async () => {
             try {
-                await fetchData("advance_final_bill", setData, "id", {});
+               // await fetchData("advance_final_bill", setData, "id", {});
+                await fetchDatanotequal("advance_final_bill", setData, "id", {"status":2});
                 setpaymentOptions(await fetchComboData("paymentoptions", "name"));
                 //console.log("Fetched data:", data); // Add this line for debugging
             } catch (error) {
@@ -136,32 +150,33 @@ export default function AdvanceOrderReports() {
         fetchAndSetData();
     }, []);
  const applyFilter = () => {
-  // Check for invalid range
-  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-    toast.error("Invalid date range: Start Date is after End Date");
-    clearFilters();
-    return;
-  }
-
-  const filtered = data.filter((item) => {
-    if (!item.pickup_date) return false; // skip if no date
-
-    const itemDate = new Date(item.pickup_date);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-
-    const isInRange =
-      (!start || itemDate >= start) &&
-      (!end || itemDate <= end);
-
-    const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
-    const matchesName = !formdata.name || item.name === formdata.name;
-
-    return isInRange && matchesPaymentMode && matchesName;
-  });
-
-  setFilteredData(filtered);
-};
+         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+             toast.error("Invalid date range: Start Date is after End Date");
+             clearFilters();
+             return;
+         }
+ 
+         const filtered = data.filter((item) => {
+             if (!item.pickup_date) return false;
+ 
+             const itemDate = new Date(item.pickup_date);
+             const start = startDate ? new Date(startDate) : null;
+             const end = endDate ? new Date(endDate) : null;
+ 
+             const isInRange =
+                 (!start || itemDate >= start) &&
+                 (!end || itemDate <= end);
+ 
+             const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
+             const matchesName = !formdata.name || item.name === formdata.name;
+ 
+             const matchesOrderNo = !orderNoSearch || item.id?.toString().includes(orderNoSearch);
+ 
+             return isInRange && matchesPaymentMode && matchesName && matchesOrderNo;
+         });
+ 
+         setFilteredData(filtered);
+     };
 
 
 
@@ -172,14 +187,27 @@ export default function AdvanceOrderReports() {
 
     useEffect(() => {
         applyFilter();
-    }, [data, startDate, endDate, formdata.name, paymentMode]);
-    const clearFilters = () => {
+    }, [data, startDate, endDate, formdata.name, paymentMode,orderNoSearch]);
+
+
+      const clearFilters = async () => {
+    try {
         setStartDate("");
         setEndDate("");
         setPaymentMode("");
+        setOrderNoSearch("")
+        setFormData({ name: "" }); // Also reset name filter if you're using it
+
+        const response = await fetchDatanotequal("advance_final_bill", setData, "id", { status: 2 });
+
+        setFilteredData([]); // Clear filteredData so the original data shows
         localStorage.removeItem("billFilters");
-        setFilteredData(data); // Show all data again
-    };
+        toast.success("Filters cleared and data reloaded.");
+    } catch (error) {
+        console.error("Error clearing filters:", error);
+        toast.error("Failed to reload data.");
+    }
+};
 
     return (
         <>
@@ -205,63 +233,77 @@ export default function AdvanceOrderReports() {
                                 <option value="Entertainment">Entertainment</option>
                             </select>
                         </div> */}
+                        <div className="col-md-3">
+                            <label>Order No.</label>
+                            <input
+                                type="text"
+                                placeholder="Search Order No"
+                                value={orderNoSearch}
+                                onChange={(e) => setOrderNoSearch(e.target.value)}
+                                className="form-control mb-2" />
+                        </div>
                     </div>
                     <div className="row mb-3">
                         <div className="col-md-3 d-flex align-items-end">
                             <button className="btn btn-primary w-100" onClick={applyFilter}>Apply Filter</button>
                         </div>
                         {(filteredData.length > 0 || data.length > 0) && (
-                            <div className="col-md-3 d-flex align-items-end">
-                                <CSVLink
-                                    data={[
-                                        ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
-                                            id: item.id,
-                                            pickup_date: item.pickup_date,
-                                            inv_time: item.inv_time,
-                                            subtotal: item.subtotal,
-                                            discount_value: item.discount_value,
-                                            discount_amount: item.discount_amount,
-                                            subtotal_afterdiscount: item.subtotal_afterdiscount,
-                                            roundoff: item.roundoff,
-                                            grand_total: item.grand_total,
-                                        })),
-                                        {
-                                            id: "",
-                                            pickup_date: "",
-                                            inv_time: "",
-                                            subtotal: "",
-                                            discount_value: "",
-                                            discount_amount: "",
-                                            subtotal_afterdiscount: "",
-                                            roundoff: "Total",
-                                            grand_total: totalAmount(), // helper function below
-                                        },
-                                    ]}
-                                    filename="salereport.csv"
-                                    className="btn btn-success w-100"
-                                >
-                                    Export CSV
-                                </CSVLink>
-
-
-
-                            </div>
-
-
-
-
-                        )}
-                        <div className="col-md-3 d-flex align-items-end">
-                            <button className="btn btn-danger w-100" onClick={exportPDF}>
-                                Export PDF
-                            </button>
-                        </div>
-
-                        <div className="col-md-3 d-flex align-items-end">
-                            <button className="btn btn-info w-100" onClick={() => clearFilters()}>
-                                Clear Filters
-                            </button>
-                        </div>
+                                   <div className="col-md-2 d-flex align-items-end">
+                                                           <CSVLink
+                                                               data={[
+                                                                   ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
+                                                                       id: item.id,
+                                                                       pickup_date: item.pickup_date,
+                                                                       inv_time: item.inv_time,
+                                                                       subtotal: item.subtotal,
+                                                                       discount_value: item.discount_value,
+                                                                       discount_amount: item.discount_amount,
+                                                                       subtotal_afterdiscount: item.subtotal_afterdiscount,
+                                                                       roundoff: item.roundoff,
+                                                                       grand_total: item.grand_total,
+                                                                   })),
+                                                                   {
+                                                                       id: "",
+                                                                       pickup_date: "",
+                                                                       inv_time: "",
+                                                                       subtotal: "",
+                                                                       discount_value: "",
+                                                                       discount_amount: "",
+                                                                       subtotal_afterdiscount: "",
+                                                                       roundoff: "Total",
+                                                                       grand_total: totalAmount(), // helper function below
+                                                                   },
+                                                               ]}
+                                                               filename="salereport.csv"
+                                                               className="btn btn-success w-100"
+                                                           >
+                                                               Export CSV
+                                                           </CSVLink>
+                           
+                           
+                           
+                                                       </div>
+                           
+                           
+                           
+                           
+                                                   )}
+                                                   <div className="col-md-2 d-flex align-items-end">
+                                                       <button className="btn btn-danger w-100" onClick={exportPDF}>
+                                                           Export PDF
+                                                       </button>
+                                                   </div>
+                           
+                                                   <div className="col-md-2 d-flex align-items-end">
+                                                       <button className="btn btn-primary w-100" onClick={() => clearFilters()}>
+                                                           Clear Filters
+                                                       </button>
+                                                   </div>
+                                                    <div className="col-md-2 d-flex align-items-end">
+                                                       <button className="btn btn-info w-100" onClick={() => showcancelorders()}>
+                                                           Show Cancel Orders
+                                                       </button>
+                                                   </div>
                     </div>
 
                 </CardComponent>

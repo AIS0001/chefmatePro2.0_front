@@ -28,7 +28,7 @@ export default function BillHistory() {
   const columns = [
     { label: "Txn ID", field: "transaction_id" },
     { label: "Date", field: "date" },
-    { label: "Customer Name", field: "customer_name" },
+    // { label: "Customer Name", field: "customer_name" },
     { label: "A/C Type", field: "account_type" },
     { label: "A/C ID", field: "account_id" },
     { label: "Description", field: "description" },

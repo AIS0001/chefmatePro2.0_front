@@ -23,8 +23,8 @@ import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
 import { SubmitButton } from "../../components/Buttons/Textfield";
 import DataTable from "../../components/data-tables/dataTableGst";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
-import  fetchData from '../../functions/fetchData';
-import  fetchdatanotequal from '../../functions/viewAllData';
+import fetchData from '../../functions/fetchData';
+import fetchdatanotequal from '../../functions/viewAllData';
 
 
 
@@ -42,6 +42,7 @@ export default function BillHistoryGst() {
     const [paymentMode, setPaymentMode] = useState("");
     const [filteredData, setFilteredData] = useState([]);
     const [paymentOptions, setpaymentOptions] = useState([]);
+    const [orderNoSearch, setOrderNoSearch] = useState("");
     const columns = [
         { label: "Inv. No.", field: "id" },
         { label: "Date", field: "inv_date" },
@@ -58,7 +59,7 @@ export default function BillHistoryGst() {
         doc.setFontSize(16);
         doc.text("Bill History", 14, 20);
 
-        const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal",  "Grand Total", "Payment Mode"];
+        const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
         const tableRows = [];
 
         const exportData = filteredData.length > 0 ? filteredData : data;
@@ -83,7 +84,7 @@ export default function BillHistoryGst() {
         ).toFixed(2);
 
         // Add total row (empty cells except last column)
-        const totalRow = ["", "",  "", "", "Total:", `INR ${totalAmount}`,""];
+        const totalRow = ["", "", "", "", "Total:", `INR ${totalAmount}`, ""];
         tableRows.push(totalRow);
 
         doc.autoTable({
@@ -122,7 +123,7 @@ export default function BillHistoryGst() {
     useEffect(() => {
         const fetchAndSetData = async () => {
             try {
-                await fetchdatanotequal("final_bill", setData, "id", {"status":2});
+                await fetchdatanotequal("final_bill", setData, "id", { "status": 2 });
                 setpaymentOptions(await fetchComboData("paymentoptions", "name"));
                 //console.log("Fetched data:", data); // Add this line for debugging
             } catch (error) {
@@ -132,15 +133,31 @@ export default function BillHistoryGst() {
 
         fetchAndSetData();
     }, []);
-    const applyFilter = () => {
-        const filtered = data.filter((item) => {
-            const itemDate = new Date(item.inv_date);
-            const isWithinDateRange =
-                (!startDate || new Date(startDate) <= itemDate) &&
-                (!endDate || itemDate <= new Date(endDate));
-            const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
 
-            return isWithinDateRange && matchesPaymentMode;
+    const applyFilter = () => {
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            toast.error("Invalid date range: Start Date is after End Date");
+            clearFilters();
+            return;
+        }
+
+        const filtered = data.filter((item) => {
+            if (!item.inv_date) return false;
+
+            const itemDate = new Date(item.inv_date);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+
+            const isInRange =
+                (!start || itemDate >= start) &&
+                (!end || itemDate <= end);
+
+            const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
+            const matchesName = !formdata.name || item.name === formdata.name;
+
+            const matchesOrderNo = !orderNoSearch || item.id?.toString().includes(orderNoSearch);
+
+            return isInRange && matchesPaymentMode && matchesName && matchesOrderNo;
         });
 
         setFilteredData(filtered);
@@ -152,7 +169,7 @@ export default function BillHistoryGst() {
 
     useEffect(() => {
         applyFilter();
-    }, [data, startDate, endDate, formdata.name, paymentMode]);
+    }, [data, startDate, endDate, formdata.name, paymentMode, orderNoSearch]);
     const clearFilters = () => {
         setStartDate("");
         setEndDate("");
@@ -185,6 +202,15 @@ export default function BillHistoryGst() {
                                 <option value="Entertainment">Entertainment</option>
                             </select>
                         </div>
+                        <div className="col-md-3">
+                            <label>Order No.</label>
+                            <input
+                                type="text"
+                                placeholder="Search Order No"
+                                value={orderNoSearch}
+                                onChange={(e) => setOrderNoSearch(e.target.value)}
+                                className="form-control mb-2" />
+                        </div>
                     </div>
                     <div className="row mb-3">
                         <div className="col-md-3 d-flex align-items-end">
@@ -193,37 +219,37 @@ export default function BillHistoryGst() {
                         {(filteredData.length > 0 || data.length > 0) && (
                             <div className="col-md-3 d-flex align-items-end">
                                 <CSVLink
-  data={[
-    ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
-      id: item.id,
-      inv_date: item.inv_date,
-      inv_time: item.inv_time,
-      subtotal: item.subtotal,
-      discount_value: item.discount_value,
-      discount_amount: item.discount_amount,
-      subtotal_afterdiscount: item.subtotal_afterdiscount,
-      roundoff: item.roundoff,
-      grand_total: item.grand_total,
-    })),
-    {
-      id: "",
-      inv_date: "",
-      inv_time: "",
-      subtotal: "",
-      discount_value: "",
-      discount_amount: "",
-      subtotal_afterdiscount: "",
-      roundoff: "Total",
-      grand_total: totalAmount(), // helper function below
-    },
-  ]}
-  filename="salereport.csv"
-  className="btn btn-success w-100"
->
-  Export CSV
-</CSVLink>
+                                    data={[
+                                        ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
+                                            id: item.id,
+                                            inv_date: item.inv_date,
+                                            inv_time: item.inv_time,
+                                            subtotal: item.subtotal,
+                                            discount_value: item.discount_value,
+                                            discount_amount: item.discount_amount,
+                                            subtotal_afterdiscount: item.subtotal_afterdiscount,
+                                            roundoff: item.roundoff,
+                                            grand_total: item.grand_total,
+                                        })),
+                                        {
+                                            id: "",
+                                            inv_date: "",
+                                            inv_time: "",
+                                            subtotal: "",
+                                            discount_value: "",
+                                            discount_amount: "",
+                                            subtotal_afterdiscount: "",
+                                            roundoff: "Total",
+                                            grand_total: totalAmount(), // helper function below
+                                        },
+                                    ]}
+                                    filename="salereport.csv"
+                                    className="btn btn-success w-100"
+                                >
+                                    Export CSV
+                                </CSVLink>
 
-                               
+
 
                             </div>
 
@@ -289,7 +315,7 @@ export default function BillHistoryGst() {
                                     <XAxis dataKey="month" />
                                     <YAxis />
                                     <Tooltip />
-                                    <Bar dataKey="total" fill="#8884d8" />
+                                    <Bar dataKey="total" fill="#2334d8" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

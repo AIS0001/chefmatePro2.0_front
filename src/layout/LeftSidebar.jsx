@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import getMenuItems from "../components/MenuItems";  // Import the function
+import getMenuItems_vat from "../components/Menu_item_vat";  // Import the function
 
 export default function LeftSidebar({ usertype }) {   // Receive userType as a prop
 

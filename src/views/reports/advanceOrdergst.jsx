@@ -24,6 +24,8 @@ import { SubmitButton } from "../../components/Buttons/Textfield";
 import DataTable from "../../components/data-tables/dataTableGst";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
+import fetchDatanotequal from "../../functions/viewAllData";
+
 
 export default function AdvanceOrderGst() {
     let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -39,12 +41,17 @@ export default function AdvanceOrderGst() {
     const [paymentMode, setPaymentMode] = useState("");
     const [filteredData, setFilteredData] = useState([]);
     const [paymentOptions, setpaymentOptions] = useState([]);
+    const [orderNoSearch, setOrderNoSearch] = useState("");
+
+
+
     const columns = [
         { label: "Order No.", field: "id" },
         { label: "Date", field: "pickup_date" },
         { label: "Time", field: "pickup_time" },
         { label: "Subtotal", field: "subtotal" },
         { label: "Grand Total", field: "grand_total" },
+        { label: "Action", field: "actions" },
         // { label: "Action", field: "actions" }
     ];
     const exportPDF = () => {
@@ -94,38 +101,50 @@ export default function AdvanceOrderGst() {
     };
 
 
-  const generateMonthlySummary = (dataArray) => {
-  const summary = {};
+    const generateMonthlySummary = (dataArray) => {
+        const summary = {};
 
-  (dataArray.length > 0 ? dataArray : data).forEach((item) => {
-    if (!item.pickup_date) return; // skip invalid/null date
+        (dataArray.length > 0 ? dataArray : data).forEach((item) => {
+            if (!item.pickup_date) return; // skip invalid/null date
 
-    try {
-      const date = parseISO(item.pickup_date);
-      if (isNaN(date)) return; // skip invalid parsed date
+            try {
+                const date = parseISO(item.pickup_date);
+                if (isNaN(date)) return; // skip invalid parsed date
 
-      const month = format(date, "MMM yyyy");
-      const total = parseFloat(item.grand_total || 0);
+                const month = format(date, "MMM yyyy");
+                const total = parseFloat(item.grand_total || 0);
 
-      summary[month] = (summary[month] || 0) + total;
-    } catch (err) {
-      console.warn("Invalid date format in item:", item);
-    }
-  });
+                summary[month] = (summary[month] || 0) + total;
+            } catch (err) {
+                console.warn("Invalid date format in item:", item);
+            }
+        });
 
-  return Object.entries(summary).map(([month, total]) => ({ month, total }));
-};
+        return Object.entries(summary).map(([month, total]) => ({ month, total }));
+    };
 
 
     const monthlyData = generateMonthlySummary(filteredData);
 
+    const showcancelorders = async () => {
+        try {
+            // Fetch orders where status is NOT equal to 2 (i.e., cancelled or others)
+            await fetchData("advance_final_bill", setData, "id", { status: 2 });
+            setFilteredData([]); // Clear current filter to show all fetched cancel data
+            toast.success("Showing cancelled orders");
+        } catch (error) {
+            console.error("Error fetching cancelled orders:", error);
+            toast.error("Failed to load cancelled orders");
+        }
+    };
 
 
 
     useEffect(() => {
         const fetchAndSetData = async () => {
             try {
-                await fetchData("advance_final_bill", setData, "id", {});
+                // await fetchData("advance_final_bill", setData, "id", {});
+                await fetchDatanotequal("advance_final_bill", setData, "id", { "status": 2 });
                 setpaymentOptions(await fetchComboData("paymentoptions", "name"));
                 //console.log("Fetched data:", data); // Add this line for debugging
             } catch (error) {
@@ -135,33 +154,35 @@ export default function AdvanceOrderGst() {
 
         fetchAndSetData();
     }, []);
- const applyFilter = () => {
-  // Check for invalid range
-  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-    toast.error("Invalid date range: Start Date is after End Date");
-    clearFilters();
-    return;
-  }
+    const applyFilter = () => {
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            toast.error("Invalid date range: Start Date is after End Date");
+            clearFilters();
+            return;
+        }
 
-  const filtered = data.filter((item) => {
-    if (!item.pickup_date) return false; // skip if no date
+        const filtered = data.filter((item) => {
+            if (!item.pickup_date) return false;
 
-    const itemDate = new Date(item.pickup_date);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
+            const itemDate = new Date(item.pickup_date);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
 
-    const isInRange =
-      (!start || itemDate >= start) &&
-      (!end || itemDate <= end);
+            const isInRange =
+                (!start || itemDate >= start) &&
+                (!end || itemDate <= end);
 
-    const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
-    const matchesName = !formdata.name || item.name === formdata.name;
+            const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
+            const matchesName = !formdata.name || item.name === formdata.name;
 
-    return isInRange && matchesPaymentMode && matchesName;
-  });
+            const matchesOrderNo = !orderNoSearch || item.id?.toString().includes(orderNoSearch);
 
-  setFilteredData(filtered);
-};
+            return isInRange && matchesPaymentMode && matchesName && matchesOrderNo;
+        });
+
+        setFilteredData(filtered);
+    };
+
 
 
 
@@ -172,14 +193,26 @@ export default function AdvanceOrderGst() {
 
     useEffect(() => {
         applyFilter();
-    }, [data, startDate, endDate, formdata.name, paymentMode]);
-    const clearFilters = () => {
-        setStartDate("");
-        setEndDate("");
-        setPaymentMode("");
-        localStorage.removeItem("billFilters");
-        setFilteredData(data); // Show all data again
+    }, [data, startDate, endDate, formdata.name, paymentMode,orderNoSearch]);
+    const clearFilters = async () => {
+        try {
+            setStartDate("");
+            setEndDate("");
+            setPaymentMode("");
+            setOrderNoSearch("")
+            setFormData({ name: "" }); // Also reset name filter if you're using it
+
+            const response = await fetchDatanotequal("advance_final_bill", setData, "id", { status: 2 });
+
+            setFilteredData([]); // Clear filteredData so the original data shows
+            localStorage.removeItem("billFilters");
+            toast.success("Filters cleared and data reloaded.");
+        } catch (error) {
+            console.error("Error clearing filters:", error);
+            toast.error("Failed to reload data.");
+        }
     };
+
 
     return (
         <>
@@ -196,7 +229,7 @@ export default function AdvanceOrderGst() {
                             <label>End Date</label>
                             <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                         </div>
-                        <div className="col-md-3">
+                        {/* <div className="col-md-3">
                             <label>Payment Mode</label>
                             <select className="form-control" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
                                 <option value="">All</option>
@@ -204,14 +237,24 @@ export default function AdvanceOrderGst() {
                                 <option value="Credit">Credit</option>
                                 <option value="Entertainment">Entertainment</option>
                             </select>
+                        </div> */}
+                        <div className="col-md-3">
+                            <label>Order No.</label>
+                            <input
+                                type="text"
+                                placeholder="Search Order No"
+                                value={orderNoSearch}
+                                onChange={(e) => setOrderNoSearch(e.target.value)}
+                                className="form-control mb-2" />
                         </div>
+
                     </div>
                     <div className="row mb-3">
-                        <div className="col-md-3 d-flex align-items-end">
+                        <div className="col-md-2 d-flex align-items-end">
                             <button className="btn btn-primary w-100" onClick={applyFilter}>Apply Filter</button>
                         </div>
                         {(filteredData.length > 0 || data.length > 0) && (
-                            <div className="col-md-3 d-flex align-items-end">
+                            <div className="col-md-2 d-flex align-items-end">
                                 <CSVLink
                                     data={[
                                         ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
@@ -251,15 +294,20 @@ export default function AdvanceOrderGst() {
 
 
                         )}
-                        <div className="col-md-3 d-flex align-items-end">
+                        <div className="col-md-2 d-flex align-items-end">
                             <button className="btn btn-danger w-100" onClick={exportPDF}>
                                 Export PDF
                             </button>
                         </div>
 
-                        <div className="col-md-3 d-flex align-items-end">
-                            <button className="btn btn-info w-100" onClick={() => clearFilters()}>
+                        <div className="col-md-2 d-flex align-items-end">
+                            <button className="btn btn-primary w-100" onClick={() => clearFilters()}>
                                 Clear Filters
+                            </button>
+                        </div>
+                        <div className="col-md-2 d-flex align-items-end">
+                            <button className="btn btn-info w-100" onClick={() => showcancelorders()}>
+                                Show Cancel Orders
                             </button>
                         </div>
                     </div>

@@ -43,6 +43,7 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   const editableTables = ["items", "customers", "taxes"]; // Tables where edit is allowed
   const printableTables = ["order_items", "final_bill", "customers"]; // Tables where print is allowed
   const CancelBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill", "customers"]; // Tables where print is allowed
+  const DeleteBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill"]; // Tables where print is allowed
 
   // Function to handle modal open and store selected customer data
   const handleCustomerClick = (customer) => {
@@ -576,14 +577,17 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
                               onClick={() => handlecancelClick(item.id)}
                             />
                           )}
+                          {!DeleteBillTables.includes(tablename) && (
+                                                      <FaTrash
+                                                      style={{
+                                                        cursor: "pointer",
+                                                        color: "red",
+                                                      }}
+                                                      onClick={() => handleDeleteClick(item.id)}
+                                                    />
+                                                    )}
                           {/* Delete Icon (Allowed for ALL tables) */}
-                          <FaTrash
-                            style={{
-                              cursor: "pointer",
-                              color: "red",
-                            }}
-                            onClick={() => handleDeleteClick(item.id)}
-                          />
+                         
                         </>
                       ) : col.field === "customer_name" ? (
                         <span
