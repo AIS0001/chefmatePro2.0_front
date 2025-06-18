@@ -6,9 +6,12 @@ import axios from "axios";
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { startOfDay } from 'date-fns';
+
+// export const baseURL = "http://www.chefmateapi.cloudnetsoftwares.com";  // Use export
+// axios.defaults.baseURL = "http://www.chefmateapi.cloudnetsoftwares.com/api/";
 export const baseURL = "http://127.0.0.1:4402";  // Use export
 axios.defaults.baseURL = "http://localhost:4402/api";
-//axios.defaults.baseURL = "https://jdapi2.dhruvinnovations.in/api";
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
