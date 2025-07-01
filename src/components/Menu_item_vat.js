@@ -12,7 +12,7 @@ const fullMenu = [
   {
     name: 'Master',
     path: '/master',
-    icon: 'folder',
+    icon: 'layers',
     dataTargetId: '#master',
     submenu: [
       { name: 'New Customer', path: '/master/newcustomer' },
@@ -42,7 +42,7 @@ const fullMenu = [
   {
     name: 'Sale',
     path: '/sale',
-    icon: 'menu',
+    icon: 'shopping-cart',
     dataTargetId: '#property',
     submenu: [
        { name: 'Advance Order', path: '/sale/advanceorder' },
@@ -67,7 +67,7 @@ const fullMenu = [
   {
     name: 'Expenses',
     path: '/pages/expenses',
-    icon: 'file-text',
+    icon: 'minus-circle',
     dataTargetId: '#reports',
     submenu: [
       { name: 'Add Expense', path: '/expenses/suppliersexpenses' },
@@ -77,7 +77,7 @@ const fullMenu = [
   {
     name: 'Reports',
     path: '/pages/reports',
-    icon: 'file-text',
+    icon: 'chart',
     dataTargetId: '#reports',
     submenu: [
       { name: 'Sale Report', path: '/reports/billhistory' },
@@ -105,7 +105,7 @@ const fullMenu = [
   {
     name: 'Setting',
     path: '/setting',
-    icon: 'gears',
+    icon: 'settings',
     dataTargetId: '#inventory',
     submenu: [
       { name: 'Core Setting', path: '/setting/coresetting' },

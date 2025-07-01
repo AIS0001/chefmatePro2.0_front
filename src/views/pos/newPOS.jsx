@@ -21,7 +21,10 @@ import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
-  const baseURL = 'http://localhost:4402';
+  // const baseURL = 'http://localhost:4402';
+  
+   const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
+ //  const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
 
   const [data, setData] = useState([]);
@@ -72,12 +75,12 @@ export default function NewPOS() {
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
       // Step 1: Update the orders table
-      await axios.put(`http://localhost:4402/orders/${orderId}`, {
+      await axios.put(baseURL`/${orderId}`, {
         invoice_number: invoiceNumber,
       });
 
       // Step 2: Update the order_items table associated with this order
-      await axios.put(`http://localhost:4402/order_items`, {
+      await axios.put(baseURL`/order_items`, {
         order_id: orderId,
         invoice_number: invoiceNumber,
       });
@@ -112,7 +115,7 @@ export default function NewPOS() {
 
 
   // Add item to the cart
-  const addItemToOrder = (index, item) => {
+  const addItemToOrder1 = (index, item) => {
 
     const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
     const updatedCart = [...cart];
@@ -129,9 +132,46 @@ export default function NewPOS() {
     setCart(updatedCart);
     updateTotal(updatedCart);
   };
+const addItemToOrder = (index, item) => {
+  const isWeightBased = item.weight === "weight";
+console.log("weight:"+item.weight);
+  let qty = 1;
+
+  if (isWeightBased) {
+    const input = prompt("Enter weight in grams (e.g. 150, 250, 500, 1000):", "250");
+    const grams = parseFloat(input);
+
+    if (isNaN(grams) || grams <= 0) {
+      toast.error("Invalid weight entered");
+      return;
+    }
+
+    qty = grams / 1000; // Convert grams to kg
+  }
+
+  const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
+  const updatedCart = [...cart];
+
+  if (existingItemIndex !== -1) {
+    updatedCart[existingItemIndex].quantity += qty;
+  } else {
+    updatedCart.push({
+      ...item,
+      quantity: qty,
+      uom: item.uom || "",
+  subtotal: item.offerprice,   // initial subtotal = 1 x price
+  tax: item.tax || 0,  //right now no need for local shop
+   tax_amount: ( ((item.tax || 0)) * item.offerprice / 100 ).toFixed(2),  //calculate tax value included
+    });
+  }
+
+  setCart(updatedCart);
+  updateTotal(updatedCart);
+};
+
 
   // Decrease item quantity
-  const decreaseItemQuantity = (index) => {
+  const decreaseItemQuantity1 = (index) => {
     const updatedCart = [...cart];
     if (updatedCart[index].quantity > 1) {
       updatedCart[index].quantity -= 1;
@@ -143,13 +183,17 @@ export default function NewPOS() {
   };
 
   // Increase item quantity
-  const increaseItemQuantity = (index) => {
+  const increaseItemQuantity1 = (index) => {
     const updatedCart = [...cart];
     updatedCart[index].quantity += 1;
     setCart(updatedCart);
     updateTotal(updatedCart);
   };
-
+const formatQuantity = (item) => {
+  return item.quantity_type === "weight"
+    ? `${(item.quantity * 1000).toFixed(0)}g`
+    : `${item.quantity}`;
+};
   // Update total price
   const updateTotal = (cart) => {
     const newTotal = cart.reduce(
@@ -158,6 +202,24 @@ export default function NewPOS() {
     );
     setTotal(newTotal);
   };
+const increaseItemQuantity = (index) => {
+  const updatedCart = [...cart];
+  const step = updatedCart[index].quantity_type === "weight" ? 0.25 : 1;
+  updatedCart[index].quantity += step;
+  setCart(updatedCart);
+  updateTotal(updatedCart);
+};
+
+const decreaseItemQuantity = (index) => {
+  const updatedCart = [...cart];
+  const step = updatedCart[index].quantity_type === "weight" ? 0.25 : 1;
+  updatedCart[index].quantity -= step;
+  if (updatedCart[index].quantity <= 0) {
+    updatedCart.splice(index, 1);
+  }
+  setCart(updatedCart);
+  updateTotal(updatedCart);
+};
 
   //delete order
   const handleDeleteOrder = async () => {
@@ -442,6 +504,8 @@ export default function NewPOS() {
                             />
                             <h5 className="item-name">{item.iname}</h5>
                             <p className="item-price">฿ {item.offerprice}.00</p>
+                              <p className="item-gst"> {item.tax}%</p>
+                            
                           </div>
                         </div>
                       ))
@@ -475,9 +539,8 @@ export default function NewPOS() {
                             key={index}
                           >
                             <h5 className="item-name mb-0">
-                              {item.iname} x {item.quantity} = ฿{" "}
-                              ฿{(item.quantity * item.offerprice).toFixed(2)}
-                            </h5>
+  {item.iname} x {formatQuantity(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
+</h5>
                             <div className="quantity-controls d-flex align-items-center">
                               <button
                                 className="btn btn-dark-custom btn-sm me-2"

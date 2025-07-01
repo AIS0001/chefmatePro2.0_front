@@ -1,328 +1,237 @@
-/* eslint-disable no-undef */
-
+// BillHistoryGst.jsx
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
-import { getHeaders } from "../../utility/getHeader";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { CSVLink } from "react-csv";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { parseISO, format } from "date-fns";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import logo from "../../assets/logo.png"
+import { format, parseISO } from "date-fns";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
-import CardComponent from "../../components/cards/CardComponent";
-
-import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-
-
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { SubmitButton } from "../../components/Buttons/Textfield";
+import Header from "../../components/Header";
+import CardComponent from "../../components/cards/CardComponent";
 import DataTable from "../../components/data-tables/dataTableGst";
-import SimpleDataTable from "../../components/data-tables/SimpledataTable";
-import fetchData from '../../functions/fetchData';
-import fetchdatanotequal from '../../functions/viewAllData';
-
-
-
+import fetchdatanotequal from "../../functions/viewAllData";
+import logo from "../../assets/logo.png";
+import BillItemModal from "../../components/Modals/BillItemModal";
 export default function BillHistoryGst() {
-    let currentDate = format(new Date(), "yyyy-MM-dd");
-    //  const headers = { Authorization: authheader().access_token };
-    const [data, setData] = useState([]);
-    const [errors, setErrors] = useState({});
-    const [formdata, setFormData] = useState({
-        name: "",
+  const [data, setData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [startDate, setStartDate] = useState(localStorage.getItem("startDate") || "");
+  const [endDate, setEndDate] = useState(localStorage.getItem("endDate") || "");
+  const [paymentMode, setPaymentMode] = useState(localStorage.getItem("paymentMode") || "");
+  const [activeTab, setActiveTab] = useState("active");
+  const [cancelledTotal, setCancelledTotal] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedBill, setSelectedBill] = useState(null);
 
+  const columns = [
+    { label: "Inv. No.", field: "id" },
+    { label: "Date", field: "inv_date" },
+    { label: "Time", field: "inv_time" },
+    { label: "Table", field: "table_number" },
+    { label: "Subtotal", field: "subtotal" },
+    { label: "Grand Total", field: "grand_total" },
+    {
+      label: "Action",
+      field: "actions",
+      render: (row) => (
+        <button className="btn btn-sm btn-info" onClick={() => handleViewItems(row)}>
+          View Items
+        </button>
+      ),
+    },
+  ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await fetchdatanotequal("final_bill", setData, "id", {});
+      } catch (error) {
+        console.error("Data fetch error:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("startDate", startDate);
+    localStorage.setItem("endDate", endDate);
+    localStorage.setItem("paymentMode", paymentMode);
+    filterData();
+  }, [data, startDate, endDate, paymentMode, activeTab]);
+
+  const filterData = () => {
+    let source = [...data];
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      source = source.filter(item => {
+        const itemDate = new Date(item.inv_date);
+        return itemDate >= start && itemDate <= end;
+      });
+    }
+    if (paymentMode) {
+      source = source.filter(item => item.payment_mode === paymentMode);
+    }
+   if (activeTab === "cancelled") {
+  const activeBills = source.filter(item => item.status !== 0 && item.status !== "0");
+  setFilteredData(activeBills);
+} else {
+  const cancelled = source.filter(item => item.status === 0 || item.status === "0");
+  setFilteredData(cancelled);
+  const total = cancelled.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
+  setCancelledTotal(total.toFixed(2));
+}
+
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.addImage(logo, "PNG", 150, 10, 40, 15);
+    doc.setFontSize(16);
+    doc.text("Bill History", 14, 20);
+
+    const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
+    const tableRows = [];
+
+    filteredData.forEach(item => {
+      tableRows.push([
+        item.id,
+        item.inv_date,
+        item.inv_time,
+        item.table_number,
+        item.subtotal,
+        item.grand_total,
+        item.payment_mode,
+      ]);
     });
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [paymentMode, setPaymentMode] = useState("");
-    const [filteredData, setFilteredData] = useState([]);
-    const [paymentOptions, setpaymentOptions] = useState([]);
-    const [orderNoSearch, setOrderNoSearch] = useState("");
-    const columns = [
-        { label: "Inv. No.", field: "id" },
-        { label: "Date", field: "inv_date" },
-        { label: "Time", field: "inv_time" },
-        { label: "Table", field: "table_number" },
-        { label: "Subtotal", field: "subtotal" },
-        { label: "Grand Total", field: "grand_total" },
-        { label: "Action", field: "actions" }
-    ];
-    const exportPDF = () => {
-        const doc = new jsPDF();
 
-        doc.addImage(logo, "PNG", 150, 10, 40, 15);
-        doc.setFontSize(16);
-        doc.text("Bill History", 14, 20);
+    doc.autoTable({ startY: 30, head: [tableColumn], body: tableRows });
+    doc.save("salereport.pdf");
+  };
 
-        const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
-        const tableRows = [];
+  const handleViewItems = (row) => {
+    setSelectedBill(row);
+    setShowModal(true);
+  };
 
-        const exportData = filteredData.length > 0 ? filteredData : data;
+  return (
+    <Layout>
+      <Header title="Sale Report - GST Version" />
+      <ToastContainer />
 
-        exportData.forEach((item) => {
-            const rowData = [
-                item.id,
-                item.inv_date,
-                item.inv_time,
-                item.table_number,
-                item.subtotal,
-                item.grand_total,
-                item.payment_mode,
-            ];
-            tableRows.push(rowData);
-        });
+      <CardComponent>
+        <div className="d-flex mb-3">
+          <button
+            className={`btn btn-${activeTab === "active" ? "primary" : "outline-primary"} me-2`}
+            onClick={() => setActiveTab("active")}
+          >
+            Active Bills
+          </button>
+          <button
+            className={`btn btn-${activeTab === "cancelled" ? "danger" : "outline-danger"}`}
+            onClick={() => setActiveTab("cancelled")}
+          >
+            Cancelled Bills
+          </button>
+        </div>
 
-        // Calculate total
-        const totalAmount = exportData.reduce(
-            (acc, item) => acc + parseFloat(item.grand_total || 0),
-            0
-        ).toFixed(2);
+        <div className="row mb-3">
+          <div className="col-md-3">
+            <label>Start Date</label>
+            <input type="date" className="form-control" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          </div>
+          <div className="col-md-3">
+            <label>End Date</label>
+            <input type="date" className="form-control" value={endDate} onChange={e => setEndDate(e.target.value)} />
+          </div>
+          <div className="col-md-3">
+            <label>Payment Mode</label>
+            <select className="form-control" value={paymentMode} onChange={e => setPaymentMode(e.target.value)}>
+              <option value="">All</option>
+              <option value="Cash">Cash</option>
+              <option value="Credit">Credit</option>
+              <option value="Entertainment">Entertainment</option>
+            </select>
+          </div>
+        </div>
 
-        // Add total row (empty cells except last column)
-        const totalRow = ["", "", "", "", "Total:", `INR ${totalAmount}`, ""];
-        tableRows.push(totalRow);
+        <div className="row mb-3">
+          <div className="col-md-3">
+            <CSVLink data={filteredData} filename="salereport.csv" className="btn btn-success w-100">
+              Export CSV
+            </CSVLink>
+          </div>
+          <div className="col-md-3">
+            <button className="btn btn-danger w-100" onClick={handleExportPDF}>Export PDF</button>
+          </div>
+        </div>
+      </CardComponent>
 
-        doc.autoTable({
-            startY: 30,
-            head: [tableColumn],
-            body: tableRows,
-        });
+      <div className="row">
+        <div className="col-12">
+          {filteredData.length === 0 ? (
+            <p>No data available.</p>
+          ) : (
+            <DataTable columns={columns} data={filteredData} tablename="final_bill" />
+          )}
+          <div className="mt-3">
+            <h5>
+              {activeTab === "cancelled" ? (
+                <>Cancelled Bill Total: ฿{cancelledTotal}</>
+              ) : (
+                <>Total Sale: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
+              )}
+            </h5>
+          </div>
+        </div>
+      </div>
 
-        doc.save("salereport.pdf");
-    };
+      <div className="row">
+        <CardComponent>
+          <div className="mt-4">
+            <h5>Monthly Sales Summary</h5>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={generateMonthlySummary(filteredData)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="total" fill="#2334d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardComponent>
+      </div>
 
+      {showModal && (
+        <BillItemModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          bill={selectedBill}
+        />
+      )}
+    </Layout>
+  );
 
-    const generateMonthlySummary = (dataArray) => {
-        const summary = {};
-
-        (dataArray.length > 0 ? dataArray : data).forEach((item) => {
-            const date = parseISO(item.inv_date);
-            const month = format(date, "MMM yyyy");
-            const total = parseFloat(item.grand_total || 0);
-
-            summary[month] = (summary[month] || 0) + total;
-        });
-
-        return Object.entries(summary).map(([month, total]) => ({ month, total }));
-    };
-
-    const monthlyData = generateMonthlySummary(filteredData);
-
-
-    //Fetch data query
-    const handleFilter = (field) => {
-        // Show a filter UI or perform a filtering action based on the clicked field
-        console.log(`Filter clicked for: ${field}`);
-    };
-
-    useEffect(() => {
-        const fetchAndSetData = async () => {
-            try {
-                await fetchdatanotequal("final_bill", setData, "id", { "status": 2 });
-                setpaymentOptions(await fetchComboData("paymentoptions", "name"));
-                //console.log("Fetched data:", data); // Add this line for debugging
-            } catch (error) {
-                console.error("Error in useEffect:", error);
-            }
-        };
-
-        fetchAndSetData();
-    }, []);
-
-    const applyFilter = () => {
-        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-            toast.error("Invalid date range: Start Date is after End Date");
-            clearFilters();
-            return;
-        }
-
-        const filtered = data.filter((item) => {
-            if (!item.inv_date) return false;
-
-            const itemDate = new Date(item.inv_date);
-            const start = startDate ? new Date(startDate) : null;
-            const end = endDate ? new Date(endDate) : null;
-
-            const isInRange =
-                (!start || itemDate >= start) &&
-                (!end || itemDate <= end);
-
-            const matchesPaymentMode = !paymentMode || item.payment_mode === paymentMode;
-            const matchesName = !formdata.name || item.name === formdata.name;
-
-            const matchesOrderNo = !orderNoSearch || item.id?.toString().includes(orderNoSearch);
-
-            return isInRange && matchesPaymentMode && matchesName && matchesOrderNo;
-        });
-
-        setFilteredData(filtered);
-    };
-    const totalAmount = () =>
-        (filteredData.length > 0 ? filteredData : data)
-            .reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0)
-            .toFixed(2);
-
-    useEffect(() => {
-        applyFilter();
-    }, [data, startDate, endDate, formdata.name, paymentMode, orderNoSearch]);
-    const clearFilters = () => {
-        setStartDate("");
-        setEndDate("");
-        setPaymentMode("");
-        localStorage.removeItem("billFilters");
-        setFilteredData(data); // Show all data again
-    };
-
-    return (
-        <>
-            <Layout>
-                <Header title="Sale Report-GST Version" />
-                <ToastContainer />
-                <CardComponent>
-                    <div className="row mb-3">
-                        <div className="col-md-3">
-                            <label>Start Date</label>
-                            <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                        </div>
-                        <div className="col-md-3">
-                            <label>End Date</label>
-                            <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        </div>
-                        <div className="col-md-3">
-                            <label>Payment Mode</label>
-                            <select className="form-control" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
-                                <option value="">All</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Credit">Credit</option>
-                                <option value="Entertainment">Entertainment</option>
-                            </select>
-                        </div>
-                        <div className="col-md-3">
-                            <label>Order No.</label>
-                            <input
-                                type="text"
-                                placeholder="Search Order No"
-                                value={orderNoSearch}
-                                onChange={(e) => setOrderNoSearch(e.target.value)}
-                                className="form-control mb-2" />
-                        </div>
-                    </div>
-                    <div className="row mb-3">
-                        <div className="col-md-3 d-flex align-items-end">
-                            <button className="btn btn-primary w-100" onClick={applyFilter}>Apply Filter</button>
-                        </div>
-                        {(filteredData.length > 0 || data.length > 0) && (
-                            <div className="col-md-3 d-flex align-items-end">
-                                <CSVLink
-                                    data={[
-                                        ...(filteredData.length > 0 ? filteredData : data).map((item) => ({
-                                            id: item.id,
-                                            inv_date: item.inv_date,
-                                            inv_time: item.inv_time,
-                                            subtotal: item.subtotal,
-                                            discount_value: item.discount_value,
-                                            discount_amount: item.discount_amount,
-                                            subtotal_afterdiscount: item.subtotal_afterdiscount,
-                                            roundoff: item.roundoff,
-                                            grand_total: item.grand_total,
-                                        })),
-                                        {
-                                            id: "",
-                                            inv_date: "",
-                                            inv_time: "",
-                                            subtotal: "",
-                                            discount_value: "",
-                                            discount_amount: "",
-                                            subtotal_afterdiscount: "",
-                                            roundoff: "Total",
-                                            grand_total: totalAmount(), // helper function below
-                                        },
-                                    ]}
-                                    filename="salereport.csv"
-                                    className="btn btn-success w-100"
-                                >
-                                    Export CSV
-                                </CSVLink>
-
-
-
-                            </div>
-
-
-
-
-                        )}
-                        <div className="col-md-3 d-flex align-items-end">
-                            <button className="btn btn-danger w-100" onClick={exportPDF}>
-                                Export PDF
-                            </button>
-                        </div>
-
-                        <div className="col-md-3 d-flex align-items-end">
-                            <button className="btn btn-info w-100" onClick={() => clearFilters()}>
-                                Clear Filters
-                            </button>
-                        </div>
-                    </div>
-
-                </CardComponent>
-
-
-
-
-                <div className="row">
-
-                    {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" id="tableid">
-                        {data.length === 0 ? (
-                            <p>No data available</p>
-                        ) : (
-                            //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                            // <DataTable columns={columns} data={data} tablename="final_bill" />
-                            <DataTable columns={columns} data={filteredData.length > 0 ? filteredData : data} tablename="final_bill" />
-
-                        )}
-                        <div className="mt-3">
-                            <h5>
-                                Total Sale: ฿{(filteredData.length > 0 ? filteredData : data)
-                                    .reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0)
-                                    .toFixed(2)}
-                            </h5>
-                        </div>
-
-
-                    </div>
-                </div>
-
-
-
-
-                <div className="row">
-                    <CardComponent>
-
-                        <div className="mt-4">
-                            <h5>Monthly Sales Summary</h5>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={monthlyData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Bar dataKey="total" fill="#2334d8" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                    </CardComponent>
-                </div>
-            </Layout>
-        </>
-    );
+  function generateMonthlySummary(dataArray) {
+    const summary = {};
+    dataArray.forEach((item) => {
+      const date = parseISO(item.inv_date);
+      const month = format(date, "MMM yyyy");
+      const total = parseFloat(item.grand_total || 0);
+      summary[month] = (summary[month] || 0) + total;
+    });
+    return Object.entries(summary).map(([month, total]) => ({ month, total }));
+  }
 }

@@ -177,8 +177,9 @@ const handleFinalSave = async () => {
       }
       axios.get(`/getclosingstock/${formData.item_id}`, getHeaders())
         .then(res => {
-          const closing = res.data?.closing_stock || 0;
-          setFormData(prev => ({ ...prev, opening_stock: closing.toFixed(2) }));
+          const closing = parseFloat(res.data?.closing_stock) || 0;
+setFormData(prev => ({ ...prev, opening_stock: closing.toFixed(2) }));
+
         })
         .catch(() => setFormData(prev => ({ ...prev, opening_stock: "0.00" })));
     }

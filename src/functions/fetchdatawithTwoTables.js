@@ -18,7 +18,7 @@ const fetchDataFromTwoTables = async (tblname1, tblname2, col1, col2, setData, o
     // If a setData function is provided, update the state with the fetched data
     if (setData && typeof setData === 'function') {
         setData(response.data.data);
-       console.log(response.data.data);
+     //  console.log(response.data.data);
     }
 
     return response.data.data;

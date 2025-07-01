@@ -63,10 +63,10 @@ export default function BillHistory() {
       filtered = filtered.filter((r) => r.customer_name === customername);
     }
 
-    const credit = filtered.reduce((sum, r) => sum + (r.credit_amount || 0), 0);
-    const debit = filtered.reduce((sum, r) => sum + (r.debit_amount || 0), 0);
+ const credit = filtered.reduce((sum, r) => sum + (Number(r.credit_amount) || 0), 0);
+const debit = filtered.reduce((sum, r) => sum + (Number(r.debit_amount) || 0), 0);
+setTotals({ credit, debit, balance: debit - credit });
 
-    setTotals({ credit, debit, balance:  debit-credit });
     setData(filtered);
   };
 
@@ -95,8 +95,8 @@ export default function BillHistory() {
       "",
       "",
       "Balance: " + Totals.balance,
-      Totals.debit.toFixed(2),
-      Totals.credit.toFixed(2),
+      (Totals.debit).toFixed(2),
+      (Totals.credit).toFixed(2),
     ]);
 
     doc.autoTable({
@@ -126,8 +126,8 @@ export default function BillHistory() {
       account_type: "",
       account_id: "",
       description: "Total",
-      debit_amount: Totals.debit.toFixed(2),
-      credit_amount: Totals.credit.toFixed(2),
+      debit_amount: (Totals.debit).toFixed(2) || 0,
+      credit_amount: (Totals.credit).toFixed(2) || 0,
     },
     {
       transaction_id: "",
@@ -156,8 +156,9 @@ const resetFilters = () => {
         const fetched = await fetchData("ledger_entries", null, "id", {});
         setAllData(fetched);
         setData(fetched);
-             const result = await fetchComboData("customers", "name");
-    setCustomerdata([...new Set(result.map(i => i.name))]); // Ensures unique names
+          const result = await fetchComboData("customers", "name");
+        setCustomerdata(result); // Don't filter to only names
+
       } catch (e) {
         console.error("Error fetching data:", e);
       }
@@ -220,10 +221,10 @@ const resetFilters = () => {
               </div>
               <div className="col-md-3">
                 <label className="control-label">Customer Name</label>
-          <select
+   <select
   className="form-control"
   value={formdata.account_id}
-  onChange={async (e) => {
+  onChange={(e) => {
     const selectedId = e.target.value;
     const selectedCustomer = customerdata.find(c => c.id == selectedId);
 
@@ -233,18 +234,19 @@ const resetFilters = () => {
       account_id: selectedId,
     });
 
-    // Optional: Fetch data using selectedId (account_id)
     const fetched = Alldata.filter(entry => entry.account_id == selectedId);
     setData(fetched);
   }}
 >
-   <option value="">Select</option>
-  {customerdata.map((name, idx) => (
-    <option key={idx} value={name}>
-      {name}
+  <option value="">Select</option>
+  {customerdata.map((cust, idx) => (
+    <option key={idx} value={cust.id}>
+      {cust.name}
     </option>
   ))}
 </select>
+
+
 
 
               </div>
@@ -284,9 +286,9 @@ const resetFilters = () => {
             />
           )}
           <div className="mt-3">
-            <strong>Total Credit:</strong> {Totals.credit.toFixed(2)} |{" "}
-            <strong>Total Debit:</strong> {Totals.debit.toFixed(2)} |{" "}
-            <strong>Balance:</strong> {Totals.balance.toFixed(2)}
+            <strong>Total Credit:</strong> {(Totals.credit).toFixed(2)} |{" "}
+            <strong>Total Debit:</strong> {(Totals.debit).toFixed(2)} |{" "}
+            <strong>Balance:</strong> {(Totals.balance).toFixed(2)}
           </div>
         </div>
       </div>

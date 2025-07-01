@@ -2,17 +2,27 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 const fullMenu = [
-  {
+  // {
+  //   name: 'Dashboard',
+  //   path: '/dashboard/admin',
+  //   icon: 'view-dashboard',
+  //   dataTargetId: '#home'
+  // },
+ {
     name: 'Dashboard',
-    path: '/dashboard/admin',
-    icon: 'view-dashboard',
-    dataTargetId: '#home'
-  },
+    path: '/dashboard',
+    icon: 'folder',
+    dataTargetId: '#dashboard',
+    submenu: [
+      { name: 'Analytics', path: '/dashboard/admin' },
+     
 
+    ]
+  },
   {
     name: 'Master',
     path: '/master',
-    icon: 'folder',
+    icon: 'layers',
     dataTargetId: '#master',
     submenu: [
       { name: 'New Customer', path: '/master/newcustomer' },
@@ -43,7 +53,7 @@ const fullMenu = [
   {
     name: 'Sale GST',
     path: '/sale',
-    icon: 'menu',
+    icon: 'shopping-cart',
     dataTargetId: '#property',
     submenu: [
       { name: 'Advance Order', path: '/sale/advanceordergstt' },
@@ -66,7 +76,7 @@ const fullMenu = [
   {
     name: 'Expenses',
     path: '/pages/expenses',
-    icon: 'file-text',
+    icon: 'minus-circle',
     dataTargetId: '#reports',
     submenu: [
       { name: 'Add Expense', path: '/expenses/suppliersexpenses' },
@@ -77,7 +87,7 @@ const fullMenu = [
   {
     name: 'Reports GST',
     path: '/pages/reports',
-    icon: 'file-text',
+    icon: 'chart',
     dataTargetId: '#reports',
     submenu: [
 
@@ -105,7 +115,7 @@ const fullMenu = [
   {
     name: 'Setting',
     path: '/setting',
-    icon: 'gears',
+    icon: 'settings',
     dataTargetId: '#inventory',
     submenu: [
       { name: 'Core Setting', path: '/setting/coresetting' },

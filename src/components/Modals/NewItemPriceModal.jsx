@@ -30,6 +30,7 @@ const customStyles = {
 const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   const [formdata, setFormData] = useState({
     unit: "",
+    quantity_type: "",
     tax: "",
     subcat: "",
     isstockable: false,
@@ -69,13 +70,14 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    //console.log(formdata);
+    console.log(formdata);
     try {
       const post1 = await axios.post(
         "/insertdata/items",
         {
           iname: formdata.iname,
           unit: formdata.unit,
+          weight: formdata.quantity_type,
           tax: formdata.tax,
           mrp: formdata.mrp,
           offerprice: formdata.offerprice,
@@ -252,6 +254,37 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 </select>
               </div>
             </div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+              <div className="form-group">
+                <label
+                  className="control-label mb-10"
+                  style={{ marginLeft: "15px" }}
+                >
+                  Item Type
+                </label>
+
+                <select
+                  id="quantity_type"
+                  name="quantity_type"
+                  className="form-select custom-select"
+                  style={{
+                    borderRadius: "4px",
+                    border: "2px solid #17a2b8",
+                    height: "45px", // Increased height
+                    width: "95%", // Full width of the parent
+                    marginLeft: "15px", // Ensure no margin that could offset alignment
+                  }} // Stylish combo box
+                  onChange={handleComboChange}
+                  value={formdata.quantity_type}
+                >
+                  <option value="">Select type</option>
+                  <option value="unit">Per Piece</option>
+                  <option value="weight">Per KG</option>
+                </select>
+              </div>
+            </div>
+
+
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <div className="form-group">
                 <label

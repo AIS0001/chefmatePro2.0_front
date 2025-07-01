@@ -21,7 +21,9 @@ import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOSGST() {
-  const baseURL = 'http://localhost:4402';
+ // const baseURL = 'http://localhost:4402';
+  const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
+  //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
 
   const [data, setData] = useState([]);
@@ -72,12 +74,12 @@ export default function NewPOSGST() {
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
       // Step 1: Update the orders table
-      await axios.put(`http://localhost:4402/orders/${orderId}`, {
+      await axios.put(baseURL`/orders/${orderId}`, {
         invoice_number: invoiceNumber,
       });
 
       // Step 2: Update the order_items table associated with this order
-      await axios.put(`http://localhost:4402/order_items_gst`, {
+      await axios.put(baseURL`/order_items_gst`, {
         order_id: orderId,
         invoice_number: invoiceNumber,
       });
@@ -91,7 +93,7 @@ export default function NewPOSGST() {
 
   // Print Order (Save to MySQL)
   const handleBillHistory = async () => {
-    navigate(`/reports/billhistory`);
+    navigate(`/reports/billhistorygst`);
   };
 
 
@@ -99,7 +101,7 @@ export default function NewPOSGST() {
   // Fetch items when a subcategory is clicked
   const handleSubcategoryClick = async (subcategoryId) => {
     try {
-      const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
+     // const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
       const response1 = await fetchDataFromTwoTables("items", "item_images", "id", "product_id", setData, "t1.id", { subcatid: subcategoryId })
       // Assuming the response returns a list of items with images
       console.log(response1);
@@ -112,7 +114,7 @@ export default function NewPOSGST() {
 
 
   // Add item to the cart
-  const addItemToOrder = (index, item) => {
+  const addItemToOrder1 = (index, item) => {
 
     const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
     const updatedCart = [...cart];
@@ -136,7 +138,44 @@ export default function NewPOSGST() {
     setCart(updatedCart);
     updateTotal(updatedCart);
   };
+const addItemToOrder = (index, item) => {
+  const isWeightBased = item.weight === "weight";
+console.log("weight:"+item.weight);
+  let qty = 1;
 
+  if (isWeightBased) {
+    const input = prompt("Enter weight in grams (e.g. 150, 250, 500, 1000):", "250");
+    const grams = parseFloat(input);
+
+    if (isNaN(grams) || grams <= 0) {
+      toast.error("Invalid weight entered");
+      return;
+    }
+
+    qty = grams / 1000; // Convert grams to kg
+  }
+
+  const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
+  const updatedCart = [...cart];
+
+  if (existingItemIndex !== -1) {
+    updatedCart[existingItemIndex].quantity += qty;
+  } else {
+    updatedCart.push({
+      ...item,
+      quantity: qty,
+      uom: item.uom || "",
+  subtotal: item.offerprice,   // initial subtotal = 1 x price
+  cgst: item.tax/2 || 0,
+  sgst: item.tax/2 || 0,
+  igst: item.igst || 0,  //right now no need for local shop
+   tax_amount: ( ((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100 ).toFixed(2),  //calculate tax value included
+    });
+  }
+
+  setCart(updatedCart);
+  updateTotal(updatedCart);
+};
   // Decrease item quantity
   const decreaseItemQuantity = (index) => {
     const updatedCart = [...cart];
@@ -235,12 +274,13 @@ export default function NewPOSGST() {
       },
         getHeaders()
       );
+//console.log("🔍 selectedTable", selectedTable);
 
       await updateData(
-        "tablelist",
-        { status: '1' },
-        { name: selectedTable } // Additional WHERE conditions
-      );
+  "tablelist",
+  { status: '1' },  // ✅ This is updatedFields
+  { name: selectedTable } // ✅ This is where
+);
       await fetchData("tablelist", setTotaltablelist, "id", {});
       await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
 
@@ -456,6 +496,7 @@ export default function NewPOSGST() {
                             <h5 className="item-name">{item.iname}</h5>
                             <p className="item-price">฿ {item.offerprice}.00</p>
                             <p className="item-gst"> {item.tax}%</p>
+                            {/* <p className="item-price"> {item.weight}</p> */}
                           </div>
                         </div>
                       ))

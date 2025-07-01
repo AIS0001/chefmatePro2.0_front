@@ -74,6 +74,7 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+  const [CustomerDetails, setCustomerDetailsdb] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
 
 
@@ -299,7 +300,7 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
 
 
   const handleBillHistory = async () => {
-    navigate(`/reports/billhistory`);
+    navigate(`/reports/billhistorygst`);
   };
   const handlePrintClick = async (itemId) => {
     try {
@@ -309,6 +310,7 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
       // Fetch the final_bill and order_items details for the given itemId
       const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
       const myOrderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: invId });
+      const myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: myfinalbilldata[0].customer_id });
       // Check if inv_time exists in finalBillData
       const invTime = myfinalbilldata[0].inv_time;
       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
@@ -411,9 +413,14 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                     <td>Time:${formattedTime}</td>
                     
                   </tr>
-                
+                 <tr >
+                    <td>Customer Name: ${myCustomerdetails[0].name}</td>
+                   
+                    <td></td>
+                    
+                  </tr>
                 <tbody> 
-                <tr>  </tr>
+                <tr><td> </td>  </tr>
                 <tr>  </tr>
                 </tbody>
                 </table>
@@ -439,7 +446,8 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                           <td>${item.item_name}</td>
                           <td>${item.quantity}</td>
                           <td>฿ ${item.total_price / item.quantity}</td>
-                          <td> ${item.cgst+item.sgst+item.igst} %</td>
+                         <td>${parseFloat(item.cgst) + parseFloat(item.sgst) + parseFloat(item.igst)} %</td>
+
                           <td>฿ ${item.total_price}</td>
                           
                         </tr>
@@ -461,7 +469,7 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
             </div>
             <div class="footer">
               <p>Printed on ${new Date().toLocaleString()}</p>
-              <p>Powered by ${companyInfo[0].name}</p>
+              <p>Powered by ${companyInfo[0].developer}</p>
             </div>
           </body>
         </html>
@@ -555,7 +563,9 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
 
       //prepare the request body
       const billData = {
-        customer_id: formdata.pmode === "Credit" ? customerDetails.custid || null : null, // ✅ Fix: Use null if undefined
+        // customer_id: formdata.pmode === "Credit" ? customerDetails.custid || null : null, // ✅ Fix: Use null if undefined
+        customer_id: customerDetails?.custid || null,
+
         tablenumber: selectedTable || "", // ✅ Fix: Ensure table number is assigned
         subtotal: subtotal || 0, // ✅ Default to 0 if undefined
 
@@ -746,6 +756,7 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
             <h2>${companyInfo[0].name}</h2>
             <div class="company-info">
               <p>${companyInfo[0].address}</p>
+              <p>${companyInfo[0].phone_number}</p>
               <p>Tax:${companyInfo[0].tax_id}</p>
             
            
@@ -1129,39 +1140,33 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                 readOnly // Make it read-only as it's calculated dynamically
               />
             </div>
-            <div className="col-12">
-              <div className="form-group">
-                <label
-                  className="control-label mb-10"
-                  style={{ marginLeft: "15px" }}
-                >
-                  Payment Mode
-                </label>
+            <div className="row">
+           <div className="col-md-6">
+  <label>Payment Mode</label>
+  <select
+    id="pmode"
+    name="pmode"
+    className="form-control"
+    onChange={handleComboChange}
+    value={formdata.pmode}
+  >
+    <option value="Cash">Cash</option>
+    <option value="Credit">Credit</option>
+    <option value="Entertainment">Entertainment</option>
+  </select>
+</div>
 
-                <select
-                  id="pmode"
-                  name="pmode"
-                  className="form-select custom-select"
-                  style={{
-                    borderRadius: "4px",
-                    border: "2px solid #17a2b8",
-                    height: "45px", // Increased height
-                    width: "95%", // Full width of the parent
-                    marginLeft: "15px", // Ensure no margin that could offset alignment
-                  }} // Stylish combo box
-                  onChange={handleComboChange}
-                  value={formdata.pmode}
-                >
+<div className="col-md-6 d-flex align-items-end">
+ 
+  <button
+    className="btn btn-primary mt-2 custom-btn"
+    onClick={() => setCustomerModalOpen(true)}
+  >
+    Select / Add Customer
+  </button>
+</div>
+</div>
 
-                  {paymentOptions.map((pmt) => (
-                    <option key={pmt.name} value={pmt.name}>
-                      {pmt.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-            </div>
             <div className="col-12">
               <div className="form-group">
                 <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
@@ -1250,6 +1255,8 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                 >
                   Bill History
                 </button>
+      
+
                 <button
                   className="btn btn-info"
                   onClick={() => {

@@ -17,7 +17,7 @@ const fetchData = async (tblname, setData, orderby, where) => {
         
        
     }
-    //console.log(url);
+    console.log(url);
     // if(tblname==="final_bill")
     // {
     //     console.log("Fetch url data");
@@ -30,13 +30,15 @@ const fetchData = async (tblname, setData, orderby, where) => {
     // If a setData function is provided, update the state with the fetched data
     if (setData && typeof setData === 'function') {
         setData(response.data.data)
-      //  console.log(response.data.data);
+        console.log(response.data.data);
     //     if(tblname==="final_bill")
     //         {
     //             console.log("getch final bill data:");
     //    console.log(response.data.data);
     //         }
     }
+    //console.log("fetchdata data:");
+    //    console.log(response.data.data);
     return response.data.data;
 }
 const fetchdatanotequal = async (tblname, setData, orderby, where) => {

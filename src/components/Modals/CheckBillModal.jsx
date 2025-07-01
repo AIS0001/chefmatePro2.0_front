@@ -382,6 +382,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                <h2>${companyInfo[0].name}</h2>
             <div class="company-info">
               <p>${companyInfo[0].address}</p>
+              <p>${companyInfo[0].phone_number}</p>
               <p>Tax:${companyInfo[0].tax_id}</p>
             
            
@@ -452,7 +453,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
             </div>
             <div class="footer">
               <p>Printed on ${new Date().toLocaleString()}</p>
-              <p>Powered by ${companyInfo[0].name}</p>
+              <p>Powered by ${companyInfo[0].developer}</p>
             </div>
           </body>
         </html>

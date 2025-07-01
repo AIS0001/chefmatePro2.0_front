@@ -31,31 +31,31 @@ export default function Topbar() {
 									<div className="app-nicescroll-bar">
 										<ul className="app-icon-wrap pa-10">
 											<li>
-												<Link to="weather.html" className="connection-item">
+												<Link to="#" className="connection-item">
 													<i className="zmdi zmdi-cloud-outline txt-info"></i>
 													<span className="block">weather</span>
 												</Link>
 											</li>
 											<li>
-												<Link to="inbox.html" className="connection-item">
+												<Link to="#" className="connection-item">
 													<i className="zmdi zmdi-email-open txt-success"></i>
 													<span className="block">e-mail</span>
 												</Link>
 											</li>
 											<li>
-												<Link to="calendar.html" className="connection-item">
+												<Link to="#" className="connection-item">
 													<i className="zmdi zmdi-calendar-check txt-primary"></i>
 													<span className="block">calendar</span>
 												</Link>
 											</li>
 											<li>
-												<Link to="vector-map.html" className="connection-item">
+												<Link to="#" className="connection-item">
 													<i className="zmdi zmdi-map txt-danger"></i>
 													<span className="block">map</span>
 												</Link>
 											</li>
 											<li>
-												<Link to="chats.html" className="connection-item">
+												<Link to="#" className="connection-item">
 													<i className="zmdi zmdi-comment-outline txt-warning"></i>
 													<span className="block">chat</span>
 												</Link>
@@ -77,7 +77,7 @@ export default function Topbar() {
 								</li>
 							</ul>
 						</li>
-						<li className="dropdown full-width-drp">
+						{/* <li className="dropdown full-width-drp">
 							<Link to="#" className="dropdown-toggle" data-toggle="dropdown"><i class="zmdi zmdi-more-vert top-nav-icon"></i></Link>
 							<ul className="dropdown-menu mega-menu pa-0" data-dropdown-in="fadeIn" data-dropdown-out="fadeOut">
 								<li className="product-nicescroll-bar row">
@@ -167,7 +167,7 @@ export default function Topbar() {
 									</ul>
 								</li>
 							</ul>
-						</li>
+						</li> */}
 						<li className="dropdown alert-drp">
 							<Link to="#" className="dropdown-toggle" data-toggle="dropdown"><i class="zmdi zmdi-notifications top-nav-icon"></i><span class="top-nav-icon-badge">5</span></Link>
 							<ul className="dropdown-menu alert-dropdown" data-dropdown-in="bounceIn" data-dropdown-out="bounceOut">
@@ -275,7 +275,7 @@ export default function Topbar() {
 									<Link to="inbox.html"><i className="zmdi zmdi-email"></i><span>Inbox</span></Link>
 								</li>
 								<li>
-									<Link to="#"><i className="zmdi zmdi-settings"></i><span>Settings</span></Link>
+									<Link to="/setting/companyinfo"><i className="zmdi zmdi-settings"></i><span>Settings</span></Link>
 								</li>
 								<li className="divider"></li>
 								<li className="sub-menu show-on-hover">

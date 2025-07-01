@@ -38,7 +38,7 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-
+ const [CustomerDetails, setCustomerDetailsdb] = useState([]); // Manage the table data state
 
   const editableTables = ["items", "customers", "taxes"]; // Tables where edit is allowed
   const printableTables = ["order_items_gst", "final_bill","advance_order_items_gst","advance_final_bill", "customers"]; // Tables where print is allowed
@@ -106,20 +106,25 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
   };
 
   const handlePrintClick = async (itemId,tblname) => {
+    console.log("table name "+tblname);
     try {
       // Fetch the final_bill and order_items_gst details for the given itemId
       const finalBillData = await fetchData(tblname, setFinalBillData, "id", { id: itemId });
        let myorderItemsData = [];
+       const myCustomerdetails =[];
 if(tblname=="final_bill")
 {
  myorderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: itemId });
+  myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: itemId });
 }
 else
 {
  myorderItemsData = await fetchData("advance_order_items_gst", setOrderItemsData, "id", { invoice_number: itemId });
+  myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: itemId });
   
 }
-      await fetchData("companyinfo", setcompanyInfo, "id", {});
+      const companyInfo = await fetchData("companyinfo", null, "id", {});
+
       
       // Check if inv_time exists in finalBillData
       const invTime = finalBillData[0].inv_time;
@@ -200,6 +205,7 @@ else
              <h2>${companyInfo[0].name}</h2>
           <div class="company-info">
             <p>${companyInfo[0].address}</p>
+            <p>${companyInfo[0].phone_number}</p>
             <p>Tax:${companyInfo[0].tax_id}</p>
           
          
@@ -224,7 +230,12 @@ else
                   <td>Time:${formattedTime}</td>
                   
                 </tr>
-              
+              <tr >
+                    <td>Customer Name: ${myCustomerdetails[0].name}</td>
+                   
+                    <td></td>
+                    
+                  </tr>
               <tbody> 
               <tr>  </tr>
               <tr>  </tr>
@@ -239,6 +250,7 @@ else
                   <th>Item Name</th>
                   <th>Qty</th>
                   <th>Rate</th>
+                  <th>GST</th>
                   <th>Total </th>
                 </tr>
               </thead>
@@ -250,6 +262,7 @@ else
                         <td>${item.item_name}</td>
                         <td>${item.quantity}</td>
                         <td>฿ ${item.total_price / item.quantity}</td>
+                         <td> ${parseFloat(item.cgst) + parseFloat(item.sgst) + parseFloat(item.igst)} %</td>
                         <td>฿ ${item.total_price}</td>
                       </tr>
                     `
@@ -260,9 +273,7 @@ else
              <div class="total-row">
             <span>Subtotal: ฿ ${FinalBillData[0].subtotal}</span><br>
             <span>Discount: ฿ ${FinalBillData[0].discount_amount}</span><br>
-            <span>Subtotal After Discount: ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
-
-            <span>Tax (7%): ฿ ${FinalBillData[0].tax}</span><br>
+            <span> After Discount: ฿ ${FinalBillData[0].subtotal_afterdiscount}</span><br>
             <span>Round Off: ฿ ${FinalBillData[0].roundoff}</span><br>
             <span>Total Amount: ฿ ${FinalBillData[0].grand_total}</span>
           </div>
@@ -270,7 +281,7 @@ else
           </div>
           <div class="footer">
             <p>Printed on ${new Date().toLocaleString()}</p>
-            <p>Powered by ${companyInfo[0].name}</p>
+            <p>Powered by ${companyInfo[0].developer}</p>
           </div>
         </body>
       </html>
@@ -399,6 +410,7 @@ else
                     <th>Item Name</th>
                     <th>Qty</th>
                     <th>Rate</th>
+                    <th>GST</th>
                     <th>Total </th>
                   </tr>
                 </thead>
@@ -407,10 +419,13 @@ else
                     .map(
                         (item) => `
                         <tr>
-                          <td>${item.item_name}</td>
+                        <td>${item.item_name}</td>
                           <td>${item.quantity}</td>
                           <td>฿ ${item.total_price / item.quantity}</td>
+                          <td> ${parseFloat(item.cgst) + parseFloat(item.sgst) + parseFloat(item.igst)} %</td>
                           <td>฿ ${item.total_price}</td>
+
+                          
                         </tr>
                       `
                     )
@@ -418,11 +433,10 @@ else
                 </tbody>
               </table>
                <div class="total-row">
+                 
               <span>Subtotal: ฿ ${finalBillData[0].subtotal}</span><br>
               <span>Discount: ฿ ${finalBillData[0].discount_amount}</span><br>
-              <span>Subtotal After Discount: ฿ ${finalBillData[0].subtotal_afterdiscount}</span><br>
-
-              <span>Tax (7%): ฿ ${finalBillData[0].tax}</span><br>
+              <span> After Discount: ฿ ${finalBillData[0].subtotal_afterdiscount}</span><br>
               <span>Round Off: ฿ ${finalBillData[0].roundoff}</span><br>
               <span>Total Amount: ฿ ${finalBillData[0].grand_total}</span>
             </div>

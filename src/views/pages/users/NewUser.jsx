@@ -161,7 +161,7 @@ export default function NewUser() {
                                                     id="usertype"
                                                     onChange={(e) => handleInputChange(e)}
                                                     name="usertype"
-                                                    value={formdata.usertype}
+                                                    value={formdata.type}
                                                     className='combo-box-select'
                                                     data-style='form-control btn-default btn-outline'
                                                 >

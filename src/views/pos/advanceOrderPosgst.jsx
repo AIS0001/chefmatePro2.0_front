@@ -21,7 +21,9 @@ import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function AdvanceOrderGst() {
-  const baseURL = 'http://localhost:4402';
+  // const baseURL = 'http://localhost:4402';
+   const baseURL = 'https://sharmachefapi.cloudnetsoftwares.com';
+  // const baseURL = 'https://www.chefmatedemo.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
 
   const [data, setData] = useState([]);
@@ -72,12 +74,12 @@ export default function AdvanceOrderGst() {
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
       // Step 1: Update the orders table
-      await axios.put(`http://localhost:4402/advance_orders/${orderId}`, {
+      await axios.put(baseURL`/advance_orders/${orderId}`, {
         invoice_number: invoiceNumber,
       });
 
       // Step 2: Update the order_items table associated with this order
-      await axios.put(`http://localhost:4402/order_items_gst`, {
+      await axios.put(baseURL`/order_items_gst`, {
         order_id: orderId,
         invoice_number: invoiceNumber,
       });

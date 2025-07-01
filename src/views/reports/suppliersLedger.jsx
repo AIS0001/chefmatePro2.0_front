@@ -37,7 +37,7 @@ export default function SuppliersLedger() {
     const credit = records.reduce((sum, r) => sum + parseFloat(r.credit_amount || 0), 0);
     const debit = records.reduce((sum, r) => sum + parseFloat(r.debit_amount || 0), 0);
     setData(records);
-    setTotals({ credit, debit, balance: credit - debit });
+    setTotals({ credit, debit, balance: debit-credit });
   };
 
   const applyFilters = () => {

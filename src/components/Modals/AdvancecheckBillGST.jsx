@@ -485,7 +485,7 @@ const [paidAmount, setPaidAmount] = useState(0);
                         <tr>
                           <td>${item.item_name} x${item.quantity}</td>
                           <td> ${item.total_price / item.quantity}</td>
-                          <td> ${item.cgst + item.sgst + item.igst} %</td>
+                          <td>${parseFloat(item.cgst) + parseFloat(item.sgst) + parseFloat(item.igst)} %</td>
                           <td> ${item.total_price}</td>
                           
                         </tr>

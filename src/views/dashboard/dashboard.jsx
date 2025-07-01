@@ -608,7 +608,13 @@ export default function Dashboard() {
     </div>
   </div>
 
-  <div className="col-lg-8 col-md-6 col-sm-12 mb-3">
+ 
+  
+</div>
+
+          </CardComponent>
+          <div className="row">
+ <div className="col-lg-8 col-md-6 col-sm-12 mb-3">
     <div className="card border-0 shadow-sm h-100">
       <div className="card-header bg-white py-2">
         <h6 className="m-0 font-weight-bold text-gray-800">Low Stock Alerts</h6>
@@ -641,9 +647,9 @@ export default function Dashboard() {
       </div>
     </div>
   </div>
-  
+
 </div>
- <div className="row">
+           <div className="row">
   <div className="col-12 mb-3">
     <div className="card border-0 shadow-sm h-100">
       <div className="card-header bg-white py-2">
@@ -678,7 +684,6 @@ export default function Dashboard() {
     </div>
   </div>
   </div>
-          </CardComponent>
         </div>
       </div>
     </Layout>
