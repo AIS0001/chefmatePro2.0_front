@@ -105,7 +105,7 @@ export default function NewPOS() {
       const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
       const response1 = await fetchDataFromTwoTables("items", "item_images", "id", "product_id", setData, "t1.id", { subcatid: subcategoryId })
       // Assuming the response returns a list of items with images
-      console.log(response1);
+     // console.log(response1);
       setData(response1);
     } catch (error) {
       console.error("Error fetching items for subcategory:", error);
@@ -459,7 +459,7 @@ const decreaseItemQuantity = (index) => {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container">
+                  <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                   <div className="row">
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-export default function Topbar() {
+export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 	return (
 		<>
 
@@ -8,13 +8,21 @@ export default function Topbar() {
 				<div className="mobile-only-brand pull-left">
 					<div className="nav-header pull-left">
 						<div className="logo-wrap">
-							<Link to="/dashboard">
+							  <Link to="/dashboard">
+    {isSidebarOpen ? (
+      <img className="brand-img" src="../../dist/img/logo.png" alt="brand" />
+    ) : (
+      <img className="brand-img" style={{ width: "40px" }} src="../../dist/img/cloudico.png" alt="brand-icon" />
+    )}
+    {/* <span className="brand-text">{isSidebarOpen ? "CloudNet Softwares" : ""}</span> */}
+  </Link>
+							{/* <Link to="/">
 								<img class="brand-img" src="../../dist/img/logo.png" alt="brand" />
-								<span className="brand-text">CloudNet</span>
-							</Link>
+								<span className="brand-text">CloudNet Softwares</span>
+							</Link> */}
 						</div>
 					</div>
-					<Link id="toggle_nav_btn" className="toggle-left-nav-btn inline-block ml-20 pull-left" to="javascript:void(0);"><i class="zmdi zmdi-menu"></i></Link>
+					<Link id="toggle_nav_btn" onClick={onToggleSidebar} className="toggle-left-nav-btn inline-block ml-20 pull-left" to="javascript:void(0);"><i class="zmdi zmdi-menu"></i></Link>
 					<Link id="toggle_mobile_search" data-toggle="collapse" data-target="#search_form" className="mobile-only-view" to="javascript:void(0);"><i class="zmdi zmdi-search"></i></Link>
 					<Link id="toggle_mobile_nav" className="mobile-only-view" to="javascript:void(0);"><i class="zmdi zmdi-more"></i></Link>
 

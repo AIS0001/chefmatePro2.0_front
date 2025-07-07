@@ -9,13 +9,11 @@ import useAutoLogout from "../hooks/useAutoLogout";
 export default function Layout({ children }) {
   const navigate = useNavigate();
   const [userType, setUserType] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // 👈 new state for sidebar
 
   useEffect(() => {
-    // Retrieve userType from localStorage or sessionStorage
-    console.log(localStorage.getItem("usertype")); // should output cashier (no quotes)
-
     const storedUserType = localStorage.getItem("usertype") || sessionStorage.getItem("usertype");
-    setUserType(storedUserType || "guest"); // fallback to guest or null if missing
+    setUserType(storedUserType || "guest");
   }, []);
 
   useEffect(() => {
@@ -27,22 +25,29 @@ export default function Layout({ children }) {
     };
 
     checkExpiration();
-    const interval = setInterval(checkExpiration, 60000); // Check every 1 minute
+    const interval = setInterval(checkExpiration, 60000);
     return () => clearInterval(interval);
   }, [navigate]);
 
-  useAutoLogout(); // Automatically triggers logout when token expires
-//alert(userType);
+  useAutoLogout();
+
   if (!userType) {
-    // You can render a loader or nothing until userType is loaded
     return null;
   }
 
+  // 👇 Function to toggle sidebar
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
   return (
     <div className="wrapper theme-4-active pimary-color-red">
-      <Topbar />
-      <LeftSidebar usertype={userType} />
-      <MainContent>{children}</MainContent>
+      {/* 👇 Pass toggleSidebar to Topbar */}
+     <Topbar onToggleSidebar={toggleSidebar} isSidebarOpen={sidebarOpen} />
+
+<LeftSidebar usertype={userType} isOpen={sidebarOpen} />
+      <MainContent isSidebarOpen={sidebarOpen}>
+  {children}
+</MainContent>
+
     </div>
   );
 }

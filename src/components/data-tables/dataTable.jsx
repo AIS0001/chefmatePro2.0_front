@@ -33,14 +33,13 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
   const rowsPerPage = 50;
-  const agent_id =
-    localStorage.getItem("uname") || sessionStorage.getItem("uname");
+  const agent_id =localStorage.getItem("uname") || sessionStorage.getItem("uname");
 
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
 
-  const editableTables = ["items", "customers", "taxes"]; // Tables where edit is allowed
+  const editableTables = [ "customers", "taxes","items","suppliers"]; // Tables where edit is allowed
   const printableTables = ["order_items", "final_bill", "customers"]; // Tables where print is allowed
   const CancelBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill", "customers"]; // Tables where print is allowed
   const DeleteBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill"]; // Tables where print is allowed

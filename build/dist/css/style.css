@@ -9481,6 +9481,7 @@ a#toggle_mobile_nav {
   margin-right: 10px;
   position: relative;
   top: 2px;
+  width:160px;
 }
 
 .navbar.navbar-inverse.navbar-fixed-top .nav-header .logo-wrap .brand-text {
@@ -17852,3 +17853,38 @@ ul.inbox-nav li a:focus {
 }
 
 /*# sourceMappingURL=style.css.map */
+
+.fixed-sidebar-left.collapsed {
+  width: 60px; /* collapsed width */
+}
+
+.fixed-sidebar-left.collapsed .right-nav-text {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Hide nested text/icons if needed */
+.fixed-sidebar-left.collapsed .side-nav li {
+  width: 60px;
+}
+
+.fixed-sidebar-left.collapsed .side-nav li a {
+  padding: 7px 10px; /* tighter padding */
+  text-align: center;
+}
+
+.fixed-sidebar-left.collapsed .side-nav li a .pull-left i {
+  margin-right: 0;
+}
+
+.fixed-sidebar-left.collapsed .side-nav li a .pull-right {
+  display: none;
+}
+
+.fixed-sidebar-left.collapsed .side-nav li.navigation-header > span {
+  display: none;
+}
+.fixed-sidebar-left {
+  transition: width 0.3s ease;
+}
+

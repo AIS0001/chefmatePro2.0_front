@@ -18,8 +18,8 @@ const customStyles = {
     bottom: "auto",
     marginRight: "-50%",
     transform: "translate(-50%, -50%)",
-    width: "100%",
-    maxWidth: "90%",
+    width: "70%",
+    maxWidth: "70%",
     borderRadius: "10px",
   },
   overlay: {
@@ -184,6 +184,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       contentLabel="New Item Entry"
       style={customStyles}
       ariaHideApp={false}
+
     >
       <ToastContainer />
       <div
@@ -191,6 +192,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          
         }}
       >
         <h4>Add New Item</h4>
@@ -337,6 +339,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 lable="Selling Price"
               />
             </div>
+            
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <div className="form-group">
                 <label

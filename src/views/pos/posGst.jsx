@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
@@ -21,7 +21,7 @@ import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOSGST() {
- // const baseURL = 'http://localhost:4402';
+  // const baseURL = 'http://localhost:4402';
   const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -101,7 +101,7 @@ export default function NewPOSGST() {
   // Fetch items when a subcategory is clicked
   const handleSubcategoryClick = async (subcategoryId) => {
     try {
-     // const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
+      // const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
       const response1 = await fetchDataFromTwoTables("items", "item_images", "id", "product_id", setData, "t1.id", { subcatid: subcategoryId })
       // Assuming the response returns a list of items with images
       console.log(response1);
@@ -122,60 +122,60 @@ export default function NewPOSGST() {
     if (existingItemIndex !== -1) {
       updatedCart[existingItemIndex].quantity += 1; // Increase quantity
     } else {
-     updatedCart.push({
-  ...item,
-  quantity: 1,
-  uom: item.uom || "",
-  subtotal: item.offerprice,   // initial subtotal = 1 x price
-  cgst: item.tax/2 || 0,
-  sgst: item.tax/2 || 0,
-  igst: item.igst || 0,  //right now no need for local shop
-   tax_amount: ( ((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100 ).toFixed(2),  //calculate tax value included
-});
+      updatedCart.push({
+        ...item,
+        quantity: 1,
+        uom: item.uom || "",
+        subtotal: item.offerprice,   // initial subtotal = 1 x price
+        cgst: item.tax / 2 || 0,
+        sgst: item.tax / 2 || 0,
+        igst: item.igst || 0,  //right now no need for local shop
+        tax_amount: (((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100).toFixed(2),  //calculate tax value included
+      });
 
     }
 
     setCart(updatedCart);
     updateTotal(updatedCart);
   };
-const addItemToOrder = (index, item) => {
-  const isWeightBased = item.weight === "weight";
-console.log("weight:"+item.weight);
-  let qty = 1;
+  const addItemToOrder = (index, item) => {
+    const isWeightBased = item.weight === "weight";
+    console.log("weight:" + item.weight);
+    let qty = 1;
 
-  if (isWeightBased) {
-    const input = prompt("Enter weight in grams (e.g. 150, 250, 500, 1000):", "250");
-    const grams = parseFloat(input);
+    if (isWeightBased) {
+      const input = prompt("Enter weight in grams (e.g. 150, 250, 500, 1000):", "250");
+      const grams = parseFloat(input);
 
-    if (isNaN(grams) || grams <= 0) {
-      toast.error("Invalid weight entered");
-      return;
+      if (isNaN(grams) || grams <= 0) {
+        toast.error("Invalid weight entered");
+        return;
+      }
+
+      qty = grams / 1000; // Convert grams to kg
     }
 
-    qty = grams / 1000; // Convert grams to kg
-  }
+    const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
+    const updatedCart = [...cart];
 
-  const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
-  const updatedCart = [...cart];
+    if (existingItemIndex !== -1) {
+      updatedCart[existingItemIndex].quantity += qty;
+    } else {
+      updatedCart.push({
+        ...item,
+        quantity: qty,
+        uom: item.uom || "",
+        subtotal: item.offerprice,   // initial subtotal = 1 x price
+        cgst: item.tax / 2 || 0,
+        sgst: item.tax / 2 || 0,
+        igst: item.igst || 0,  //right now no need for local shop
+        tax_amount: (((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100).toFixed(2),  //calculate tax value included
+      });
+    }
 
-  if (existingItemIndex !== -1) {
-    updatedCart[existingItemIndex].quantity += qty;
-  } else {
-    updatedCart.push({
-      ...item,
-      quantity: qty,
-      uom: item.uom || "",
-  subtotal: item.offerprice,   // initial subtotal = 1 x price
-  cgst: item.tax/2 || 0,
-  sgst: item.tax/2 || 0,
-  igst: item.igst || 0,  //right now no need for local shop
-   tax_amount: ( ((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100 ).toFixed(2),  //calculate tax value included
-    });
-  }
-
-  setCart(updatedCart);
-  updateTotal(updatedCart);
-};
+    setCart(updatedCart);
+    updateTotal(updatedCart);
+  };
   // Decrease item quantity
   const decreaseItemQuantity = (index) => {
     const updatedCart = [...cart];
@@ -217,23 +217,23 @@ console.log("weight:"+item.weight);
     let kotContent = `\nKITCHEN ORDER TICKET (KOT)\n`;
     kotContent += `Table: ${selectedTable}\n`;
     kotContent += `--------------------------------\n`;
-  
+
     orderItems.forEach((item) => {
       kotContent += `${item.item_name} x ${item.quantity}  \n`;
     });
-  
+
     kotContent += `--------------------------------\n`;
     kotContent += `Date: ${new Date().toLocaleString()}\n`;
-  
+
     // Send KOT content to printer (Assuming you use `window.print()`)
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`<pre>${kotContent}</pre>`);
     newWindow.document.close();
     newWindow.print();
-     newWindow.close();
+    newWindow.close();
   };
 
-  
+
   // Function to handle printing the order
   const handlePrintOrder = async () => {
     if (!selectedTable) {
@@ -254,53 +254,53 @@ console.log("weight:"+item.weight);
       );
 
       // Prepare an array of order items to insert
-    const orderItems = cart.map(item => ({
-  order_id: maxNumber,                     // or `order_number` if that's what your DB expects
-  table_number: selectedTable,
-  item_name: item.iname,
-  quantity: item.quantity,
-  uom: item.uom || "",                     // fallback if uom not present
-  rate: item.subtotal || (item.offerprice * item.quantity),
-  cgst: item.cgst || 0,
-  sgst: item.sgst || 0,
-  igst: item.igst || 0,
-  tax_amount: item.tax_amount || 0,
-  total_price: item.offerprice * item.quantity,
-  status: "1"
-}));
+      const orderItems = cart.map(item => ({
+        order_id: maxNumber,                     // or `order_number` if that's what your DB expects
+        table_number: selectedTable,
+        item_name: item.iname,
+        quantity: item.quantity,
+        uom: item.uom || "",                     // fallback if uom not present
+        rate: item.subtotal || (item.offerprice * item.quantity),
+        cgst: item.cgst || 0,
+        sgst: item.sgst || 0,
+        igst: item.igst || 0,
+        tax_amount: item.tax_amount || 0,
+        total_price: item.offerprice * item.quantity,
+        status: "1"
+      }));
 
       const response1 = await axios.post(`/insertdatabulkgst/order_items_gst`, {
         items: orderItems // Wrap in an object if your API expects this
       },
         getHeaders()
       );
-//console.log("🔍 selectedTable", selectedTable);
+      //console.log("🔍 selectedTable", selectedTable);
 
       await updateData(
-  "tablelist",
-  { status: '1' },  // ✅ This is updatedFields
-  { name: selectedTable } // ✅ This is where
-);
+        "tablelist",
+        { status: '1' },  // ✅ This is updatedFields
+        { name: selectedTable } // ✅ This is where
+      );
       await fetchData("tablelist", setTotaltablelist, "id", {});
       await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
 
-        // Step 3: Print KOT after successful save
-    if (response1.data.success) {
-      toast.success(response.data.message);
-      setOrderNumber((prevOrder) => prevOrder + 1);
+      // Step 3: Print KOT after successful save
+      if (response1.data.success) {
+        toast.success(response.data.message);
+        setOrderNumber((prevOrder) => prevOrder + 1);
         // Send request to backend for printing
-      //   await axios.post("/printkot", {
-      //     table: selectedTable,
-      //     items: orderItems,
-      //     total: total
-      // });
-      printKOT(orderItems); // Call function to print the KOT
-      setCart([]);
-      setTotal(0);
-      
-    } else {
-      toast.error("Failed to save the order!");
-    }
+        //   await axios.post("/printkot", {
+        //     table: selectedTable,
+        //     items: orderItems,
+        //     total: total
+        // });
+        printKOT(orderItems); // Call function to print the KOT
+        setCart([]);
+        setTotal(0);
+
+      } else {
+        toast.error("Failed to save the order!");
+      }
     } catch (error) {
       console.error('Error saving order:', error);
       toast.error('Error saving order!');
@@ -442,7 +442,8 @@ console.log("weight:"+item.weight);
 
         {/* Subcategory List */}
         <div className="row mt-4">
-          <div className="col-lg-2 col-md-2 col-sm-4 col-xs-12">
+          <div className="col-lg-2 col-md-2 col-sm-3 col-xs-12">
+
             <CardComponent
               title="Subcategories"
               headerColor="danger"
@@ -473,7 +474,8 @@ console.log("weight:"+item.weight);
           </div>
 
           {/* Item List */}
-          <div className="col-lg-7 col-md-7 col-sm-8 col-xs-12">
+           <div className="col-lg-7 col-md-6 col-sm-8 col-xs-12">
+
             <CardComponent
               title="Items"
               headerColor="darkblue"
@@ -481,11 +483,13 @@ console.log("weight:"+item.weight);
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container">
+                <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+
                   <div className="row mt-3">
                     {data.length > 0 ? (
                       data.map((item, index) => (
                         <div key={item.id} className="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
+
                           <div className="item-card text-center">
                             <img
                               src={`${baseURL}/uploads/${item.filename}`}
@@ -493,6 +497,7 @@ console.log("weight:"+item.weight);
                               onClick={() => addItemToOrder(index, item)}
                               className="item-image"
                             />
+
                             <h5 className="item-name">{item.iname}</h5>
                             <p className="item-price">฿ {item.offerprice}.00</p>
                             <p className="item-gst"> {item.tax}%</p>
@@ -530,7 +535,7 @@ console.log("weight:"+item.weight);
                             key={index}
                           >
                             <h5 className="item-name mb-0">
-                              {item.iname} x {item.quantity} = 
+                              {item.iname} x {item.quantity} =
                               ฿{(item.quantity * item.offerprice).toFixed(2)}
                             </h5>
                             <div className="quantity-controls d-flex align-items-center">
@@ -597,7 +602,7 @@ console.log("weight:"+item.weight);
 
 
               <button className="btn btn-darkblue mb-2">Previous Order</button>
-              <button  onClick={handleBillHistory}className="btn btn-success mt-2 custom-btn" >
+              <button onClick={handleBillHistory} className="btn btn-success mt-2 custom-btn" >
                 Bill History
               </button>
               {/* <button className="btn btn-warning mb-2">Save Bill</button> */}
@@ -606,17 +611,18 @@ console.log("weight:"+item.weight);
             </div>
           </div>
         </div>
- 
+
 
 
       </Layout>
+      
       <CheckBillModal
-          isOpen={tableshowModal}
-          customer={selectedContract}
-          uptableList={Tablelist}
-          // onItemAdded={triggerReload} // Pass the reload function
-          onClose={() => settableShowModal(false)} // Close the modal
-        />
+        isOpen={tableshowModal}
+        customer={selectedContract}
+        uptableList={Tablelist}
+        // onItemAdded={triggerReload} // Pass the reload function
+        onClose={() => settableShowModal(false)} // Close the modal
+      />
     </>
   );
 }

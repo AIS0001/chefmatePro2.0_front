@@ -264,7 +264,9 @@ const [paidAmount, setPaidAmount] = useState(0);
 
         //  handlediscount({ target: { value: "0" } });
     };
-
+   const handlenewCustomer = async () => {
+    navigate(`/master/newcustomer`);
+  };
 
     // Runs when discAmount or discountType changes
    // Runs when discAmount or discountType changes
@@ -1319,65 +1321,7 @@ const [paidAmount, setPaidAmount] = useState(0);
                                 </button>
 
                             )}
-                            <div className="col-12">
-                                <button
-                                    className="btn btn-warning"
-                                    onClick={() => {
-                                        if (!customerDetails.phones) {
-                                            toast.error("Please enter customer phone first.");
-                                            setLineQRModalOpen(true);
-                                            return;
-                                        }
-                                        // Simulate check with backend — or do it in real
-                                        alert(phones);
-                                        axios.post('/checkline', { phone: phones })
-                                            .then(res => {
-                                                if (res.data.eligible) {
-                                                    setLineQRModalOpen(true);
-                                                } else {
-                                                    toast.error("Discount already claimed for this number.");
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error(err);
-                                                toast.error("Error checking discount eligibility.");
-                                            });
-                                    }}
-                                >
-                                    Discount via LINE
-                                </button>
-                                <button
-                                    onClick={handleBillHistory}
-                                    className="btn btn-success mt-2 custom-btn"
-                                >
-                                    Bill History
-                                </button>
-                                <button
-                                    className="btn btn-info"
-                                    onClick={() => {
-                                        if (!customerDetails.phone) {
-                                            toast.error("Please enter customer phone first.");
-                                            setLineQRModalOpen(true);
-                                            return;
-                                        }
-                                        // Simulate check with backend — or do it in real
-                                        axios.post('/checkline', { phone: customerDetails.phone })
-                                            .then(res => {
-                                                if (res.data.eligible) {
-                                                    setLineQRModalOpen(true);
-                                                } else {
-                                                    toast.error("Discount already claimed for this number.");
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error(err);
-                                                toast.error("Error checking discount eligibility.");
-                                            });
-                                    }}
-                                >
-                                    Discount via Whatsapp
-                                </button>
-                            </div>
+                          
 
 
                             {/* this button used only when user dont want to print bill only make save bill */}
@@ -1393,7 +1337,78 @@ const [paidAmount, setPaidAmount] = useState(0);
                 </div>
                 {/* Horizontal rule */}
 
+<div className="row mt-4">
+          <div className="col-12">
 
+            <hr style={{ borderTop: "1px solid #ccc" }} />
+             <button
+                  className="btn btn-warning"
+                  onClick={() => {
+                    if (!customerDetails.phones) {
+                      toast.error("Please enter customer phone first.");
+                      setLineQRModalOpen(true);
+                      return;
+                    }
+                    // Simulate check with backend — or do it in real
+                    alert(phones);
+                    axios.post('/checkline', { phone: phones })
+                      .then(res => {
+                        if (res.data.eligible) {
+                          setLineQRModalOpen(true);
+                        } else {
+                          toast.error("Discount already claimed for this number.");
+                        }
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        toast.error("Error checking discount eligibility.");
+                      });
+                  }}
+                >
+                  Discount via LINE
+                </button>
+   <button
+                  onClick={handleBillHistory}
+                  className="btn btn-success mt-2 custom-btn"
+                >
+                  Bill History
+                </button>
+                 <button
+                  onClick={handlenewCustomer}
+                  className="btn btn-danger mt-2 custom-btn"
+                >
+                  Add New Customer
+                </button>
+      
+
+                <button
+                  className="btn btn-info"
+                  onClick={() => {
+                    if (!customerDetails.phone) {
+                      toast.error("Please enter customer phone first.");
+                      setLineQRModalOpen(true);
+                      return;
+                    }
+                    // Simulate check with backend — or do it in real
+                    axios.post('/checkline', { phone: customerDetails.phone })
+                      .then(res => {
+                        if (res.data.eligible) {
+                          setLineQRModalOpen(true);
+                        } else {
+                          toast.error("Discount already claimed for this number.");
+                        }
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        toast.error("Error checking discount eligibility.");
+                      });
+                  }}
+                >
+                  Discount via Whatsapp
+                </button>
+
+            </div>
+            </div>
 
 
 

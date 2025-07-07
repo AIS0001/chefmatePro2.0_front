@@ -302,6 +302,9 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
   const handleBillHistory = async () => {
     navigate(`/reports/billhistorygst`);
   };
+    const handlenewCustomer = async () => {
+    navigate(`/master/newcustomer`);
+  };
   const handlePrintClick = async (itemId) => {
     try {
 
@@ -414,7 +417,8 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                     
                   </tr>
                  <tr >
-                    <td>Customer Name: ${myCustomerdetails[0].name}</td>
+                   <td>Customer Name: ${myCustomerdetails?.[0]?.name || ""}</td>
+
                    
                     <td></td>
                     
@@ -536,7 +540,48 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
     }
   };
 
+const handleCancelBill = async () => {
+  try {
+    if (!selectedTable) {
+      alert("Please select a table to cancel the bill.");
+      return;
+    }
 
+    // Check if there are any items in the bill
+    if (finalData.length === 0) {
+      alert("No items found in the bill to cancel.");
+      return;
+    }
+
+    // Confirm cancellation
+    const confirmCancel = window.confirm("Are you sure you want to cancel this bill?");
+    if (!confirmCancel) return;
+
+    // Prepare data for cancellation
+    const cancellationData = {
+      table_number: selectedTable,
+      status: "2", // Assuming 2 indicates cancelled status
+      invoice_number: finalData[0].invoice_number, // Use the first item's invoice number
+    };
+
+    // Update the table status to closed
+    await updateData("tablelist", { status: "0" }, { name: selectedTable });
+
+    // Update order items status to cancelled
+    await updateData("order_items_gst", cancellationData, {
+      table_number: selectedTable,
+      status: "1", // Only update active orders
+    });
+
+    // Refresh the table list
+    await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+
+    // Show success message
+    toast.success("Bill cancelled successfully!");
+  } catch (err) {
+    console.error("Error occurred during bill cancellation:", err.message); 
+  }
+}
   const handleSaveBill = async () => {
     try {
       // Validate customer details if payment mode is Credit
@@ -547,7 +592,8 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
       }
 
       // Calculate subtotal, tax, discount, round off, and grand total
-      const subtotal = finalData.reduce((acc, item) => acc + item.total_price, 0);
+      const subtotal2 = finalData.reduce((acc, item) => acc + item.total_price, 0);
+      const subtotal = finalData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
       const tax = subtotal * 0.07; // Assuming 7% tax
       const grandTotal = subtotal + tax;
 
@@ -1222,8 +1268,28 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                 </button>
 
               )}
-              <div className="col-12">
-                <button
+            
+
+
+              {/* this button used only when user dont want to print bill only make save bill */}
+              {/* <button
+                onClick={handleCancelBill}
+                className="btn btn-darkblue mb-2 custom-btn"
+              >
+                Cancel Bill
+              </button> */}
+
+            </div>
+          </div>
+        </div>
+        {/* Horizontal rule */}
+
+
+<div className="row mt-4">
+          <div className="col-12">
+
+            <hr style={{ borderTop: "1px solid #ccc" }} />
+             <button
                   className="btn btn-warning"
                   onClick={() => {
                     if (!customerDetails.phones) {
@@ -1249,11 +1315,17 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                 >
                   Discount via LINE
                 </button>
-                <button
+   <button
                   onClick={handleBillHistory}
                   className="btn btn-success mt-2 custom-btn"
                 >
                   Bill History
+                </button>
+                 <button
+                  onClick={handlenewCustomer}
+                  className="btn btn-danger mt-2 custom-btn"
+                >
+                  Add New Customer
                 </button>
       
 
@@ -1282,24 +1354,9 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
                 >
                   Discount via Whatsapp
                 </button>
-              </div>
-
-
-              {/* this button used only when user dont want to print bill only make save bill */}
-              {/* <button
-                onClick={handleSaveBill}
-                className="btn btn-darkblue mb-2 custom-btn"
-              >
-                Save Bill
-              </button> */}
 
             </div>
-          </div>
-        </div>
-        {/* Horizontal rule */}
-
-
-
+            </div>
 
 
       </Modal>

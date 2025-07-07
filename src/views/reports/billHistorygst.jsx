@@ -39,7 +39,7 @@ export default function BillHistoryGst() {
     { label: "Date", field: "inv_date" },
     { label: "Time", field: "inv_time" },
     { label: "Table", field: "table_number" },
-    { label: "Subtotal", field: "subtotal" },
+    { label: "Subtotal", field: "subtotal_afterdiscount" },
     { label: "Grand Total", field: "grand_total" },
     {
       label: "Action",
@@ -95,30 +95,54 @@ export default function BillHistoryGst() {
 
   };
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.addImage(logo, "PNG", 150, 10, 40, 15);
-    doc.setFontSize(16);
-    doc.text("Bill History", 14, 20);
+ const handleExportPDF = () => {
+  const doc = new jsPDF();
+  doc.addImage(logo, "PNG", 150, 10, 40, 15);
+  doc.setFontSize(16);
+  doc.text("Bill History", 14, 20);
 
-    const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
-    const tableRows = [];
+  const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
+  const tableRows = [];
 
-    filteredData.forEach(item => {
-      tableRows.push([
-        item.id,
-        item.inv_date,
-        item.inv_time,
-        item.table_number,
-        item.subtotal,
-        item.grand_total,
-        item.payment_mode,
-      ]);
-    });
+  let totalSubtotal = 0;
+  let totalGrandTotal = 0;
 
-    doc.autoTable({ startY: 30, head: [tableColumn], body: tableRows });
-    doc.save("salereport.pdf");
-  };
+  filteredData.forEach(item => {
+    const subtotal = parseFloat(item.subtotal_afterdiscount) || 0;
+    const grandTotal = parseFloat(item.grand_total) || 0;
+
+    totalSubtotal += subtotal;
+    totalGrandTotal += grandTotal;
+
+    tableRows.push([
+      item.id,
+      item.inv_date,
+      item.inv_time,
+      item.table_number,
+      subtotal.toFixed(2),
+      grandTotal.toFixed(2),
+      item.payment_mode,
+    ]);
+  });
+
+  // Add total row
+  tableRows.push([
+    { content: "Total", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+    totalSubtotal.toFixed(2),
+    totalGrandTotal.toFixed(2),
+    "" // Empty payment mode column
+  ]);
+
+  doc.autoTable({
+    startY: 30,
+    head: [tableColumn],
+    body: tableRows,
+    styles: { fontSize: 10 },
+  });
+
+  doc.save("salereport.pdf");
+};
+
 
   const handleViewItems = (row) => {
     setSelectedBill(row);
@@ -186,9 +210,10 @@ export default function BillHistoryGst() {
             <DataTable columns={columns} data={filteredData} tablename="final_bill" />
           )}
           <div className="mt-3">
+          
             <h5>
               {activeTab === "cancelled" ? (
-                <>Cancelled Bill Total: ฿{cancelledTotal}</>
+                <>Cancelled Bill Total: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
               ) : (
                 <>Total Sale: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
               )}

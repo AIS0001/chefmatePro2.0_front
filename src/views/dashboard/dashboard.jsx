@@ -84,7 +84,7 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        const [salesRes, purchaseRes, summaryRes, todaysummaryRes, lowStock,getTopproducts] = await Promise.all([
+        const [salesRes, purchaseRes, summaryRes, todaysummaryRes, lowStock, getTopproducts] = await Promise.all([
           axios.get(`/report/sale?range=${dateRange}`, getHeaders()),
           axios.get(`/report/purchase?range=${dateRange}`, getHeaders()),
           axios.get("/report/summary", getHeaders()),
@@ -98,7 +98,7 @@ export default function Dashboard() {
 
         setSummary(prev => ({
           ...prev,
-           totalSales: summaryRes.data.totalSales,
+          totalSales: summaryRes.data.totalSales,
           totalPurchase: summaryRes.data.totalPurchase,
           topProduct: summaryRes.data.topProduct,
           profitMargin: summaryRes.data.totalSales > 0
@@ -569,7 +569,7 @@ export default function Dashboard() {
         <div className="col-lg-4 mb-4">
           <CardComponent
             title="Summary & Alerts"
-            headerColor={COLORS.danger}
+            headerColor={COLORS.primary}
             customHeader={
               <div className="d-flex justify-content-between align-items-center">
                 <h6 className="m-0 font-weight-bold">Summary & Alerts</h6>
@@ -578,112 +578,62 @@ export default function Dashboard() {
             }
           >
             <div className="row">
-  <div className="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div className="card border-0 shadow-sm h-100">
-      <div className="card-header bg-white py-2">
-        <h6 className="m-0 font-weight-bold text-gray-800">Financial Summary</h6>
-      </div>
-      <div className="card-body p-0">
-        <ul className="list-group list-group-flush">
-          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
-            <span>Total Sales</span>
-            <span className="badge badge-primary badge-pill">${summary.totalSales}</span>
-          </li>
-          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
-            <span>Total Purchases</span>
-            <span className="badge badge-info badge-pill">${summary.totalPurchase}</span>
-          </li>
-          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
-            <span>Gross Profit</span>
-            <span className="badge badge-success badge-pill">
-              ${(summary.totalSales - summary.totalPurchase).toFixed(2)}
-            </span>
-          </li>
-          <li className="list-group-item d-flex justify-content-between align-items-center py-2">
-            <span>Profit Margin</span>
-            <span className="badge badge-dark badge-pill">{summary.profitMargin}%</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
- 
-  
-</div>
+              <div className="col-lg-4 col-md-6 col-sm-12 mb-3">
+                <div className="card border-0 shadow-sm h-100">
+                  <div className="card-header bg-white py-2">
+                    <h6 className="m-0 font-weight-bold text-gray-800">Financial Summary</h6>
+                  </div>
+                  <div className="card-body p-0">
+                    <ul className="list-group list-group-flush">
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <span>Total Sales</span>
+                        <span className="badge badge-primary badge-pill">${summary.totalSales}</span>
+                      </li>
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <span>Total Purchases</span>
+                        <span className="badge badge-info badge-pill">${summary.totalPurchase}</span>
+                      </li>
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <span>Gross Profit</span>
+                        <span className="badge badge-success badge-pill">
+                          ${(summary.totalSales - summary.totalPurchase).toFixed(2)}
+                        </span>
+                      </li>
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <span>Profit Margin</span>
+                        <span className="badge badge-dark badge-pill">{summary.profitMargin}%</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
 
           </CardComponent>
-          <div className="row">
- <div className="col-lg-8 col-md-6 col-sm-12 mb-3">
-    <div className="card border-0 shadow-sm h-100">
-      <div className="card-header bg-white py-2">
-        <h6 className="m-0 font-weight-bold text-gray-800">Low Stock Alerts</h6>
-      </div>
-      <div className="card-body p-0">
-        {lowStockAlerts.length > 0 ? (
-          <ul className="list-group list-group-flush">
-            {lowStockAlerts.map((item, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center py-2"
-              >
-                <span>{item.iname}</span>
-                <span
-                  className="badge badge-pill"
-                  style={{
-                    backgroundColor:
-                      item.closing_stock < 5 ? COLORS.danger : COLORS.warning,
-                    color: 'white'
-                  }}
-                >
-                  {item.closing_stock} left
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="alert alert-success m-2">All items are well stocked</div>
-        )}
-      </div>
-    </div>
-  </div>
 
-</div>
-           <div className="row">
-  <div className="col-12 mb-3">
-    <div className="card border-0 shadow-sm h-100">
-      <div className="card-header bg-white py-2">
-        <h6 className="m-0 font-weight-bold text-gray-800">Top Selling Products</h6>
+        </div>
       </div>
-      <div className="card-body p-0">
-        {toptenProducts.length > 0 ? (
-          <ul className="list-group list-group-flush">
-            {toptenProducts.map((item, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center py-2"
-              >
-                <span>{item.item_name}</span>
-                <span
-                  className="badge badge-pill"
-                  style={{
-                    backgroundColor:
-                      item.closing_stock < 5 ? COLORS.success : COLORS.success,
-                    color: 'white'
-                  }}
-                >
-                  {item.totalSold} 
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="alert alert-success m-2">All items are well stocked</div>
-        )}
-      </div>
-    </div>
-  </div>
-  </div>
+      <div className="row mb-4">
+        <div className="col-lg-2 mb-4">
+          <CardComponent
+            title="Low Stock Alerts"
+            headerColor="#080808"
+            customHeader={
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="m-0 font-weight-bold">Low Stock Alerts</h6>
+                <i className="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+              </div>
+            }
+          >
+            <ul className="list-group list-group-flush">
+              {lowStockAlerts.map((item, index) => (
+                <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{item.item_name}</span>
+                  <span className="badge badge-danger badge-pill">{item.stock}</span>
+                </li>
+              ))}
+            </ul>
+          </CardComponent>
         </div>
       </div>
     </Layout>

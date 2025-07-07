@@ -1,0 +1,97 @@
+/* components/InvoiceTable.css */
+
+.invoice-table-wrapper {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.company-details,
+.customer-details {
+  line-height: 1.5;
+}
+
+.company-details h5,
+.customer-details h6 {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.invoice-table thead {
+  background-color: #080808;
+  color: #fff;
+}
+
+.invoice-table th,
+.invoice-table td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e1e1e1;
+  font-size: 14px;
+}
+
+.invoice-table td {
+  vertical-align: top;
+}
+
+.invoice-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.text-right {
+  text-align: right;
+}
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .invoice-table-wrapper {
+    box-shadow: none !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+}
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .modal,
+  .modal * {
+    visibility: visible !important;
+  }
+
+  .modal {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: white !important;
+    padding: 20px !important;
+  }
+
+  .modal-footer,
+  .btn-close {
+    display: none !important;
+  }
+}

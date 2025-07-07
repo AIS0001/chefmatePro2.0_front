@@ -40,7 +40,7 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
  const [CustomerDetails, setCustomerDetailsdb] = useState([]); // Manage the table data state
 
-  const editableTables = ["items", "customers", "taxes"]; // Tables where edit is allowed
+  const editableTables = ["items","order_items_gst",  "customers", "taxes"]; // Tables where edit is allowed
   const printableTables = ["order_items_gst", "final_bill","advance_order_items_gst","advance_final_bill", "customers"]; // Tables where print is allowed
     const CancelBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill", "customers"]; // Tables where print is allowed
     const DeleteBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill"]; // Tables where print is allowed
@@ -109,18 +109,18 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
     console.log("table name "+tblname);
     try {
       // Fetch the final_bill and order_items_gst details for the given itemId
-      const finalBillData = await fetchData(tblname, setFinalBillData, "id", { id: itemId });
+      let finalBillData = await fetchData(tblname, setFinalBillData, "id", { id: itemId });
        let myorderItemsData = [];
-       const myCustomerdetails =[];
+       let  myCustomerdetails =[];
 if(tblname=="final_bill")
 {
  myorderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: itemId });
-  myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: itemId });
+  myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: finalBillData[0].customer_id });
 }
 else
 {
  myorderItemsData = await fetchData("advance_order_items_gst", setOrderItemsData, "id", { invoice_number: itemId });
-  myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: itemId });
+  myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: finalBillData[0].customer_id  });
   
 }
       const companyInfo = await fetchData("companyinfo", null, "id", {});
@@ -231,7 +231,8 @@ else
                   
                 </tr>
               <tr >
-                    <td>Customer Name: ${myCustomerdetails[0].name}</td>
+                    <td>Customer Name: ${myCustomerdetails?.[0]?.name || ""}</td>
+
                    
                     <td></td>
                     
@@ -505,7 +506,7 @@ else
       // Update the table data state after deletion
       setTableData((prevData) => {
         const updatedData = prevData.filter((item) => item.id !== itemId);
-        console.log("Updated Data:", updatedData); // Log updated data for debugging
+       // console.log("Updated Data:", updatedData); // Log updated data for debugging
         return updatedData; // Ensure new reference is returned
       });
     } catch (error) {

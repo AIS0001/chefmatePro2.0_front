@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
@@ -17,12 +17,13 @@ import { getUserName } from "../../functions/storageUtils";
 import updateData from "../../functions/updateData";
 import CheckBillModal from "../../components/Modals/AdvancecheckBillGST";
 import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
+import WeightModal from "../../components/Modals/WeightModal";
 
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function AdvanceOrderGst() {
   // const baseURL = 'http://localhost:4402';
-   const baseURL = 'https://sharmachefapi.cloudnetsoftwares.com';
+  const baseURL = 'https://sharmachefapi.cloudnetsoftwares.com';
   // const baseURL = 'https://www.chefmatedemo.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
 
@@ -38,6 +39,8 @@ export default function AdvanceOrderGst() {
 
   const [selectedContract, setSelectedContract] = useState(null);
   const [tableshowModal, settableShowModal] = useState(false);
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
 
   const showtableBillDetails = (contract) => {
@@ -70,6 +73,31 @@ export default function AdvanceOrderGst() {
     setSelectedTable(tableNumber);
     toast.success(`Selected Table: ${tableNumber}`);
   };
+const addItemToCart = (item) => {
+  if (item.weight === "weight") {
+    setSelectedItem(item);
+    setShowWeightModal(true);
+  } else {
+    handleAddToCart(item, 1);
+  }
+};
+const handleAddToCart = (item, quantity) => {
+  const existingIndex = cart.findIndex((cartItem) => cartItem.id === item.id);
+  const updatedCart = [...cart];
+
+  if (existingIndex !== -1) {
+    updatedCart[existingIndex].quantity += quantity;
+  } else {
+    updatedCart.push({
+      ...item,
+      quantity,
+      subtotal: quantity * item.offerprice,
+    });
+  }
+
+  setCart(updatedCart);
+  toast.success("Item added to cart");
+};
 
   const updateInvoiceNumber = async (orderId, invoiceNumber) => {
     try {
@@ -114,7 +142,7 @@ export default function AdvanceOrderGst() {
 
 
   // Add item to the cart
-  const addItemToOrder = (index, item) => {
+  const addItemToOrder1 = (index, item) => {
 
     const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
     const updatedCart = [...cart];
@@ -122,17 +150,55 @@ export default function AdvanceOrderGst() {
     if (existingItemIndex !== -1) {
       updatedCart[existingItemIndex].quantity += 1; // Increase quantity
     } else {
-     updatedCart.push({
-  ...item,
-  quantity: 1,
-  uom: item.uom || "",
-  subtotal: item.offerprice,   // initial subtotal = 1 x price
-  cgst: item.tax/2 || 0,
-  sgst: item.tax/2 || 0,
-  igst: item.igst || 0,  //right now no need for local shop
-   tax_amount: ( ((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100 ).toFixed(2),  //calculate tax value included
-});
+      updatedCart.push({
+        ...item,
+        quantity: 1,
+        uom: item.uom || "",
+        subtotal: item.offerprice,   // initial subtotal = 1 x price
+        cgst: item.tax / 2 || 0,
+        sgst: item.tax / 2 || 0,
+        igst: item.igst || 0,  //right now no need for local shop
+        tax_amount: (((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100).toFixed(2),  //calculate tax value included
+      });
 
+    }
+
+    setCart(updatedCart);
+    updateTotal(updatedCart);
+  };
+  const addItemToOrder = (index, item) => {
+    const isWeightBased = item.weight === "weight";
+    console.log("weight:" + item.weight);
+    let qty = 1;
+
+    if (isWeightBased) {
+      const input = prompt("Enter weight in grams (e.g. 150, 250, 500, 1000):", "250");
+      const grams = parseFloat(input);
+
+      if (isNaN(grams) || grams <= 0) {
+        toast.error("Invalid weight entered");
+        return;
+      }
+
+      qty = grams / 1000; // Convert grams to kg
+    }
+
+    const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
+    const updatedCart = [...cart];
+
+    if (existingItemIndex !== -1) {
+      updatedCart[existingItemIndex].quantity += qty;
+    } else {
+      updatedCart.push({
+        ...item,
+        quantity: qty,
+        uom: item.uom || "",
+        subtotal: item.offerprice,   // initial subtotal = 1 x price
+        cgst: item.tax / 2 || 0,
+        sgst: item.tax / 2 || 0,
+        igst: item.igst || 0,  //right now no need for local shop
+        tax_amount: (((item.tax || 0) + (item.igst || 0)) * item.offerprice / 100).toFixed(2),  //calculate tax value included
+      });
     }
 
     setCart(updatedCart);
@@ -180,23 +246,23 @@ export default function AdvanceOrderGst() {
     let kotContent = `\Advance ORDER TICKET (KOT)\n`;
     kotContent += `Table: ${selectedTable}\n`;
     kotContent += `--------------------------------\n`;
-  
+
     orderItems.forEach((item) => {
       kotContent += `${item.item_name} x ${item.quantity}  \n`;
     });
-  
+
     kotContent += `--------------------------------\n`;
     kotContent += `Date: ${new Date().toLocaleString()}\n`;
-  
+
     // Send KOT content to printer (Assuming you use `window.print()`)
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`<pre>${kotContent}</pre>`);
     newWindow.document.close();
     newWindow.print();
-     newWindow.close();
+    newWindow.close();
   };
 
-  
+
   // Function to handle printing the order
   const handlePrintOrder = async () => {
     if (!selectedTable) {
@@ -217,24 +283,24 @@ export default function AdvanceOrderGst() {
       );
 
       // Prepare an array of order items to insert
-    const orderItems = cart.map(item => ({
-  order_id: maxNumber,                     // or `order_number` if that's what your DB expects
-  table_number: selectedTable,
-  item_name: item.iname,
-  quantity: item.quantity,
-  uom: item.uom || "",                     // fallback if uom not present
-  rate: item.subtotal || (item.offerprice * item.quantity),
-  cgst: item.cgst || 0,
-  sgst: item.sgst || 0,
-  igst: item.igst || 0,
-  tax_amount: item.tax_amount || 0,
-  total_price: item.offerprice * item.quantity,
-  status: "1"
-}));
-//console.log(orderItems);
+      const orderItems = cart.map(item => ({
+        order_id: maxNumber,                     // or `order_number` if that's what your DB expects
+        table_number: selectedTable,
+        item_name: item.iname,
+        quantity: item.quantity,
+        uom: item.uom || "",                     // fallback if uom not present
+        rate: item.subtotal || (item.offerprice * item.quantity),
+        cgst: item.cgst || 0,
+        sgst: item.sgst || 0,
+        igst: item.igst || 0,
+        tax_amount: item.tax_amount || 0,
+        total_price: item.offerprice * item.quantity,
+        status: "1"
+      }));
+      //console.log(orderItems);
       const response1 = await axios.post(`/insertdatabulkgst/advance_order_items_gst`, {
-  items: orderItems
-}, getHeaders());
+        items: orderItems
+      }, getHeaders());
 
       await updateData(
         "tablelist",
@@ -244,23 +310,23 @@ export default function AdvanceOrderGst() {
       await fetchData("tablelist", setTotaltablelist, "id", {});
       await getMax("advance_orders", setmaxNumber, "userid", getUserName(), "order_number");
 
-        // Step 3: Print KOT after successful save
-    if (response1.data.success) {
-      toast.success(response.data.message);
-      setOrderNumber((prevOrder) => prevOrder + 1);
+      // Step 3: Print KOT after successful save
+      if (response1.data.success) {
+        toast.success(response.data.message);
+        setOrderNumber((prevOrder) => prevOrder + 1);
         // Send request to backend for printing
-      //   await axios.post("/printkot", {
-      //     table: selectedTable,
-      //     items: orderItems,
-      //     total: total
-      // });
-      printKOT(orderItems); // Call function to print the KOT
-      setCart([]);
-      setTotal(0);
-      
-    } else {
-      toast.error("Failed to save the order!");
-    }
+        //   await axios.post("/printkot", {
+        //     table: selectedTable,
+        //     items: orderItems,
+        //     total: total
+        // });
+        printKOT(orderItems); // Call function to print the KOT
+        setCart([]);
+        setTotal(0);
+
+      } else {
+        toast.error("Failed to save the order!");
+      }
     } catch (error) {
       console.error('Error saving order:', error);
       toast.error('Error saving order!');
@@ -410,7 +476,7 @@ export default function AdvanceOrderGst() {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container">
+                <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                   <div className="row">
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (
@@ -433,7 +499,7 @@ export default function AdvanceOrderGst() {
           </div>
 
           {/* Item List */}
-          <div className="col-lg-7 col-md-7 col-sm-8 col-xs-12">
+              <div className="col-lg-7 col-md-6 col-sm-8 col-xs-12">
             <CardComponent
               title="Items"
               headerColor="darkblue1"
@@ -441,7 +507,7 @@ export default function AdvanceOrderGst() {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container">
+                <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                   <div className="row mt-3">
                     {data.length > 0 ? (
                       data.map((item, index) => (
@@ -489,7 +555,7 @@ export default function AdvanceOrderGst() {
                             key={index}
                           >
                             <h5 className="item-name mb-0">
-                              {item.iname} x {item.quantity} = 
+                              {item.iname} x {item.quantity} =
                               ฿{(item.quantity * item.offerprice).toFixed(2)}
                             </h5>
                             <div className="quantity-controls d-flex align-items-center">
@@ -556,7 +622,7 @@ export default function AdvanceOrderGst() {
 
 
               <button className="btn btn-darkblue1 mb-2">Previous Order</button>
-              <button  onClick={handleBillHistory}className="btn btn-success mt-2 custom-btn" >
+              <button onClick={handleBillHistory} className="btn btn-success mt-2 custom-btn" >
                 Bill History
               </button>
               {/* <button className="btn btn-warning mb-2">Save Bill</button> */}
@@ -565,17 +631,24 @@ export default function AdvanceOrderGst() {
             </div>
           </div>
         </div>
- 
+
 
 
       </Layout>
       <CheckBillModal
-          isOpen={tableshowModal}
-          customer={selectedContract}
-          uptableList={Tablelist}
-          // onItemAdded={triggerReload} // Pass the reload function
-          onClose={() => settableShowModal(false)} // Close the modal
-        />
+        isOpen={tableshowModal}
+        customer={selectedContract}
+        uptableList={Tablelist}
+        // onItemAdded={triggerReload} // Pass the reload function
+        onClose={() => settableShowModal(false)} // Close the modal
+      />
+      <WeightModal
+  isOpen={showWeightModal}
+  item={selectedItem}
+  onClose={() => setShowWeightModal(false)}
+  onConfirm={handleAddToCart}
+/>
+
     </>
   );
 }

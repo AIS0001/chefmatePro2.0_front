@@ -6,6 +6,8 @@ import { isTokenExpired } from './auth';
 const roleBasedAccess = {
   cashier: [
     "/dashboard/cashier",
+    "/sale/posgst",
+    "/sale/newpos",
     "/sale/pos",
     "/reports/billhistory",
     "/reports/saleledger",

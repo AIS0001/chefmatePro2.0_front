@@ -46,7 +46,7 @@ export default function AdvanceOrderReports() {
         { label: "Order No.", field: "id" },
         { label: "Date", field: "pickup_date" },
         { label: "Time", field: "pickup_time" },
-        { label: "Subtotal", field: "subtotal" },
+        { label: "Subtotal", field: "subtotal_afterdiscount" },
         { label: "Grand Total", field: "grand_total" },
         // { label: "Action", field: "actions" }
     ];
@@ -68,7 +68,7 @@ export default function AdvanceOrderReports() {
                 item.pickup_date,
                 item.inv_time,
                 item.table_number,
-                item.subtotal,
+                item.subtotal_afterdiscount,
                 item.grand_total,
                 item.payment_mode,
                 item.bill_generated_by,

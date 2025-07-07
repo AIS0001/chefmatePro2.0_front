@@ -18,12 +18,12 @@ const fetchData = async (tblname, setData, orderby, where) => {
        
     }
     console.log(url);
-    // if(tblname==="final_bill")
-    // {
-    //     console.log("Fetch url data");
-    //     console.log(url);
+    if(tblname==="final_bill")
+    {
+        console.log("Fetch url data");
+        console.log(url);
 
-    // }
+    }
     
     const response = await axios.get(url, getHeaders());
 
@@ -37,8 +37,8 @@ const fetchData = async (tblname, setData, orderby, where) => {
     //    console.log(response.data.data);
     //         }
     }
-    //console.log("fetchdata data:");
-    //    console.log(response.data.data);
+    console.log("fetchdata data:");
+       console.log(response.data.data);
     return response.data.data;
 }
 const fetchdatanotequal = async (tblname, setData, orderby, where) => {

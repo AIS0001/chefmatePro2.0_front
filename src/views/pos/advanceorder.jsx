@@ -394,7 +394,7 @@ export default function AdvanceOrders() {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container">
+                 <div className="item-list-container">
                   <div className="row">
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (
@@ -425,7 +425,7 @@ export default function AdvanceOrders() {
               bodyClass="panel-body"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container">
+                <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                   <div className="row mt-3">
                     {data.length > 0 ? (
                       data.map((item, index) => (

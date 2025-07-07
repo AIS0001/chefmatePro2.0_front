@@ -56,7 +56,7 @@ export default function NewItem() {
     const fetchAndSetData = async () => {
       try {
         const items = await fetchData("items", setData, "id", {});
-        console.log("Fetched data:", items);
+        // console.log("Fetched data:", items);
         setData(items); // Ensure the data state is set with fetched items
       } catch (error) {
         console.error("Error in useEffect:", error);
@@ -66,30 +66,30 @@ export default function NewItem() {
     fetchAndSetData();
   }, [reload]);
   useEffect(() => {
-    console.log("Updated data:", data);
-}, [data]);
+    // console.log("Updated data:", data);
+  }, [data]);
   return (
     <>
       <Layout>
         <Header title="Item Details" />
         <ToastContainer />
         <div className="row mb-4">
-        <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10" >
+          <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10" >
           </div>
-    
-       
+
+
           <div className="col-lg-2 col-md-2 col-sm-2 col-xs-2" >
-          <Link
-            type="button"
-            name="add"
-            onClick={AddNewItemPriceButton}
-            className="btn btn-primary category-btn"
-           
-          >
-            <i className="add_shopping_cart"></i> {/* Add an icon */}
-             Add New Item
-          </Link>
-        </div>
+            <Link
+              type="button"
+              name="add"
+              onClick={AddNewItemPriceButton}
+              className="btn btn-primary category-btn"
+
+            >
+              <i className="add_shopping_cart"></i> {/* Add an icon */}
+              Add New Item
+            </Link>
+          </div>
         </div>
 
         <div className="row">
@@ -102,19 +102,25 @@ export default function NewItem() {
           </div>
         </div>
 
-        <NewItemModal
+        {/* <NewItemModal
           isOpen={showModalItem}
           customer={selectedContract}
           onItemAdded={triggerReload} // Pass the reload function
           onClose={() => setShowModalItem(false)} // Close the modal
-        />
-        
-        <NewItemPriceModal
-          isOpen={showModal}
-          customer={selectedContract}
-          onItemAdded={triggerReload} // Pass the reload function
-          onClose={() => setShowModal(false)} // Close the modal
-        />
+        /> */}
+        <div className="row">
+          <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12" >
+            <NewItemPriceModal
+              isOpen={showModal}
+              customer={selectedContract}
+              onItemAdded={triggerReload} // Pass the reload function
+              onClose={() => setShowModal(false)} // Close the modal
+            />
+
+
+          </div>
+        </div>
+
       </Layout>
     </>
   );

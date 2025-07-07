@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import getMenuItems from "../components/MenuItems";  // Import the function
 import getMenuItems_vat from "../components/Menu_item_vat";  // Import the function
 
-export default function LeftSidebar({ usertype }) {   // Receive userType as a prop
+export default function LeftSidebar({ usertype, isOpen }) {   // Receive userType as a prop
 
   const [activeMenu, setActiveMenu] = useState(null);
 
@@ -14,8 +14,10 @@ export default function LeftSidebar({ usertype }) {   // Receive userType as a p
   };
 
   return (
-    <div className="fixed-sidebar-left">
+    //  <div className="fixed-sidebar-left" >
+         <div className={`fixed-sidebar-left ${isOpen ? "open" : "collapsed"}`}>
       <ul className="nav navbar-nav side-nav nicescroll-bar">
+       {/* <ul className="side-nav"> */}
         <li className="navigation-header">
           <span>Main</span>
           <i className="zmdi zmdi-more"></i>
@@ -30,6 +32,7 @@ export default function LeftSidebar({ usertype }) {   // Receive userType as a p
               data-target={item.dataTargetId}
             >
               <div className="pull-left">
+                
                 <i className={`zmdi zmdi-${item.icon} mr-20`}></i>
                 <span className="right-nav-text">{item.name}</span>
               </div>

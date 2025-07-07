@@ -33,6 +33,8 @@ export default function BillHistory() {
   const [orderNoSearch, setOrderNoSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
+  const [activeTab, setActiveTab] = useState("active");
+ const [cancelledTotal, setCancelledTotal] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,8 +51,8 @@ export default function BillHistory() {
     localStorage.setItem("startDate", startDate);
     localStorage.setItem("endDate", endDate);
     localStorage.setItem("paymentMode", paymentMode);
-    applyFilter();
-  }, [data, startDate, endDate, paymentMode, orderNoSearch]);
+    filterData();
+  }, [data, startDate, endDate, paymentMode, activeTab]);
 
   const applyFilter = () => {
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
@@ -70,6 +72,30 @@ export default function BillHistory() {
     setFilteredData(filtered);
   };
 
+ const filterData = () => {
+    let source = [...data];
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      source = source.filter(item => {
+        const itemDate = new Date(item.inv_date);
+        return itemDate >= start && itemDate <= end;
+      });
+    }
+    if (paymentMode) {
+      source = source.filter(item => item.payment_mode === paymentMode);
+    }
+   if (activeTab === "cancelled") {
+  const activeBills = source.filter(item => item.status !== 0 && item.status !== "0");
+  setFilteredData(activeBills);
+} else {
+  const cancelled = source.filter(item => item.status === 0 || item.status === "0");
+  setFilteredData(cancelled);
+  const total = cancelled.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
+  setCancelledTotal(total.toFixed(2));
+}
+
+  };
   const clearFilters = () => {
     setStartDate("");
     setEndDate("");
@@ -78,31 +104,54 @@ export default function BillHistory() {
     setFilteredData(data);
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.addImage(logo, "PNG", 150, 10, 40, 15);
-    doc.setFontSize(16);
-    doc.text("Bill History", 14, 20);
+ const exportPDF = () => {
+  const doc = new jsPDF();
+  doc.addImage(logo, "PNG", 150, 10, 40, 15);
+  doc.setFontSize(16);
+  doc.text("Bill History", 14, 20);
 
-    const tableColumn = ["Invoice No", "Date", "Time", "Table", "Tax", "Subtotal", "Grand Total", "Payment Mode"];
-    const tableRows = [];
+  const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
+  const tableRows = [];
 
-    (filteredData.length > 0 ? filteredData : data).forEach((item) => {
-      tableRows.push([
-        item.id,
-        item.inv_date,
-        item.inv_time,
-        item.table_number,
-        item.tax,
-        item.subtotal,
-        item.grand_total,
-        item.payment_mode,
-      ]);
-    });
+  let totalSubtotal = 0;
+  let totalGrandTotal = 0;
 
-    doc.autoTable({ startY: 30, head: [tableColumn], body: tableRows });
-    doc.save("salereport.pdf");
-  };
+  filteredData.forEach(item => {
+    const subtotal = parseFloat(item.subtotal_afterdiscount) || 0;
+    const grandTotal = parseFloat(item.grand_total) || 0;
+
+    totalSubtotal += subtotal;
+    totalGrandTotal += grandTotal;
+
+    tableRows.push([
+      item.id,
+      item.inv_date,
+      item.inv_time,
+      item.table_number,
+      subtotal.toFixed(2),
+      grandTotal.toFixed(2),
+      item.payment_mode,
+    ]);
+  });
+
+  // Add total row
+  tableRows.push([
+    { content: "Total", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+    totalSubtotal.toFixed(2),
+    totalGrandTotal.toFixed(2),
+    "" // Empty payment mode column
+  ]);
+
+  doc.autoTable({
+    startY: 30,
+    head: [tableColumn],
+    body: tableRows,
+    styles: { fontSize: 10 },
+  });
+
+  doc.save("salereport.pdf");
+};
+
 
   const handleViewItems = (row) => {
     setSelectedBill(row);
@@ -132,7 +181,7 @@ export default function BillHistory() {
     { label: "Date", field: "inv_date" },
     { label: "Time", field: "inv_time" },
     { label: "Table", field: "table_number" },
-    { label: "Subtotal", field: "subtotal" },
+    { label: "Subtotal", field: "subtotal_afterdiscount" },
     { label: "Tax", field: "tax" },
     { label: "Grand Total", field: "grand_total" },
     { label: "Payment", field: "payment_mode" },
@@ -142,7 +191,22 @@ export default function BillHistory() {
     <Layout>
       <Header title="Sale Report" />
       <ToastContainer />
+      
       <CardComponent>
+         <div className="d-flex mb-3">
+          <button
+            className={`btn btn-${activeTab === "active" ? "primary" : "outline-primary"} me-2`}
+            onClick={() => setActiveTab("active")}
+          >
+            Active Bills
+          </button>
+          <button
+            className={`btn btn-${activeTab === "cancelled" ? "danger" : "outline-danger"}`}
+            onClick={() => setActiveTab("cancelled")}
+          >
+            Cancelled Bills
+          </button>
+        </div>
         <div className="row mb-3">
           <div className="col-md-3">
             <label>Start Date</label>
@@ -190,14 +254,19 @@ export default function BillHistory() {
 
       <div className="row">
         <div className="col-12">
-          {data.length === 0 ? (
-            <p>No data available</p>
+          {filteredData.length === 0 ? (
+            <p>No data available.</p>
           ) : (
-            <DataTable columns={columns} data={filteredData.length > 0 ? filteredData : data} tablename="final_bill" />
+            <DataTable columns={columns} data={filteredData} tablename="final_bill" />
           )}
           <div className="mt-3">
+          
             <h5>
-              Total Sale: ฿{(filteredData.length > 0 ? filteredData : data).reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}
+              {activeTab === "cancelled" ? (
+                <>Cancelled Bill Total: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
+              ) : (
+                <>Total Sale: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
+              )}
             </h5>
           </div>
         </div>
