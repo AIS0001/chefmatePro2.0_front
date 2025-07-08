@@ -32,6 +32,7 @@ import AdvanceOrdergstt from './views/pos/advanceOrderPosgst';
 import NewPOS from './views/pos/newPOS';
 import NewPOSGST from './views/pos/posGst';
 import NewSale from './views/pos/sale';
+import vatSale from './views/pos/vatsale';
 //expenses
 import SupplierLedgerEntry from './views/expenses/supplierLedgerEntry';
 
@@ -89,6 +90,7 @@ function App() {
           <Route path="/sale/pos" element={<PrivateRoute><NewPOS /></PrivateRoute>} />
           <Route path="/sale/advanceorder" element={<PrivateRoute><AdvanceOrder /></PrivateRoute>} />
           <Route path="/sale/newsale" element={<PrivateRoute><NewSale /></PrivateRoute>} />
+          <Route path="/sale/vatsale" element={<PrivateRoute><vatSale /></PrivateRoute>} />
           <Route path="/sale/advanceordergstt" element={<PrivateRoute><AdvanceOrdergstt /></PrivateRoute>} />
           
           <Route path="/sale/posgst" element={<PrivateRoute><NewPOSGST /></PrivateRoute>} />

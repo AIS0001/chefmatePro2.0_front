@@ -19,7 +19,7 @@ import { getHeaders } from '../../utility/getHeader'
 import { GSTInvoicePrintPreview } from '../../components/Templates/gstTemplates'
 import { VATInvoicePrintPreview } from '../../components/Templates/vatemplate';
 
-export default function Sale() {
+export default function VatSale() {
   const itemNameRefs = useRef([])
   const [cart, setCart] = useState([])
   const [barcode, setBarcode] = useState('')

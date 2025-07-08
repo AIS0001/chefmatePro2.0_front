@@ -9,6 +9,8 @@ const roleBasedAccess = {
     "/sale/posgst",
     "/sale/newpos",
     "/sale/pos",
+    "/sale/newsale",
+    "/sale/vatsale",
     "/reports/billhistory",
     "/reports/saleledger",
     "/vouchers/recieptvoucher",
