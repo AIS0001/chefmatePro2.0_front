@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>chefMatePOS-</title>
+    <meta name="description" content="chefMatePOS" />
+    <meta name="keywords" content="Responsive admin panel,Website controller,admin panel" />
+    <meta name="author" content="hencework"/>
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+  />
+    	<!-- select2 CSS -->
+		<link href="%PUBLIC_URL%/vendors/bower_components/select2/dist/css/select2.min.css" rel="stylesheet" type="text/css"/>
+    <!-- Morris Charts CSS -->
+      <link href="%PUBLIC_URL%/vendors/bower_components/morris.js/morris.css" rel="stylesheet" type="text/css"/>
+      <link rel="stylesheet" href="%PUBLIC_URL%/vendors/bower_components/bootstrap3-wysihtml5-bower/dist/bootstrap3-wysihtml5.css" />
+    <!-- Data table CSS -->
+    <link href="%PUBLIC_URL%/vendors/bower_components/datatables/media/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css"/>
+    
+    <link href="%PUBLIC_URL%/vendors/bower_components/jquery-toast-plugin/%PUBLIC_URL%/dist/jquery.toast.min.css" rel="stylesheet" type="text/css">
+      	<!-- Summernote css -->
+		<link rel="stylesheet" href="%PUBLIC_URL%/vendors/bower_components/summernote/dist/summernote.css" />
+    <!-- Custom CSS -->
+    <link href="%PUBLIC_URL%/dist/css/style.css" rel="stylesheet" type="text/css">
+    <link href="%PUBLIC_URL%/dist/css/pandalogin.css" rel="stylesheet" type="text/css">
+  
+  
+	<!-- bootstrap-select CSS -->
+  <link href="%PUBLIC_URL%/vendors/bower_components/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet" type="text/css"/>
+		
+  <!-- bootstrap-tagsinput CSS -->
+  <link href="%PUBLIC_URL%/vendors/bower_components/bootstrap-tagsinput/dist/bootstrap-tagsinput.css" rel="stylesheet" type="text/css"/>
+  
+
+  <!-- multi-select CSS -->
+  <link href="%PUBLIC_URL%/vendors/bower_components/multiselect/css/multi-select.css" rel="stylesheet" type="text/css"/>
+  
+  <!-- Bootstrap Switches CSS -->
+  <link href="%PUBLIC_URL%/vendors/bower_components/bootstrap-switch/dist/css/bootstrap3/bootstrap-switch.min.css" rel="stylesheet" type="text/css"/>
+  
+  <!-- Bootstrap Datetimepicker CSS -->
+  <link href="%PUBLIC_URL%/vendors/bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css"/>
+   <!-- bootstrap-touchspin CSS -->
+		<link href="%PUBLIC_URL%/vendors/bower_components/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.css" rel="stylesheet" type="text/css"/>
+   
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap3/bootstrap-switch.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="%PUBLIC_URL%/dist/css/customStyle.css" rel="stylesheet" type="text/css">
+    <link href="%PUBLIC_URL%/dist/css/InvoiceTable.css" rel="stylesheet" type="text/css">
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+ 
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="%PUBLIC_URL%/vendors/bower_components/jquery/%PUBLIC_URL%/dist/jquery.min.js"></script>
+ 
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="%PUBLIC_URL%/vendors/bower_components/bootstrap/%PUBLIC_URL%/dist/js/bootstrap.min.js"></script>
+    
+	<!-- Data table JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/bower_components/datatables/media/js/jquery.dataTables.min.js"></script>
+	
+	<!-- Slimscroll JavaScript -->
+	<script src="%PUBLIC_URL%/dist/js/jquery.slimscroll.js"></script>
+	
+	<!-- simpleWeather JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/bower_components/moment/min/moment.min.js"></script>
+	<script src="%PUBLIC_URL%/vendors/bower_components/simpleWeather/jquery.simpleWeather.min.js"></script>
+	<script src="%PUBLIC_URL%/dist/js/simpleweather-data.js"></script>
+	
+	<!-- Progressbar Animation JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/bower_components/waypoints/lib/jquery.waypoints.min.js"></script>
+	<script src="%PUBLIC_URL%/vendors/bower_components/jquery.counterup/jquery.counterup.min.js"></script>
+	
+	<!-- Fancy Dropdown JS -->
+	<script src="%PUBLIC_URL%/dist/js/dropdown-bootstrap-extended.js"></script>
+	<script src="%PUBLIC_URL%/vendors/bower_components/wysihtml5x/dist/wysihtml5x.min.js"></script>
+		
+		<script src="%PUBLIC_URL%/vendors/bower_components/bootstrap3-wysihtml5-bower/dist/bootstrap3-wysihtml5.all.js"></script>
+<!-- Bootstrap Wysuhtml5 Init JavaScript -->
+<script src="%PUBLIC_URL%/dist/js/bootstrap-wysuhtml5-data.js"></script>
+	<!-- Tinymce JavaScript -->
+  <script src="%PUBLIC_URL%/vendors/bower_components/tinymce/tinymce.min.js"></script>
+			
+  <!-- Tinymce Wysuhtml5 Init JavaScript -->
+  <script src="%PUBLIC_URL%/dist/js/tinymce-data.js"></script>
+	<!-- Sparkline JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/jquery.sparkline/dist/jquery.sparkline.min.js"></script>
+	
+	<!-- Owl JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/bower_components/owl.carousel/%PUBLIC_URL%/dist/owl.carousel.min.js"></script>
+	
+	<!-- ChartJS JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/chart.js/Chart.min.js"></script>
+	
+	<!-- Morris Charts JavaScript -->
+    <script src="%PUBLIC_URL%/vendors/bower_components/raphael/raphael.min.js"></script>
+    <script src="%PUBLIC_URL%/vendors/bower_components/morris.js/morris.min.js"></script>
+    <script src="%PUBLIC_URL%/vendors/bower_components/jquery-toast-plugin/%PUBLIC_URL%/dist/jquery.toast.min.js"></script>
+	
+	<!-- Switchery JavaScript -->
+	<script src="%PUBLIC_URL%/vendors/bower_components/switchery/%PUBLIC_URL%/dist/switchery.min.js"></script>
+	
+	<!-- Init JavaScript -->
+	<script src="%PUBLIC_URL%/dist/js/init.js"></script>
+	<!-- <script src="%PUBLIC_URL%/dist/js/dashboard-data.js"></script> -->
+  <script src="%PUBLIC_URL%/vendors/bower_components/select2/dist/js/select2.full.min.js"></script>
+		
+  <!-- Bootstrap Select JavaScript -->
+  <script src="%PUBLIC_URL%/vendors/bower_components/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+  <!-- Summernote Plugin JavaScript -->
+  <script src="%PUBLIC_URL%/vendors/bower_components/summernote/dist/summernote.min.js"></script>
+			
+  <!-- Summernote Wysuhtml5 Init JavaScript -->
+  <script src="%PUBLIC_URL%/dist/js/summernote-data.js"></script>
+  <!-- Bootstrap Tagsinput JavaScript -->
+  <script src="%PUBLIC_URL%/vendors/bower_components/bootstrap-tagsinput/dist/bootstrap-tagsinput.min.js"></script>
+  	<!-- Form Advance Init JavaScript -->
+		<script src="%PUBLIC_URL%/dist/js/form-advance-data.js"></script>
+
+<!-- Bootstrap Touchspin JavaScript -->
+<script src="%PUBLIC_URL%/vendors/bower_components/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
+<!-- Multiselect JavaScript -->
+<script src="%PUBLIC_URL%/vendors/bower_components/multiselect/js/jquery.multi-select.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.min.js"></script>
+
+
+
+  </body>
+</html>
