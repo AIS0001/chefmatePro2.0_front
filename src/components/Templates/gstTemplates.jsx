@@ -5,12 +5,17 @@ export const GSTInvoiceA4 = forwardRef(function GSTInvoiceA4(
   { company, customer, items, summary, taxes, invoiceNo, invoiceDate, invoiceTime },
   ref
 ) {
-  console.log('company:', company);
-console.log('customer:', customer);
-console.log('items:', items);
-   if (!company || !customer || !items || items.length === 0) {
-  return <div>Loading...</div>;
-}
+  // Currency symbol logic
+  let currencySymbol = '฿';
+  if (company && company.currency) {
+    if (company.currency === 'INR') currencySymbol = '₹';
+    else if (company.currency === 'USD') currencySymbol = '$';
+    else if (company.currency === 'GBP') currencySymbol = '£';
+    else if (company.currency === 'THB') currencySymbol = '฿';
+  }
+  if (!company || !customer || !items || items.length === 0) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div ref={ref} style={{
@@ -71,9 +76,9 @@ console.log('items:', items);
               <tr key={idx} style={{ borderBottom: "1.5px solid #e0e0e0" }}>
                 <td style={{ padding: "10px 12px" }}>{item.item_name}</td>
                 <td style={{ padding: "10px 12px" }}>{item.quantity}</td>
-                <td style={{ padding: "10px 12px" }}>฿ {item.rate}</td>
+                <td style={{ padding: "10px 12px" }}>{currencySymbol} {item.rate}</td>
                 <td style={{ padding: "10px 12px" }}>{parseFloat(item.cgst) + parseFloat(item.sgst) + parseFloat(item.igst)}%</td>
-                <td style={{ padding: "10px 12px" }}>฿ {item.total_price}</td>
+                <td style={{ padding: "10px 12px" }}>{currencySymbol} {item.total_price}</td>
               </tr>
             ))}
           </tbody>
@@ -96,9 +101,9 @@ console.log('items:', items);
               <td style={{ textAlign: "center" }}>{taxes.igstPercent}%</td>
             </tr>
             <tr>
-              <td style={{ textAlign: "center" }}>฿ {taxes.cgstTotal}</td>
-              <td style={{ textAlign: "center" }}>฿ {taxes.sgstTotal}</td>
-              <td style={{ textAlign: "center" }}>฿ {taxes.igstTotal}</td>
+              <td style={{ textAlign: "center" }}>{currencySymbol} {taxes.cgstTotal}</td>
+              <td style={{ textAlign: "center" }}>{currencySymbol} {taxes.sgstTotal}</td>
+              <td style={{ textAlign: "center" }}>{currencySymbol} {taxes.igstTotal}</td>
             </tr>
           </tbody>
         </table>
@@ -109,23 +114,23 @@ console.log('items:', items);
           <tbody>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Subtotal</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.subtotal}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.subtotal}</td>
             </tr>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Discount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.discount}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.discount}</td>
             </tr>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>After Discount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.subtotalAfterDiscount}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.subtotalAfterDiscount}</td>
             </tr>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Round Off</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.roundoff}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.roundoff}</td>
             </tr>
             <tr style={{ background: "#e9ecef" }}>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Total Amount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}><b>฿ {summary.grandTotal}</b></td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}><b>{currencySymbol} {summary.grandTotal}</b></td>
             </tr>
           </tbody>
         </table>

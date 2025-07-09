@@ -2,11 +2,14 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 const fullMenu = [
+
+  
+
   {
-    name: 'Dashboard',
+    name: ' Dashboard',
     path: '/dashboard/admin',
     icon: 'view-dashboard',
-    dataTargetId: '#home'
+    dataTargetId: '#testdashboard'
   },
 
   {
@@ -47,6 +50,7 @@ const fullMenu = [
     submenu: [
        { name: 'Advance Order', path: '/sale/advanceorder' },
       { name: 'POS', path: '/sale/pos' },
+      { name: 'New Sale', path: '/sale/newsale' },
 
 
 
@@ -131,7 +135,7 @@ const getMenuItems = (usertype) => {
         if (item.submenu) 
           {
           const allowedSubmenuNames = {
-            Sale: ["POS"],
+            Sale: ["POS","Retail"],
             Reports: ["Sale Report", "Supplier Ledger", "Customer Ledger", "Reciept Voucher", "Payment Voucher"],
           };
           const filteredSubmenu = allowedSubmenuNames[item.name]
@@ -145,7 +149,7 @@ const getMenuItems = (usertype) => {
 
   if (usertype === "Account") {
     return fullMenu
-      .filter(item => ["Account Dashboard", "Reports", "Logout"].includes(item.name))
+      .filter(item => ["Dashboard", "Reports", "Logout"].includes(item.name))
       .map(item => {
         if (item.name === "Reports" && item.submenu) {
           // Show full Reports submenu for Account

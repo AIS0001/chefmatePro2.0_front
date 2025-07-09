@@ -13,6 +13,7 @@ import Logout from './views/Logout';
 import HotelBookingCalendar from './views/Hotel/HotelBookingCalendar';
 import Details from './views/Hotel/Details';
 
+
 import Customers from './views/master/customers';
 import Suppliers from './views/master/suppliers';
 import Categories from './views/master/categories';

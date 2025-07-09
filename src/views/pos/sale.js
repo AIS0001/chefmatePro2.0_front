@@ -1,30 +1,49 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react';
 import AddCustomerModal from '../../components/Modals/addCustomer';
-import Select from 'react-select'
-import axios from 'axios'
-import { useNavigate, Link } from "react-router-dom";
-import { toast, ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import CardComponent from '../../components/cards/CardComponent'
-import Header from '../../components/Header'
-import Layout from '../../layout/Layout'
-import {
-  Textfield,
-  TextfieldwithLabel
-} from '../../components/Buttons/Textfield'
-import getAmountInWords from '../../components/numbertoWords'
-import InvoiceTableModal from '../../components/Templates/template1'
-import fetchData from '../../functions/fetchData'
-import { getHeaders } from '../../utility/getHeader'
-import { GSTInvoicePrintPreview } from '../../components/Templates/gstTemplates'
+import Select from 'react-select';
+import axios from 'axios';
+import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import CardComponent from '../../components/cards/CardComponent';
+import Header from '../../components/Header';
+import Layout from '../../layout/Layout';
+import { Textfield, TextfieldwithLabel } from '../../components/Buttons/Textfield';
+import getAmountInWords from '../../components/numbertoWords';
+import fetchData from '../../functions/fetchData';
+import { getHeaders } from '../../utility/getHeader';
+import { GSTInvoicePrintPreview } from '../../components/Templates/gstTemplates';
 import { VATInvoicePrintPreview } from '../../components/Templates/vatemplate';
+
+// Utility to fetch coresetting tax_type
+async function fetchTaxType() {
+  try {
+    // coresetting table is usually a single row
+    const res = await fetchData('coresetting', null, 'id', {});
+    if (Array.isArray(res) && res.length > 0) {
+      return res[0].tax_type ? res[0].tax_type.toLowerCase() : 'gst';
+    }
+    return 'gst'; // default fallback
+  } catch (e) {
+    return 'gst';
+  }
+}
 
 export default function Sale() {
   const itemNameRefs = useRef([])
-  const [cart, setCart] = useState([])
+  const [cart] = useState([])
   const [barcode, setBarcode] = useState('')
   const [total, setTotal] = useState(0)
-  const [paymentType, setPaymentType] = useState('cash')
+  const [paymentType, setPaymentType] = useState('Cash')
+  // Tax type state
+  const [taxType, setTaxType] = useState('gst');
+  // On mount, fetch tax type from coresetting
+  useEffect(() => {
+    (async () => {
+      const ttype = await fetchTaxType();
+      setTaxType(ttype);
+    })();
+  }, []);
   const [discountType, setDiscountType] = useState('percentage')
   const [discountValue, setDiscountValue] = useState(0)
   const [showCustomerModal, setShowCustomerModal] = useState(false)
@@ -70,29 +89,76 @@ export default function Sale() {
     roundOff: 0,
     grandTotal: 0
   })
-  useEffect(() => {
-    const itemTotal = itemRows.reduce((sum, r) => sum + r.amount, 0)
-    const discount = itemRows.reduce((sum, r) => sum + r.discountValue, 0)
-    const subTotal = itemTotal - discount
-    const tax = itemRows.reduce((sum, r) => {
-      const totalTax =
-        ((r.cgst + r.sgst + r.igst) / 100) * (r.amount - r.discountValue)
-      return sum + totalTax
-    }, 0)
-    const grandTotal = Math.round(subTotal + tax)
-    const roundOff = grandTotal - (subTotal + tax)
+  // Update invoice summary calculation
+useEffect(() => {
+  let itemTotal = 0;
+  let discount = 0;
+  let taxValue = 0;
+  let taxPercent = 0;
+  let subTotal = 0;
+  let roundOff = 0;
+  let grandTotal = 0;
+  let taxTypeLabel = taxType === 'vat' ? 'VAT' : 'GST';
+  let taxPercentDisplay = '';
 
-    setInvoiceSummary({
-      itemTotal,
-      discount,
-      subTotal,
-      tax,
-      roundOff,
-      grandTotal
-    })
-  }, [itemRows])
+  if (itemRows.length > 0) {
+    itemTotal = itemRows.reduce((sum, r) => sum + r.amount, 0);
+    discount = itemRows.reduce((sum, r) => sum + r.discountValue, 0);
+    subTotal = itemTotal - discount;
+    // Calculate tax percent and value
+    if (taxType === 'vat') {
+      // VAT: use first nonzero VAT% as display
+      const vatRows = itemRows.filter(r => r.vat > 0);
+      taxPercent = vatRows.length > 0 ? vatRows[0].vat : 0;
+      // If any item is taxIncluded, extract tax from netAmount, else add tax on top
+      if (vatRows.length > 0 && vatRows[0].taxIncluded) {
+        // Tax included: extract tax from netAmount
+        taxValue = itemRows.reduce((sum, r) => sum + (r.taxIncluded ? (r.netAmount - (r.netAmount / (1 + (r.vat / 100)))) : 0), 0);
+      } else {
+        // Tax excluded: add tax on top
+        taxValue = itemRows.reduce((sum, r) => sum + (!r.taxIncluded ? ((r.amount - r.discountValue) * (r.vat / 100)) : 0), 0);
+      }
+      taxPercentDisplay = `VAT (${taxPercent}%)`;
+    } else {
+      // GST: sum all GST fields
+      let cgst = 0, sgst = 0, igst = 0;
+      let cgstVal = 0, sgstVal = 0, igstVal = 0;
+      itemRows.forEach(r => {
+        if (r.cgst > 0) {
+          cgst = r.cgst;
+          cgstVal += r.taxIncluded ? (r.netAmount - (r.netAmount / (1 + (r.cgst / 100)))) : ((r.amount - r.discountValue) * (r.cgst / 100));
+        }
+        if (r.sgst > 0) {
+          sgst = r.sgst;
+          sgstVal += r.taxIncluded ? (r.netAmount - (r.netAmount / (1 + (r.sgst / 100)))) : ((r.amount - r.discountValue) * (r.sgst / 100));
+        }
+        if (r.igst > 0) {
+          igst = r.igst;
+          igstVal += r.taxIncluded ? (r.netAmount - (r.netAmount / (1 + (r.igst / 100)))) : ((r.amount - r.discountValue) * (r.igst / 100));
+        }
+      });
+      taxPercent = cgst + sgst + igst;
+      taxValue = cgstVal + sgstVal + igstVal;
+      taxPercentDisplay = `GST (${taxPercent}%)`;
+    }
+    // Grand total: sum all net amounts
+    grandTotal = itemRows.reduce((sum, r) => sum + r.netAmount, 0);
+    grandTotal = Math.round(grandTotal);
+    roundOff = grandTotal - itemRows.reduce((sum, r) => sum + r.netAmount, 0);
+  }
+  setInvoiceSummary({
+    itemTotal,
+    discount,
+    subTotal,
+    tax: taxValue,
+    taxPercent: taxPercentDisplay,
+    roundOff,
+    grandTotal
+  });
+}, [itemRows, taxType])
   const [allItems, setAllItems] = useState([]) // from DB
   const [suggestions, setSuggestions] = useState({}) // {rowIndex: [items]}
+  const [taxes, setTaxes] = useState([]); // All taxes from DB
 
   // const baseURL = 'http://localhost:4402';
 
@@ -117,12 +183,34 @@ export default function Sale() {
       }
     }
 
-    // Auto-calculate amounts
-    row.amount = row.rate * row.quantity
-    row.discountValue = row.amount * (row.discountPercent / 100)
-    const taxedAmount = row.amount - row.discountValue
-    const totalTax = taxedAmount * ((row.cgst + row.sgst + row.igst) / 100)
-    row.netAmount = taxedAmount + totalTax
+    // Tax-included/excluded logic (strict: amount is always base price, netAmount is final price paid)
+    const included = row.taxIncluded;
+    let rate = parseFloat(row.rate) || 0;
+    let quantity = parseFloat(row.quantity) || 1;
+    let discountPercent = parseFloat(row.discountPercent) || 0;
+    let vat = taxType === 'vat' ? (parseFloat(row.vat) || 0) : 0;
+    let cgst = taxType === 'gst' ? (parseFloat(row.cgst) || 0) : 0;
+    let sgst = taxType === 'gst' ? (parseFloat(row.sgst) || 0) : 0;
+    let igst = taxType === 'gst' ? (parseFloat(row.igst) || 0) : 0;
+    let totalTaxPercent = taxType === 'vat' ? vat : (cgst + sgst + igst);
+    let amount = 0, discountValue = 0, netAmount = 0;
+
+    if (included) {
+      // Tax is included in price: gross is the final price, discount is on gross
+      let gross = rate * quantity;
+      amount = gross; // Show the actual price paid (tax included)
+      discountValue = gross * (discountPercent / 100);
+      netAmount = gross - discountValue; // Final price after discount (still tax included)
+    } else {
+      // Tax is excluded: add tax after discount
+      amount = rate * quantity;
+      discountValue = amount * (discountPercent / 100);
+      netAmount = (amount - discountValue) * (1 + (totalTaxPercent / 100));
+    }
+
+    row.amount = amount;
+    row.discountValue = discountValue;
+    row.netAmount = netAmount;
 
     setItemRows(updatedRows)
   }
@@ -315,33 +403,83 @@ export default function Sale() {
   }
 
   useEffect(() => {
-    const myItems = fetchData('items', setAllItems, 'id', {})
+    fetchData('items', setAllItems, 'id', {});
+    fetchData('taxes', setTaxes, 'id', {});
   }, [])
 
   const handleItemSelect = (index, selectedItem) => {
-    const updatedRows = [...itemRows]
+    const updatedRows = [...itemRows];
+    // Find tax row for this item (by tax name or value, fallback to first)
+    let taxRow = null;
+    if (taxType === 'vat') {
+      taxRow = taxes.find(t => t.taxname && selectedItem.vat && (parseFloat(t.taxvalue) === parseFloat(selectedItem.vat)));
+    } else {
+      // For GST, try to match by cgst/sgst/igst or fallback
+      taxRow = taxes.find(t => t.taxname && (
+        (selectedItem.cgst && parseFloat(t.taxvalue) === parseFloat(selectedItem.cgst)) ||
+        (selectedItem.sgst && parseFloat(t.taxvalue) === parseFloat(selectedItem.sgst)) ||
+        (selectedItem.igst && parseFloat(t.taxvalue) === parseFloat(selectedItem.igst))
+      ));
+    }
+    if (!taxRow && taxes.length > 0) taxRow = taxes[0];
+    const included = taxRow && (taxRow.included === true || taxRow.included === 'true');
+
+    // Calculate price/tax logic (fix: for tax-included, netAmount = gross - discount on base, amount = base, tax = diff)
+    let rate = selectedItem.offerprice || 0;
+    let quantity = 1;
+    let amount = 0;
+    let discountPercent = 0;
+    let discountValue = 0;
+    let vat = taxType === 'vat' ? (selectedItem.vat || 7) : 0;
+    let cgst = taxType === 'gst' ? (selectedItem.cgst || 0) : 0;
+    let sgst = taxType === 'gst' ? (selectedItem.sgst || 0) : 0;
+    let igst = taxType === 'gst' ? (selectedItem.igst || 0) : 0;
+    let netAmount = 0;
+
+    if (included) {
+      let totalTaxPercent = taxType === 'vat' ? vat : (cgst + sgst + igst);
+      let gross = rate * quantity;
+      let base = gross / (1 + (totalTaxPercent / 100));
+      amount = base;
+      discountValue = base * (discountPercent / 100);
+      let baseAfterDiscount = base - discountValue;
+      let taxValue = gross - baseAfterDiscount;
+      netAmount = gross - discountValue; // This is correct for tax-included
+    } else {
+      amount = rate * quantity;
+      discountValue = amount * (discountPercent / 100);
+      if (taxType === 'vat') {
+        netAmount = (amount - discountValue) * (1 + (vat / 100));
+      } else {
+        const totalTaxPercent = cgst + sgst + igst;
+        netAmount = (amount - discountValue) * (1 + (totalTaxPercent / 100));
+      }
+    }
+
     updatedRows[index] = {
       ...updatedRows[index],
       itemName: selectedItem.iname,
       description: selectedItem.description || '',
-      rate: selectedItem.offerprice || 0,
-      quantity: 1,
-      amount: selectedItem.offerprice || 0,
-      discountPercent: 0,
-      discountValue: 0,
-      cgst: selectedItem.cgst || 0,
-      sgst: selectedItem.sgst || 0,
-      igst: selectedItem.igst || 0,
-      netAmount: selectedItem.offerprice || 0
-    }
-    setItemRows(updatedRows)
-    setSuggestions(prev => ({ ...prev, [index]: [] })) // close suggestion
+      rate,
+      quantity,
+      amount,
+      discountPercent,
+      discountValue,
+      vat,
+      cgst,
+      sgst,
+      igst,
+      netAmount,
+      taxIncluded: included,
+    };
+    setItemRows(updatedRows);
+    setSuggestions(prev => ({ ...prev, [index]: [] })); // close suggestion
     setTimeout(() => {
       // Focus description field after selection
-      const descInput = document.getElementById(`description-${index}`)
-      if (descInput) descInput.focus()
-    }, 0)
-  }
+      const descInput = document.getElementById(`description-${index}`);
+      if (descInput) descInput.focus();
+    }, 0);
+  };
 
   const printBill = () => {
     const finalTotal = calculateFinalTotal()
@@ -380,44 +518,57 @@ export default function Sale() {
 
 
 
-  // Helper to build GST invoice props from current bill
-  async function getGSTInvoiceProps(itemId = null) {
+  // Helper to build invoice props from current bill, dynamic by taxType
+  async function getInvoiceProps(itemId = null) {
     let invId = itemId || window.lastSavedBillId || '';
     let myfinalbilldata = [];
     let myOrderItemsData = [];
     let myCustomerdetails = {};
     // Fetch from DB if invId is present
     if (invId) {
-      // Fetch the final_bill and order_items details for the given itemId
       myfinalbilldata = await fetchData("final_bill", () => { }, "id", { id: invId });
-      myOrderItemsData = await fetchData("order_items_gst", () => { }, "id", { order_id: invId });
+      // Dynamic table based on taxType
+      const orderTable = taxType === 'gst' ? 'order_items_gst' : 'order_items';
+      myOrderItemsData = await fetchData(orderTable, () => { }, "id", { order_id: invId });
       if (myfinalbilldata && myfinalbilldata[0] && myfinalbilldata[0].customer_id) {
         const custArr = await fetchData("customers", () => { }, "id", { id: myfinalbilldata[0].customer_id });
         myCustomerdetails = custArr && custArr[0] ? custArr[0] : {};
       }
     }
-    // console.log('myfinalbilldata', myfinalbilldata);
-    // console.log('myOrderItemsData', myOrderItemsData);
-    // console.log('myCustomerdetails', myCustomerdetails);
-
     // Company
     const company = companyDetails;
-    // console.log('company details', company.name, company.address, company.phone, company.email  );
     // Items
-    const items = (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).map(row => ({
-      item_name: (row && (row.itemName || row.item_name)) || '',
-      description: (row && row.description) || '',
-      quantity: row ? Number(row.quantity) : 0,
-      rate: row ? Number(row.rate) : 0,
-      cgst: row ? Number(row.cgst) : 0,
-      sgst: row ? Number(row.sgst) : 0,
-      igst: row ? Number(row.igst) : 0,
-      amount: row ? Number(row.amount || row.total_price) : 0,
-      discountPercent: row ? Number(row.discountPercent) : 0,
-      discountValue: row ? Number(row.discountValue) : 0,
-      netAmount: row ? Number(row.netAmount) : 0,
-      total_price: row ? Number(row.amount || row.total_price) : 0
-    }));
+    const items = (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).map(row => {
+      if (taxType === 'gst') {
+        return {
+          item_name: (row && (row.itemName || row.item_name)) || '',
+          description: (row && row.description) || '',
+          quantity: row ? Number(row.quantity) : 0,
+          rate: row ? Number(row.rate) : 0,
+          cgst: row ? Number(row.cgst) : 0,
+          sgst: row ? Number(row.sgst) : 0,
+          igst: row ? Number(row.igst) : 0,
+          amount: row ? Number(row.amount || row.total_price) : 0,
+          discountPercent: row ? Number(row.discountPercent) : 0,
+          discountValue: row ? Number(row.discountValue) : 0,
+          netAmount: row ? Number(row.netAmount) : 0,
+          total_price: row ? Number(row.amount || row.total_price) : 0
+        };
+      } else {
+        return {
+          item_name: (row && (row.itemName || row.item_name)) || '',
+          description: (row && row.description) || '',
+          quantity: row ? Number(row.quantity) : 0,
+          rate: row ? Number(row.rate) : 0,
+          vat: row ? Number(row.vat || 0) : 0,
+          amount: row ? Number(row.amount || row.total_price) : 0,
+          discountPercent: row ? Number(row.discountPercent) : 0,
+          discountValue: row ? Number(row.discountValue) : 0,
+          netAmount: row ? Number(row.netAmount) : 0,
+          total_price: row ? Number(row.amount || row.total_price) : 0
+        };
+      }
+    });
     // Customer: Only use DB data for print preview, never fall back to UI state
     let customerData = {
       name: '',
@@ -425,113 +576,6 @@ export default function Sale() {
       email: '',
       address: '',
       gst: '',
-      deliveryPlace: ''
-    };
-    if (myCustomerdetails && typeof myCustomerdetails === 'object' && Object.keys(myCustomerdetails).length > 0) {
-      customerData = {
-        name: myCustomerdetails.name || '',
-        phone: myCustomerdetails.phone || '',
-        email: myCustomerdetails.email || '',
-        address: myCustomerdetails.address || '',
-        gst: myCustomerdetails.gst || '',
-        deliveryPlace: myCustomerdetails.deliveryPlace || ''
-      };
-    } else if (invId) {
-      // Defensive: If DB fetch failed, show error toast and leave empty
-      toast.error('Customer data not found for this bill.');
-    }
-    // Summary
-    const summary = myfinalbilldata && myfinalbilldata[0] ? {
-      subtotal: Number(myfinalbilldata[0].subtotal) || 0,
-      discount: Number(myfinalbilldata[0].discount_amount) || 0,
-      subtotalAfterDiscount: Number(myfinalbilldata[0].subtotal_afterdiscount) || 0,
-      roundoff: Number(myfinalbilldata[0].roundoff) || 0,
-      grandTotal: Number(myfinalbilldata[0].grand_total) || 0
-    } : {
-      subtotal: invoiceSummary.itemTotal,
-      discount: invoiceSummary.discount,
-      subtotalAfterDiscount: invoiceSummary.subTotal,
-      roundoff: invoiceSummary.roundOff,
-      grandTotal: invoiceSummary.grandTotal
-    };
-    // console.log('invoice summary', summary);
-    // console.log('customer data', customerData);
-    // Taxes
-    let cgstPercent = 0, sgstPercent = 0, igstPercent = 0;
-    let cgstTotal = 0, sgstTotal = 0, igstTotal = 0;
-    let cgstCount = 0, sgstCount = 0, igstCount = 0;
-    (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).forEach(item => {
-      if (parseFloat(item.cgst || 0) > 0) { cgstPercent += parseFloat(item.cgst || 0); cgstCount++; }
-      if (parseFloat(item.sgst || 0) > 0) { sgstPercent += parseFloat(item.sgst || 0); sgstCount++; }
-      if (parseFloat(item.igst || 0) > 0) { igstPercent += parseFloat(item.igst || 0); igstCount++; }
-      cgstTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.cgst || 0) / 100);
-      sgstTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.sgst || 0) / 100);
-      igstTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.igst || 0) / 100);
-    });
-    cgstPercent = cgstCount ? cgstPercent / cgstCount : 0;
-    sgstPercent = sgstCount ? sgstPercent / sgstCount : 0;
-    igstPercent = igstCount ? igstPercent / igstCount : 0;
-    const taxes = {
-      cgstPercent: cgstPercent.toFixed(2),
-      sgstPercent: sgstPercent.toFixed(2),
-      igstPercent: igstPercent.toFixed(2),
-      cgstTotal: cgstTotal.toFixed(2),
-      sgstTotal: sgstTotal.toFixed(2),
-      igstTotal: igstTotal.toFixed(2)
-    };
-    // Invoice meta
-    const invoiceNo = invId;
-    const invoiceDate = myfinalbilldata && myfinalbilldata[0] ? myfinalbilldata[0].inv_date : new Date().toLocaleDateString();
-    const invoiceTime = myfinalbilldata && myfinalbilldata[0] ? myfinalbilldata[0].inv_time : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    console.log('company data', customerData)
-    return {
-      company,
-      customer: customerData,
-      items,
-      summary,
-      taxes,
-      invoiceNo,
-      invoiceDate,
-      invoiceTime
-    };
-  }
-
-  // Helper to build VAT invoice props from current bill
-  async function getVATInvoiceProps(itemId = null) {
-    let invId = itemId || window.lastSavedBillId || '';
-    let myfinalbilldata = [];
-    let myOrderItemsData = [];
-    let myCustomerdetails = {};
-    // Fetch from DB if invId is present
-    if (invId) {
-      myfinalbilldata = await fetchData("final_bill", () => { }, "id", { id: invId });
-      myOrderItemsData = await fetchData("order_items", () => { }, "id", { order_id: invId });
-      if (myfinalbilldata && myfinalbilldata[0] && myfinalbilldata[0].customer_id) {
-        const custArr = await fetchData("customers", () => { }, "id", { id: myfinalbilldata[0].customer_id });
-        myCustomerdetails = custArr && custArr[0] ? custArr[0] : {};
-      }
-    }
-    // Company
-    const company = companyDetails;
-    // Items
-    const items = (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).map(row => ({
-      item_name: (row && (row.itemName || row.item_name)) || '',
-      description: (row && row.description) || '',
-      quantity: row ? Number(row.quantity) : 0,
-      rate: row ? Number(row.rate) : 0,
-      vat: row ? Number(row.vat || 0) : 0,
-      amount: row ? Number(row.amount || row.total_price) : 0,
-      discountPercent: row ? Number(row.discountPercent) : 0,
-      discountValue: row ? Number(row.discountValue) : 0,
-      netAmount: row ? Number(row.netAmount) : 0,
-      total_price: row ? Number(row.amount || row.total_price) : 0
-    }));
-    // Customer: Only use DB data for print preview, never fall back to UI state
-    let customerData = {
-      name: '',
-      phone: '',
-      email: '',
-      address: '',
       vat: '',
       deliveryPlace: ''
     };
@@ -541,11 +585,11 @@ export default function Sale() {
         phone: myCustomerdetails.phone || '',
         email: myCustomerdetails.email || '',
         address: myCustomerdetails.address || '',
+        gst: myCustomerdetails.gst || '',
         vat: myCustomerdetails.vat || '',
         deliveryPlace: myCustomerdetails.deliveryPlace || ''
       };
     } else if (invId) {
-      // Defensive: If DB fetch failed, show error toast and leave empty
       toast.error('Customer data not found for this bill.');
     }
     // Summary
@@ -562,17 +606,43 @@ export default function Sale() {
       roundoff: invoiceSummary.roundOff,
       grandTotal: invoiceSummary.grandTotal
     };
-    // VAT
-    let vatPercent = 0, vatTotal = 0, vatCount = 0;
-    (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).forEach(item => {
-      if (parseFloat(item.vat || 0) > 0) { vatPercent += parseFloat(item.vat || 0); vatCount++; }
-      vatTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.vat || 0) / 100);
-    });
-    vatPercent = vatCount ? vatPercent / vatCount : 0;
-    const taxes = {
-      vatPercent: vatPercent.toFixed(2),
-      vatTotal: vatTotal.toFixed(2)
-    };
+    // Taxes
+    let taxes = {};
+    if (taxType === 'gst') {
+      let cgstPercent = 0, sgstPercent = 0, igstPercent = 0;
+      let cgstTotal = 0, sgstTotal = 0, igstTotal = 0;
+      let cgstCount = 0, sgstCount = 0, igstCount = 0;
+      (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).forEach(item => {
+        if (parseFloat(item.cgst || 0) > 0) { cgstPercent += parseFloat(item.cgst || 0); cgstCount++; }
+        if (parseFloat(item.sgst || 0) > 0) { sgstPercent += parseFloat(item.sgst || 0); sgstCount++; }
+        if (parseFloat(item.igst || 0) > 0) { igstPercent += parseFloat(item.igst || 0); igstCount++; }
+        cgstTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.cgst || 0) / 100);
+        sgstTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.sgst || 0) / 100);
+        igstTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.igst || 0) / 100);
+      });
+      cgstPercent = cgstCount ? cgstPercent / cgstCount : 0;
+      sgstPercent = sgstCount ? sgstPercent / sgstCount : 0;
+      igstPercent = igstCount ? igstPercent / igstCount : 0;
+      taxes = {
+        cgstPercent: cgstPercent.toFixed(2),
+        sgstPercent: sgstPercent.toFixed(2),
+        igstPercent: igstPercent.toFixed(2),
+        cgstTotal: cgstTotal.toFixed(2),
+        sgstTotal: sgstTotal.toFixed(2),
+        igstTotal: igstTotal.toFixed(2)
+      };
+    } else {
+      let vatPercent = 0, vatTotal = 0, vatCount = 0;
+      (myOrderItemsData.length > 0 ? myOrderItemsData : itemRows).forEach(item => {
+        if (parseFloat(item.vat || 0) > 0) { vatPercent += parseFloat(item.vat || 0); vatCount++; }
+        vatTotal += (Number(item.amount || item.total_price) - Number(item.discountValue || 0)) * (parseFloat(item.vat || 0) / 100);
+      });
+      vatPercent = vatCount ? vatPercent / vatCount : 0;
+      taxes = {
+        vatPercent: vatPercent.toFixed(2),
+        vatTotal: vatTotal.toFixed(2)
+      };
+    }
     // Invoice meta
     const invoiceNo = invId;
     const invoiceDate = myfinalbilldata && myfinalbilldata[0] ? myfinalbilldata[0].inv_date : new Date().toLocaleDateString();
@@ -588,6 +658,8 @@ export default function Sale() {
       invoiceTime
     };
   }
+
+
 
   // Modal state for Add New Customer
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
@@ -834,9 +906,15 @@ export default function Sale() {
                   <th>Amount</th>
                   <th>Disc%</th>
                   <th>Disc Value</th>
-                  <th>CGST%</th>
-                  <th>SGST%</th>
-                  <th>IGST%</th>
+                  {taxType === 'vat' ? (
+                    <th>VAT%</th>
+                  ) : (
+                    <>
+                      <th>CGST%</th>
+                      <th>SGST%</th>
+                      <th>IGST%</th>
+                    </>
+                  )}
                   <th>Net Amount</th>
                   <th>Action</th>
                 </tr>
@@ -1011,71 +1089,98 @@ export default function Sale() {
                     {/* Disc Value */}
                     <td>{row.discountValue.toFixed(2)}</td>
 
-                    {/* CGST */}
-                    <td>
-                      {editableRowIndex === index ? (
-                        <Textfield
-                          id={`cgst-${index}`}
-                          value={row.cgst}
-                          onChange={e =>
-                            handleRowChange(
-                              index,
-                              'cgst',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          type='number'
-                          name='cgst'
-                        />
-                      ) : (
-                        row.cgst
-                      )}
-                    </td>
 
-                    {/* SGST */}
-                    <td>
-                      {editableRowIndex === index ? (
-                        <Textfield
-                          id={`sgst-${index}`}
-                          value={row.sgst}
-                          onChange={e =>
-                            handleRowChange(
-                              index,
-                              'sgst',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          type='number'
-                          name='sgst'
-                        />
-                      ) : (
-                        row.sgst
-                      )}
-                    </td>
-
-                    {/* IGST */}
-                    <td>
-                      {editableRowIndex === index ? (
-                        <Textfield
-                          id={`igst-${index}`}
-                          value={row.igst}
-                          onChange={e =>
-                            handleRowChange(
-                              index,
-                              'igst',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          type='number'
-                          name='igst'
-                        />
-                      ) : (
-                        row.igst
-                      )}
-                    </td>
+                    {/* VAT% or GST fields */}
+                    {taxType === 'vat' ? (
+                      <td>
+                        {editableRowIndex === index ? (
+                          <Textfield
+                            id={`vat-${index}`}
+                            value={row.vat}
+                            onChange={e =>
+                              handleRowChange(
+                                index,
+                                'vat',
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            type='number'
+                            name='vat'
+                          />
+                        ) : (
+                          row.vat
+                        )}
+                      </td>
+                    ) : (
+                      <>
+                        <td>
+                          {editableRowIndex === index ? (
+                            <Textfield
+                              id={`cgst-${index}`}
+                              value={row.cgst}
+                              onChange={e =>
+                                handleRowChange(
+                                  index,
+                                  'cgst',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              type='number'
+                              name='cgst'
+                            />
+                          ) : (
+                            row.cgst
+                          )}
+                        </td>
+                        <td>
+                          {editableRowIndex === index ? (
+                            <Textfield
+                              id={`sgst-${index}`}
+                              value={row.sgst}
+                              onChange={e =>
+                                handleRowChange(
+                                  index,
+                                  'sgst',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              type='number'
+                              name='sgst'
+                            />
+                          ) : (
+                            row.sgst
+                          )}
+                        </td>
+                        <td>
+                          {editableRowIndex === index ? (
+                            <Textfield
+                              id={`igst-${index}`}
+                              value={row.igst}
+                              onChange={e =>
+                                handleRowChange(
+                                  index,
+                                  'igst',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              type='number'
+                              name='igst'
+                            />
+                          ) : (
+                            row.igst
+                          )}
+                        </td>
+                      </>
+                    )}
 
                     {/* Net Amount */}
-                    <td>{row.netAmount.toFixed(2)}</td>
+                    <td>
+                      {row.netAmount.toFixed(2)}
+                      <br />
+                      <small className={row.taxIncluded ? 'text-success' : 'text-danger'}>
+                        {row.taxIncluded ? 'Tax Included' : 'Tax Excluded'}
+                      </small>
+                    </td>
 
                     {/* Delete Button */}
                     <td>
@@ -1181,6 +1286,13 @@ export default function Sale() {
                     ฿ {invoiceSummary.grandTotal.toFixed(2)}
                   </div>
                 </div>
+                {/* Tax Summary: Moved to separate row for clarity */}
+                <div className='col-md-12'>
+                  <label className='fw-semibold font-20'>Tax</label>
+                  <div className='font-20'>
+                    {invoiceSummary.taxPercent}: ฿ {invoiceSummary.tax.toFixed(2)}
+                  </div>
+                </div>
               </div>
             </CardComponent>
           </div>
@@ -1196,12 +1308,12 @@ export default function Sale() {
                   onClick={async () => {
                     // Validate
                     if (!customer.name || !customer.phone) {
-                      toast.error('Please enter customer name and phone.')
-                      return
+                      toast.error('Please enter customer name and phone.');
+                      return;
                     }
                     if (itemRows.length === 0) {
-                      toast.error('Please add at least one item.')
-                      return
+                      toast.error('Please add at least one item.');
+                      return;
                     }
                     try {
                       // Prepare bill data
@@ -1216,42 +1328,69 @@ export default function Sale() {
                         round_off: invoiceSummary.roundOff || 0,
                         grand_total: invoiceSummary.grandTotal || 0,
                         payment_mode: paymentType || 'Cash',
-                        status: paymentType === 'credit' ? 1 : 0
-                      }
+                        status: paymentType === 'Credit' ? 1 : 0
+                      };
                       // Save bill and get bill_id
                       const res = await axios.post(
                         '/savebill',
                         billData,
                         getHeaders()
-                      )
-                      const bill_id = res.data.bill_id
-                      // Store the latest bill id globally for print button
-                      window.lastSavedBillId = bill_id
+                      );
+                      const bill_id = res.data.bill_id;
+                      window.lastSavedBillId = bill_id;
                       // Prepare order items
-                      const orderItems = itemRows.map(row => ({
-                        order_id: bill_id,
-                        table_number: customer.deliveryPlace || '',
-                        item_name: row.itemName,
-                        quantity: row.quantity,
-                        uom: row.uom || '',
-                        rate: row.rate,
-                        cgst: row.cgst || 0,
-                        sgst: row.sgst || 0,
-                        igst: row.igst || 0,
-                        tax_amount: 0, // You can calculate if needed
-                        total_price: row.amount,
-                        status: '1'
-                      }))
-                      await axios.post(
-                        '/insertdatabulkgst/order_items_gst',
-                        { items: orderItems },
-                        getHeaders()
-                      )
+                      const orderItems = itemRows.map(row => {
+                        if (taxType === 'gst') {
+                          return {
+                            order_id: bill_id,
+                            invoice_number: bill_id,
+                            table_number: customer.deliveryPlace || '',
+                            item_name: row.itemName,
+                            quantity: row.quantity,
+                            uom: row.uom || '',
+                            rate: row.rate,
+                            cgst: row.cgst || 0,
+                            sgst: row.sgst || 0,
+                            igst: row.igst || 0,
+                            tax_amount: 0,
+                            total_price: row.amount,
+                            status: '1'
+                          };
+                        } else {
+                          return {
+                            order_number: bill_id,
+                            invoice_number: bill_id,
+                            table_number: customer.deliveryPlace || '',
+                            item_name: row.itemName,
+                            quantity: row.quantity,
+                            // uom: row.uom || '',
+                            // rate: row.rate,
+                            // vat: row.vat || 0,
+                            // tax_amount: 0,
+                            total_price: row.amount,
+                            status: '1'
+                          };
+                        }
+                      });
+                      // Insert into correct table
+                      if (taxType === 'gst') {
+                        await axios.post(
+                          '/insertdatabulkgst/order_items_gst',
+                          { items: orderItems },
+                          getHeaders()
+                        );
+                      } else {
+                        await axios.post(
+                          '/insertdatabulk/order_items',
+                          { items: orderItems },
+                          getHeaders()
+                        );
+                      }
                       toast.success(
                         `Invoice generated successfully. Invoice No: ${bill_id}`
-                      )
+                      );
                       // Reset all data for next bill
-                      setItemRows([])
+                      setItemRows([]);
                       setCustomer({
                         name: '',
                         phone: '',
@@ -1259,12 +1398,12 @@ export default function Sale() {
                         address: '',
                         gst: '',
                         deliveryPlace: ''
-                      })
-                      setDiscountValue(0)
-                      setPaymentType('cash')
-                      setDiscountType('percentage')
+                      });
+                      setDiscountValue(0);
+                      setPaymentType('Cash');
+                      setDiscountType('percentage');
                     } catch (err) {
-                      toast.error('Error saving bill.')
+                      toast.error('Error saving bill.');
                     }
                   }}
                 >
@@ -1301,28 +1440,17 @@ export default function Sale() {
                       return;
                     }
                     // Fetch invoice props only when print is requested
-                    const props = await getGSTInvoiceProps(latestBillId);
-                    setGstInvoiceProps(props);
-                    setShowInvoicePreview(true);
-                  }}
-                >
-                  🖨️ Print GST Bill
-                </button>
-   <button
-                  className='btn btn-purple text-white'
-                  onClick={async () => {
-                    let latestBillId = window.lastSavedBillId;
-                    if (!latestBillId) {
-                      toast.error('No bill found to print. Please save a bill first.');
-                      return;
+                    const props = await getInvoiceProps(latestBillId);
+                    if (taxType === 'gst') {
+                      setGstInvoiceProps(props);
+                      setShowInvoicePreview(true);
+                    } else {
+                      setVatInvoiceProps(props);
+                      setShowVATInvoicePreview(true);
                     }
-                    // Fetch invoice props only when print is requested
-                    const props = await getVATInvoiceProps(latestBillId);
-                    setVatInvoiceProps(props);
-                    setShowVATInvoicePreview(true);
                   }}
                 >
-                  🖨️ Print VAT Bill
+                  🖨️ Print Bill
                 </button>
                 
                 <button

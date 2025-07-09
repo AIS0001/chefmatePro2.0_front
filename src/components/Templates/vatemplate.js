@@ -5,6 +5,14 @@ export const VATInvoiceA4 = forwardRef(function VATInvoiceA4(
   { company, customer, items, summary, taxes, invoiceNo, invoiceDate, invoiceTime },
   ref
 ) {
+  // Currency symbol logic
+  let currencySymbol = '฿';
+  if (company && company.currency) {
+    if (company.currency === 'INR') currencySymbol = '₹';
+    else if (company.currency === 'USD') currencySymbol = '$';
+    else if (company.currency === 'GBP') currencySymbol = '£';
+    else if (company.currency === 'THB') currencySymbol = '฿';
+  }
   return (
     <div ref={ref} style={{
       border: "2px solid #2c3e50",
@@ -60,15 +68,32 @@ export const VATInvoiceA4 = forwardRef(function VATInvoiceA4(
             </tr>
           </thead>
           <tbody>
-            {items.map((item, idx) => (
-              <tr key={idx} style={{ borderBottom: "1.5px solid #e0e0e0" }}>
-                <td style={{ padding: "10px 12px" }}>{item.item_name}</td>
-                <td style={{ padding: "10px 12px" }}>{item.quantity}</td>
-                <td style={{ padding: "10px 12px" }}>฿ {item.rate}</td>
-                <td style={{ padding: "10px 12px" }}>{parseFloat(item.vat || 0)}%</td>
-                <td style={{ padding: "10px 12px" }}>฿ {item.total_price}</td>
-              </tr>
-            ))}
+            {items.map((item, idx) => {
+              // Calculate rate and vat% from quantity and total_price
+              const qty = parseFloat(item.quantity) || 1;
+              const total = parseFloat(item.total_price) || 0;
+              // If item.vat is present, use it, else try to estimate
+              let vatPercent = parseFloat(item.vat);
+              if (isNaN(vatPercent) || vatPercent === 0) vatPercent = 0;
+              // If tax is included, estimate base and vat% from total and qty
+              let rate = 0;
+              if (vatPercent > 0) {
+                // If tax included, rate = total / qty / (1 + vat/100)
+                rate = (total / qty) / (1 + vatPercent / 100);
+              } else {
+                // If no VAT, just show total/qty
+                rate = total / qty;
+              }
+              return (
+                <tr key={idx} style={{ borderBottom: "1.5px solid #e0e0e0" }}>
+                  <td style={{ padding: "10px 12px" }}>{item.item_name}</td>
+                  <td style={{ padding: "10px 12px" }}>{item.quantity}</td>
+                  <td style={{ padding: "10px 12px" }}>{currencySymbol} {rate.toFixed(2)}</td>
+                  <td style={{ padding: "10px 12px" }}>{vatPercent}%</td>
+                  <td style={{ padding: "10px 12px" }}>{currencySymbol} {total.toFixed(2)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -85,7 +110,7 @@ export const VATInvoiceA4 = forwardRef(function VATInvoiceA4(
               <td style={{ textAlign: "center" }}>{taxes.vatPercent}%</td>
             </tr>
             <tr>
-              <td style={{ textAlign: "center" }}>฿ {taxes.vatTotal}</td>
+              <td style={{ textAlign: "center" }}>{currencySymbol} {taxes.vatTotal}</td>
             </tr>
           </tbody>
         </table>
@@ -96,23 +121,27 @@ export const VATInvoiceA4 = forwardRef(function VATInvoiceA4(
           <tbody>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Subtotal</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.subtotal}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.subtotal}</td>
             </tr>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Discount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.discount}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.discount}</td>
             </tr>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>After Discount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.subtotalAfterDiscount}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.subtotalAfterDiscount}</td>
+            </tr>
+            <tr>
+              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>VAT (%)</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{taxes.vatPercent}%</td>
             </tr>
             <tr>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Round Off</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>฿ {summary.roundoff}</td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.roundoff}</td>
             </tr>
             <tr style={{ background: "#e9ecef" }}>
               <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Total Amount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}><b>฿ {summary.grandTotal}</b></td>
+              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}><b>{currencySymbol} {summary.grandTotal}</b></td>
             </tr>
           </tbody>
         </table>

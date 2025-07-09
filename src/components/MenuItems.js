@@ -58,6 +58,7 @@ const fullMenu = [
     submenu: [
       { name: 'Advance Order', path: '/sale/advanceordergstt' },
       { name: 'POS', path: '/sale/posgst' },
+      { name: 'Retail', path: '/sale/newsale' },
 
 
     ]
