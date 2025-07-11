@@ -129,9 +129,9 @@ const handleSubmit = (e) => {
 useEffect(() => {
   const token = getAuthToken();
   const userType = getUserType();
-  console.log("Token:", token);
-  console.log("Is expired:", isTokenExpired());
-  console.log("User type:", userType);
+  // console.log("Token:", token);
+  // console.log("Is expired:", isTokenExpired());
+  // console.log("User type:", userType);
 
   if (token && !isTokenExpired()) {
     switch (userType) {
@@ -158,8 +158,9 @@ useEffect(() => {
         <>
             <ToastContainer />
             <div className="login-page">
+              <div className="product-images-container">
                 {/* Left Column - Login Form */}
-                <div className="login-form-container">
+                <div className="non-float">
                     <div className="table-struct ">
                         <div className="table-cell vertical-align-middle auth-form-wrap">
                             <div className="auth-form ml-auto mr-auto no-float">
@@ -218,7 +219,7 @@ useEffect(() => {
                     </div>
                 </div>
                 {/* Right Column - SaaS Product Pictures */}
-                <div className="product-images-container">
+                
                     {/* Add your images or content here */}
                 </div>
             </div>

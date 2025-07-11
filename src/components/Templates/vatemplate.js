@@ -1,158 +1,177 @@
 import React, { forwardRef } from "react";
+import moment from "moment";
 
-// VAT Invoice Template: Modern A4
+// VAT Invoice Template: A4 Full Page with Narrow Margin and Enhancements
 export const VATInvoiceA4 = forwardRef(function VATInvoiceA4(
-  { company, customer, items, summary, taxes, invoiceNo, invoiceDate, invoiceTime },
+  { company, customer, items, summary, taxes, invoiceNo, invoiceDate, invoiceTime, watermark = "PAID" },
   ref
 ) {
-  // Currency symbol logic
-  let currencySymbol = '฿';
+  let currencySymbol = "฿";
   if (company && company.currency) {
-    if (company.currency === 'INR') currencySymbol = '₹';
-    else if (company.currency === 'USD') currencySymbol = '$';
-    else if (company.currency === 'GBP') currencySymbol = '£';
-    else if (company.currency === 'THB') currencySymbol = '฿';
+    if (company.currency === "INR") currencySymbol = "₹";
+    else if (company.currency === "USD") currencySymbol = "$";
+    else if (company.currency === "GBP") currencySymbol = "£";
+    else if (company.currency === "THB") currencySymbol = "฿";
   }
+
+  const invoiceDueDate = moment(invoiceDate).add(7, "days").format("YYYY-MM-DD");
+
   return (
-    <div ref={ref} style={{
-      border: "2px solid #2c3e50",
-      borderRadius: 12,
-      padding: 24,
-      background: "#fff",
-      maxWidth: 900,
-      margin: "0 auto",
-      fontFamily: "Cambria, monospace",
-      fontSize: 16
-    }}>
+    <div
+      ref={ref}
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        padding: "10mm 5mm 10mm 10mm", // top right bottom left
+        boxSizing: "border-box",
+        background: "#fff",
+        fontFamily: "Cambria, monospace",
+        fontSize: 15,
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between"
+      }}
+    >
+      {/* Watermark */}
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        fontSize: 100,
+        color: "#eee",
+        zIndex: 0,
+        pointerEvents: "none",
+        userSelect: "none",
+        whiteSpace: "nowrap",
+        opacity: 0.3,
+      }}>{watermark}</div>
+
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "stretch", marginBottom: 0 }}>
-        <div style={{ width: "48%", textAlign: "left" }}>
-          <h2 style={{ marginBottom: 6, color: "#2c3e50" }}>{company.name}</h2>
-          <p style={{ margin: 0 }}>{company.address}</p>
-          <p style={{ margin: 0 }}>Phone: {company.phone}</p>
-          <p style={{ margin: 0 }}>Email: {company.email}</p>
-          {company.tax_id && <p style={{ margin: 0 }}>Tax: {company.tax_id}</p>}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, position: "relative", zIndex: 1 }}>
+        
+        <div style={{ width: "48%" }}>
+          <img src="../../dist/img/logo2.png" alt="Logo" style={{ maxWidth: "180px", marginBottom: 10 }} />
+          <h2 style={{ color: "#2c3e50", marginBottom: 6 }}>{company.name}</h2>
+          <p>{company.address}</p>
+          <p>Phone: {company.phone}</p>
+          <p>Email: {company.email}</p>
+          {company.tax_id && <p>Tax ID: {company.tax_id}</p>}
+           <div style={{ marginTop: 10 }}>
+            <p><b>Invoice No:</b> {invoiceNo}</p>
+            <p><b>Date:</b> {invoiceDate}</p>
+          </div>
         </div>
-        <div style={{ borderLeft: "2px solid #2c3e50", minHeight: 120, margin: "0 18px" }}></div>
-        <div style={{ width: "48%", textAlign: "right" }}>
-          <h3 style={{ marginBottom: 6, color: "#2d7a46" }}>Customer Details</h3>
-          <p style={{ margin: 0 }}><b>Name:</b> {customer.name}</p>
-          <p style={{ margin: 0 }}><b>Phone:</b> {customer.phone}</p>
-          <p style={{ margin: 0 }}><b>Email:</b> {customer.email}</p>
-          <p style={{ margin: 0 }}><b>Address:</b> {customer.address}</p>
-          {customer.vat && <p style={{ margin: 0 }}><b>VAT:</b> {customer.vat}</p>}
+         <div style={{ width: "48%",textAlign: "right" }}>
+         
+          <div>
+            <h3 style={{ color: "#2d7a46", marginBottom: 6 }}>Invoice</h3>
+            <h5 style={{ color: "#2d7a46", marginBottom: 6 }}>Customer Details</h5>
+            <p><b>Name:</b> {customer.name}</p>
+            <p><b>Phone:</b> {customer.phone}</p>
+            <p><b>Email:</b> {customer.email}</p>
+            <p><b>Address:</b> {customer.address}</p>
+            {customer.vat && <p><b>VAT:</b> {customer.vat}</p>}
+            <div style={{ marginTop: 10 }}>
+           
+            <p><b>Due Date:</b> {invoiceDueDate}</p>
+          </div>
+          </div>
         </div>
       </div>
-      {/* Invoice Info */}
-      <div style={{ margin: "18px 0 10px 0" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <tbody>
-            <tr>
-              <td><b>Inv No.</b> {invoiceNo}</td>
-              <td><b>Date:</b> {invoiceDate}</td>
-              <td><b>Time:</b> {invoiceTime}</td>
-            </tr>
-          </tbody>
-        </table>
+
+      {/* Item Table with fixed height */}
+      <div style={{ flexGrow: 1, marginBottom: 10, position: "relative", zIndex: 1, overflow: "hidden" }}>
+        <div style={{ height: "130mm", overflow: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#2ecc71", color: "#fff" }}>
+                <th style={{ padding: "10px 12px", textAlign: "left" }}>Item Name</th>
+                <th style={{ padding: "10px 12px", textAlign: "right" }}>Qty</th>
+                <th style={{ padding: "10px 12px", textAlign: "right" }}>Rate</th>
+                <th style={{ padding: "10px 12px", textAlign: "right" }}>VAT%</th>
+                <th style={{ padding: "10px 12px", textAlign: "right" }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, idx) => {
+                const qty = parseFloat(item.quantity) || 1;
+                const total = parseFloat(item.total_price) || 0;
+                const vatPercent = 7;
+                const rate = (total / qty) / (1 + vatPercent / 100);
+
+                return (
+                  <tr key={idx} style={{ background: idx % 2 === 0 ? "#f9f9f9" : "#ffffff" }}>
+                    <td style={{ padding: "10px 12px" }}>{item.item_name}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{item.quantity}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{currencySymbol} {rate.toFixed(2)}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{vatPercent}%</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{currencySymbol} {total.toFixed(2)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-      {/* Item Details */}
-      <div style={{ border: "2px solid #2c3e50", borderRadius: 10, padding: 12, minHeight: 260, marginBottom: 18, background: "#fff" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 8, overflow: "hidden" }}>
-          <thead>
-            <tr style={{ background: "#e9ecef", color: "#34495e" }}>
-              <th style={{ padding: "10px 12px", borderBottom: "2px solid #bfc9d1" }}>Item Name</th>
-              <th style={{ padding: "10px 12px", borderBottom: "2px solid #bfc9d1" }}>Qty</th>
-              <th style={{ padding: "10px 12px", borderBottom: "2px solid #bfc9d1" }}>Rate</th>
-              <th style={{ padding: "10px 12px", borderBottom: "2px solid #bfc9d1" }}>VAT%</th>
-              <th style={{ padding: "10px 12px", borderBottom: "2px solid #bfc9d1" }}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, idx) => {
-              // Calculate rate and vat% from quantity and total_price
-              const qty = parseFloat(item.quantity) || 1;
-              const total = parseFloat(item.total_price) || 0;
-              // If item.vat is present, use it, else try to estimate
-              let vatPercent = parseFloat(item.vat);
-              if (isNaN(vatPercent) || vatPercent === 0) vatPercent = 0;
-              // If tax is included, estimate base and vat% from total and qty
-              let rate = 0;
-              if (vatPercent > 0) {
-                // If tax included, rate = total / qty / (1 + vat/100)
-                rate = (total / qty) / (1 + vatPercent / 100);
-              } else {
-                // If no VAT, just show total/qty
-                rate = total / qty;
-              }
-              return (
-                <tr key={idx} style={{ borderBottom: "1.5px solid #e0e0e0" }}>
-                  <td style={{ padding: "10px 12px" }}>{item.item_name}</td>
-                  <td style={{ padding: "10px 12px" }}>{item.quantity}</td>
-                  <td style={{ padding: "10px 12px" }}>{currencySymbol} {rate.toFixed(2)}</td>
-                  <td style={{ padding: "10px 12px" }}>{vatPercent}%</td>
-                  <td style={{ padding: "10px 12px" }}>{currencySymbol} {total.toFixed(2)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {/* Tax Bifurcation */}
-      <div style={{ margin: "18px 0 10px 0" }}>
-        <table style={{ maxWidth: 600, marginLeft: "auto", width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "center" }}>VAT (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ textAlign: "center" }}>{taxes.vatPercent}%</td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: "center" }}>{currencySymbol} {taxes.vatTotal}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      {/* Summary */}
-      <div style={{ width: "50%", marginLeft: "auto", marginRight: 0, background: "#f6f6f6", border: "2px solid #2c3e50", borderRadius: 8, padding: 0 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#f6f6f6" }}>
-          <tbody>
-            <tr>
-              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Subtotal</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.subtotal}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Discount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.discount}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>After Discount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.subtotalAfterDiscount}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>VAT (%)</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{taxes.vatPercent}%</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Round Off</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}>{currencySymbol} {summary.roundoff}</td>
-            </tr>
-            <tr style={{ background: "#e9ecef" }}>
-              <td style={{ fontWeight: "bold", padding: "8px 12px", border: "2px solid #2c3e50" }}>Total Amount</td>
-              <td style={{ textAlign: "right", padding: "8px 12px", border: "2px solid #2c3e50" }}><b>{currencySymbol} {summary.grandTotal}</b></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      {/* Footer */}
-      <div style={{ marginTop: 30, textAlign: "center", fontSize: 15, color: "#888" }}>
-        <p>Powered by {company.developer || "Chefmate"}</p>
+<hr style={{ border: "none", borderTop: "1px solid #ccc", margin: "20px 0" }} />
+
+      {/* Summary and Footer Combined */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          
+          {/* Signature and QR aligned left */}
+          <div style={{ width: "58%" }}>
+            <p style={{ fontSize: 15, marginTop: 10 }}><b style={{ fontWeight: 800, marginTop: 10 }}>Payment Terms:</b><br/> Please make the payment within 7 days. Late payments may attract additional charges.</p>
+            <p style={{ fontSize: 13 }}><b>Terms & Conditions:</b> Goods once sold will not be taken back. Ensure to keep the invoice for any service or claim.</p>
+         
+            <p style={{ fontWeight: 800, marginTop: 10,fontSize: 18 }}>Authorized Signature</p>
+            <div style={{ height: 50, borderBottom: "1px dashed #333", width: "60%" }}></div>
+            <div style={{ marginTop: 10 }}>
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?data=Invoice%20${invoiceNo}&size=80x80`} alt="QR Code" />
+            </div>
+            <p style={{ fontSize: 12, color: "#999", marginTop: 5 }}>Scan for payment details</p>
+             </div>
+
+          {/* Summary Box */}
+         
+          <div style={{ width: "40%", fontSize: 15, lineHeight: 1.8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Subtotal:</span>
+              <span>{currencySymbol} {summary.subtotal}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Discount:</span>
+              <span>{currencySymbol} {summary.discount}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>After Discount:</span>
+              <span>{currencySymbol} {summary.subtotalAfterDiscount}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>VAT:</span>
+              <span>{currencySymbol} {summary.payment}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Round Off:</span>
+              <span>{currencySymbol} {summary.roundoff}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: 17, borderTop: "1px solid #ccc", borderBottom: "1px solid #ccc", marginTop: 8, paddingTop: 6 }}>
+              <span>Total:</span>
+              <span>{currencySymbol} {summary.grandTotal}</span>
+            </div>
+          </div>
+        </div>
+        <hr style={{ border: "none", borderTop: "1px solid #ccc",  }} />
+        <p style={{  textAlign: "center", color: "#999" }}>Powered by {company.developer || "Chefmate POS-+66986643299/+66952477020"}</p>
       </div>
     </div>
   );
 });
+
+
+
 
 // PrintPreview component for modal/print area usage
 export function VATInvoicePrintPreview({

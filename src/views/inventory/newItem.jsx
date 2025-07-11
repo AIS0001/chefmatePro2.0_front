@@ -74,7 +74,7 @@ export default function NewItem() {
         <Header title="Item Details" />
         <ToastContainer />
         <div className="row mb-4">
-          <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10" >
+          <div className="col-lg-8 col-md-8 col-sm-8 col-xs-8" >
           </div>
 
 
@@ -88,6 +88,18 @@ export default function NewItem() {
             >
               <i className="add_shopping_cart"></i> {/* Add an icon */}
               Add New Item
+            </Link>
+          </div>
+          <div className="col-lg-2 col-md-2 col-sm-2 col-xs-2" >
+            <Link
+              type="button"
+              name="add"
+              onClick={AddNewItemPriceButton}
+              className="btn btn-primary category-btn"
+
+            >
+              <i className="add_shopping_cart"></i> {/* Add an icon */}
+              Generate Barcode
             </Link>
           </div>
         </div>

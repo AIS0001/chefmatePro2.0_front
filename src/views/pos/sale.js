@@ -14,6 +14,7 @@ import fetchData from '../../functions/fetchData';
 import { getHeaders } from '../../utility/getHeader';
 import { GSTInvoicePrintPreview } from '../../components/Templates/gstTemplates';
 import { VATInvoicePrintPreview } from '../../components/Templates/vatemplate';
+import { VAT2InvoicePrintPreview } from '../../components/Templates/vattemplate2';
 
 // Utility to fetch coresetting tax_type
 async function fetchTaxType() {
@@ -162,8 +163,8 @@ useEffect(() => {
 
   // const baseURL = 'http://localhost:4402';
 
-  const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com'
-  //  const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
+  //const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com'
+   // const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
   const handleRowChange = (index, field, value) => {
     const updatedRows = [...itemRows]
     const row = updatedRows[index]
@@ -325,54 +326,86 @@ useEffect(() => {
     navigate(`/master/newcustomer`);
   };
   const handleScan = async e => {
-    e.preventDefault();
-    if (!barcode) return;
-    try {
-      // Use fetchData to get item by barcode
-      const itemsArr = await fetchData('items', () => { }, 'id', { id: barcode });
-      const item = itemsArr && itemsArr[0];
-      if (!item || item.stock <= 0) {
-        toast.error('Item not found or out of stock.');
-        return;
-      }
-      // Check if item already exists in itemRows
-      const existingIndex = itemRows.findIndex(r => r.itemName === item.iname);
-      if (existingIndex !== -1) {
-        // If exists, increment quantity
-        const updatedRows = [...itemRows];
-        updatedRows[existingIndex].quantity += 1;
-        updatedRows[existingIndex].amount = updatedRows[existingIndex].rate * updatedRows[existingIndex].quantity;
-        updatedRows[existingIndex].discountValue = updatedRows[existingIndex].amount * (updatedRows[existingIndex].discountPercent / 100);
-        const taxedAmount = updatedRows[existingIndex].amount - updatedRows[existingIndex].discountValue;
-        const totalTax = taxedAmount * ((updatedRows[existingIndex].cgst + updatedRows[existingIndex].sgst + updatedRows[existingIndex].igst) / 100);
-        updatedRows[existingIndex].netAmount = taxedAmount + totalTax;
-        setItemRows(updatedRows);
-      } else {
-        // Add new row to itemRows
-        setItemRows(prev => [
-          ...prev,
-          {
-            id: Date.now(),
-            itemName: item.iname,
-            description: item.description || '',
-            rate: item.offerprice || 0,
-            quantity: 1,
-            amount: item.offerprice || 0,
-            discountPercent: 0,
-            discountValue: 0,
-            cgst: item.cgst || 0,
-            sgst: item.sgst || 0,
-            igst: item.igst || 0,
-            vat: item.vat || 0,
-            netAmount: item.offerprice || 0
-          }
-        ]);
-      }
-      setBarcode('');
-    } catch (error) {
-      toast.error('Error fetching item.');
+  e.preventDefault();
+  if (!barcode) return;
+  try {
+    // Use fetchData to get item by barcode
+    const itemsArr = await fetchData('items', () => {}, 'id', { id: barcode });
+    const item = itemsArr && itemsArr[0];
+    if (!item || item.stock <= 0) {
+      toast.error('Item not found or out of stock.');
+      return;
     }
+    // Check if item already exists in itemRows
+    const existingIndex = itemRows.findIndex(r => r.itemName === item.iname);
+    if (existingIndex !== -1) {
+      // If exists, increment quantity
+      const updatedRows = [...itemRows];
+      updatedRows[existingIndex].quantity += 1;
+      updatedRows[existingIndex].amount = updatedRows[existingIndex].rate * updatedRows[existingIndex].quantity;
+
+      // Calculate discount value
+      updatedRows[existingIndex].discountValue =
+        updatedRows[existingIndex].amount * (updatedRows[existingIndex].discountPercent / 100);
+
+      // Taxed amount after discount
+      const taxedAmount = updatedRows[existingIndex].amount - updatedRows[existingIndex].discountValue;
+
+      // Sum all taxes including VAT
+      const totalTaxPercent =
+        (updatedRows[existingIndex].cgst || 0) +
+        (updatedRows[existingIndex].sgst || 0) +
+        (updatedRows[existingIndex].igst || 0) +
+        (updatedRows[existingIndex].vat || 7);
+
+      // Calculate total tax amount
+      const totalTax = taxedAmount * (totalTaxPercent / 100);
+
+      // Net amount after tax
+      updatedRows[existingIndex].netAmount = taxedAmount + totalTax;
+
+      setItemRows(updatedRows);
+    } else {
+      // Add new row to itemRows
+      const basePrice = item.offerprice || 0;
+      const discountPercent = 0;
+      const discountValue = 0;
+      const taxedAmount = basePrice - discountValue;
+
+      const totalTaxPercent =
+        (item.cgst || 0) +
+        (item.sgst || 0) +
+        (item.igst || 0) +
+        (item.vat || 7);
+
+      const totalTax = taxedAmount * (totalTaxPercent / 100);
+      const netAmount = taxedAmount + totalTax;
+
+      setItemRows(prev => [
+        ...prev,
+        {
+          id: Date.now(),
+          itemName: item.iname,
+          description: item.description || '',
+          rate: basePrice,
+          quantity: 1,
+          amount: basePrice,
+          discountPercent,
+          discountValue,
+          cgst: item.cgst || 0,
+          sgst: item.sgst || 0,
+          igst: item.igst || 0,
+          vat: item.vat || 7,
+          netAmount
+        }
+      ]);
+    }
+    setBarcode('');
+  } catch (error) {
+    toast.error('Error fetching item.');
   }
+};
+
   // Customer auto-suggestion state
   const [allCustomers, setAllCustomers] = useState([]) // All customers from DB
 
@@ -597,12 +630,17 @@ useEffect(() => {
       subtotal: Number(myfinalbilldata[0].subtotal) || 0,
       discount: Number(myfinalbilldata[0].discount_amount) || 0,
       subtotalAfterDiscount: Number(myfinalbilldata[0].subtotal_afterdiscount) || 0,
+      tax: Number(myfinalbilldata[0].tax) || 0,
+      payment_mode: Number(myfinalbilldata[0].payment_mode) || 0,
       roundoff: Number(myfinalbilldata[0].roundoff) || 0,
       grandTotal: Number(myfinalbilldata[0].grand_total) || 0
     } : {
       subtotal: invoiceSummary.itemTotal,
       discount: invoiceSummary.discount,
       subtotalAfterDiscount: invoiceSummary.subTotal,
+      tax: invoiceSummary.tax,
+      payment_mode: invoiceSummary.payment_mode,
+    
       roundoff: invoiceSummary.roundOff,
       grandTotal: invoiceSummary.grandTotal
     };
@@ -744,10 +782,10 @@ useEffect(() => {
                       if (selectedCustomer) {
                         setCustomer({
                           name: selectedCustomer.name || '',
-                          phone: selectedCustomer.phone || '',
+                          phone: selectedCustomer.contact || '',
                           email: selectedCustomer.email || '',
                           address: selectedCustomer.address || '',
-                          gst: selectedCustomer.gst || '',
+                          gst: selectedCustomer.taxid || '',
                           deliveryPlace: selectedCustomer.deliveryPlace || '',
                           custid: selectedCustomer.id || ''
                         })
@@ -1096,7 +1134,7 @@ useEffect(() => {
                         {editableRowIndex === index ? (
                           <Textfield
                             id={`vat-${index}`}
-                            value={row.vat}
+                            value={row.tax}
                             onChange={e =>
                               handleRowChange(
                                 index,
@@ -1108,7 +1146,7 @@ useEffect(() => {
                             name='vat'
                           />
                         ) : (
-                          row.vat
+                          row.tax
                         )}
                       </td>
                     ) : (
@@ -1216,10 +1254,12 @@ useEffect(() => {
                     onChange={e => setPaymentType(e.target.value)}
                     style={{ maxWidth: 200 }}
                   >
-                    <option value='cash'>Cash</option>
-                    <option value='credit'>Credit</option>
-                    <option value='entertainment'>Entertainment</option>
-                    <option value='upi'>UPI</option>
+                    <option value='Cash'>Cash</option>
+                    <option value='Credit'>Credit</option>
+                    <option value='Bank Transfer'>Bank Transfer</option>
+                    <option value='Entertainment'>Entertainment</option>
+                    <option value='UPI'>UPI</option>
+                    <option value='QR Code'>QR Code</option>
                   </select>
                 </div>
                 <div className='text-right' style={{ minWidth: 200 }}>
@@ -1248,10 +1288,10 @@ useEffect(() => {
               {/* Financial Summary */}
               <div className='row gy-3 text-lg'>
                 {/* Item Total */}
-                <div className='col-md-4'>
+                {/* <div className='col-md-4'>
                   <label className='fw-semibold font-20'>Invoice Date</label>
                   <div className='font-20'>{invoiceSummary.invoiceDate}</div>
-                </div>
+                </div> */}
                 <div className='col-md-4'>
                   <label className='fw-semibold font-20'>Item Total</label>
                   <div className='font-20'>
@@ -1272,6 +1312,13 @@ useEffect(() => {
                     ฿ {invoiceSummary.subTotal.toFixed(2)}
                   </div>
                 </div>
+                 {/* Tax Summary: Moved to separate row for clarity */}
+                <div className='col-md-4'>
+                  <label className='fw-semibold font-20'>Tax</label>
+                  <div className='font-20'>
+                    {invoiceSummary.taxPercent}: ฿ {invoiceSummary.tax.toFixed(2)}
+                  </div>
+                </div>
                 {/* Round Off */}
                 <div className='col-md-4'>
                   <label className='fw-semibold font-20'>Round Off</label>
@@ -1286,13 +1333,8 @@ useEffect(() => {
                     ฿ {invoiceSummary.grandTotal.toFixed(2)}
                   </div>
                 </div>
-                {/* Tax Summary: Moved to separate row for clarity */}
-                <div className='col-md-12'>
-                  <label className='fw-semibold font-20'>Tax</label>
-                  <div className='font-20'>
-                    {invoiceSummary.taxPercent}: ฿ {invoiceSummary.tax.toFixed(2)}
-                  </div>
-                </div>
+               
+                
               </div>
             </CardComponent>
           </div>
@@ -1327,7 +1369,7 @@ useEffect(() => {
                         tax: invoiceSummary.tax || 0,
                         round_off: invoiceSummary.roundOff || 0,
                         grand_total: invoiceSummary.grandTotal || 0,
-                        payment_mode: paymentType || 'Cash',
+                        payment_mode: paymentType ,
                         status: paymentType === 'Credit' ? 1 : 0
                       };
                       // Save bill and get bill_id
@@ -1339,7 +1381,9 @@ useEffect(() => {
                       const bill_id = res.data.bill_id;
                       window.lastSavedBillId = bill_id;
                       // Prepare order items
+                     
                       const orderItems = itemRows.map(row => {
+                         console.log('Saving bill with ID:', row.amount);
                         if (taxType === 'gst') {
                           return {
                             order_id: bill_id,
@@ -1352,7 +1396,10 @@ useEffect(() => {
                             cgst: row.cgst || 0,
                             sgst: row.sgst || 0,
                             igst: row.igst || 0,
-                            tax_amount: 0,
+                            tax_amount:
+  (row.amount - row.discountValue) *
+  ((row.cgst + row.sgst + row.igst) / 100),
+
                             total_price: row.amount,
                             status: '1'
                           };
@@ -1366,12 +1413,13 @@ useEffect(() => {
                             // uom: row.uom || '',
                             // rate: row.rate,
                             // vat: row.vat || 0,
-                            // tax_amount: 0,
-                            total_price: row.amount,
+                            //  tax_amount: (row.amount - row.discountValue) * (row.vat / 100), // or compute as needed
+                            total_amount: row.netAmount,
                             status: '1'
                           };
                         }
                       });
+                      //console.log('Order Items:', orderItems);
                       // Insert into correct table
                       if (taxType === 'gst') {
                         await axios.post(
