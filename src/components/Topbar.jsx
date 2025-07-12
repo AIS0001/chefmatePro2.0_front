@@ -1,9 +1,61 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
+	
+	useEffect(() => {
+		// Add CSS animation for scrolling text
+		const style = document.createElement('style');
+		style.textContent = `
+			@keyframes scroll-back-forth {
+				0% {
+					transform: translateX(-100%);
+				}
+				50% {
+					transform: translateX(100%);
+				}
+				100% {
+					transform: translateX(-100%);
+				}
+			}
+			
+			.center-scrolling-text {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				z-index: 1;
+				overflow: hidden;
+				width: 60%;
+				white-space: nowrap;
+				pointer-events: none;
+			}
+			
+			.scrolling-content {
+				display: inline-block;
+				animation: scroll-back-forth 45s ease-in-out infinite;
+				color: #fff;
+				font-weight: bold;
+				font-size: 16px;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+				width: 100%;
+				text-align: center;
+			}
+			
+			@media (max-width: 768px) {
+				.center-scrolling-text {
+					display: none !important;
+				}
+			}
+		`;
+		document.head.appendChild(style);
+		
+		return () => {
+			document.head.removeChild(style);
+		};
+	}, []);
+
 	return (
 		<>
-
 			<nav className="navbar navbar-inverse navbar-fixed-top">
 				<div className="mobile-only-brand pull-left">
 					<div className="nav-header pull-left">
@@ -22,11 +74,19 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 							</Link> */}
 						</div>
 					</div>
-					<Link id="toggle_nav_btn" onClick={onToggleSidebar} className="toggle-left-nav-btn inline-block ml-20 pull-left" to="javascript:void(0);"><i class="zmdi zmdi-menu"></i></Link>
-					<Link id="toggle_mobile_search" data-toggle="collapse" data-target="#search_form" className="mobile-only-view" to="javascript:void(0);"><i class="zmdi zmdi-search"></i></Link>
-					<Link id="toggle_mobile_nav" className="mobile-only-view" to="javascript:void(0);"><i class="zmdi zmdi-more"></i></Link>
+					<Link id="toggle_nav_btn" onClick={onToggleSidebar} className="toggle-left-nav-btn inline-block ml-20 pull-left" to="#"><i class="zmdi zmdi-menu"></i></Link>
+					<Link id="toggle_mobile_search" data-toggle="collapse" data-target="#search_form" className="mobile-only-view" to="#"><i class="zmdi zmdi-search"></i></Link>
+					<Link id="toggle_mobile_nav" className="mobile-only-view" to="#"><i class="zmdi zmdi-more"></i></Link>
 
 				</div>
+				
+				{/* Center scrolling text */}
+				<div className="center-scrolling-text">
+					<div className="scrolling-content">
+						ChefMate POS
+					</div>
+				</div>
+
 				<div id="mobile_only_nav" className="mobile-only-nav pull-right">
 					<ul className="nav navbar-right top-nav pull-right">
 						<li>
@@ -80,7 +140,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 								<li>
 									<div className="app-box-bottom-wrap">
 										<hr className="light-grey-hr ma-0" />
-										<Link class="block text-center read-all" to="javascript:void(0)"> more </Link>
+										<Link class="block text-center read-all" to="#"> more </Link>
 									</div>
 								</li>
 							</ul>
@@ -182,7 +242,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 								<li>
 									<div className="notification-box-head-wrap">
 										<span className="notification-box-head pull-left inline-block">notifications</span>
-										<Link class="txt-danger pull-right clear-notifications inline-block" to="javascript:void(0)"> clear all </Link>
+										<Link class="txt-danger pull-right clear-notifications inline-block" to="#"> clear all </Link>
 										<div className="clearfix"></div>
 										<hr className="light-grey-hr ma-0" />
 									</div>
@@ -190,7 +250,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 								<li>
 									<div className="streamline message-nicescroll-bar">
 										<div className="sl-item">
-											<Link to="javascript:void(0)">
+											<Link to="#">
 												<div className="icon bg-green">
 													<i className="zmdi zmdi-flag"></i>
 												</div>
@@ -205,7 +265,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 										</div>
 										<hr className="light-grey-hr ma-0" />
 										<div className="sl-item">
-											<Link to="javascript:void(0)">
+											<Link to="#">
 												<div className="icon bg-yellow">
 													<i className="zmdi zmdi-trending-down"></i>
 												</div>
@@ -219,7 +279,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 										</div>
 										<hr className="light-grey-hr ma-0" />
 										<div className="sl-item">
-											<Link to="javascript:void(0)">
+											<Link to="#">
 												<div className="icon bg-blue">
 													<i className="zmdi zmdi-email"></i>
 												</div>
@@ -233,7 +293,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 										</div>
 										<hr className="light-grey-hr ma-0" />
 										<div className="sl-item">
-											<Link to="javascript:void(0)">
+											<Link to="#">
 												<div className="sl-avatar">
 													<img class="img-responsive" src="../../dist/img/avatar.jpg" alt="avatar" />
 												</div>
@@ -247,7 +307,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 										</div>
 										<hr className="light-grey-hr ma-0" />
 										<div className="sl-item">
-											<Link to="javascript:void(0)">
+											<Link to="#">
 												<div className="icon bg-red">
 													<i className="zmdi zmdi-storage"></i>
 												</div>
@@ -264,7 +324,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 								<li>
 									<div className="notification-box-bottom-wrap">
 										<hr className="light-grey-hr ma-0" />
-										<Link class="block text-center read-all" to="javascript:void(0)"> read all </Link>
+										<Link class="block text-center read-all" to="#"> read all </Link>
 										<div className="clearfix"></div>
 									</div>
 								</li>
@@ -280,7 +340,7 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 									<Link to="#"><i className="zmdi zmdi-card"></i><span>my balance</span></Link>
 								</li>
 								<li>
-									<Link to="inbox.html"><i className="zmdi zmdi-email"></i><span>Inbox</span></Link>
+									<Link to="#"><i className="zmdi zmdi-email"></i><span>Inbox</span></Link>
 								</li>
 								<li>
 									<Link to="/setting/companyinfo"><i className="zmdi zmdi-settings"></i><span>Settings</span></Link>
@@ -309,9 +369,6 @@ export default function Topbar({ onToggleSidebar,isSidebarOpen  }) {
 					</ul>
 				</div>
 			</nav>
-
-
-
 		</>
 	)
 }
