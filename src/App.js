@@ -48,6 +48,7 @@ import AdvanceOrderReport from './views/reports/advanceorderReports';
 import ItemWiseSaleGst from './views/reports/itemWiseSaleGst';
 import SaleLedger from './views/reports/saleLedger';
 import SupplierLedger from './views/reports/suppliersLedger';
+import LowStockItems from './views/reports/lowStockItems';
 
 
 //Users
@@ -113,7 +114,7 @@ function App() {
 
           {/* Reports */}
           <Route path="/reports/billhistory" element={<PrivateRoute><BillHistory /></PrivateRoute>} />
-         
+          <Route path="/reports/lowstockitems" element={<PrivateRoute><LowStockItems /></PrivateRoute>} />
           <Route path="/reports/saleledger" element={<PrivateRoute><SaleLedger /></PrivateRoute>} />
           <Route path="/reports/supplierledger" element={<PrivateRoute><SupplierLedger /></PrivateRoute>} />
 

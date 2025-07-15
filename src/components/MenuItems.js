@@ -8,17 +8,16 @@ const fullMenu = [
   //   icon: 'view-dashboard',
   //   dataTargetId: '#home'
   // },
- {
+{
     name: 'Dashboard',
     path: '/dashboard',
     icon: 'folder',
     dataTargetId: '#dashboard',
     submenu: [
       { name: 'Analytics', path: '/dashboard/admin' },
-     
-
     ]
   },
+    
   {
     name: 'Master',
     path: '/master',
@@ -96,6 +95,7 @@ const fullMenu = [
       { name: 'PreOrders-GST', path: '/reports/advanceorderreportgst' },
       { name: 'Item Wise GST', path: '/reports/itemwisesalegst' },
       { name: 'Purchase Report', path: '/inventory/stockreports' },
+      { name: 'Low Stock Items', path: '/reports/lowstockitems' },
       { name: 'Supplier Ledger', path: '/reports/supplierledger' },
       { name: 'Customer Ledger', path: '/reports/saleledger' },
 
@@ -137,13 +137,14 @@ const getMenuItems = (usertype) => {
   if (usertype === "Cashier")
     {
     return fullMenu
-      .filter(item => ["Dashboard", "Sale", "Reports", "Vouchers", "Logout"].includes(item.name))
+      .filter(item => ["Dashboard", "Sale GST", "Reports GST", "Vouchers", "Logout"].includes(item.name))
       .map(item => {
         if (item.submenu) 
           {
           const allowedSubmenuNames = {
-            Sale: ["POS"],
-            Reports: ["Sale Report", "Supplier Ledger", "Customer Ledger", "Reciept Voucher", "Payment Voucher"],
+            "Sale GST": ["POS"],
+            "Reports GST": ["Sale Report-GST", "Supplier Ledger", "Customer Ledger"],
+            "Vouchers": ["Reciept Voucher", "Payment Voucher"],
           };
           const filteredSubmenu = allowedSubmenuNames[item.name]
             ? item.submenu.filter(sub => allowedSubmenuNames[item.name].includes(sub.name))

@@ -21,7 +21,7 @@ import deleteRecord from "../../functions/delateData";
 import cancelRecord from "../../functions/cancelBill";
 import fetchData from "../../functions/fetchData";
 
-const DataTable = ({ columns, data, tablename, onEditClick }) => {
+const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [companyInfo, setcompanyInfo] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
@@ -49,6 +49,16 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
     setSelectedCustomer(customer);
     setShowModal(true);
   };
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🔍 DataTable Debug Info:");
+    console.log("📋 Table name:", tablename);
+    console.log("🗑️ DeleteBillTables:", DeleteBillTables);
+    console.log("❌ Should show delete button:", !DeleteBillTables.includes(tablename));
+    console.log("✏️ EditableTables:", editableTables);
+    console.log("🖨️ PrintableTables:", printableTables);
+  }, [tablename]);
 
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
@@ -91,16 +101,21 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
     } else if (tablename === "contract") {
       navigate(`/contracts/editcontract/${item.id}/${agent_id}`);
     } else if (tablename === "taxes") {
-      console.log("Editing item:", item);
-
-      // ❌ DO NOT navigate
-      // ✅ Instead, fill the form on the same page
-      setFormData({
-        taxname: item.taxname,
-        taxvalue: item.taxvalue,
-        included: item.included,
-      });
-      setEditId(item.id); // switch to edit mode
+      // Use the onEditClick prop if provided, otherwise use default behavior
+      if (onEditClick) {
+        onEditClick(item);
+      } else {
+        console.log("Editing item:", item);
+        setFormData({
+          taxname: item.taxname,
+          taxvalue: item.taxvalue,
+          included: item.included,
+        });
+        setEditId(item.id); // switch to edit mode
+      }
+    } else if (onEditClick) {
+      // For other tables, use the provided onEditClick handler
+      onEditClick(item);
     }
   };
 
@@ -418,6 +433,12 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
 
 
   const handleDeleteClick = async (itemId) => {
+    // Show confirmation dialog
+    const confirmDelete = window.confirm("Are you sure you want to delete this record?");
+    if (!confirmDelete) {
+      return; // Exit if user cancels
+    }
+
     try {
       // Implement delete logic here
       await deleteRecord(tablename, "id", itemId);
@@ -433,8 +454,17 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
         console.log("Updated Data:", updatedData); // Log updated data for debugging
         return updatedData; // Ensure new reference is returned
       });
+
+      // Call the callback if provided (for refreshing parent component data)
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      } else {
+        // Show generic success message if no callback provided
+        toast.success("Record deleted successfully!");
+      }
     } catch (error) {
       console.error("Error deleting record:", error);
+      toast.error("Error deleting record");
     }
   };
   const handlecancelClick = async (itemId) => {
@@ -577,14 +607,17 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
                             />
                           )}
                           {!DeleteBillTables.includes(tablename) && (
-                                                      <FaTrash
-                                                      style={{
-                                                        cursor: "pointer",
-                                                        color: "red",
-                                                      }}
-                                                      onClick={() => handleDeleteClick(item.id)}
-                                                    />
-                                                    )}
+                            <>
+                              {console.log("🗑️ Rendering delete button for table:", tablename, "Item ID:", item.id)}
+                              <FaTrash
+                                style={{
+                                  cursor: "pointer",
+                                  color: "red",
+                                }}
+                                onClick={() => handleDeleteClick(item.id)}
+                              />
+                            </>
+                          )}
                           {/* Delete Icon (Allowed for ALL tables) */}
                          
                         </>

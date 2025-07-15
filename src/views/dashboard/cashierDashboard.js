@@ -372,7 +372,7 @@ export default function CashierDashboard() {
 
         
 
-        <div className="col-lg-4 mb-4">
+        <div className="col-lg-8 mb-4">
           <CardComponent
             title="Transactions & Profit"
             headerColor={COLORS.teal}

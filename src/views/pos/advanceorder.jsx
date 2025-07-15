@@ -17,6 +17,7 @@ import { getUserName } from "../../functions/storageUtils";
 import updateData from "../../functions/updateData";
 import CheckBillModal from "../../components/Modals/AdvanceOrdercheckBill";
 import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
+import "./advanceorder.css";
 
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
@@ -33,6 +34,7 @@ export default function AdvanceOrders() {
   const [total, setTotal] = useState(0);
   const [maxNumber, setmaxNumber] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [Tablelist, settableList] = useState(null);
   const [TotalTablelist, setTotaltablelist] = useState(0);
 
@@ -59,6 +61,8 @@ export default function AdvanceOrders() {
   // Fetch subcategories when a category is clicked
   const handleCategoryClick = (categoryId) => {
     setSelectedCategory(categoryId); // Keep track of selected category
+    setSelectedSubcategory(null); // Reset selected subcategory
+    setData([]); // Clear items when switching categories
     // Fetch subcategories using fetchData function
     fetchData("subcategory", setSubcategories, "id", { cat_id: categoryId });
   };
@@ -101,6 +105,7 @@ export default function AdvanceOrders() {
   // Fetch items when a subcategory is clicked
   const handleSubcategoryClick = async (subcategoryId) => {
     try {
+      setSelectedSubcategory(subcategoryId);
       const response = await fetchData("items", setData, "subcatid", { subcatid: subcategoryId });
       const response1 = await fetchDataFromTwoTables("items", "item_images", "id", "product_id", setData, "t1.id", { subcatid: subcategoryId })
       // Assuming the response returns a list of items with images
@@ -275,140 +280,113 @@ export default function AdvanceOrders() {
         <Header title="Advance Order System " />
         <ToastContainer />
 
-        <div className="row mt-4">
+        <div className="row mt-3">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
             <CardComponent
-              title="View All Tables List"
+              title="Tables"
               headerColor="darkblue1"
               pull="left"
-              bodyClass="panel-body"
+              bodyClass="panel-body card-compact"
             >
               <div className="panel panel-default card-view">
-                <div className="row justify-content-center">
-                  {TotalTablelist.length > 0 ? (
-                    TotalTablelist.map((table, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleTableClick(table.name)}
-                        className="col-lg-2 col-md-4 col-sm-6 col-12 mb-4"
-                        style={{
-                          cursor: "pointer",
-                          transition: "transform 0.3s, box-shadow 0.3s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "scale(1.05)";
-                          e.currentTarget.style.boxShadow = "0px 6px 15px rgba(0, 0, 0, 0.2)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "scale(1)";
-                          e.currentTarget.style.boxShadow = "none";
-                        }}
-                      >
+                <div className="tables-container-compact">
+                  <div className="row">
+                    {TotalTablelist.length > 0 ? (
+                      TotalTablelist.map((table, index) => (
                         <div
-                          className="table-card p-4 text-center rounded"
-                          style={{
-                            backgroundColor: table.status === 0 ? "#28a745" : "#dc3545",
-                            color: "white",
-                            border: "2px solid white",
-                          }}
+                          key={index}
+                          className="col-lg-2 col-md-3 col-sm-4 col-6"
                         >
-                          <img
-                            src={`../../dist/img/tables/table.png`}
-                            alt={`Table ${index + 1}`}
-                            className="img-fluid mb-3"
-                            style={{ width: "60px", height: "60px" }}
-                          />
-                          <h5
-                            style={{
-                              fontWeight: "bold",
-                              textTransform: "uppercase",
-                              margin: "0",
-                              fontSize: "1rem",
-                            }}
+                          <div
+                            onClick={() => handleTableClick(table.name)}
+                            className={`table-card-compact ${table.status === 0 ? "available" : "occupied"}`}
                           >
-                            {table.name}
-                          </h5>
-                          <span
-                            style={{
-                              fontSize: "0.9rem",
-                              fontWeight: "500",
-                              marginTop: "5px",
-                              display: "block",
-                            }}
-                          >
-                            {table.status === 0 ? "Available" : "Occupied"}
-                          </span>
+                            <img
+                              src={`../../dist/img/tables/table.png`}
+                              alt={`Table ${table.name}`}
+                              className="table-image"
+                            />
+                            <div className="table-name">{table.name}</div>
+                            <div className="table-status">
+                              {table.status === 0 ? "Available" : "Occupied"}
+                            </div>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="col-12 text-center">
+                        <p className="text-muted">Loading tables...</p>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted" style={{ fontSize: "1.2rem" }}>
-                      Loading tables...
-                    </p>
-                  )}
+                    )}
+                  </div>
                 </div>
-
               </div>
             </CardComponent>
           </div>
         </div>
 
-        {/* Main Category List */}
-        <div className="row mt-4">
+        {/* Categories */}
+        <div className="row mt-3">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
             <CardComponent
-              title="Choose Category"
+              title="Categories"
               headerColor="darkblue1"
               pull="left"
-              bodyClass="panel-body"
+              bodyClass="panel-body card-compact"
             >
               <div className="panel panel-default card-view">
-                <div className="row">
-                  {categories.length > 0 ? (
-                    categories.map((category, index) => (
-                      <div className="col-2 col-md-2 col-sm-6 col-xs-12" key={index}>
-                        <button
-                          className="btn btn-primary category-btn"
-                          onClick={() => handleCategoryClick(category.id)}
-                        >
-                          {category.name}
-                        </button>
+                <div className="category-container-compact">
+                  <div className="row">
+                    {categories.length > 0 ? (
+                      categories.map((category, index) => (
+                        <div className="col-2 col-md-2 col-sm-6 col-xs-12" key={index}>
+                          <button
+                            className={`category-btn-compact ${selectedCategory === category.id ? 'active' : ''}`}
+                            onClick={() => handleCategoryClick(category.id)}
+                          >
+                            {category.name}
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-12 text-center">
+                        <p className="text-muted">Loading categories...</p>
                       </div>
-                    ))
-                  ) : (
-                    <p>Loading categories...</p>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </CardComponent>
           </div>
         </div>
 
-        {/* Subcategory List */}
-        <div className="row mt-4">
-          <div className="col-lg-2 col-md-2 col-sm-4 col-xs-12">
+        {/* Subcategories and Items */}
+        <div className="row mt-3">
+          <div className="col-lg-2 col-md-3 col-sm-4 col-xs-12">
             <CardComponent
               title="Subcategories"
               headerColor="danger"
               pull="left"
-              bodyClass="panel-body"
+              bodyClass="panel-body card-compact"
             >
               <div className="panel panel-default card-view">
-                 <div className="item-list-container">
+                <div className="subcategory-container-compact">
                   <div className="row">
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (
                         <div className="col-12" key={index}>
                           <button
                             onClick={() => handleSubcategoryClick(subcategory.id)}
-                            className="btn btn-danger btn-anim fixed-width-btn"
+                            className={`subcategory-btn-compact ${selectedSubcategory === subcategory.id ? 'active' : ''}`}
                           >
                             {subcategory.subcat}
                           </button>
                         </div>
                       ))
                     ) : (
-                      <p>No subcategories available for this category.</p>
+                      <div className="col-12 text-center">
+                        <p className="text-muted small">Select a category first</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -416,34 +394,38 @@ export default function AdvanceOrders() {
             </CardComponent>
           </div>
 
-          {/* Item List */}
-          <div className="col-lg-7 col-md-7 col-sm-8 col-xs-12">
+          {/* Items */}
+          <div className="col-lg-7 col-md-6 col-sm-8 col-xs-12">
             <CardComponent
               title="Items"
               headerColor="darkblue1"
               pull="left"
-              bodyClass="panel-body"
+              bodyClass="panel-body card-compact"
             >
               <div className="panel panel-default card-view">
-                <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                  <div className="row mt-3">
+                <div className="items-container-compact">
+                  <div className="row">
                     {data.length > 0 ? (
                       data.map((item, index) => (
-                        <div key={item.id} className="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
-                          <div className="item-card text-center">
+                        <div key={item.id} className="col-lg-3 col-md-4 col-sm-6 col-xs-12">
+                          <div
+                            className="item-card-compact"
+                            onClick={() => addItemToOrder(index, item)}
+                          >
                             <img
                               src={`${baseURL}/uploads/${item.filename}`}
                               alt={item.iname}
-                              onClick={() => addItemToOrder(index, item)}
                               className="item-image"
                             />
-                            <h5 className="item-name">{item.iname}</h5>
-                            <p className="item-price">฿ {item.offerprice}.00</p>
+                            <div className="item-name">{item.iname}</div>
+                            <div className="item-price">฿ {item.offerprice}.00</div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p>No items available for this subcategory.</p>
+                      <div className="col-12 text-center">
+                        <p className="text-muted">Select a subcategory to view items</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -452,100 +434,109 @@ export default function AdvanceOrders() {
           </div>
 
           {/* Order Summary */}
-
-          {/* Order Summary with quantity adjustment buttons and item total amount display */}
           <div className="col-lg-3 col-md-3 col-sm-4 col-xs-12">
             <CardComponent
-              title={selectedTable}
+              title={selectedTable ? `Table: ${selectedTable}` : "Select Table"}
               headerColor="info"
               pull="left"
-              bodyClass="panel-body"
+              bodyClass="panel-body card-compact"
             >
               <div className="panel panel-default card-view">
-                <div className="row">
-                  <div className="col-12">
-                    {cart.length > 0 ? (
-                      cart.map((item, index) => (
-                        <>
-                          <div
-                            className="order-item d-flex align-items-center justify-content-between mb-2"
-                            key={index}
+                <div className="order-summary-container">
+                  {cart.length > 0 ? (
+                    cart.map((item, index) => (
+                      <div className="order-item-compact" key={index}>
+                        <div className="item-name">
+                          {item.iname} x {item.quantity} = ฿{(item.quantity * item.offerprice).toFixed(2)}
+                        </div>
+                        <div className="quantity-controls">
+                          <button
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => decreaseItemQuantity(index)}
                           >
-                            <h5 className="item-name mb-0">
-                              {item.iname} x {item.quantity} = ฿{" "}
-                              ฿{(item.quantity * item.offerprice).toFixed(2)}
-                            </h5>
-                            <div className="quantity-controls d-flex align-items-center">
-                              <button
-                                className="btn btn-dark-custom btn-sm me-2"
-                                onClick={() => decreaseItemQuantity(index)}
-                              >
-                                -
-                              </button>
-                              <span className="quantity me-2">{item.quantity}</span>
-                              <button
-                                className="btn btn-dark-custom btn-sm"
-                                onClick={() => increaseItemQuantity(index)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-
-                        </>
-
-                      ))
-                    ) : (
-                      <p>Your cart is empty.</p>
-                    )}
-                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
-                      <h5>
-                        Total:{" "}
-                        <span className="total-amount">
-                          ฿ {total.toFixed(2)}
-                        </span>
-                      </h5>
+                            -
+                          </button>
+                          <span className="quantity">{item.quantity}</span>
+                          <button
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => increaseItemQuantity(index)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted">
+                      <p>Your cart is empty</p>
                     </div>
-                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
-
-                      <button className="btn btn-primary" onClick={handlePrintOrder}> <FaPrint className="me-2" />   Send Kot</button>
-                      <button className="btn btn-danger" onClick={handleDeleteOrder}> <FaTrash className="me-2" /></button>
-
+                  )}
+                  
+                  <div className="order-total mt-3 pt-3 border-top">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <strong>Total: ฿{total.toFixed(2)}</strong>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button 
+                        className="btn btn-primary btn-sm flex-grow-1" 
+                        onClick={handlePrintOrder}
+                        disabled={!selectedTable || cart.length === 0}
+                      >
+                        <FaPrint className="me-1" />Send KOT
+                      </button>
+                      <button 
+                        className="btn btn-outline-danger btn-sm" 
+                        onClick={handleDeleteOrder}
+                        disabled={cart.length === 0}
+                      >
+                        <FaTrash />
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </CardComponent>
           </div>
-
-
         </div>
 
-        {/* New Row for Action Buttons */}
+        {/* Action Buttons */}
         <div className="row mt-3">
           <div className="col-12">
-            <div className="d-flex justify-content-between flex-wrap mx-3">
-              {" "}
-              {/* Added mx-3 for equal horizontal spacing */}
-
-
-              <button className="btn btn-warning mb-2"
-                onClick={showtableBillDetails}
-
-              >
-                Check Bill</button>
-              <button className="btn btn-info mb-2">Last Order</button>
-
-
-              <button className="btn btn-darkblue1 mb-2">Previous Order</button>
-              <button  onClick={handleBillHistory}className="btn btn-success mt-2 custom-btn" >
-                Bill History
-              </button>
-              {/* <button className="btn btn-warning mb-2">Save Bill</button> */}
-
-              <button onClick={refreshTables} className="btn btn-primary mb-2">Refresh Tables</button>
-            </div>
+            <CardComponent
+              title="Actions"
+              headerColor="secondary"
+              pull="left"
+              bodyClass="panel-body card-compact"
+            >
+              <div className="panel panel-default card-view">
+                <div className="action-buttons-compact">
+                  <button 
+                    className="btn btn-warning"
+                    onClick={showtableBillDetails}
+                  >
+                    Check Bill
+                  </button>
+                  <button className="btn btn-info">
+                    Last Order
+                  </button>
+                  <button className="btn btn-darkblue1">
+                    Previous Order
+                  </button>
+                  <button 
+                    onClick={handleBillHistory}
+                    className="btn btn-success"
+                  >
+                    Bill History
+                  </button>
+                  <button 
+                    onClick={refreshTables} 
+                    className="btn btn-primary"
+                  >
+                    Refresh Tables
+                  </button>
+                </div>
+              </div>
+            </CardComponent>
           </div>
         </div>
  

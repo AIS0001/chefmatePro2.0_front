@@ -26,6 +26,18 @@ const roleBasedAccess = {
     "/inventory/stockreports",
     "/logout",
   ],
+  manager: [
+    "/dashboard/manager",
+    "/dashboard/admin", // Managers can also access admin dashboard
+    "/reports/billhistory",
+    "/reports/saleledger", 
+    "/reports/supplierledger",
+    "/inventory/stockreports",
+    "/reports/lowstockitems",
+    "/vouchers/recieptvoucher",
+    "/vouchers/paymentvoucher",
+    "/logout",
+  ],
   admin: "all", // admin can access all routes
   // Add other roles here if needed
 };
@@ -35,7 +47,7 @@ const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const userType = (localStorage.getItem('usertype') || sessionStorage.getItem('usertype') || '').toLowerCase();
 
-  if (!token || isTokenExpired(token)) {
+  if (!token || isTokenExpired()) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 

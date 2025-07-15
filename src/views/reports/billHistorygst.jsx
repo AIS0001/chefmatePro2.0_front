@@ -84,13 +84,13 @@ export default function BillHistoryGst() {
       source = source.filter(item => item.payment_mode === paymentMode);
     }
    if (activeTab === "cancelled") {
-  const activeBills = source.filter(item => item.status !== 0 && item.status !== "0");
-  setFilteredData(activeBills);
-} else {
-  const cancelled = source.filter(item => item.status === 0 || item.status === "0");
-  setFilteredData(cancelled);
-  const total = cancelled.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
+  const cancelledBills = source.filter(item => item.status === 2 || item.status === "2");
+  setFilteredData(cancelledBills);
+  const total = cancelledBills.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
   setCancelledTotal(total.toFixed(2));
+} else {
+  const activeBills = source.filter(item => item.status !== 2 && item.status !== "2");
+  setFilteredData(activeBills);
 }
 
   };

@@ -14,6 +14,7 @@ import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
 import NewItemModal from "../../components/Modals/NewItemModal";
 import NewItemPriceModal from "../../components/Modals/NewItemPriceModal";
+import BarcodeModal from "../../components/Modals/BarcodeModal";
 
 export default function NewItem() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -23,6 +24,7 @@ export default function NewItem() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showModalItem, setShowModalItem] = useState(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [reload, setReload] = useState(false); // Define reload state
 
   const [formdata, setFormData] = useState({
@@ -46,6 +48,10 @@ export default function NewItem() {
   const AddNewItemPriceButton = (contract) => {
     // setSelectedContract(contract);
     setShowModal(true);
+  };
+
+  const GenerateBarcodeButton = () => {
+    setShowBarcodeModal(true);
   };
 
   const triggerReload = () => {
@@ -84,7 +90,6 @@ export default function NewItem() {
               name="add"
               onClick={AddNewItemPriceButton}
               className="btn btn-primary category-btn"
-
             >
               <i className="add_shopping_cart"></i> {/* Add an icon */}
               Add New Item
@@ -94,10 +99,8 @@ export default function NewItem() {
             <Link
               type="button"
               name="add"
-              onClick={AddNewItemPriceButton}
-              className="btn btn-primary category-btn"
-
-            >
+              onClick={GenerateBarcodeButton}
+              className="btn btn-primary category-btn" >
               <i className="add_shopping_cart"></i> {/* Add an icon */}
               Generate Barcode
             </Link>
@@ -128,8 +131,11 @@ export default function NewItem() {
               onItemAdded={triggerReload} // Pass the reload function
               onClose={() => setShowModal(false)} // Close the modal
             />
-
-
+            <BarcodeModal
+              isOpen={showBarcodeModal}
+              items={data}
+              onClose={() => setShowBarcodeModal(false)}
+            />
           </div>
         </div>
 

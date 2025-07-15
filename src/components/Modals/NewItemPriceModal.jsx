@@ -48,6 +48,8 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
   const [images, setImages] = useState([]);
+  const [taxType, setTaxType] = useState(""); // For storing tax type from coresetting
+  const [dynamicTaxOptions, setDynamicTaxOptions] = useState([]); // For dynamic tax options
   //   if (!customer) return null;
 
   const handleInputChange = (e) => {
@@ -160,22 +162,76 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      // const tblname1 = "contract";
-      // const tblname2 = "monthly_entries";
-      // const col1 = "id";
-      // const col2 = "contract_id";
-      // const where = { cat_id: SelectedCatID };
-
-      // await fetchDataFromTwoTables(tblname1, tblname2, col1, col2, setData, "t1.customer_name", where);
-      setUnits(await fetchComboData("units", "name"));
-      setTax(await fetchComboData("taxes", "taxname"));
-      setCategory(await fetchComboData("categories", "name"));
-      //setSubCategory(await fetchComboDataWithWhere("subcategory", "cat_id",where));
+    const fetchComboDataAsync = async () => {
+      console.log("🔄 useEffect running - fetching combo data");
+      
+      try {
+        // Fetch basic combo data
+        console.log("📦 Fetching units...");
+        const unitsData = await fetchComboData("units", "name");
+        console.log("✅ Units fetched:", unitsData);
+        setUnits(unitsData);
+        
+        console.log("📦 Fetching categories...");
+        const categoriesData = await fetchComboData("categories", "name");
+        console.log("✅ Categories fetched:", categoriesData);
+        setCategory(categoriesData);
+        
+        // Fetch tax type from coresetting table
+        console.log("📦 Fetching tax type from coresetting...");
+        const coreSettings = await fetchData("coresetting", null, "id", {});
+        console.log("✅ Core settings fetched:", coreSettings);
+        
+        let currentTaxType = "gst"; // default
+        
+        if (coreSettings && coreSettings.length > 0) {
+          const taxTypeSetting = coreSettings.find(setting => setting.setting_name === "tax_type");
+          if (taxTypeSetting) {
+            currentTaxType = taxTypeSetting.setting_value.toLowerCase();
+          }
+        }
+        
+        setTaxType(currentTaxType);
+        
+        // Create dynamic tax options based on tax type
+        let taxOptions = [];
+        if (currentTaxType === "vat") {
+          taxOptions = [
+            { id: 1, taxname: "VAT 0%", taxvalue: "0" },
+            { id: 2, taxname: "VAT 7%", taxvalue: "7" }
+          ];
+          console.log("✅ VAT options created:", taxOptions);
+        } else {
+          // For GST or any other tax type, fetch from taxes table
+          console.log("📦 Fetching tax options from taxes table...");
+          taxOptions = await fetchComboData("taxes", "taxname");
+          console.log("✅ Tax options fetched:", taxOptions);
+        }
+        
+        setDynamicTaxOptions(taxOptions);
+        setTax(taxOptions); // Keep backward compatibility
+        
+        console.log("🎯 Tax type loaded:", currentTaxType);
+        console.log("🎯 Tax options loaded:", taxOptions);
+        console.log("✅ All combo data fetched successfully");
+        
+      } catch (error) {
+        console.error("❌ Error fetching combo data:", error);
+        // Fallback to default tax options
+        try {
+          const fallbackTaxOptions = await fetchComboData("taxes", "taxname");
+          setTax(fallbackTaxOptions);
+        } catch (fallbackError) {
+          console.error("❌ Error fetching fallback tax options:", fallbackError);
+        }
+      }
     };
 
-    fetchData();
-  }, []);
+    // Only run if modal is open
+    if (isOpen) {
+      fetchComboDataAsync();
+    }
+  }, [isOpen]);
 
   return (
     <Modal
@@ -293,7 +349,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                   className="control-label mb-10"
                   style={{ marginLeft: "15px" }}
                 >
-                  Tax
+                  Tax {taxType ? `(${taxType.toUpperCase()})` : ''}
                 </label>
 
                 <select
@@ -310,7 +366,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                   onChange={handleComboChange}
                   value={formdata.tax}
                 >
-                  <option value="">Select Tax</option>
+                  <option value="">Select {taxType ? taxType.toUpperCase() : 'Tax'}</option>
                   {getTax.map((taxes) => (
                     <option key={taxes.id} value={taxes.taxvalue}>
                       {taxes.taxname}

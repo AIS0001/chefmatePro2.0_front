@@ -23,8 +23,8 @@ import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 export default function NewPOS() {
   // const baseURL = 'http://localhost:4402';
   
-   const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
- //  const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
+ //  const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
+  const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
 
   const [data, setData] = useState([]);
@@ -340,7 +340,7 @@ const decreaseItemQuantity = (index) => {
         <Header title="POS System " />
         <ToastContainer />
 
-        <div className="row mt-4">
+        <div className="row mt-2">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
             <CardComponent
               title="View All Tables List"
@@ -348,21 +348,22 @@ const decreaseItemQuantity = (index) => {
               pull="left"
               bodyClass="panel-body"
             >
-              <div className="panel panel-default card-view">
-                <div className="row justify-content-center">
+              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+                <div className="row justify-content-center" style={{ margin: '0' }}>
                   {TotalTablelist.length > 0 ? (
                     TotalTablelist.map((table, index) => (
                       <div
                         key={index}
                         onClick={() => handleTableClick(table.name)}
-                        className="col-lg-2 col-md-4 col-sm-6 col-12 mb-4"
+                        className="col-lg-1 col-md-2 col-sm-3 col-4 mb-2"
                         style={{
                           cursor: "pointer",
-                          transition: "transform 0.3s, box-shadow 0.3s",
+                          transition: "transform 0.2s, box-shadow 0.2s",
+                          padding: '3px'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = "scale(1.05)";
-                          e.currentTarget.style.boxShadow = "0px 6px 15px rgba(0, 0, 0, 0.2)";
+                          e.currentTarget.style.boxShadow = "0px 4px 10px rgba(0, 0, 0, 0.15)";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = "scale(1)";
@@ -370,34 +371,35 @@ const decreaseItemQuantity = (index) => {
                         }}
                       >
                         <div
-                          className="table-card p-4 text-center rounded"
+                          className="table-card p-2 text-center rounded"
                           style={{
                             backgroundColor: table.status === 0 ? "#28a745" : "#dc3545",
                             color: "white",
-                            border: "2px solid white",
+                            border: "1px solid white",
+                            minHeight: '70px'
                           }}
                         >
                           <img
                             src={`../../dist/img/tables/table.png`}
                             alt={`Table ${index + 1}`}
-                            className="img-fluid mb-3"
-                            style={{ width: "60px", height: "60px" }}
+                            className="img-fluid mb-1"
+                            style={{ width: "30px", height: "30px" }}
                           />
-                          <h5
+                          <h6
                             style={{
                               fontWeight: "bold",
                               textTransform: "uppercase",
                               margin: "0",
-                              fontSize: "1rem",
+                              fontSize: "0.7rem",
                             }}
                           >
                             {table.name}
-                          </h5>
+                          </h6>
                           <span
                             style={{
-                              fontSize: "0.9rem",
-                              fontWeight: "500",
-                              marginTop: "5px",
+                              fontSize: "0.6rem",
+                              fontWeight: "400",
+                              marginTop: "2px",
                               display: "block",
                             }}
                           >
@@ -407,7 +409,7 @@ const decreaseItemQuantity = (index) => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-muted" style={{ fontSize: "1.2rem" }}>
+                    <p className="text-center text-muted" style={{ fontSize: "1rem", padding: '20px' }}>
                       Loading tables...
                     </p>
                   )}
@@ -419,7 +421,7 @@ const decreaseItemQuantity = (index) => {
         </div>
 
         {/* Main Category List */}
-        <div className="row mt-4">
+        <div className="row mt-2">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
             <CardComponent
               title="Choose Category"
@@ -427,14 +429,21 @@ const decreaseItemQuantity = (index) => {
               pull="left"
               bodyClass="panel-body"
             >
-              <div className="panel panel-default card-view">
-                <div className="row">
+              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+                <div className="row" style={{ margin: '0' }}>
                   {categories.length > 0 ? (
                     categories.map((category, index) => (
-                      <div className="col-2 col-md-2 col-sm-6 col-xs-12" key={index}>
+                      <div className="col-2 col-md-2 col-sm-6 col-xs-12" key={index} style={{ padding: '2px' }}>
                         <button
                           className="btn btn-primary category-btn"
                           onClick={() => handleCategoryClick(category.id)}
+                          style={{ 
+                            width: '100%', 
+                            padding: '8px 4px', 
+                            fontSize: '12px', 
+                            margin: '2px 0',
+                            minHeight: '35px'
+                          }}
                         >
                           {category.name}
                         </button>
@@ -450,7 +459,7 @@ const decreaseItemQuantity = (index) => {
         </div>
 
         {/* Subcategory List */}
-        <div className="row mt-4">
+        <div className="row mt-2">
           <div className="col-lg-2 col-md-2 col-sm-4 col-xs-12">
             <CardComponent
               title="Subcategories"
@@ -458,22 +467,29 @@ const decreaseItemQuantity = (index) => {
               pull="left"
               bodyClass="panel-body"
             >
-              <div className="panel panel-default card-view">
+              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
                   <div className="item-list-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                  <div className="row">
+                  <div className="row" style={{ margin: '0' }}>
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (
-                        <div className="col-12" key={index}>
+                        <div className="col-12" key={index} style={{ padding: '2px' }}>
                           <button
                             onClick={() => handleSubcategoryClick(subcategory.id)}
                             className="btn btn-danger btn-anim fixed-width-btn"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              fontSize: '11px',
+                              margin: '1px 0',
+                              minHeight: '30px'
+                            }}
                           >
                             {subcategory.subcat}
                           </button>
                         </div>
                       ))
                     ) : (
-                      <p>No subcategories available for this category.</p>
+                      <p style={{ fontSize: '12px', padding: '10px' }}>No subcategories available for this category.</p>
                     )}
                   </div>
                 </div>
@@ -489,28 +505,28 @@ const decreaseItemQuantity = (index) => {
               pull="left"
               bodyClass="panel-body"
             >
-              <div className="panel panel-default card-view">
+              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
                 <div className="item-list-container">
-                  <div className="row mt-3">
+                  <div className="row mt-2" style={{ margin: '0' }}>
                     {data.length > 0 ? (
                       data.map((item, index) => (
-                        <div key={item.id} className="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
-                          <div className="item-card text-center">
+                        <div key={item.id} className="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-2" style={{ padding: '5px' }}>
+                          <div className="item-card text-center" style={{ padding: '8px' }}>
                             <img
                               src={`${baseURL}/uploads/${item.filename}`}
                               alt={item.iname}
                               onClick={() => addItemToOrder(index, item)}
                               className="item-image"
+                              style={{ marginBottom: '5px' }}
                             />
-                            <h5 className="item-name">{item.iname}</h5>
-                            <p className="item-price">฿ {item.offerprice}.00</p>
-                              <p className="item-gst"> {item.tax}%</p>
-                            
+                            <h5 className="item-name" style={{ fontSize: '13px', margin: '3px 0' }}>{item.iname}</h5>
+                            <p className="item-price" style={{ fontSize: '12px', margin: '2px 0' }}>฿ {item.offerprice}.00</p>
+                            <p className="item-gst" style={{ fontSize: '11px', margin: '2px 0' }}> {item.tax}%</p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p>No items available for this subcategory.</p>
+                      <p style={{ padding: '20px', fontSize: '14px' }}>No items available for this subcategory.</p>
                     )}
                   </div>
                 </div>
@@ -528,56 +544,66 @@ const decreaseItemQuantity = (index) => {
               pull="left"
               bodyClass="panel-body"
             >
-              <div className="panel panel-default card-view">
-                <div className="row">
+              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+                <div className="row" style={{ margin: '0' }}>
                   <div className="col-12">
                     {cart.length > 0 ? (
                       cart.map((item, index) => (
                         <>
                           <div
-                            className="order-item d-flex align-items-center justify-content-between mb-2"
+                            className="order-item d-flex align-items-center justify-content-between mb-1"
                             key={index}
+                            style={{ padding: '3px 0' }}
                           >
-                            <h5 className="item-name mb-0">
-  {item.iname} x {formatQuantity(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
-</h5>
+                            <h5 className="item-name mb-0" style={{ fontSize: '12px' }}>
+                              {item.iname} x {formatQuantity(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
+                            </h5>
                             <div className="quantity-controls d-flex align-items-center">
                               <button
-                                className="btn btn-dark-custom btn-sm me-2"
+                                className="btn btn-dark-custom btn-sm me-1"
                                 onClick={() => decreaseItemQuantity(index)}
+                                style={{ padding: '2px 6px', fontSize: '10px' }}
                               >
                                 -
                               </button>
-                              <span className="quantity me-2">{item.quantity}</span>
+                              <span className="quantity me-1" style={{ fontSize: '11px' }}>{item.quantity}</span>
                               <button
                                 className="btn btn-dark-custom btn-sm"
                                 onClick={() => increaseItemQuantity(index)}
+                                style={{ padding: '2px 6px', fontSize: '10px' }}
                               >
                                 +
                               </button>
                             </div>
                           </div>
-
-
                         </>
-
                       ))
                     ) : (
-                      <p>Your cart is empty.</p>
+                      <p style={{ fontSize: '12px', padding: '10px' }}>Your cart is empty.</p>
                     )}
-                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
-                      <h5>
+                    <div className="total-container mt-2 d-flex justify-content-between align-items-center">
+                      <h5 style={{ fontSize: '14px' }}>
                         Total:{" "}
                         <span className="total-amount">
                           ฿ {total.toFixed(2)}
                         </span>
                       </h5>
                     </div>
-                    <div className="total-container mt-3 d-flex justify-content-between align-items-center">
-
-                      <button className="btn btn-primary" onClick={handlePrintOrder}> <FaPrint className="me-2" />   Send Kot</button>
-                      <button className="btn btn-danger" onClick={handleDeleteOrder}> <FaTrash className="me-2" /></button>
-
+                    <div className="total-container mt-2 d-flex justify-content-between align-items-center">
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={handlePrintOrder}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                      > 
+                        <FaPrint className="me-1" />Send Kot
+                      </button>
+                      <button 
+                        className="btn btn-danger" 
+                        onClick={handleDeleteOrder}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                      > 
+                        <FaTrash className="me-1" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -589,28 +615,42 @@ const decreaseItemQuantity = (index) => {
         </div>
 
         {/* New Row for Action Buttons */}
-        <div className="row mt-3">
+        <div className="row mt-2">
           <div className="col-12">
-            <div className="d-flex justify-content-between flex-wrap mx-3">
-              {" "}
-              {/* Added mx-3 for equal horizontal spacing */}
-
-
-              <button className="btn btn-warning mb-2"
+            <div className="d-flex justify-content-between flex-wrap" style={{ padding: '0 15px' }}>
+              <button 
+                className="btn btn-warning mb-1"
                 onClick={showtableBillDetails}
-
+                style={{ padding: '6px 12px', fontSize: '12px', margin: '2px' }}
               >
-                Check Bill</button>
-              <button className="btn btn-info mb-2">Last Order</button>
-
-
-              <button className="btn btn-darkblue mb-2">Previous Order</button>
-              <button  onClick={handleBillHistory}className="btn btn-success mt-2 custom-btn" >
+                Check Bill
+              </button>
+              <button 
+                className="btn btn-info mb-1"
+                style={{ padding: '6px 12px', fontSize: '12px', margin: '2px' }}
+              >
+                Last Order
+              </button>
+              <button 
+                className="btn btn-darkblue mb-1"
+                style={{ padding: '6px 12px', fontSize: '12px', margin: '2px' }}
+              >
+                Previous Order
+              </button>
+              <button  
+                onClick={handleBillHistory}
+                className="btn btn-success mb-1 custom-btn"
+                style={{ padding: '6px 12px', fontSize: '12px', margin: '2px' }}
+              >
                 Bill History
               </button>
-              {/* <button className="btn btn-warning mb-2">Save Bill</button> */}
-
-              <button onClick={refreshTables} className="btn btn-primary mb-2">Refresh Tables</button>
+              <button 
+                onClick={refreshTables} 
+                className="btn btn-primary mb-1"
+                style={{ padding: '6px 12px', fontSize: '12px', margin: '2px' }}
+              >
+                Refresh Tables
+              </button>
             </div>
           </div>
         </div>

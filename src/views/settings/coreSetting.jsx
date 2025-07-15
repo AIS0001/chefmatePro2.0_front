@@ -36,8 +36,8 @@ export default function CoreSettings() {
     const fetchSubscription = async () => {
       try {
         const res = await fetchData("coresetting", setData, "id", {});
-        if (res.data.length > 0) {
-          const record = res.data[0];
+        if (res && res.length > 0) {
+          const record = res[0];
           setFormData({
             id: record.id,
             customer_name: record.customer_name,
@@ -48,9 +48,13 @@ export default function CoreSettings() {
             status: record.status || "active",
             tax_type: record.tax_type || "GST",
           });
+        } else {
+          // No existing data, keep the form empty for new creation
+          console.log("No existing core settings found");
         }
       } catch (error) {
-        console.error("Error fetching subscription:", error);
+        console.error("Error fetching core settings:", error);
+        toast.error("Error loading core settings");
       }
     };
     fetchSubscription();
@@ -67,11 +71,12 @@ export default function CoreSettings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formdata) return;
+    
     try {
       if (formdata.id) {
         // Update existing subscription
         await axios.put(
-          `/coresetting/${formdata.id}`,
+          `updatesubscription/coresetting/${formdata.id}`,
           {
             customer_name: formdata.customer_name,
             region: formdata.region,
@@ -83,9 +88,17 @@ export default function CoreSettings() {
           },
           getHeaders()
         );
-        toast.success("Subscription updated successfully!");
+        toast.success("Core settings updated successfully!");
       } else {
-        // Create new subscription
+        // Check if any record already exists
+        const existingData = await fetchData("coresetting", null, "id", {});
+        
+        if (existingData && existingData.length > 0) {
+          toast.error("Core settings already exist! You can only update the existing settings.");
+          return;
+        }
+        
+        // Create new subscription only if no data exists
         const res = await axios.post(
           "/insertdata/coresetting",
           {
@@ -104,13 +117,14 @@ export default function CoreSettings() {
           ...prev,
           id: res.data.id,
         }));
-        toast.success("Subscription started successfully!");
+        toast.success("Core settings created successfully!");
       }
-      // Optional: reload or update data table
+      
+      // Reload data table
       await fetchData("coresetting", setData, "id", {});
     } catch (error) {
       toast.error(
-        "Error saving subscription details. Please check all fields."
+        "Error saving core settings. Please check all fields."
       );
       console.error(error);
     }
@@ -119,7 +133,7 @@ export default function CoreSettings() {
   // Handler to change status (cancel or hold)
   const handleStatusChange = async (newStatus) => {
     if (!formdata.id) {
-      toast.error("No subscription to update status.");
+      toast.error("No settings to update status.");
       return;
     }
     try {
@@ -132,7 +146,7 @@ export default function CoreSettings() {
         getHeaders()
       );
       setFormData((prev) => ({ ...prev, status: newStatus }));
-      toast.success(`Subscription status updated to ${newStatus}`);
+      toast.success(`Settings status updated to ${newStatus}`);
     } catch (error) {
       toast.error("Error updating status");
       console.error(error);
@@ -141,20 +155,37 @@ export default function CoreSettings() {
 
   return (
     <Layout>
-      <Header title="Subscription Details" />
+      <Header title="Core Settings" />
       <ToastContainer />
 
       <div className="row" style={{ minHeight: '80vh', background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)', padding: '32px 0' }}>
         {/* Left Card: Subscription Form */}
         <div className="col-lg-4 col-md-5 col-sm-12 col-xs-12">
           <CardComponent
-            title={formdata.id ? "Edit Subscription" : "Application Core Settings"}
+            title={formdata.id ? "Update Core Settings" : "Create Core Settings"}
             headerColor="#2d7a46"
             pull="left"
             bodyClass="panel-body"
             style={{ borderRadius: 18, boxShadow: '0 4px 24px #0001', background: '#fff' }}
           >
             <form onSubmit={handleSubmit} style={{ padding: 8 }}>
+              {/* Show info message if data already exists */}
+              {formdata.id && (
+                <div 
+                  className="alert alert-info" 
+                  style={{ 
+                    borderRadius: 8, 
+                    marginBottom: 18,
+                    backgroundColor: '#e8f4f8',
+                    borderColor: '#2d7a46',
+                    color: '#2d7a46'
+                  }}
+                >
+                  <i className="fa fa-info-circle" style={{ marginRight: 8 }}></i>
+                  <strong>Update Mode:</strong> Core settings already exist. You can only update the existing configuration.
+                </div>
+              )}
+              
               <div className="panel panel-default card-view" style={{ background: 'transparent', border: 'none' }}>
                 <div className="form-group" style={{ marginBottom: 18 }}>
                   <TextfieldwithLabel
@@ -250,14 +281,14 @@ export default function CoreSettings() {
                 {formdata.id ? (
                   <SubmitButton
                     type="submit"
-                    name="Update Data"
+                    name="Update Settings"
                     cls="btn btn-success btn-anim"
                     disabled={formdata.status === "cancelled"}
                   />
                 ) : (
                   <SubmitButton
                     type="submit"
-                    name="Save Settings"
+                    name="Create Settings"
                     cls="btn btn-success btn-anim"
                     disabled={formdata.status === "cancelled"}
                   />
@@ -273,14 +304,14 @@ export default function CoreSettings() {
                   style={{ borderRadius: 8, fontWeight: 500, letterSpacing: 1 }}
                   onClick={() => handleStatusChange("hold")}
                 >
-                  Hold Subscription
+                  Hold Settings
                 </button>
                 <button
                   className="btn btn-danger"
                   style={{ borderRadius: 8, fontWeight: 500, letterSpacing: 1 }}
                   onClick={() => handleStatusChange("cancelled")}
                 >
-                  Cancel Subscription
+                  Disable Settings
                 </button>
               </div>
             )}
@@ -297,8 +328,20 @@ export default function CoreSettings() {
         {/* Right Card: Data Table */}
         <div className="col-lg-8 col-md-7 col-sm-12 col-xs-12" id="tableid">
           <div style={{ borderRadius: 18, boxShadow: '0 4px 24px #0001', background: '#fff', padding: 24 }}>
+            <h5 style={{ marginBottom: 20, color: '#2d7a46', fontWeight: 600 }}>Core Settings Overview</h5>
             {data.length === 0 ? (
-              <p style={{ color: '#888', fontStyle: 'italic', textAlign: 'center', marginTop: 40 }}>No data available</p>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '40px 20px',
+                color: '#666',
+                backgroundColor: '#f8f9fa',
+                borderRadius: 12,
+                border: '2px dashed #ddd'
+              }}>
+                <i className="fa fa-cog fa-3x" style={{ marginBottom: 15, color: '#ccc' }}></i>
+                <p style={{ fontSize: 18, fontWeight: 500, marginBottom: 10 }}>No Core Settings Found</p>
+                <p style={{ fontSize: 14, color: '#888' }}>Please create your application's core settings using the form on the left.</p>
+              </div>
             ) : (
               <DataTable
                 columns={[
