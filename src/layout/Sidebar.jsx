@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 export default function Sidebar() {
   return (
@@ -21,6 +22,9 @@ export default function Sidebar() {
 						</li>
 						<li>
 							<a href="index3.html">Project</a>
+						</li>
+						<li>
+							<Link to="/dashboard/analytics">Analytics Dashboard</Link>
 						</li>
 						<li>
 							<a href="profile.html">profile</a>

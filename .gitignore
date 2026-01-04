@@ -1,1 +1,10 @@
-node_modules
+# Node projects
+node_modules/
+npm-debug.log*
+yarn-error.log*
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db

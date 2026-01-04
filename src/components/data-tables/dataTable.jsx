@@ -17,11 +17,13 @@ import { ToastContainer, toast } from "react-toastify";
 import { baseURL } from "../..";
 import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
 import EditModal from "../Modals/EditModals";
-import deleteRecord from "../../functions/delateData";
+import deleteRecord, { deleteBulkRecords } from "../../functions/delateData";
 import cancelRecord from "../../functions/cancelBill";
 import fetchData from "../../functions/fetchData";
+import axios from "axios";
+import { getAuthToken, getHeaders } from "../../utility/getHeader";
 
-const DataTable = ({ columns, data, tablename, onEditClick }) => {
+const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [companyInfo, setcompanyInfo] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
@@ -32,6 +34,8 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   const [tableData, setTableData] = useState(data); // Manage the table data state
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+  const [selectedRows, setSelectedRows] = useState([]); // State for selected rows
+  const [selectAll, setSelectAll] = useState(false); // State for select all checkbox
   const rowsPerPage = 50;
   const agent_id =localStorage.getItem("uname") || sessionStorage.getItem("uname");
 
@@ -49,6 +53,111 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
     setSelectedCustomer(customer);
     setShowModal(true);
   };
+
+  // Functions for handling row selection
+  const handleRowSelect = (itemId) => {
+    setSelectedRows(prev => {
+      if (prev.includes(itemId)) {
+        return prev.filter(id => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedRows([]);
+    } else {
+      const currentPageIds = paginatedData.map(item => item.id);
+      setSelectedRows(currentPageIds);
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Bulk delete function
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) {
+      toast.warning("Please select items to delete");
+      return;
+    }
+
+    const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedRows.length} selected record(s)?`);
+    if (!confirmDelete) {
+      return;
+    }
+
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      toast.error("Operation timed out. Please try again.");
+    }, 30000); // 30 seconds timeout
+
+    try {
+      setLoading(true);
+      console.log("Starting bulk delete for items:", selectedRows);
+      
+      // Use the bulk delete API endpoint
+      await deleteBulkRecords(tablename, "id", selectedRows);
+      
+      // Handle related table cleanup for items
+      if (tablename === "items") {
+        try {
+          console.log("Deleting related images for items:", selectedRows);
+          await deleteBulkRecords("images", "id", selectedRows);
+        } catch (imgError) {
+          console.log("No images found or error deleting images:", imgError.message);
+        }
+      }
+      
+      // Handle related table cleanup for customers
+      if (tablename === "customers") {
+        try {
+          console.log("Deleting related customer images for items:", selectedRows);
+          await deleteBulkRecords("customer_images", "id", selectedRows);
+        } catch (imgError) {
+          console.log("No customer images found or error deleting customer images:", imgError.message);
+        }
+      }
+
+     // console.log(`Bulk delete completed successfully for ${selectedRows.length} items`);
+
+      // Clear the timeout since operation completed
+      clearTimeout(timeoutId);
+
+      // Update the table data to remove deleted items
+      const updatedData = tableData.filter(item => !selectedRows.includes(item.id));
+      setTableData(updatedData);
+
+      // Clear selections
+      setSelectedRows([]);
+      setSelectAll(false);
+
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
+
+      toast.success(`${selectedRows.length} record(s) deleted successfully!`);
+      
+    } catch (error) {
+      console.error("Error in bulk delete:", error);
+      toast.error("Failed to delete records - check console for details");
+      clearTimeout(timeoutId);
+    } finally {
+      console.log("Setting loading to false");
+      setLoading(false);
+    }
+  };
+
+  // Debug logging
+  useEffect(() => {
+    // console.log("🔍 DataTable Debug Info:");
+    // console.log("📋 Table name:", tablename);
+    // console.log("🗑️ DeleteBillTables:", DeleteBillTables);
+    // console.log("❌ Should show delete button:", !DeleteBillTables.includes(tablename));
+    // console.log("✏️ EditableTables:", editableTables);
+    // console.log("🖨️ PrintableTables:", printableTables);
+  }, [tablename]);
 
   // Sort data based on sortConfig
   const sortedData = React.useMemo(() => {
@@ -73,8 +182,20 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   const paginatedData = sortedData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
+  // Update selectAll state based on current page selections
+  useEffect(() => {
+    if (paginatedData.length > 0) {
+      const currentPageIds = paginatedData.map(item => item.id);
+      const allCurrentPageSelected = currentPageIds.every(id => selectedRows.includes(id));
+      setSelectAll(allCurrentPageSelected && currentPageIds.length > 0);
+    }
+  }, [paginatedData, selectedRows]);
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
+    // Clear selections when changing pages to avoid confusion
+    setSelectedRows([]);
+    setSelectAll(false);
   };
   const [editId, setEditId] = useState(null);
   const [formdata, setFormData] = useState({
@@ -86,21 +207,35 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   const navigate = useNavigate();
 
   const handleEditClick = (item) => {
+    console.log("DataTable - handleEditClick called with item:", item, "tablename:", tablename);
+    
     if (tablename === "items") {
-      navigate(`/inventory/edititem/${item.id}`);
+      // Check if onEditClick prop is provided (for modal), otherwise use navigation
+      if (onEditClick) {
+        console.log("DataTable - Using onEditClick prop for items");
+        onEditClick(item);
+      } else {
+        console.log("DataTable - Using navigation for items");
+        navigate(`/inventory/edititem/${item.id}`);
+      }
     } else if (tablename === "contract") {
       navigate(`/contracts/editcontract/${item.id}/${agent_id}`);
     } else if (tablename === "taxes") {
-      console.log("Editing item:", item);
-
-      // ❌ DO NOT navigate
-      // ✅ Instead, fill the form on the same page
-      setFormData({
-        taxname: item.taxname,
-        taxvalue: item.taxvalue,
-        included: item.included,
-      });
-      setEditId(item.id); // switch to edit mode
+      // Use the onEditClick prop if provided, otherwise use default behavior
+      if (onEditClick) {
+        onEditClick(item);
+      } else {
+        console.log("Editing item:", item);
+        setFormData({
+          taxname: item.taxname,
+          taxvalue: item.taxvalue,
+          included: item.included,
+        });
+        setEditId(item.id); // switch to edit mode
+      }
+    } else if (onEditClick) {
+      // For other tables, use the provided onEditClick handler
+      onEditClick(item);
     }
   };
 
@@ -418,9 +553,16 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
 
 
   const handleDeleteClick = async (itemId) => {
+    // Show confirmation dialog
+    const confirmDelete = window.confirm("Are you sure you want to delete this record?");
+    if (!confirmDelete) {
+      return; // Exit if user cancels
+    }
+
     try {
       // Implement delete logic here
       await deleteRecord(tablename, "id", itemId);
+      
       if (tablename === "listing") {
         await deleteRecord("images", "id", itemId);
       } else if (tablename === "contract") {
@@ -433,8 +575,17 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
         console.log("Updated Data:", updatedData); // Log updated data for debugging
         return updatedData; // Ensure new reference is returned
       });
+
+      // Call the callback if provided (for refreshing parent component data)
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      } else {
+        // Show generic success message if no callback provided
+        toast.success("Record deleted successfully!");
+      }
     } catch (error) {
       console.error("Error deleting record:", error);
+      toast.error("Error deleting record");
     }
   };
   const handlecancelClick = async (itemId) => {
@@ -482,6 +633,9 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
   // Sync tableData with data prop
   useEffect(() => {
     setTableData(data);
+    // Clear selections when data changes (e.g., after reload)
+    setSelectedRows([]);
+    setSelectAll(false);
   }, [data]);
   return (
     <>
@@ -493,7 +647,147 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
           onImageLoad={() => setLoading(false)} // Stop loading when image is loaded
         />
       )}
-      {loading && <div className="loading-icon">Loading...</div>}
+      {loading && (
+        <div className="loading-icon" style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '20px',
+          borderRadius: '10px',
+          zIndex: 9999,
+          textAlign: 'center'
+        }}>
+          <div className="spinner-border text-light mb-2" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div>Processing deletion...</div>
+        </div>
+      )}
+      
+      {/* Bulk Actions Section */}
+      {!DeleteBillTables.includes(tablename) && selectedRows.length > 0 && (
+        <div className="bulk-actions mb-3" style={{
+          padding: '10px',
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderRadius: '5px'
+        }}>
+          <div className="d-flex align-items-center gap-2">
+            <span className="badge bg-info" style={{ fontSize: '12px' }}>
+              {selectedRows.length} item(s) selected
+            </span>
+            <button 
+              className="btn btn-danger btn-sm" 
+              onClick={handleBulkDelete}
+              disabled={loading}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '5px' 
+              }}
+            >
+              <FaTrash />
+              Delete Selected ({selectedRows.length})
+            </button>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={() => {
+                setSelectedRows([]);
+                setSelectAll(false);
+              }}
+            >
+              Clear Selection
+            </button>
+            <button 
+              className="btn btn-info btn-sm" 
+              onClick={() => {
+                console.log("Current selected rows:", selectedRows);
+                console.log("Table name:", tablename);
+                console.log("Current loading state:", loading);
+                console.log("Axios base URL:", axios.defaults.baseURL);
+                console.log("Auth token:", getAuthToken());
+              }}
+              style={{ marginLeft: '5px' }}
+            >
+              Debug Info
+            </button>
+            <button 
+              className="btn btn-warning btn-sm" 
+              onClick={async () => {
+                if (selectedRows.length > 0) {
+                  const testId = selectedRows[0];
+                  console.log("🧪 Testing single delete for ID:", testId);
+                  try {
+                    await deleteRecord(tablename, "id", testId);
+                    console.log("✅ Single delete test successful");
+                    toast.success("Test delete successful!");
+                  } catch (error) {
+                    console.error("❌ Single delete test failed:", error);
+                    toast.error("Test delete failed - check console");
+                  }
+                } else {
+                  toast.warning("Select at least one item to test");
+                }
+              }}
+              style={{ marginLeft: '5px' }}
+            >
+              Test Single
+            </button>
+            <button 
+              className="btn btn-warning btn-sm" 
+              onClick={async () => {
+                if (selectedRows.length > 0) {
+                  const testIds = selectedRows.slice(0, 2); // Test with first 2 selected items
+                  console.log("🧪 Testing bulk delete for IDs:", testIds);
+                  try {
+                    await deleteBulkRecords(tablename, "id", testIds);
+                    console.log("✅ Bulk delete test successful");
+                    toast.success("Test bulk delete successful!");
+                  } catch (error) {
+                    console.error("❌ Bulk delete test failed:", error);
+                    toast.error("Test bulk delete failed - check console");
+                  }
+                } else {
+                  toast.warning("Select at least one item to test");
+                }
+              }}
+              style={{ marginLeft: '5px' }}
+            >
+              Test Bulk
+            </button>
+            <button 
+              className="btn btn-success btn-sm" 
+              onClick={async () => {
+                console.log("🔗 Testing API connection...");
+                try {
+                  // Test with a simple GET request first
+                  const response = await axios.get('/test', getHeaders());
+                  console.log("✅ API connection test successful:", response.data);
+                  toast.success("API connection OK");
+                } catch (error) {
+                  console.error("❌ API connection test failed:", error);
+                  // If test endpoint doesn't exist, try to get items to test connection
+                  try {
+                    const itemsResponse = await axios.get('/items', getHeaders());
+                    console.log("✅ API connection via items endpoint successful");
+                    toast.success("API connection OK (via items)");
+                  } catch (itemsError) {
+                    console.error("❌ Items endpoint also failed:", itemsError);
+                    toast.error("API connection failed - check console");
+                  }
+                }
+              }}
+              style={{ marginLeft: '5px' }}
+            >
+              Test API
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className="table-wrap">
         <div className="table-responsive">
           <table
@@ -502,6 +796,25 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
           >
             <thead>
               <tr>
+                {/* Checkbox column for row selection (only show for tables that allow delete) */}
+                {!DeleteBillTables.includes(tablename) && (
+                  <th
+                    style={{
+                      textAlign: "center",
+                      color: "white",
+                      backgroundColor: "#050505",
+                      width: "50px"
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                      style={{ cursor: "pointer" }}
+                      title="Select/Deselect all items on this page"
+                    />
+                  </th>
+                )}
                 {columns.map((col, index) => (
                   <th
                     key={index}
@@ -520,9 +833,31 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
             </thead>
             <tbody>
               {paginatedData.map((item, rowIndex) => (
-                <tr key={rowIndex}>
+                <tr 
+                  key={rowIndex} 
+                  style={{
+                    backgroundColor: selectedRows.includes(item.id) ? '#e3f2fd' : 'transparent',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                >
                   {" "}
                   {/* Adjust row height */}
+                  
+                  {/* Checkbox column for row selection (only show for tables that allow delete) */}
+                  {!DeleteBillTables.includes(tablename) && (
+                    <td style={{ textAlign: "center", width: "50px", verticalAlign: "middle" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.includes(item.id)}
+                        onChange={() => handleRowSelect(item.id)}
+                        style={{ 
+                          cursor: "pointer",
+                          transform: "scale(1.2)"
+                        }}
+                      />
+                    </td>
+                  )}
+                  
                   {columns.map((col, colIndex) => (
                     <td key={colIndex}>
                       {" "}
@@ -577,14 +912,17 @@ const DataTable = ({ columns, data, tablename, onEditClick }) => {
                             />
                           )}
                           {!DeleteBillTables.includes(tablename) && (
-                                                      <FaTrash
-                                                      style={{
-                                                        cursor: "pointer",
-                                                        color: "red",
-                                                      }}
-                                                      onClick={() => handleDeleteClick(item.id)}
-                                                    />
-                                                    )}
+                            <>
+                              {/* {console.log("🗑️ Rendering delete button for table:", tablename, "Item ID:", item.id)} */}
+                              <FaTrash
+                                style={{
+                                  cursor: "pointer",
+                                  color: "red",
+                                }}
+                                onClick={() => handleDeleteClick(item.id)}
+                              />
+                            </>
+                          )}
                           {/* Delete Icon (Allowed for ALL tables) */}
                          
                         </>

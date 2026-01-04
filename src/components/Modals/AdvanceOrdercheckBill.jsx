@@ -17,28 +17,31 @@ import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
 import LineQRDiscountModal from "./LineQRDiscountModal";
+import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
+import "./AdvanceOrdercheckBill.css";
 
 
 const customStyles = {
-    content: {
-        top: "50%",
-        left: "50%",
-        right: "auto",
-        bottom: "auto",
-        marginRight: "-50%",
-        transform: "translate(-50%, -50%)",
-        width: "100%",
-        maxWidth: "90%", // Ensures it doesn't take up full width on small screens
-        maxHeight: "90vh", // Makes sure modal content doesn't overflow vertically
-        borderRadius: "10px",
-        overflowY: "auto", // Enables scrolling if content overflows
-    },
-    overlay: {
-        zIndex: 1050, // Ensure this is higher than your sidebar's z-index
-        backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: Overlay styling
-    },
-
-
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    width: "95%",
+    maxWidth: "1200px",
+    maxHeight: "90vh",
+    padding: "0",
+    border: "none",
+    borderRadius: "12px",
+    overflowY: "auto",
+    background: "transparent",
+  },
+  overlay: {
+    zIndex: 1050,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
 };
 
 const getCurrentDate = () => {
@@ -122,6 +125,30 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
     const refreshTables = (event) => {
         fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
         setIsBillSaved(false);
+        
+        // Clear current bill data when refreshing
+        setFinalData([]);
+        setSelectedTable(null);
+        
+        // Reset all calculation states
+        setSubtotal(0);
+        setDiscAmount(0);
+        settaxAmount(0);
+        setroundoffAmount(0);
+        setgrandAmount(0);
+        settotalAmount(0);
+        setsubtotalAfterDiscount(0);
+        
+        // Reset form data
+        setFormData({
+            pmode: "",
+            discAmount: 0,
+            discountType: "percentage",
+            phones: "",
+            paidAmount: ""
+        });
+        setChangeMoney("");
+        setphones("");
     };
 
     //   if (!customer) return null;
@@ -189,7 +216,7 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
         const grandTotal = Math.round(
             finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07
         ); // Calculate the grand total
-        const change = paidAmount - grandAmount; // Calculate the change
+        const change = paidAmount - grandTotal; // Calculate the change
         setChangeMoney(change.toFixed(2)); // Update the state with the calculated change
         setFormData((prevData) => ({
             ...prevData,
@@ -202,9 +229,10 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
     const [roundoffAmount, setroundoffAmount] = useState(0);
     const [grandAmount, setgrandAmount] = useState(0);
     const [totalAmount, settotalAmount] = useState(0);
-    const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
-    const [isBillSaved, setIsBillSaved] = useState(false);
-    const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
+  const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
+  const [isBillSaved, setIsBillSaved] = useState(false);
+  const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
+  const [currencySign, setCurrencySign] = useState("฿"); // Default to Thai Baht
 
 
 
@@ -242,7 +270,15 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
         setFormData((prevData) => ({ ...prevData, paidAmount: "" }));
         setChangeMoney("");
         setDiscAmount("0");
-        setIsBillSaved(false);
+        setIsBillSaved(false); // Reset bill saved status when selecting a new table
+        
+        // Reset all calculation states when selecting a new table
+        setSubtotal(0);
+        settaxAmount(0);
+        setroundoffAmount(0);
+        setgrandAmount(0);
+        settotalAmount(0);
+        setsubtotalAfterDiscount(0);
 
         fetchData("advance_order_items", setFinalData, "id", { table_number: tableName, status: "1" });
 
@@ -252,9 +288,9 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
 
     // Runs when discAmount or discountType changes
     useEffect(() => {
-        if (finalData.length === 0) return; // Prevent running when there's no data
+        if (finalData.length === 0 || !TaxesData || TaxesData.length === 0) return; // Prevent running when there's no data
 
-        let discountAmount = discAmount;
+        let discountAmount = parseFloat(discAmount) || 0;
 
         // Calculate subtotal safely
         const subtotalValue = finalData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
@@ -262,54 +298,43 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
 
         // Adjust discount calculation based on type
         if (formdata.discountType === "percentage") {
-            discountAmount = Math.min((subtotalValue * discAmount) / 100, subtotalValue); // Prevent over-discount
+            discountAmount = Math.min((subtotalValue * discountAmount) / 100, subtotalValue); // Prevent over-discount
         } else {
             discountAmount = Math.min(discountAmount, subtotalValue); // Prevent over-discount for amount
         }
-        //setDiscAmount(discountAmount);
+
         // Calculate subtotal after discount
         const subtotalAfterDiscount = subtotalValue - discountAmount;
         setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));
 
-        // Calculate tax (7%)
-        //calculate tax bases on setting include or exclude
+        // Calculate tax based on settings
         let taxValue = 0;
+        let totalAmountValue = 0;
+        
+        const taxRate = parseFloat(TaxesData[0].taxvalue) || 0;
+        
         if (TaxesData[0].included === "true") {
-            taxValue = (subtotalAfterDiscount * TaxesData[0].taxvalue) / (100 + TaxesData[0].taxvalue);
-            settaxAmount(taxValue.toFixed(2));
-
-            // Calculate total amount after tax
-            //const totalAmountValue = subtotalAfterDiscount + taxValue;
-            settotalAmount(subtotalAfterDiscount.toFixed(2));
-
-            // Round-off amount
-            const roundedTotal = Math.round(subtotalAfterDiscount);
-            const roundoffValue = roundedTotal - subtotalAfterDiscount;
-            setroundoffAmount(roundoffValue.toFixed(2));
-
-            // Set final grand total
-            setgrandAmount(roundedTotal.toFixed(2));
+            // Tax included in price
+            taxValue = (subtotalAfterDiscount * taxRate) / (100 + taxRate);
+            totalAmountValue = subtotalAfterDiscount;
+        } else {
+            // Tax excluded from price
+            taxValue = subtotalAfterDiscount * (taxRate / 100);
+            totalAmountValue = subtotalAfterDiscount + taxValue;
         }
-        else {
-            taxValue = subtotalAfterDiscount * (TaxesData[0].taxvalue / 100);
-            settaxAmount(taxValue.toFixed(2));
+        
+        settaxAmount(taxValue.toFixed(2));
+        settotalAmount(totalAmountValue.toFixed(2));
 
-            // Calculate total amount after tax
-            const totalAmountValue = subtotalAfterDiscount + taxValue;
-            settotalAmount(totalAmountValue.toFixed(2));
+        // Round-off amount
+        const roundedTotal = Math.round(totalAmountValue);
+        const roundoffValue = roundedTotal - totalAmountValue;
+        setroundoffAmount(roundoffValue.toFixed(2));
 
-            // Round-off amount
-            const roundedTotal = Math.round(totalAmountValue);
-            const roundoffValue = roundedTotal - totalAmountValue;
-            setroundoffAmount(roundoffValue.toFixed(2));
+        // Set final grand total
+        setgrandAmount(roundedTotal.toFixed(2));
 
-            // Set final grand total
-            setgrandAmount(roundedTotal.toFixed(2));
-
-        }
-
-
-    }, [discAmount, formdata.discountType, finalData]); // Dependencies prevent infinite looping
+    }, [discAmount, formdata.discountType, finalData, TaxesData]); // Added TaxesData to dependencies
 
 
     const handleBillHistory = async () => {
@@ -461,8 +486,8 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
                         <tr>
                           <td>${item.item_name}</td>
                           <td>${item.quantity}</td>
-                          <td>฿ ${item.total_price / item.quantity}</td>
-                          <td>฿ ${item.total_price}</td>
+                          <td>${currencySign} ${item.total_price / item.quantity}</td>
+                          <td>${currencySign} ${item.total_price}</td>
                         </tr>
                       `
                     )
@@ -470,19 +495,20 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
                 </tbody>
               </table>
                <div class="total-row">
-              <span>Subtotal: ฿ ${myfinalbilldata[0].subtotal}</span><br>
-              <span>Discount: ฿ ${myfinalbilldata[0].discount_amount}</span><br>
-              <span>Subtotal After Discount: ฿ ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
+              <span>Subtotal: ${currencySign} ${myfinalbilldata[0].subtotal}</span><br>
+              <span>Discount: ${currencySign} ${myfinalbilldata[0].discount_amount}</span><br>
+              <span>Subtotal After Discount: ${currencySign} ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
 
-              <span>Tax (7%): ฿ ${myfinalbilldata[0].tax}</span><br>
-              <span>Round Off: ฿ ${myfinalbilldata[0].roundoff}</span><br>
-              <span>Total Amount: ฿ ${myfinalbilldata[0].grand_total}</span>
+              <span>Tax (7%): ${currencySign} ${myfinalbilldata[0].tax}</span><br>
+              <span>Round Off: ${currencySign} ${myfinalbilldata[0].roundoff}</span><br>
+              <span>Total Amount: ${currencySign} ${myfinalbilldata[0].grand_total}</span>
             </div>
               
             </div>
             <div class="footer">
             <p>Note: ${myfinalbilldata[0].special_note}</p>
               <p>Printed on ${new Date().toLocaleString()}</p>
+              <p>Cashier: ${getUserName() || 'N/A'}</p>
               <p>Powered by Cloudnet Softwares </p>
             </div>
           </body>
@@ -651,6 +677,37 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
             //handlePrintClick(bill_id);
 
 
+            // Clear the bill summary table after successful save
+            setFinalData([]);
+            setSelectedTable(null);
+            
+            // Reset all calculation states
+            setSubtotal(0);
+            setDiscAmount(0);
+            settaxAmount(0);
+            setroundoffAmount(0);
+            setgrandAmount(0);
+            settotalAmount(0);
+            setsubtotalAfterDiscount(0);
+            
+            // Reset form data
+            setFormData({
+                pmode: "",
+                discAmount: 0,
+                discountType: "percentage",
+                phones: "",
+                paidAmount: ""
+            });
+            setChangeMoney("");
+            setphones("");
+            
+            // Reset order details
+            setPickupDate('');
+            setPickupTime('');
+            setSpecialNote('');
+            setOrderType('');
+            setFinalBilled(false);
+
             // Show success toast message
             toast.success("Bill saved successfully!");
             setIsBillSaved(true);
@@ -801,8 +858,8 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
                   <tr>
                     <td>${item.item_name}</td>
                     <td>${item.quantity}</td>
-                    <td>฿ ${Number(item.total_price / item.quantity).toFixed(2)}</td>
-                    <td>฿ ${Number(item.total_price).toFixed(2)}</td>
+                    <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
+                    <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
                  
                   </tr>
                 `
@@ -811,14 +868,16 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
               </tbody>
             </table>
             <div class="total-row">
-              <span>Subtotal: ฿ ${subtotal}</span><br>
-              <span>Subtotal after Discount: ฿ ${subtotalAfterDiscount}</span><br>
-              <span>Tax (7%): ฿ ${taxAmount}</span><br>
-              <span>Round Off: ฿ ${roundoffAmount}</span><br>
-              <span>Total Amount: ฿ ${grandAmount}</span>
+              <span>Subtotal: ${currencySign} ${subtotal}</span><br>
+               <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span><br>
+              <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount}</span><br>
+              <span>Tax (7%): ${currencySign} ${taxAmount}</span><br>
+              <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
+              <span>Total Amount: ${currencySign} ${grandAmount}</span>
             </div>
           </div>
           <div class="footer">
+            <p>Cashier: ${getUserName() || 'N/A'}</p>
             <p>Powered by CloudPOS !! </p>
           </div>
         </body>
@@ -847,6 +906,16 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
                 await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
                 await fetchData("companyinfo", setcompanyInfo, "id", {});
                 await setpaymentOptions(await fetchComboData("paymentoptions", "name"));
+                
+                // Fetch core settings for currency sign
+                try {
+                    const coreSettings = await fetchData("coresetting", null, "id", {});
+                    if (coreSettings && coreSettings.length > 0) {
+                        setCurrencySign(coreSettings[0].currency_sign || "฿");
+                    }
+                } catch (error) {
+                    console.error("Error fetching core settings:", error);
+                }
             } catch (error) {
                 console.error("Error in useEffect:", error);
             }
@@ -884,517 +953,401 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
         }
     };
 
+    // Function to clear the bill summary table manually
+    const clearBillSummary = () => {
+        setFinalData([]);
+        setSelectedTable(null);
+        
+        // Reset all calculation states
+        setSubtotal(0);
+        setDiscAmount(0);
+        settaxAmount(0);
+        setroundoffAmount(0);
+        setgrandAmount(0);
+        settotalAmount(0);
+        setsubtotalAfterDiscount(0);
+        
+        // Reset form data
+        setFormData({
+            pmode: "",
+            discAmount: 0,
+            discountType: "percentage",
+            phones: "",
+            paidAmount: ""
+        });
+        setChangeMoney("");
+        setphones("");
+        
+        // Reset order details
+        setPickupDate('');
+        setPickupTime('');
+        setSpecialNote('');
+        setOrderType('');
+        setFinalBilled(false);
+        setIsBillSaved(false);
+        
+        toast.success("Bill summary cleared successfully!");
+    };
+
     return (
         <>
-
             <Modal
                 isOpen={isOpen}
                 onRequestClose={onClose}
-                contentLabel="New Item Entry"
+                contentLabel="Advance Order Check Bill"
                 style={customStyles}
                 ariaHideApp={false}
             >
-                <ToastContainer />
-                <div className="row mt-4">
-                    <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <CardComponent
-                            title="Advance Orders"
-                            headerColor="darkblue1"
-                            pull="left"
-                            bodyClass="panel-body"
-                        >
-                            <div className="panel panel-default card-view">
-                                <div className="row justify-content-center">
-                                    {TotalTablelist.length > 0 ? (
-                                        TotalTablelist.map((tables, index) => (
-                                            <div
-                                                key={index}
-                                                onClick={() => handleTableHistory(tables.name, "0")}
-                                                className={`col-lg-2 col-md-3 col-sm-4 col-6 mb-4`}
-                                                style={{
-                                                    cursor: "pointer",
-                                                    transition: "transform 0.3s, box-shadow 0.3s",
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.transform = "scale(1.05)";
-                                                    e.currentTarget.style.boxShadow =
-                                                        "0px 4px 8px rgba(17, 218, 33, 0.2)";
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.transform = "scale(1)";
-                                                    e.currentTarget.style.boxShadow = "none";
-                                                }}
-                                            >
-                                                <div
-                                                    className={`table-card p-4 text-center border w-100 rounded`}
-                                                    style={{
-                                                        backgroundColor:
-                                                            tables.status === 0 ? "#bf0202" : "#dc3545", // Green for available, red for occupied
-                                                        color: "white",
-                                                    }}
-                                                >
-                                                    <img
-                                                        src={`../../dist/img/tables/table.png`}
-                                                        alt={`Table ${index + 1}`}
-                                                        className="img-fluid mb-2"
-                                                        style={{ width: "50px", height: "50px" }}
-                                                    />
-                                                    <h6 className="font-weight-bold">{tables.name}</h6>
-                                                    <small
-                                                        style={{
-                                                            backgroundColor: "rgba(7, 194, 22, 0.3)",
-                                                            padding: "3px 8px",
-                                                            borderRadius: "5px",
-                                                            fontSize: "12px",
-                                                            color: "white",
-                                                        }}
-                                                    >
-                                                        {tables.status === 0 ? "Available" : "Occupied"}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>Loading tables...</p>
-                                    )}
+                <div className="advance-bill-modal-container">
+                    <ToastContainer />
+                    
+                    {/* Header */}
+                    <div className="advance-bill-modal-header">
+                        <h2 className="advance-bill-modal-title">Advance Order Summary - {selectedTable}</h2>
+                        <div className="advance-bill-modal-actions">
+                            <button onClick={refreshTables} className="advance-refresh-btn">
+                                <FaRedo size={16} />
+                            </button>
+                            <button onClick={onClose} className="advance-close-btn">
+                                <FaTimes size={16} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Tables Section */}
+                    <div className="advance-tables-section">
+                        <h4 style={{ margin: "0 0 15px 0", color: "#495057" }}>Advance Order Tables</h4>
+                        <div className="advance-tables-grid">
+                            {TotalTablelist.length > 0 ? (
+                                TotalTablelist.map((tables, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => handleTableHistory(tables.name, "0")}
+                                        className={`advance-table-card ${tables.status === 0 ? "available" : "occupied"}`}
+                                    >
+                                        <img
+                                            src={`../../dist/img/tables/table.png`}
+                                            alt={`Table ${index + 1}`}
+                                            onError={(e) => {
+                                                e.target.src = "../../dist/img/tables/table.png";
+                                            }}
+                                        />
+                                        <h6>{tables.name}</h6>
+                                        <span className={`advance-table-status ${tables.status === 0 ? "available" : "occupied"}`}>
+                                            {tables.status === 0 ? "Available" : "Occupied"}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="advance-loading-message">Loading tables...</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Advance Order Details Section */}
+                    <div className="advance-order-details-section">
+                        <h4 style={{ margin: "0 15px 15px 0", color: "#495057" }}>Order Details</h4>
+                        <div className="advance-order-info-grid">
+                            <div className="advance-order-info-item">
+                                <label>Pickup Date</label>
+                                <input
+                                    type="date"
+                                    value={pickupDate}
+                                    onChange={(e) => setPickupDate(e.target.value)}
+                                />
+                            </div>
+                            <div className="advance-order-info-item">
+                                <label>Pickup Time</label>
+                                <input
+                                    type="time"
+                                    value={pickupTime}
+                                    onChange={(e) => setPickupTime(e.target.value)}
+                                />
+                            </div>
+                            <div className="advance-order-info-item">
+                                <label>Special Note</label>
+                                <input
+                                    type="text"
+                                    value={specialNote}
+                                    onChange={(e) => setSpecialNote(e.target.value)}
+                                    placeholder="Enter special instructions"
+                                />
+                            </div>
+                            <div className="advance-order-info-item">
+                                <label>Order Type</label>
+                                <input
+                                    type="text"
+                                    value={orderType}
+                                    onChange={(e) => setOrderType(e.target.value)}
+                                    placeholder="Enter order type"
+                                />
+                            </div>
+                            <div className="advance-order-info-item">
+                                <label>Bill Generated By</label>
+                                <input
+                                    type="text"
+                                    value={billGeneratedBy}
+                                    readOnly
+                                />
+                            </div>
+                            <div className="advance-order-info-item">
+                                <div className="advance-order-checkbox">
+                                    <input
+                                        type="checkbox"
+                                        id="final_billed"
+                                        checked={finalBilled}
+                                        onChange={(e) => setFinalBilled(e.target.checked)}
+                                    />
+                                    <label htmlFor="final_billed">Final Billed</label>
                                 </div>
                             </div>
-                        </CardComponent>
-                        <CardComponent>
-                            <div className="row">
-                                <div className="col-12 col-md-6 col-lg-4 mb-3">
-                                    <TextfieldwithLabel
-                                        id="pickup_date"
-                                        value={pickupDate}
-                                        onChange={(e) => setPickupDate(e.target.value)}
-                                        type="date"
-                                        name="pickup_date"
-                                        lable="Pickup Date"
-                                    />
-                                </div>
+                        </div>
+                    </div>
 
-                                <div className="col-12 col-md-6 col-lg-4 mb-3">
-                                    <TextfieldwithLabel
-                                        id="pickup_time"
-                                        value={pickupTime}
-                                        onChange={(e) => setPickupTime(e.target.value)}
-                                        type="time"
-                                        name="pickup_time"
-                                        lable="Pickup Time"
-                                    />
-                                </div>
+                    {/* Main Content */}
+                    <div className="advance-bill-content">
+                        {/* Left Side - Bill Summary */}
+                        <div className="advance-bill-summary-section" ref={printRef}>
+                            <div className="advance-bill-summary-header">
+                                Bill Summary
+                            </div>
+                            
+                            <div className="advance-bill-table-container">
+                                <table className="advance-bill-table">
+                                    <thead>
+                                        <tr>
+                                            <th className="text-start">Item</th>
+                                            <th>Qty</th>
+                                            <th>Unit Price</th>
+                                            <th className="text-end">Total Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {finalData.length > 0 ? (
+                                            finalData.map((item, index) => (
+                                                <tr key={index}>
+                                                    <td className="text-start">{item.item_name}</td>
+                                                    <td>{item.quantity}</td>
+                                                    <td>{currencySign} {(item.total_price / item.quantity).toFixed(2)}</td>
+                                                    <td className="text-end">{currencySign} {Number(item.total_price).toFixed(2)}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="4" className="advance-empty-table-message">
+                                                    Table is Empty
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                                <div className="col-12 col-md-6 col-lg-4 mb-3">
-                                    <TextfieldwithLabel
-                                        id="special_note"
-                                        value={specialNote}
-                                        onChange={(e) => setSpecialNote(e.target.value)}
-                                        type="text"
-                                        name="special_note"
-                                        lable="Special Note"
-                                    />
-                                </div>
-
-                                <div className="col-12 col-md-6 col-lg-4 mb-3">
-                                    <TextfieldwithLabel
-                                        id="order_type"
-                                        value={orderType}
-                                        onChange={(e) => setOrderType(e.target.value)}
-                                        type="text"
-                                        name="order_type"
-                                        lable="Order Type"
-                                    />
-                                </div>
-
-                                <div className="col-12 col-md-6 col-lg-4 mb-3">
-                                    <TextfieldwithLabel
-                                        id="bill_generated_by"
-                                        value={billGeneratedBy}
-                                        onChange={(e) => setBillGeneratedBy(e.target.value)}
-                                        type="text"
-                                        name="bill_generated_by"
-                                        lable="Bill Generated By"
-                                        readOnly
-                                    />
-
-                                </div>
-
-                                <div className="col-12 col-md-6 col-lg-4 mb-3 d-flex align-items-center">
-                                    <div className="form-check mt-3">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            id="final_billed"
-                                            checked={finalBilled}
-                                            onChange={(e) => setFinalBilled(e.target.checked)}
-                                        />
-                                        <label className="form-check-label ms-2" htmlFor="final_billed">
-                                            Final Billed
-                                        </label>
+                            {finalData.length > 0 && (
+                                <div className="advance-bill-totals">
+                                    <div className="advance-total-row">
+                                        <span className="label">Subtotal</span>
+                                        <span className="value">{currencySign} {subtotal}</span>
+                                    </div>
+                                    <div className="advance-total-row">
+                                        <span className="label">Discount</span>
+                                        <span className="value">
+                                            {formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}
+                                        </span>
+                                    </div>
+                                    <div className="advance-total-row">
+                                        <span className="label">Subtotal After Discount</span>
+                                        <span className="value">{currencySign} {subtotalAfterDiscount}</span>
+                                    </div>
+                                    <div className="advance-total-row">
+                                        <span className="label">Tax ({TaxesData[0]?.taxvalue || 0}%)</span>
+                                        <span className="value">{currencySign} {taxAmount}</span>
+                                    </div>
+                                    <div className="advance-total-row">
+                                        <span className="label">Total Amount</span>
+                                        <span className="value">{currencySign} {totalAmount}</span>
+                                    </div>
+                                    <div className="advance-total-row">
+                                        <span className="label">Round Off Amount</span>
+                                        <span className="value">{currencySign} {roundoffAmount}</span>
+                                    </div>
+                                    <div className="advance-total-row">
+                                        <span className="label">Grand Total</span>
+                                        <span className="value">{currencySign} {grandAmount}</span>
                                     </div>
                                 </div>
-
-
-                            </div>
-                        </CardComponent>
-                    </div>
-                </div>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "10px 0", // Optional: adds some padding around the section
-                    }}
-                >
-                    <div className="row mt-4" style={{ flex: 1 }}>
-                        <div className="col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                            <h4>Final Summary - {selectedTable}</h4> {/* Left-aligned text */}
-                        </div>
-                    </div>
-
-                    <div
-                        className="col-lg-4 col-md-4 col-sm-6 col-xs-12"
-                        style={{ textAlign: "right" }}
-                    >
-                        <button
-                            onClick={refreshTables}
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                cursor: "pointer",
-                                marginRight: "10px", // Optional: adds space between the buttons
-                            }}
-                        >
-                            <FaRedo size={20} color="green" /> {/* Refresh icon */}
-                        </button>
-
-                        <button
-                            onClick={onClose}
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                cursor: "pointer",
-                            }}
-                        >
-                            <FaTimes size={20} color="red" /> {/* Close icon */}
-                        </button>
-                    </div>
-                </div>
-                <div className="row">
-                    <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12">
-                        <div ref={printRef}>
-                            <form onSubmit={handleSubmit}>
-                                <div className="row">
-                                    <table className="table table-bordered table-hover text-end">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th className="text-start">Item</th>
-                                                <th>Qty</th>
-                                                <th>Unit Price</th>
-                                                <th>Total Price</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {finalData.length > 0 ? (
-                                                finalData.map((item, index) => (
-                                                    <tr key={index}>
-                                                        <td className="text-start">{item.item_name}</td>
-                                                        <td>{item.quantity}</td>
-                                                        <td>
-                                                            ฿ {(item.total_price / item.quantity).toFixed(2)}
-                                                        </td>{" "}
-                                                        {/* Corrected unit price */}
-                                                        <td>฿ {Number(item.total_price).toFixed(2)}</td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan="4" className="text-center">
-                                                        Table is Empty
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-
-                                        {finalData.length > 0 && (
-                                            <tfoot className="table-light">
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Subtotal</strong>
-                                                    </td>
-                                                    <td>
-                                                        ฿{" "}
-                                                        {subtotal}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Discount</strong>
-                                                    </td>
-                                                    <td>
-                                                        {formdata.discountType === "percentage" ? `${discAmount} %` : `฿ ${discAmount}`}
-                                                    </td>
-
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Subtotal After Discount</strong>
-                                                    </td>
-                                                    <td>
-                                                        ฿{" "}
-                                                        {subtotalAfterDiscount}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Tax ({TaxesData[0].taxvalue}%)</strong>
-                                                    </td>
-                                                    <td>
-                                                        ฿{" "}
-                                                        {taxAmount}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Total Amount</strong>
-                                                    </td>
-                                                    <td>
-                                                        ฿{" "}
-                                                        {totalAmount}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Round Off Amount</strong>
-                                                    </td>
-                                                    <td>
-                                                        ฿{" "}
-                                                        {roundoffAmount}
-                                                    </td>{" "}
-                                                    {/* Corrected Round Off Amount */}
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="3" className="text-end">
-                                                        <strong>Grand Total</strong>
-                                                    </td>
-                                                    <td>
-                                                        ฿{" "}
-                                                        {grandAmount}
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        )}
-                                    </table>
-
-
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-                        <div className="col-12">
-                            <TextfieldwithLabel
-                                id="phones"
-                                //  value={` ${formdata.phones}`} // Display the change amount with currency formatting
-                                onChange={(e) => setphones(e.target.value)} // Only update state
-                                value={phones}
-                                type="number"
-                                name="phones"
-                                lable="Customer Mobile Number"
-                            />
-                        </div>
-                        <div className="col-12">
-                            <TextfieldwithLabel
-                                id="paidAmount"
-                                onChange={handleChangeMoney} // Call the function on input change
-                                value={formdata.paidAmount}
-                                type="text"
-                                name="paidAmount"
-                                lable="Recieved"
-                            />
-                        </div>
-                        <div className="col-12">
-                            <TextfieldwithLabel
-                                id="changeMoney"
-                                value={`฿ ${changeMoney}`} // Display the change amount with currency formatting
-                                type="text"
-                                name="changeMoney"
-                                lable="Change Money"
-                                style={{
-                                    color: changeMoney < 0 ? "red" : "green", // Red for insufficient payment, green for extra payment
-                                    fontWeight: "bold",
-                                }}
-                                readOnly // Make it read-only as it's calculated dynamically
-                            />
-                        </div>
-                        <div className="col-12">
-                            <div className="form-group">
-                                <label
-                                    className="control-label mb-10"
-                                    style={{ marginLeft: "15px" }}
-                                >
-                                    Payment Mode
-                                </label>
-
-                                <select
-                                    id="pmode"
-                                    name="pmode"
-                                    className="form-select custom-select"
-                                    style={{
-                                        borderRadius: "4px",
-                                        border: "2px solid #17a2b8",
-                                        height: "45px", // Increased height
-                                        width: "95%", // Full width of the parent
-                                        marginLeft: "15px", // Ensure no margin that could offset alignment
-                                    }} // Stylish combo box
-                                    onChange={handleComboChange}
-                                    value={formdata.pmode}
-                                >
-
-                                    {paymentOptions.map((pmt) => (
-                                        <option key={pmt.name} value={pmt.name}>
-                                            {pmt.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                        </div>
-                        <div className="col-12">
-                            <div className="form-group">
-                                <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
-                                    Discount Type
-                                </label>
-                                <select
-                                    id="discountType"
-                                    name="discountType"
-                                    className="form-select custom-select"
-                                    style={{
-                                        borderRadius: "4px",
-                                        border: "2px solid #17a2b8",
-                                        height: "45px", // Increased height
-                                        width: "95%", // Full width of the parent
-                                        marginLeft: "15px", // Ensure no margin that could offset alignment
-                                    }}
-                                    onChange={handleDiscountTypeChange}
-                                    value={formdata.discountType} // Adding discountType to formdata
-                                >
-                                    <option value="amount" selected>Amount</option>
-                                    <option value="percentage">Percentage</option>
-
-                                </select>
-                            </div>
-                        </div>
-                        <div className="col-12">
-                            <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
-                                Discount Value
-                            </label>
-                            <TextfieldwithLabel
-                                id="discAmount"
-                                onChange={(e) => setDiscAmount(e.target.value)} // Only update state
-                                value={discAmount}
-                                type="text"
-                                name="discAmount"
-                                label="Discount"
-                            />
-
-                        </div>
-                        <div className="d-flex justify-content-between mt-4">
-
-                            <button
-
-                                onClick={() => handlePrintClick(latestBillId)}
-                                className="btn btn-danger mb-2 custom-btn"
-                            >
-                                Print Bill
-                            </button>
-                            {/* This button help to save and print bill together on one click */}
-                            {!isBillSaved && (
-                                <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
-                                    Save  Bill
-                                </button>
-
                             )}
-                            <div className="col-12">
-                                <button
-                                    className="btn btn-warning"
-                                    onClick={() => {
-                                        if (!customerDetails.phones) {
-                                            toast.error("Please enter customer phone first.");
-                                            setLineQRModalOpen(true);
-                                            return;
-                                        }
-                                        // Simulate check with backend — or do it in real
-                                        alert(phones);
-                                        axios.post('/checkline', { phone: phones })
-                                            .then(res => {
-                                                if (res.data.eligible) {
-                                                    setLineQRModalOpen(true);
-                                                } else {
-                                                    toast.error("Discount already claimed for this number.");
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error(err);
-                                                toast.error("Error checking discount eligibility.");
-                                            });
-                                    }}
-                                >
-                                    Discount via LINE
-                                </button>
-                                <button
-                                    onClick={handleBillHistory}
-                                    className="btn btn-success mt-2 custom-btn"
-                                >
-                                    Bill History
-                                </button>
-                                <button
-                                    className="btn btn-info"
-                                    onClick={() => {
-                                        if (!customerDetails.phone) {
-                                            toast.error("Please enter customer phone first.");
-                                            setLineQRModalOpen(true);
-                                            return;
-                                        }
-                                        // Simulate check with backend — or do it in real
-                                        axios.post('/checkline', { phone: customerDetails.phone })
-                                            .then(res => {
-                                                if (res.data.eligible) {
-                                                    setLineQRModalOpen(true);
-                                                } else {
-                                                    toast.error("Discount already claimed for this number.");
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error(err);
-                                                toast.error("Error checking discount eligibility.");
-                                            });
-                                    }}
-                                >
-                                    Discount via Whatsapp
-                                </button>
+                        </div>
+
+                        {/* Right Side - Payment & Customer Info */}
+                        <div className="advance-payment-section">
+                            {/* Customer Information Card */}
+                            <div className="advance-payment-card">
+                                <div className="advance-payment-card-header">
+                                    Customer Information
+                                </div>
+                                <div className="advance-payment-card-body">
+                                    <div className="advance-form-group">
+                                        <label>Customer Mobile Number</label>
+                                        <input
+                                            type="number"
+                                            value={phones}
+                                            onChange={(e) => setphones(e.target.value)}
+                                            placeholder="Enter mobile number"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => setCustomerModalOpen(true)}
+                                        className="advance-action-btn info"
+                                    >
+                                        Add Customer Details
+                                    </button>
+                                </div>
                             </div>
 
+                            {/* Payment Details Card */}
+                            <div className="advance-payment-card">
+                                <div className="advance-payment-card-header">
+                                    Payment Details
+                                </div>
+                                <div className="advance-payment-card-body">
+                                    <div className="advance-form-group">
+                                        <label>Payment Mode</label>
+                                        <select
+                                            value={formdata.pmode}
+                                            onChange={handleComboChange}
+                                        >
+                                            {paymentOptions.map((pmt) => (
+                                                <option key={pmt.name} value={pmt.name}>
+                                                    {pmt.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                            {/* this button used only when user dont want to print bill only make save bill */}
-                            {/* <button
-                onClick={handleSaveBill}
-                className="btn btn-darkblue mb-2 custom-btn"
-              >
-                Save Bill
-              </button> */}
+                                    <div className="advance-form-group">
+                                        <label>Amount Received</label>
+                                        <input
+                                            type="text"
+                                            value={formdata.paidAmount}
+                                            onChange={handleChangeMoney}
+                                            placeholder="Enter received amount"
+                                        />
+                                    </div>
 
+                                    <div className="advance-form-group">
+                                        <label>Change Money</label>
+                                        <input
+                                            type="text"
+                                            className={`change-money ${changeMoney >= 0 ? 'positive' : 'negative'}`}
+                                            value={`${currencySign} ${changeMoney}`}
+                                            readOnly
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Discount Card */}
+                             <div className="payment-card">
+                                           <div className="payment-card-header">
+                                             Discount Options
+                                           </div>
+                                           <div className="payment-card-body">
+                                             <div className="discount-controls">
+                                               <div className="discount-input">
+                                                 <label>Discount Amount</label>
+                                                 <input
+                                                   type="number"
+                                                   className="form-control"
+                                                   value={discAmount}
+                                                   onChange={(e) => setDiscAmount(e.target.value)}
+                                                   placeholder="Enter discount"
+                                                 />
+                                               </div>
+                                               <div className="discount-type-select">
+                                                 <label>Type</label>
+                                                 <select
+                                                   className="form-select"
+                                                   value={formdata.discountType}
+                                                   onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value }))}
+                                                 >
+                                                   <option value="percentage">%</option>
+                                                   <option value="fixed">{currencySign}</option>
+                                                 </select>
+                                               </div>
+                                             </div>
+                           
+                                             <div className="action-buttons">
+                                               <button
+                                                 onClick={() => {
+                                                   if (!phones) {
+                                                     toast.error("Please enter customer phone first.");
+                                                     return;
+                                                   }
+                                                   setLineQRModalOpen(true);
+                                                 }}
+                                                 className="btn btn-warning"
+                                               >
+                                                 LINE Discount
+                                               </button>
+                                               <button
+                                                 onClick={() => {
+                                                   if (!customerDetails.phone) {
+                                                     toast.error("Please enter customer phone first.");
+                                                     return;
+                                                   }
+                                                   setLineQRModalOpen(true);
+                                                 }}
+                                                 className="btn btn-info"
+                                               >
+                                                 WhatsApp Discount
+                                               </button>
+                                             </div>
+                                           </div>
+                                         </div>
+
+                            {/* Action Buttons */}
+                            <div className="advance-payment-card">
+                                <div className="advance-payment-card-body">
+                                    <div className="advance-action-buttons">
+                                        {!isBillSaved && (
+                                            <button
+                                                onClick={handleSaveBill}
+                                                className="advance-action-btn success"
+                                                disabled={!finalData || finalData.length === 0}
+                                            >
+                                                Save Bill
+                                            </button>
+                                        )}
+                                        {isBillSaved && (
+                                            <button
+                                                onClick={handleGenetotal_priceBill}
+                                                className="advance-action-btn primary"
+                                            >
+                                                Print Bill
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={clearBillSummary}
+                                            className="advance-action-btn warning"
+                                            disabled={!finalData || finalData.length === 0}
+                                        >
+                                            Clear Bill
+                                        </button>
+                                        <button
+                                            onClick={handleBillHistory}
+                                            className="advance-action-btn info"
+                                        >
+                                            Bill History
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {/* Horizontal rule */}
-
-
-
-
-
             </Modal>
+
             <LineQRDiscountModal
                 isOpen={isLineQRModalOpen}
                 onClose={() => setLineQRModalOpen(false)}
@@ -1403,7 +1356,6 @@ const AdvanceOrderCheckBillModal = ({ isOpen, customer, uptableList, onClose }) 
                     setFormData(prev => ({ ...prev, discountType: "percentage" })); // ✅ SAFE UPDATE
                 }}
             />
-
 
             <CustomerDetailsModal
                 isOpen={isCustomerModalOpen}

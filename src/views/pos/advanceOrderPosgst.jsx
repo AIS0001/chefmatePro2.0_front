@@ -23,8 +23,8 @@ import WeightModal from "../../components/Modals/WeightModal";
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function AdvanceOrderGst() {
   // const baseURL = 'http://localhost:4402';
-  const baseURL = 'https://sharmachefapi.cloudnetsoftwares.com';
-  // const baseURL = 'https://www.chefmatedemo.cloudnetsoftwares.com';
+ // const baseURL = 'https://sharmachefapi.cloudnetsoftwares.com';
+   const baseURL = 'https://www.chefmatedemo.cloudnetsoftwares.com';
   let currentDate = format(new Date(), "yyyy-MM-dd");
 
   const [data, setData] = useState([]);

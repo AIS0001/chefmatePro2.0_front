@@ -72,6 +72,30 @@ export default function NewStock() {
     updatedForm.subtotal = subtotal.toFixed(2);
     updatedForm.vatAmount = vatAmount.toFixed(2);
     updatedForm.netAmount = netAmount.toFixed(2);
+
+    // If item_id is changed, fetch opening balance (closing stock)
+    if (name === "item_id" && value) {
+      // Set unit and vat from selected item
+      const selectedItem = stockable.find(item => item.id.toString() === value);
+      //alert(selectedItem);
+      if (selectedItem) {
+       // alert("Selected item  found");
+        updatedForm.unit = selectedItem.unit || "";
+        updatedForm.vat = selectedItem.tax || "0";
+      }
+      else{
+        alert("Selected item not found");
+      }
+      // Fetch closing stock for the selected item
+      axios.get(`getclosingstock/${value}`, getHeaders())
+        .then(res => {
+          const closing = parseFloat(res.data?.closing_stock) || 0;
+          setFormData(prev => ({ ...updatedForm, opening_stock: closing.toFixed(2) }));
+        })
+        .catch(() => setFormData(prev => ({ ...updatedForm, opening_stock: "0.00" })));
+      // Don't call setFormData here, will be called in promise above
+      return;
+    }
     setFormData(updatedForm);
   };
 
@@ -151,45 +175,26 @@ const handleFinalSave = async () => {
         supplier_id: formData.supplier_id
       });
 
-      const res = await axios.get("/inventory/joined", getHeaders());
-      setData(res.data);
+      // Use fetchData to get joined inventory after saving
+      fetchData("inventory/joined", setData, "id");
+      console.log("Inventory data fetched successfully using fetchData");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to save stock or ledger entry.");
+      console.error("API Error:", err);
+      console.error("Error details:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      toast.error(`Failed to save stock or ledger entry: ${err.response?.data?.error || err.message}`);
     }
   };
 
   useEffect(() => {
-    fetchData("items", setStockable, "id", { isstockable: 'true' });
+    fetchData("items", setStockable, "id", { isstockable: '1' });
     fetchData("suppliers", setSuppliers, "id", {});
     
   }, []);
 
-  useEffect(() => {
-    if (formData.item_id) {
-      const selectedItem = stockable.find(item => item.id.toString() === formData.item_id);
-      if (selectedItem) {
-        setFormData(prev => ({
-          ...prev,
-          unit: selectedItem.unit || "",
-          vat: selectedItem.tax || "0"
-        }));
-      }
-      axios.get(`/getclosingstock/${formData.item_id}`, getHeaders())
-        .then(res => {
-          const closing = parseFloat(res.data?.closing_stock) || 0;
-setFormData(prev => ({ ...prev, opening_stock: closing.toFixed(2) }));
+  // Removed duplicate closing stock fetch from useEffect. Now handled only in handleInputChange for item_id.
 
-        })
-        .catch(() => setFormData(prev => ({ ...prev, opening_stock: "0.00" })));
-    }
-  }, [formData.item_id, stockable]);
 
-  useEffect(() => {
-    axios.get("/inventory/joined", getHeaders())
-      .then((res) => setData(res.data))
-      .catch((err) => toast.error("Failed to fetch inventory"));
-  }, []);
 
   return (
     <Layout>

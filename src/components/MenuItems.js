@@ -8,17 +8,17 @@ const fullMenu = [
   //   icon: 'view-dashboard',
   //   dataTargetId: '#home'
   // },
- {
+{
     name: 'Dashboard',
     path: '/dashboard',
     icon: 'folder',
     dataTargetId: '#dashboard',
     submenu: [
       { name: 'Analytics', path: '/dashboard/admin' },
-     
-
+      { name: 'Analytics', path: '/dashboard/analytics' },
     ]
   },
+    
   {
     name: 'Master',
     path: '/master',
@@ -58,6 +58,9 @@ const fullMenu = [
     submenu: [
       { name: 'Advance Order', path: '/sale/advanceordergstt' },
       { name: 'POS', path: '/sale/posgst' },
+      { name: 'Retail', path: '/sale/newsale' },
+      { name: 'New Quotation', path: '/sale/quotation' },
+      { name: 'Quotation History', path: '/quotation-history' },
 
 
     ]
@@ -94,9 +97,12 @@ const fullMenu = [
       { name: 'Sale Report-GST', path: '/reports/billhistorygst' },
       { name: 'PreOrders-GST', path: '/reports/advanceorderreportgst' },
       { name: 'Item Wise GST', path: '/reports/itemwisesalegst' },
+      { name: 'Item Wise VAT Summary', path: '/reports/itemwisesummaryvat' },
       { name: 'Purchase Report', path: '/inventory/stockreports' },
+      { name: 'Low Stock Items', path: '/reports/lowstockitems' },
       { name: 'Supplier Ledger', path: '/reports/supplierledger' },
       { name: 'Customer Ledger', path: '/reports/saleledger' },
+      { name: 'Day Close', path: '/reports/dayclose' },
 
     ]
   },
@@ -122,8 +128,15 @@ const fullMenu = [
       { name: 'Company Info', path: '/setting/companyinfo' },
       { name: 'Taxes', path: '/setting/taxes' },
       { name: 'Units', path: '/setting/units' },
+      { name: 'Menu Permissions', path: '/setting/menupermissions' },
 
     ]
+  },
+  {
+    name: 'Subscription',
+    path: '/subscription',
+    icon: 'card-membership',
+    dataTargetId: '#subscription'
   },
   //   { name: 'Logout', 
   //     path: '/logout', 
@@ -136,13 +149,14 @@ const getMenuItems = (usertype) => {
   if (usertype === "Cashier")
     {
     return fullMenu
-      .filter(item => ["Dashboard", "Sale", "Reports", "Vouchers", "Logout"].includes(item.name))
+      .filter(item => ["Dashboard", "Sale GST", "Reports GST", "Vouchers", "Logout"].includes(item.name))
       .map(item => {
         if (item.submenu) 
           {
           const allowedSubmenuNames = {
-            Sale: ["POS"],
-            Reports: ["Sale Report", "Supplier Ledger", "Customer Ledger", "Reciept Voucher", "Payment Voucher"],
+            "Sale GST": ["POS"],
+            "Reports GST": ["Sale Report-GST", "Supplier Ledger", "Customer Ledger"],
+            "Vouchers": ["Reciept Voucher", "Payment Voucher"],
           };
           const filteredSubmenu = allowedSubmenuNames[item.name]
             ? item.submenu.filter(sub => allowedSubmenuNames[item.name].includes(sub.name))

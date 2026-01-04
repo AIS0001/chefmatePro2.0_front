@@ -31,10 +31,15 @@ export default function ItemWiseSaleGst() {
     const [data, setData] = useState([]);
     const [categories, setCategories] = useState([]);
     const [subcategories, setSubcategories] = useState([]);
+    const [tableCategories, setTableCategories] = useState([]);
     const [selectedCatId, setSelectedCatId] = useState("");
     const [selectedSubCatId, setSelectedSubCatId] = useState("");
+    const [selectedTableCatId, setSelectedTableCatId] = useState("");
     const [categorySummary, setCategorySummary] = useState([]);
     const [showCategorySummary, setShowCategorySummary] = useState(false);
+    const [tableCategorySummary, setTableCategorySummary] = useState([]);
+    const [showTableCategorySummary, setShowTableCategorySummary] = useState(false);
+    const [taxType, setTaxType] = useState("GST"); // Default to GST, will be updated from coresetting
 
 
     const [errors, setErrors] = useState({});
@@ -57,13 +62,18 @@ const [subcategorySummaryData, setSubcategorySummaryData] = useState([]);
         { label: "Date", field: "created_at" },
         { label: "Category", field: "category_name" },
         { label: "Subcategory ", field: "subcategory_name" },
+        { label: "Table Category", field: "table_category_name" },
         { label: "Item Name", field: "item_name" },
         { label: "Quantity", field: "quantity" },
         { label: "UOM", field: "uom" },
         { label: "Rate", field: "rate" },
-        { label: "CGST", field: "cgst" },
-        { label: "SGST", field: "sgst" },
-        { label: "IGST", field: "igst" },
+        ...(taxType === "VAT" ? [
+            { label: "VAT", field: "cgst" }
+        ] : [
+            { label: "CGST", field: "cgst" },
+            { label: "SGST", field: "sgst" },
+            { label: "IGST", field: "igst" }
+        ]),
         { label: "Tax Amount", field: "tax_amount" },
         { label: "Total", field: "total_price" },
     ];
@@ -73,6 +83,10 @@ const [subcategorySummaryData, setSubcategorySummaryData] = useState([]);
 ];
 const subcategorySummaryColumns = [
   { label: "Subcategory Name", field: "subcategory_name" },
+  { label: "Total Amount", field: "total_amount" },
+];
+const tableCategorySummaryColumns = [
+  { label: "Table Category Name", field: "table_category_name" },
   { label: "Total Amount", field: "total_amount" },
 ];
 
@@ -138,6 +152,41 @@ const generateSubcategorySummary = () => {
   setSubcategorySummaryData(summaryArray);
   setShowSubcategorySummary(true);
   setShowCategorySummary(false);  // Hide category summary if shown
+  setShowTableCategorySummary(false);  // Hide table category summary if shown
+};
+
+const generateTableCategorySummary = () => {
+  // Filter data by date range first
+  const filteredByDate = data.filter(item => {
+    if (!item.created_at) return false;
+    const itemDate = new Date(item.created_at);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    const itemDateMidnight = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+
+    return (!start || start <= itemDateMidnight) && (!end || itemDateMidnight <= end);
+  });
+
+  const summaryMap = {};
+
+  filteredByDate.forEach(item => {
+    if (!item.table_cat_id) return;
+
+    const tableCategory = tableCategories.find(tcat => tcat.id.toString() === item.table_cat_id.toString());
+    const tableCatName = tableCategory ? tableCategory.cat_name : "Unknown";
+
+    if (!summaryMap[item.table_cat_id]) {
+      summaryMap[item.table_cat_id] = { table_category_name: tableCatName, total_amount: 0 };
+    }
+
+    summaryMap[item.table_cat_id].total_amount += parseFloat(item.total_price || 0);
+  });
+
+  const summaryArray = Object.values(summaryMap);
+  setTableCategorySummary(summaryArray);
+  setShowTableCategorySummary(true);
+  setShowCategorySummary(false);  // Hide category summary if shown
+  setShowSubcategorySummary(false);  // Hide subcategory summary if shown
 };
 
 
@@ -286,6 +335,36 @@ useEffect(() => {
     }, []);
 
     useEffect(() => {
+        const fetchTableCategories = async () => {
+            try {
+                const tableCats = await fetchComboData("table_category", "cat_name");
+                setTableCategories(tableCats);
+            } catch (err) {
+                console.error("Error fetching table categories:", err);
+            }
+        };
+
+        fetchTableCategories();
+    }, []);
+
+    // Fetch tax type from coresetting
+    useEffect(() => {
+        const fetchTaxType = async () => {
+            try {
+                const result = await fetchData("coresetting");
+                if (result && result.length > 0) {
+                    setTaxType(result[0].tax_type || "GST");
+                }
+            } catch (err) {
+                console.error("Error fetching tax type:", err);
+                setTaxType("GST"); // Default to GST on error
+            }
+        };
+
+        fetchTaxType();
+    }, []);
+
+    useEffect(() => {
         const fetchSubcategories = async () => {
             if (!selectedCatId) {
                 setSubcategories([]);
@@ -306,6 +385,26 @@ useEffect(() => {
 
 // applyFilter should filter based on original data (not filteredData)
 const applyFilter = () => {
+    console.log("ApplyFilter called with:");
+    console.log("- selectedTableCatId:", selectedTableCatId);
+    console.log("- selectedCatId:", selectedCatId);
+    console.log("- selectedSubCatId:", selectedSubCatId);
+    console.log("- formdata.name:", formdata.name);
+    console.log("- startDate:", startDate);
+    console.log("- endDate:", endDate);
+    console.log("- data length:", data.length);
+    
+    if (data.length === 0) {
+        console.log("No data available for filtering");
+        return;
+    }
+    
+    // Log sample data structure
+    if (data[0]) {
+        console.log("Sample data item fields:", Object.keys(data[0]));
+        console.log("Sample data item:", data[0]);
+    }
+    
     const filtered = data.filter(item => {
         if (!item.created_at) return false;
 
@@ -328,9 +427,32 @@ const applyFilter = () => {
         const matchesSubcategory =
             !selectedSubCatId || item.subcatid?.toString() === selectedSubCatId.toString();
 
-        return isWithinDateRange && matchesItemName && matchesCategory && matchesSubcategory;
+        const matchesTableCategory =
+            !selectedTableCatId || item.table_cat_id?.toString() === selectedTableCatId.toString();
+
+        const passesFilter = isWithinDateRange && matchesItemName && matchesCategory && matchesSubcategory && matchesTableCategory;
+        
+        // Log filtering details for debugging
+        if (selectedTableCatId || selectedCatId || selectedSubCatId || formdata.name) {
+            console.log(`Item ${item.item_name}:`, {
+                isWithinDateRange,
+                matchesItemName,
+                matchesCategory,
+                matchesSubcategory,
+                matchesTableCategory,
+                passesFilter,
+                itemData: {
+                    catid: item.catid,
+                    subcatid: item.subcatid,
+                    table_cat_id: item.table_cat_id
+                }
+            });
+        }
+
+        return passesFilter;
     });
 
+    console.log("Filtered results:", filtered.length, "items");
     setFilteredData(filtered);
 };
 
@@ -341,10 +463,12 @@ const clearFilters = () => {
     setFormData({ name: "" });
     setSelectedCatId("");
     setSelectedSubCatId("");
+    setSelectedTableCatId("");
     setPaymentMode("");
     setFilteredData(data);  // Reset filteredData to original data
     setShowCategorySummary(false);
     setShowSubcategorySummary(false);
+    setShowTableCategorySummary(false);
     localStorage.removeItem("billFilters");
 };
 
@@ -380,8 +504,11 @@ const clearFilters = () => {
         "Total": grandTotal.toFixed(2)
     });
  useEffect(() => {
-    applyFilter();
-}, [data, startDate, endDate, formdata.name, paymentMode, selectedCatId, selectedSubCatId]);
+    if (data.length > 0) {
+        console.log("useEffect triggered for filtering. Data length:", data.length);
+        applyFilter();
+    }
+}, [data, startDate, endDate, formdata.name, paymentMode, selectedCatId, selectedSubCatId, selectedTableCatId]);
 
 
 
@@ -441,6 +568,20 @@ const clearFilters = () => {
                                     </select>
                                 </div>
 
+                                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-6">
+                                    <label>Table Category</label>
+                                    <select
+                                        className="form-control"
+                                        value={selectedTableCatId}
+                                        onChange={(e) => setSelectedTableCatId(e.target.value)}
+                                    >
+                                        <option value="">All Table Categories</option>
+                                        {tableCategories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.cat_name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
 
                             </div>
                             <div className="row mt-3">
@@ -468,10 +609,29 @@ const clearFilters = () => {
 <button className="btn btn-warning" onClick={generateSubcategorySummary}>
   Subcategory Wise Summary
 </button>
+<button className="btn btn-info" onClick={generateTableCategorySummary}>
+  Table Category Wise Summary
+</button>
 {showCategorySummary && (
   <button
     className="btn btn-primary w-100 mt-2"
     onClick={() => setShowCategorySummary(false)}
+  >
+    Back to Item Details
+  </button>
+)}
+{showSubcategorySummary && (
+  <button
+    className="btn btn-primary w-100 mt-2"
+    onClick={() => setShowSubcategorySummary(false)}
+  >
+    Back to Item Details
+  </button>
+)}
+{showTableCategorySummary && (
+  <button
+    className="btn btn-primary w-100 mt-2"
+    onClick={() => setShowTableCategorySummary(false)}
   >
     Back to Item Details
   </button>
@@ -518,6 +678,8 @@ const clearFilters = () => {
       ? categorySummaryColumns
       : showSubcategorySummary
       ? subcategorySummaryColumns
+      : showTableCategorySummary
+      ? tableCategorySummaryColumns
       : columns
   }
   data={
@@ -525,6 +687,8 @@ const clearFilters = () => {
       ? categorySummaryData
       : showSubcategorySummary
       ? subcategorySummaryData
+      : showTableCategorySummary
+      ? tableCategorySummaryData
       : (filteredData.length > 0 ? filteredData : data)
   }
   tablename={
@@ -532,6 +696,8 @@ const clearFilters = () => {
       ? "category_summary"
       : showSubcategorySummary
       ? "subcategory_summary"
+      : showTableCategorySummary
+      ? "table_category_summary"
       : "order_items_gst"
   }
 />

@@ -1,0 +1,39 @@
+{
+  "name": "chefmate-print-server",
+  "version": "1.0.0",
+  "description": "ChefMate KOT Thermal Print Server - Windows & Android compatible",
+  "main": "server-windows.js",
+  "bin": "server-windows.js",
+  "author": "ChefMate Team",
+  "license": "MIT",
+  "keywords": ["thermal", "printer", "pos", "kot", "restaurant"],
+  "scripts": {
+    "start": "node server-windows.js",
+    "dev": "nodemon server-windows.js",
+    "build": "node scripts/build-all.js",
+    "build:windows": "pkg . --targets node18-win-x64 --output ./dist/ChefMate-PrintServer-Windows.exe",
+    "build:windows-portable": "npm run build:windows && npm run package:portable",
+    "build:android": "npm run build:android-setup",
+    "package:portable": "node scripts/create-portable.js",
+    "build:android-setup": "node scripts/create-android-package-fixed.js",
+    "clean": "rimraf dist build temp/*.txt"
+  },
+  "pkg": {
+    "scripts": "server-windows.js",
+    "assets": [
+      "test.html",
+      "README.md"
+    ],
+    "outputPath": "dist/"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "pkg": "^5.8.1",
+    "rimraf": "^5.0.1",
+    "archiver": "^6.0.1"
+  }
+}

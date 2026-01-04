@@ -7,6 +7,7 @@ import CardComponent from "../../components/cards/CardComponent";
 import DataTable from "../../components/data-tables/dataTable";
 import { getHeaders } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
+import { fetchComboData } from "../../services/api";
 import "react-toastify/dist/ReactToastify.css";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -62,7 +63,11 @@ export default function StockReport() {
 
   useEffect(() => {
     fetchInventory();
-    fetchData("items", setItems, "id", { isstockable: 'true' });
+    // Use fetchComboData for items dropdown
+    fetchComboData("items", "id").then((res) => {
+      // If you want to filter by isstockable, do it here:
+      setItems(res.filter(item => item.isstockable === '1' || item.isstockable === 1));
+    });
     fetchData("suppliers", setSuppliers, "id", {});
    
   }, []);

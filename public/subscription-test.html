@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subscription System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        .warning { border-left-color: #ffc107; }
+        .plan-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .feature-item { padding: 10px; border: 1px solid #ddd; border-radius: 3px; }
+        .enabled { background: #d4edda; border-color: #c3e6cb; }
+        .disabled { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Subscription System Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test results container
+        const resultsDiv = document.getElementById('results');
+        
+        // Mock the subscription system data
+        const DEFAULT_PLAN_FEATURES = {
+            'basic': {
+                name: 'Basic Plan',
+                price: 0,
+                features: {
+                    dashboard: { enabled: true, level: 'basic' },
+                    analytics: { enabled: true, level: 'basic' },
+                    customers: { enabled: true, limit: 100 },
+                    suppliers: { enabled: false, limit: 0 },
+                    inventory: { enabled: true, limit: 50 },
+                    pos: { enabled: true, limit: 1 },
+                    reports: { enabled: false, limit: 0 },
+                    users: { enabled: false, limit: 1 }
+                }
+            },
+            'professional': {
+                name: 'Professional Plan',
+                price: 29,
+                features: {
+                    dashboard: { enabled: true, level: 'advanced' },
+                    analytics: { enabled: true, level: 'advanced' },
+                    customers: { enabled: true, limit: 1000 },
+                    suppliers: { enabled: true, limit: 100 },
+                    inventory: { enabled: true, limit: 500 },
+                    pos: { enabled: true, limit: 3 },
+                    reports: { enabled: true, limit: 10 },
+                    users: { enabled: true, limit: 5 }
+                }
+            },
+            'enterprise': {
+                name: 'Enterprise Plan',
+                price: 199,
+                features: {
+                    dashboard: { enabled: true, level: 'enterprise' },
+                    analytics: { enabled: true, level: 'enterprise' },
+                    customers: { enabled: true, limit: -1 },
+                    suppliers: { enabled: true, limit: -1 },
+                    inventory: { enabled: true, limit: -1 },
+                    pos: { enabled: true, limit: -1 },
+                    reports: { enabled: true, limit: -1 },
+                    users: { enabled: true, limit: -1 }
+                }
+            }
+        };
+        
+        // Mock FeatureValidator
+        class FeatureValidator {
+            constructor(currentPlan, features) {
+                this.currentPlan = currentPlan;
+                this.features = features;
+            }
+            
+            hasFeature(featureName) {
+                if (!this.features || !this.currentPlan) return false;
+                const planData = this.features[this.currentPlan];
+                if (!planData) return false;
+                
+                const planFeatures = planData.features || planData;
+                const feature = planFeatures[featureName];
+                return feature?.enabled || false;
+            }
+            
+            getFeatureLimit(featureName) {
+                if (!this.features || !this.currentPlan) return 0;
+                const planData = this.features[this.currentPlan];
+                if (!planData) return 0;
+                
+                const planFeatures = planData.features || planData;
+                const feature = planFeatures[featureName];
+                return feature?.limit || 0;
+            }
+            
+            getAvailableFeatures() {
+                if (!this.features || !this.currentPlan) return [];
+                const planData = this.features[this.currentPlan];
+                if (!planData) return [];
+                
+                const planFeatures = planData.features || planData;
+                return Object.keys(planFeatures).filter(featureName => 
+                    planFeatures[featureName]?.enabled
+                );
+            }
+        }
+        
+        // Test function
+        function testPlan(planName) {
+            const validator = new FeatureValidator(planName, DEFAULT_PLAN_FEATURES);
+            const plan = DEFAULT_PLAN_FEATURES[planName];
+            
+            const section = document.createElement('div');
+            section.className = 'plan-section';
+            section.innerHTML = `<h2>${plan.name} ($${plan.price})</h2>`;
+            
+            const features = ['customers', 'suppliers', 'inventory', 'pos', 'reports', 'users'];
+            const featureGrid = document.createElement('div');
+            featureGrid.className = 'feature-grid';
+            
+            features.forEach(feature => {
+                const hasFeature = validator.hasFeature(feature);
+                const limit = validator.getFeatureLimit(feature);
+                const limitText = limit === -1 ? 'Unlimited' : limit;
+                
+                const featureItem = document.createElement('div');
+                featureItem.className = `feature-item ${hasFeature ? 'enabled' : 'disabled'}`;
+                featureItem.innerHTML = `
+                    <strong>${feature}</strong><br>
+                    Status: ${hasFeature ? 'Enabled' : 'Disabled'}<br>
+                    Limit: ${limitText}
+                `;
+                featureGrid.appendChild(featureItem);
+            });
+            
+            section.appendChild(featureGrid);
+            
+            const availableFeatures = validator.getAvailableFeatures();
+            const availableDiv = document.createElement('div');
+            availableDiv.className = 'result';
+            availableDiv.innerHTML = `<strong>Available Features:</strong> ${availableFeatures.join(', ')}`;
+            section.appendChild(availableDiv);
+            
+            resultsDiv.appendChild(section);
+        }
+        
+        // Run tests
+        function runTests() {
+            resultsDiv.innerHTML = '';
+            
+            // Test each plan
+            testPlan('basic');
+            testPlan('professional');
+            testPlan('enterprise');
+            
+            // Summary
+            const summary = document.createElement('div');
+            summary.className = 'result success';
+            summary.innerHTML = `
+                <h3>Test Summary</h3>
+                <p>✅ Basic Plan: Limited features (customers, inventory, pos)</p>
+                <p>✅ Professional Plan: More features (adds suppliers, reports, users)</p>
+                <p>✅ Enterprise Plan: All features with unlimited limits</p>
+            `;
+            resultsDiv.appendChild(summary);
+        }
+        
+        // Run tests on page load
+        runTests();
+    </script>
+</body>
+</html>

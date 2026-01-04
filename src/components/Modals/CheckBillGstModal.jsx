@@ -17,6 +17,7 @@ import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
 import LineQRDiscountModal from "./LineQRDiscountModal";
+import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
 
 
 const customStyles = {
@@ -473,6 +474,7 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
             </div>
             <div class="footer">
               <p>Printed on ${new Date().toLocaleString()}</p>
+              <p>Cashier: ${getUserName() || 'N/A'}</p>
               <p>Powered by ${companyInfo[0].developer}</p>
             </div>
           </body>
@@ -846,6 +848,7 @@ const handleCancelBill = async () => {
             </div>
           </div>
           <div class="footer">
+            <p>Cashier: ${getUserName() || 'N/A'}</p>
             <p>Powered by CloudPOS !! </p>
           </div>
         </body>

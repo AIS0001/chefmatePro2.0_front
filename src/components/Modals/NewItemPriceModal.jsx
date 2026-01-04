@@ -5,6 +5,7 @@ import { TextfieldwithLabel } from "../Buttons/Textfield";
 import axios from "axios";
 import { fetchComboData, fetchComboDataWithWhere } from "../../services/api";
 import { getHeaders } from "../../utility/getHeader";
+import { getAuthToken } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import { SubmitButton } from "../Buttons/Textfield";
 import { ToastContainer, toast } from "react-toastify";
@@ -21,9 +22,11 @@ const customStyles = {
     width: "70%",
     maxWidth: "70%",
     borderRadius: "10px",
+    zIndex: 10000, // Higher than sidebar z-index (2000)
   },
   overlay: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 9999, // High z-index for overlay, but below content
   },
 };
 
@@ -48,6 +51,8 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
   const [images, setImages] = useState([]);
+  const [taxType, setTaxType] = useState(""); // For storing tax type from coresetting
+  const [dynamicTaxOptions, setDynamicTaxOptions] = useState([]); // For dynamic tax options
   //   if (!customer) return null;
 
   const handleInputChange = (e) => {
@@ -70,56 +75,119 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formdata);
+    console.log("[Add Item] formdata:", formdata);
     try {
+      // Log request body and headers
+      const requestBody = {
+        iname: formdata.iname,
+        unit: formdata.unit,
+        weight: formdata.quantity_type,
+        tax: formdata.tax,
+        mrp: formdata.mrp,
+        offerprice: formdata.offerprice,
+        catid: formdata.category,
+        subcatid: formdata.subcat,
+        description: formdata.desc,
+        isstockable: formdata.isstockable,
+        min_stock: formdata.min_stock,
+      };
+      // console.log("[Add Item] Request body:", requestBody);
+      // console.log("[Add Item] Request headers:", getHeaders());
+
       const post1 = await axios.post(
         "/insertdata/items",
-        {
-          iname: formdata.iname,
-          unit: formdata.unit,
-          weight: formdata.quantity_type,
-          tax: formdata.tax,
-          mrp: formdata.mrp,
-          offerprice: formdata.offerprice,
-          catid: formdata.category,
-          subcatid: formdata.subcat,
-          description: formdata.desc,
-          isstockable: formdata.isstockable,  // <-- new field added
-          min_stock: formdata.min_stock, // <-- added
-        },
+        requestBody,
         getHeaders()
       );
+     // console.log("[Add Item] post1 response:", post1);
+
       const formdata1 = e.target;
       const formData = new FormData();
-      Array.from(formdata1.images.files).forEach((file) => {
-        formData.append("images", file);
-      });
-      //console.log(post1.data.id);
+      
+      // Check if images exist before processing
+      if (formdata1.images && formdata1.images.files && formdata1.images.files.length > 0) {
+        Array.from(formdata1.images.files).forEach((file, index) => {
+          console.log(`📸 Adding image ${index + 1}:`, file.name, file.size, 'bytes');
+          formData.append("images", file);
+        });
+      } else {
+        console.log('⚠️ No images selected');
+      }
+      
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
+      console.log('🆔 Product ID added:', post1.data.id);
 
-      const post2 = await axios.post("/addnewproduct/item_images", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,  // Again, make sure the token is correct
-        },
-      });
-      // Immediately fetch updated data after adding an item
-      // await fetchData("items", setData, "id", {});
+      try {
+        // Check authentication before upload
+        const token = getAuthToken();
+        if (!token) {
+          toast.error('Authentication required. Please log in again.');
+          return;
+        }
+
+        // Get proper auth headers (but don't include Content-Type)
+        const authHeaders = getHeaders();
+        
+        // console.log('📸 Uploading images for product ID:', post1.data.id);
+        // console.log('📸 Number of images:', formdata1.images.files ? formdata1.images.files.length : 0);
+        // console.log('🌐 API Base URL:', axios.defaults.baseURL);
+        // console.log('📡 Full URL:', `${axios.defaults.baseURL}/addnewproduct/item_images`);
+        // console.log('🔑 Token found:', !!token);
+        // console.log('📦 FormData entries:');
+        for (let pair of formData.entries()) {
+          console.log(pair[0], pair[1]);
+        }
+        
+        const post2 = await axios.post("/addnewproduct/item_images", formData, {
+          headers: {
+            // Only include Authorization - let axios set Content-Type with boundary
+            'Authorization': authHeaders.headers.Authorization
+          }
+        });
+        
+        console.log('✅ Images uploaded successfully:', post2.data);
+      } catch (imgErr) {
+        console.error('❌ Error uploading images:', imgErr);
+        
+        // Enhanced error logging
+        if (imgErr.response) {
+          console.error('❌ Status:', imgErr.response.status);
+          console.error('❌ Data:', imgErr.response.data);
+          console.error('❌ Headers:', imgErr.response.headers);
+          
+          if (imgErr.response.status === 401) {
+            toast.error('Authentication failed. Please log in again.');
+          } else if (imgErr.response.status === 403) {
+            toast.error('Insufficient permissions to upload images.');
+          } else if (imgErr.response.status === 500) {
+            toast.error('Server error during image upload. Please try again.');
+          } else {
+            toast.error(`Image upload failed: ${imgErr.response.data?.message || 'Unknown error'}`);
+          }
+        } else if (imgErr.request) {
+          console.error('❌ Network error:', imgErr.request);
+          toast.error('Network error during image upload.');
+        } else {
+          console.error('❌ Error:', imgErr.message);
+          toast.error(`Image upload error: ${imgErr.message}`);
+        }
+      }
+
       onItemAdded(); // Call this to trigger the reload function in NewItem
       toast.success("Item added successfully!");
       setImages([]);
-      // Optionally add a delay before closing the modal to ensure the toast is visible
       setTimeout(() => {
         onClose(); // Close modal
-      }, 1000); // Adjust the delay as needed
-      //console.log("Fetched data after add:", data);
+      }, 1000);
     } catch (err) {
       toast.error("Error in adding Item");
-      console.error(err.message);
+     // console.error("[Add Item] Error:", err);
+      if (err.response) {
+        // console.error("[Add Item] Error response data:", err.response.data);
+        // console.error("[Add Item] Error response status:", err.response.status);
+        // console.error("[Add Item] Error response headers:", err.response.headers);
+      }
     }
-
-    // Clear form data and errors
-    // setFormData({});
     setErrors({});
   };
 
@@ -160,22 +228,76 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      // const tblname1 = "contract";
-      // const tblname2 = "monthly_entries";
-      // const col1 = "id";
-      // const col2 = "contract_id";
-      // const where = { cat_id: SelectedCatID };
+    const fetchComboDataAsync = async () => {
+      console.log("🔄 useEffect running - fetching combo data");
+      
+      try {
+        // Fetch basic combo data
+      //  console.log("📦 Fetching units...");
+        const unitsData = await fetchComboData("units", "name");
+      //  console.log("✅ Units fetched:", unitsData);
+        setUnits(unitsData);
+        
+      //  console.log("📦 Fetching categories...");
+        const categoriesData = await fetchComboData("categories", "name");
+       // console.log("✅ Categories fetched:", categoriesData);
+        setCategory(categoriesData);
+        
+        // Fetch tax type from coresetting table
+      //  console.log("📦 Fetching tax type from coresetting...");
+        const coreSettings = await fetchData("coresetting", null, "id", {});
+      //  console.log("✅ Core settings fetched:", coreSettings);
+        
+        let currentTaxType = "gst"; // default
+        
+        if (coreSettings && coreSettings.length > 0) {
+          const taxTypeSetting = coreSettings.find(setting => setting.setting_name === "tax_type");
+          if (taxTypeSetting) {
+            currentTaxType = taxTypeSetting.setting_value.toLowerCase();
+          }
+        }
+        
+        setTaxType(currentTaxType);
+        
+        // Create dynamic tax options based on tax type
+        let taxOptions = [];
+        if (currentTaxType === "vat") {
+          taxOptions = [
+            { id: 1, taxname: "VAT 0%", taxvalue: "0" },
+            { id: 2, taxname: "VAT 7%", taxvalue: "7" }
+          ];
+          console.log("✅ VAT options created:", taxOptions);
+        } else {
+          // For GST or any other tax type, fetch from taxes table
+       //   console.log("📦 Fetching tax options from taxes table...");
+          taxOptions = await fetchComboData("taxes", "taxname");
+        //  console.log("✅ Tax options fetched:", taxOptions);
+        }
+        
+        setDynamicTaxOptions(taxOptions);
+        setTax(taxOptions); // Keep backward compatibility
 
-      // await fetchDataFromTwoTables(tblname1, tblname2, col1, col2, setData, "t1.customer_name", where);
-      setUnits(await fetchComboData("units", "name"));
-      setTax(await fetchComboData("taxes", "taxname"));
-      setCategory(await fetchComboData("categories", "name"));
-      //setSubCategory(await fetchComboDataWithWhere("subcategory", "cat_id",where));
+        // console.log("🎯 Tax type loaded:", currentTaxType);
+        // console.log("🎯 Tax options loaded:", taxOptions);
+        // console.log("✅ All combo data fetched successfully");
+
+      } catch (error) {
+        console.error("❌ Error fetching combo data:", error);
+        // Fallback to default tax options
+        try {
+          const fallbackTaxOptions = await fetchComboData("taxes", "taxname");
+          setTax(fallbackTaxOptions);
+        } catch (fallbackError) {
+          console.error("❌ Error fetching fallback tax options:", fallbackError);
+        }
+      }
     };
 
-    fetchData();
-  }, []);
+    // Only run if modal is open
+    if (isOpen) {
+      fetchComboDataAsync();
+    }
+  }, [isOpen]);
 
   return (
     <Modal
@@ -293,7 +415,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                   className="control-label mb-10"
                   style={{ marginLeft: "15px" }}
                 >
-                  Tax
+                  Tax {taxType ? `(${taxType.toUpperCase()})` : ''}
                 </label>
 
                 <select
@@ -310,7 +432,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                   onChange={handleComboChange}
                   value={formdata.tax}
                 >
-                  <option value="">Select Tax</option>
+                  <option value="">Select {taxType ? taxType.toUpperCase() : 'Tax'}</option>
                   {getTax.map((taxes) => (
                     <option key={taxes.id} value={taxes.taxvalue}>
                       {taxes.taxname}

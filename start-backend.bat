@@ -1,0 +1,9 @@
+@echo off
+echo Starting ChefMate Backend Server...
+cd /d "%~dp0backend"
+if not exist node_modules (
+    echo Installing dependencies...
+    npm install
+)
+echo Starting backend server on port 3001...
+npm start

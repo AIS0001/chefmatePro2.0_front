@@ -23,15 +23,28 @@ export default function TableList() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   //  const headers = { Authorization: authheader().access_token };
   const [data, setData] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [errors, setErrors] = useState({});
   const [formdata, setFormData] = useState({
     name: "",
   });
+  const categoryMap = categories.reduce((acc, cat) => {
+    acc[cat.id] = cat.cat_name || "";
+    return acc;
+  }, {});
+
   const columns = [
     { label: "ID", field: "id" },
     { label: "Table name", field: "name" },
+    { label: "Category", field: "category_display" },
     { label: "Actions", field: "actions" },
   ];
+
+  const dataWithCategory = data.map((row) => ({
+    ...row,
+    category_display: categoryMap[row.category] || row.category || "",
+  }));
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     // alert(e.target);
@@ -48,15 +61,15 @@ export default function TableList() {
         "/insertdata/tablelist",
         {
           name: formdata.name,
+          category: formdata.category,
         },
         getHeaders()
       );
 
       // Fetch the updated data after successful submission
       await fetchData("tablelist", setData, "id", {});
-      console.log("Fetched data after add:", data); 
+      console.log("Fetched data after add:", data);
       toast.success("Table added successfully!");
-      
     } catch (err) {
       toast.error("Error in adding table");
       console.error(err.message);
@@ -79,6 +92,20 @@ export default function TableList() {
 
     fetchAndSetData();
   }, []);
+
+  useEffect(() => {
+    // Fetch table categories for combo box
+    fetchData(
+      "table_category",
+      (result) => {
+        console.log("Fetched categories:", result);
+        setCategories(result);
+      },
+      "id",
+      {}
+    );
+  }, []);
+
   return (
     <>
       <Layout>
@@ -104,6 +131,30 @@ export default function TableList() {
                         name="name"
                         lable="Table Name"
                       />
+                      {/* Combo box for table category */}
+                      <div className="form-group">
+                        <label htmlFor="category">Table Category</label>
+                        <select
+                          id="category"
+                          name="category"
+                          className="form-control"
+                          value={formdata.category || ""}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              category: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Select Category</option>
+                          {categories.map((cat) => (
+                            <option
+                              key={cat.id}
+                              value={cat.id}
+                            >{cat.cat_name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     <div className="form-group">
@@ -127,7 +178,7 @@ export default function TableList() {
               <p>No data available</p>
             ) : (
               //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-              <DataTable columns={columns} data={data} tablename="tablelist" />
+              <DataTable columns={columns} data={dataWithCategory} tablename="tablelist" />
             )}
 
             {/* <CardComponent 

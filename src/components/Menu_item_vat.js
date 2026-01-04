@@ -2,13 +2,20 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 const fullMenu = [
-  {
-    name: 'Dashboard',
-    path: '/dashboard/admin',
-    icon: 'view-dashboard',
-    dataTargetId: '#home'
-  },
 
+  
+
+
+{
+    name: 'Dashboard',
+    path: '/dashboard',
+    icon: 'folder',
+    dataTargetId: '#dashboard',
+    submenu: [
+     
+      { name: 'Analytics', path: '/dashboard/analytics' },
+    ]
+  },
   {
     name: 'Master',
     path: '/master',
@@ -47,6 +54,9 @@ const fullMenu = [
     submenu: [
        { name: 'Advance Order', path: '/sale/advanceorder' },
       { name: 'POS', path: '/sale/pos' },
+      { name: 'New Sale', path: '/sale/newsale' },
+      { name: 'New Quotation', path: '/sale/quotation' },
+     
 
 
 
@@ -81,11 +91,15 @@ const fullMenu = [
     dataTargetId: '#reports',
     submenu: [
       { name: 'Sale Report', path: '/reports/billhistory' },
-      { name: 'Item Wise', path: '/reports/itemwisesale' },
+       { name: 'Quotation History', path: '/quotation-history' },
+      // { name: 'Item Wise', path: '/reports/itemwisesale' },
+      { name: 'Item Wise ', path: '/reports/itemwisesummaryvat' },
       { name: 'Preorders', path: '/reports/advanceorderreport' },
       { name: 'Purchase Report', path: '/inventory/stockreports' },
+      { name: 'Low Stock Items', path: '/reports/lowstockitems' },
       { name: 'Supplier Ledger', path: '/reports/supplierledger' },
       { name: 'Customer Ledger', path: '/reports/saleledger' },
+      { name: 'Day Close', path: '/reports/dayclose' },
 
     ]
   },
@@ -112,8 +126,15 @@ const fullMenu = [
       { name: 'Company Info', path: '/setting/companyinfo' },
       { name: 'Taxes', path: '/setting/taxes' },
       { name: 'Units', path: '/setting/units' },
+      { name: 'Menu Permissions', path: '/setting/menupermissions' },
 
     ]
+  },
+  {
+    name: 'Subscription',
+    path: '/subscription',
+    icon: 'card-membership',
+    dataTargetId: '#subscription'
   },
   //   { name: 'Logout', 
   //     path: '/logout', 
@@ -131,7 +152,7 @@ const getMenuItems = (usertype) => {
         if (item.submenu) 
           {
           const allowedSubmenuNames = {
-            Sale: ["POS"],
+            Sale: ["POS","Retail"],
             Reports: ["Sale Report", "Supplier Ledger", "Customer Ledger", "Reciept Voucher", "Payment Voucher"],
           };
           const filteredSubmenu = allowedSubmenuNames[item.name]
@@ -145,7 +166,7 @@ const getMenuItems = (usertype) => {
 
   if (usertype === "Account") {
     return fullMenu
-      .filter(item => ["Account Dashboard", "Reports", "Logout"].includes(item.name))
+      .filter(item => ["Dashboard", "Reports", "Logout"].includes(item.name))
       .map(item => {
         if (item.name === "Reports" && item.submenu) {
           // Show full Reports submenu for Account

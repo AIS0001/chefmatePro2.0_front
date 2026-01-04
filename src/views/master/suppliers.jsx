@@ -19,6 +19,11 @@ import DataTable from "../../components/data-tables/dataTable";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
 
+// Feature Control imports
+import { useSubscription } from "../../Context/SubscriptionContext";
+import { FeatureButton, FeatureCard, LimitDisplay, FeatureProgressBar } from "../../components/FeatureControls";
+import { RouteGuard, LimitGuard } from "../../utils/featureControl";
+
 export default function Suppliers() {
   let currentDate = format(new Date(), "yyyy-MM-dd");
   //  const headers = { Authorization: authheader().access_token };
@@ -32,6 +37,11 @@ export default function Suppliers() {
     address: "",
 
   });
+  
+  // Feature Control
+  const { hasFeature, getFeatureValue, checkLimit } = useSubscription();
+  const supplierLimit = getFeatureValue('suppliers.limit');
+  const supplierCount = data.length;
   const columns = [
     { label: "ID", field: "id" },
     { label: "Name", field: "name" },
@@ -111,117 +121,145 @@ export default function Suppliers() {
   return (
     <>
       <Layout>
-        <Header title="Add New Supplier" />
+        <Header title="Supplier Management" />
         <ToastContainer />
-        <div className="row">
-          <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Add Supplier for new Ledger"
-              headerColor="darkblue"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div class="row">
-                <div class="col-md-12">
-                  <form onSubmit={handleSubmit}>
-                    <div class="panel panel-default card-view">
-                      <TextfieldwithLabel
-                        id="name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.name}
-                        type="text"
-                        name="name"
-                        lable="Supplier Name"
-                      />
-                      <TextfieldwithLabel
-                        id="company_name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.company_name}
-                        type="text"
-                        name="company_name"
-                        lable="Comapany Name"
-                      />
-                      <TextfieldwithLabel
-                        id="contact"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.contact}
-                        type="number"
-                        name="contact"
-                        lable="Contact"
-                      />
-                      <TextfieldwithLabel
-                        id="email"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.email}
-                        type="text"
-                        name="email"
-                        lable="Email ID"
-                      />
-                      <TextfieldwithLabel
-                        id="taxid"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.taxid}
-                        type="text"
-                        name="taxid"
-                        lable="Tax ID(if Any)"
-                      />
-                      <TextfieldwithLabel
-                        id="address"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.address}
-                        type="text"
-                        name="address"
-                        lable="Address"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="control-label mb-12"></label>
-                      <SubmitButton
-                        type="submit"
-                        name="Save"
-                        cls="btn btn-darkblue btn-anim"
-                      />
-                    </div>
-                  </form>
+        
+        {/* Feature Control Check */}
+        <RouteGuard route="/master/suppliers">
+          
+          {/* Supplier Limit Information */}
+          <div className="row mb-3">
+            <div className="col-12">
+              <div className="alert alert-info">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>Supplier Limit:</strong>
+                    <LimitDisplay feature="suppliers.limit" currentCount={supplierCount} className="ml-2" />
+                  </div>
+                  <div>
+                    <FeatureProgressBar 
+                      feature="suppliers.limit" 
+                      currentCount={supplierCount} 
+                      className="progress" 
+                      style={{ width: '200px', height: '20px' }} 
+                    />
+                  </div>
                 </div>
               </div>
-            </CardComponent>
+            </div>
           </div>
-          {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-          <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-            {data.length === 0 ? (
-              <p>No data available</p>
-            ) : (
-              //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-              <DataTable columns={columns} data={data} tablename="categories" />
-            )}
+          
+          <div className="row">
+            <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+              <FeatureCard
+                feature="suppliers"
+                title="Add New Supplier"
+                description="Create a new supplier for your business"
+                className="card-view"
+              >
+                <LimitGuard
+                  feature="suppliers.limit"
+                  currentCount={supplierCount}
+                  fallback={
+                    <div className="alert alert-warning">
+                      <h6>Supplier Limit Reached</h6>
+                      <p>You have reached the maximum number of suppliers ({supplierLimit}) for your current plan.</p>
+                      <Link to="/subscription" className="btn btn-primary btn-sm">
+                        Upgrade Plan
+                      </Link>
+                    </div>
+                  }
+                >
+                  <div className="row">
+                    <div className="col-md-12">
+                      <form onSubmit={handleSubmit}>
+                        <div className="panel panel-default card-view">
+                          <TextfieldwithLabel
+                            id="name"
+                            onChange={(e) => handleInputChange(e)}
+                            value={formdata.name}
+                            type="text"
+                            name="name"
+                            lable="Supplier Name"
+                          />
+                          <TextfieldwithLabel
+                            id="company_name"
+                            onChange={(e) => handleInputChange(e)}
+                            value={formdata.company_name}
+                            type="text"
+                            name="company_name"
+                            lable="Company Name"
+                          />
+                          <TextfieldwithLabel
+                            id="contact"
+                            onChange={(e) => handleInputChange(e)}
+                            value={formdata.contact}
+                            type="number"
+                            name="contact"
+                            lable="Contact"
+                          />
+                          <TextfieldwithLabel
+                            id="email"
+                            onChange={(e) => handleInputChange(e)}
+                            value={formdata.email}
+                            type="text"
+                            name="email"
+                            lable="Email ID"
+                          />
+                          <TextfieldwithLabel
+                            id="taxid"
+                            onChange={(e) => handleInputChange(e)}
+                            value={formdata.taxid}
+                            type="text"
+                            name="taxid"
+                            lable="Tax ID (if Any)"
+                          />
+                          <TextfieldwithLabel
+                            id="address"
+                            onChange={(e) => handleInputChange(e)}
+                            value={formdata.address}
+                            type="text"
+                            name="address"
+                            lable="Address"
+                          />
+                        </div>
 
-            {/* <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="lightblue"
-                            pull="right"
-                            bodyClass="panel-body">
-
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
-
-                        </CardComponent> */}
+                        <div className="form-group">
+                          <label className="control-label mb-12"></label>
+                          <FeatureButton
+                            feature="suppliers"
+                            type="submit"
+                            className="btn btn-darkblue btn-anim"
+                            disabled={!checkLimit('suppliers.limit', supplierCount)}
+                          >
+                            Save Supplier
+                          </FeatureButton>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </LimitGuard>
+              </FeatureCard>
+            </div>
+            
+            <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
+              <FeatureCard
+                feature="suppliers"
+                title="Supplier List"
+                description="Manage your existing suppliers"
+                className="card-view"
+              >
+                {data.length === 0 ? (
+                  <div className="alert alert-info">
+                    <p>No suppliers found. Add your first supplier to get started.</p>
+                  </div>
+                ) : (
+                  <DataTable columns={columns} data={data} tablename="suppliers" />
+                )}
+              </FeatureCard>
+            </div>
           </div>
-        </div>
+        </RouteGuard>
       </Layout>
     </>
   );

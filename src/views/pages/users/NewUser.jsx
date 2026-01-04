@@ -31,7 +31,7 @@ export default function NewUser() {
         pass: "",
         contact: "",
         email: "",
-        type: "",
+        usertype: "",
         lastloggedin: currentDate,
     });
     const columns = [
@@ -73,14 +73,20 @@ export default function NewUser() {
             await fetchData('users', setData, 'id', {});
 
             toast.success('User added successfully!');
-            setFormData({});
+            setFormData({
+                name: "",
+                pass: "",
+                contact: "",
+                email: "",
+                usertype: "",
+                lastloggedin: currentDate,
+            });
         } catch (err) {
             toast.error('Error in adding user');
             console.error(err.message);
         }
 
-        // Clear form data and errors
-        setFormData({});
+        // Clear errors
         setErrors({});
     };
 
@@ -161,7 +167,7 @@ export default function NewUser() {
                                                     id="usertype"
                                                     onChange={(e) => handleInputChange(e)}
                                                     name="usertype"
-                                                    value={formdata.type}
+                                                    value={formdata.usertype}
                                                     className='combo-box-select'
                                                     data-style='form-control btn-default btn-outline'
                                                 >

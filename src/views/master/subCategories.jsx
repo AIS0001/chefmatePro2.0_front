@@ -25,8 +25,8 @@ export default function SubCategories() {
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
   const [formdata, setFormData] = useState({
-    name: "",
-   
+    catid: "", // Category ID
+    subcatname: "", // Subcategory name
   });
   const columns = [
     { label: "ID", field: "id" },
@@ -45,30 +45,51 @@ export default function SubCategories() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation
+    if (!formdata.catid) {
+      toast.error("Please select a category first");
+      return;
+    }
+    
+    if (!formdata.subcatname || formdata.subcatname.trim() === "") {
+      toast.error("Please enter a subcategory name");
+      return;
+    }
+
     try {
+      console.log("📤 Submitting subcategory:", {
+        cat_id: formdata.catid,
+        subcat: formdata.subcatname.trim()
+      });
+
       await axios.post(
         "/insertdata/subcategory",
         {
           cat_id: formdata.catid,
-          subcat: formdata.subcatname,
+          subcat: formdata.subcatname.trim(),
         },
         getHeaders()
       );
      
       // Fetch the updated data after successful submission
       await fetchData("subcategory", setData, "id", {});
-        // Fetch updated subcategories or update the table data directly
-        //const updatedData = await fetchData("subcategory", null, "id", {});
-       // setData(updatedData);
 
       toast.success("Sub Category added successfully!");
-      setFormData({name:""});
+      
+      // Only clear the subcategory name, keep the selected category
+      setFormData(prevData => ({
+        ...prevData,
+        subcatname: "" // Only clear the subcategory name
+        // Keep catid so user can add multiple subcategories under same category
+      }));
     } catch (err) {
-      toast.error("Error in adding category");
-      console.error(err.message);
+      toast.error("Error in adding subcategory");
+      console.error("❌ Submission error:", err);
+      if (err.response) {
+        console.error("❌ Error response:", err.response.data);
+      }
     }
-    // Clear form data and errors
-   
+    
     setErrors({});
   };
 
@@ -116,6 +137,15 @@ export default function SubCategories() {
                         displayField="id"
                         displayValue="name"
                         />
+                        {formdata.catid && (
+                          <button 
+                            type="button" 
+                            className="btn btn-sm btn-warning mt-2"
+                            onClick={() => setFormData(prev => ({ ...prev, catid: "", subcatname: "" }))}
+                          >
+                            Clear Category Selection
+                          </button>
+                        )}
                         </div>
                     <div class="col-md-12">
 

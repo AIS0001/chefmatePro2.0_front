@@ -198,7 +198,7 @@ label {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   margin: 20px;
-  width: 300px;
+  /* width: 300px; */
   /* Adjust width as needed */
   transition: box-shadow 0.3s ease;
 }
@@ -664,7 +664,7 @@ button.btn-orange.fc-agendaWeek-button,
 }
 
 .item-list-container {
-  max-height: 400px; /* Set your desired height */
+  max-height: 600px; /* Set your desired height */
   overflow-y: auto; /* Enable vertical scrolling */
   overflow-x: hidden; /* Enable vertical scrolling */
 }

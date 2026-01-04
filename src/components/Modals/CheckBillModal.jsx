@@ -17,28 +17,45 @@ import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
 import LineQRDiscountModal from "./LineQRDiscountModal";
+import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
+import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
+import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
+import "./CheckBillModal.css";
 
 
 const customStyles = {
   content: {
-    top: "50%",
-    left: "50%",
+    position: "relative",
+    top: "auto",
+    left: "auto",
     right: "auto",
     bottom: "auto",
-    marginRight: "-50%",
-    transform: "translate(-50%, -50%)",
+    margin: "0",
+    transform: "none",
     width: "100%",
-    maxWidth: "90%", // Ensures it doesn't take up full width on small screens
-    maxHeight: "90vh", // Makes sure modal content doesn't overflow vertically
-    borderRadius: "10px",
-    overflowY: "auto", // Enables scrolling if content overflows
+    height: "auto",
+    maxWidth: "none",
+    maxHeight: "none",
+    padding: "0",
+    border: "none",
+    borderRadius: "12px",
+    overflow: "visible",
+    background: "transparent",
+    inset: "auto"
   },
   overlay: {
-    zIndex: 1050, // Ensure this is higher than your sidebar's z-index
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: Overlay styling
+    zIndex: 1050,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0
   },
-
-
 };
 
 const getCurrentDate = () => {
@@ -60,18 +77,20 @@ const getCurrentTime = () => {
 
 //console.log(getCurrentDate()); // Output: YYYY-MM-DD
 
-const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
+const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger }) => {
   const [formdata, setFormData] = useState({
-    pmode: "",
+    pmode: "Cash", // Default to "Cash"
     discAmount: 0,
     discountType: "percentage", // Default to "percentage"
     phones: ""
     // other fields
   });
   const [companyInfo, setcompanyInfo] = useState([]);
-  const [TotalTablelist, setTotaltablelist] = useState(0);
+  const [TotalTablelist, setTotaltablelist] = useState([]); // Initialize as empty array instead of 0
   const [TaxesData, setTaxesData] = useState(0);
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
+  const [selectedTables, setSelectedTables] = useState([]); // Multiple table selection for merging
+  const [isMergeMode, setIsMergeMode] = useState(false); // Toggle merge mode
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
@@ -111,6 +130,46 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     setIsBillSaved(false);
   };
 
+  // Function to refresh tables and clear bill summary
+  const refreshTablesAndClearBill = async () => {
+    try {
+      // Refresh table list
+      await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      
+      // Clear bill summary data
+      setFinalData([]);
+      setSelectedTable(null);
+      setSubtotal(0);
+      setDiscAmount(0);
+      settaxAmount(0);
+      setroundoffAmount(0);
+      setgrandAmount(0);
+      settotalAmount(0);
+      setsubtotalAfterDiscount(0);
+      setIsBillSaved(false);
+      setLatestBillId(null);
+      
+      // Clear merge states
+      setSelectedTables([]);
+      setIsMergeMode(false);
+      
+      // Clear form data
+      setFormData({
+        pmode: "Cash",
+        discAmount: 0,
+        discountType: "percentage",
+        phones: "",
+        paidAmount: ""
+      });
+      setChangeMoney("");
+      setphones("");
+      
+      // console.log("Tables refreshed and bill summary cleared");
+    } catch (error) {
+      console.error("Error refreshing tables:", error);
+    }
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,7 +194,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
       Array.from(formdata1.images.files).forEach((file) => {
         formData.append("images", file);
       });
-      console.log(post1.data.id);
+      // console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
 
       const post2 = await axios.post("/addnewproduct/item_images", formData, {
@@ -186,6 +245,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
   const [isBillSaved, setIsBillSaved] = useState(false);
   const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
+  const [currencySign, setCurrencySign] = useState("฿"); // Default to Thai Baht
 
 
 
@@ -197,9 +257,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     const { value } = e.target;
     setFormData((prevData) => ({ ...prevData, pmode: value }));
 
-    console.log("Payment Mode Selected:", value); // ✅ Debugging
+    // console.log("Payment Mode Selected:", value); // ✅ Debugging
     if (value === "Credit") {
-      console.log("Opening Customer Details Modal"); // ✅ Debugging
+      // console.log("Opening Customer Details Modal"); // ✅ Debugging
       setCustomerModalOpen(true);
     }
   };
@@ -220,22 +280,125 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   // Fetch subcategories based on selected category
   const handleTableHistory = async (tableName) => {
     setSelectedTable(tableName);
-    setFormData((prevData) => ({ ...prevData, paidAmount: "" }));
+    setFormData((prevData) => ({ ...prevData, paidAmount: "", pmode: "Cash" }));
     setChangeMoney("");
     setDiscAmount("0");
-    setIsBillSaved(false);
+    setIsBillSaved(false); // Reset bill saved status when selecting a new table
 
     fetchData("order_items", setFinalData, "id", { table_number: tableName, status: "1" });
 
     //  handlediscount({ target: { value: "0" } });
   };
 
+  // Toggle merge mode
+  const toggleMergeMode = () => {
+    setIsMergeMode(!isMergeMode);
+    setSelectedTables([]);
+    setSelectedTable(null);
+    setFinalData([]);
+    setIsBillSaved(false);
+    toast.info(isMergeMode ? "Merge mode disabled" : "Merge mode enabled - Select multiple tables");
+  };
+
+  // Handle table selection in merge mode
+  const handleTableSelection = async (tableName) => {
+    if (isMergeMode) {
+      let newSelectedTables;
+      // In merge mode, allow multiple table selection
+      if (selectedTables.includes(tableName)) {
+        // Remove table if already selected
+        newSelectedTables = selectedTables.filter(table => table !== tableName);
+        setSelectedTables(newSelectedTables);
+        toast.info(`Table ${tableName} removed from selection`);
+      } else {
+        // Add table to selection
+        newSelectedTables = [...selectedTables, tableName];
+        setSelectedTables(newSelectedTables);
+        toast.success(`Table ${tableName} added to selection`);
+      }
+      
+      // Automatically merge and show bill summary when tables are selected
+      if (newSelectedTables.length > 0) {
+        await autoMergeTables(newSelectedTables);
+      } else {
+        // Clear bill data if no tables selected
+        setFinalData([]);
+        setSelectedTable(null);
+      }
+    } else {
+      // Normal single table selection
+      handleTableHistory(tableName);
+    }
+  };
+
+  // Auto-merge function to show bill summary immediately
+  const autoMergeTables = async (tablesToMerge) => {
+    try {
+      // Fetch order items from all selected tables
+      const allOrderItems = [];
+      for (const tableName of tablesToMerge) {
+        const tableOrders = await fetchData("order_items", null, "id", { 
+          table_number: tableName, 
+          status: "1" 
+        });
+        if (tableOrders && tableOrders.length > 0) {
+          allOrderItems.push(...tableOrders);
+        }
+      }
+
+      if (allOrderItems.length === 0) {
+        setFinalData([]);
+        setSelectedTable(null);
+        return;
+      }
+
+      // Combine items with same name by adding quantities and totals
+      const mergedItems = {};
+      allOrderItems.forEach(item => {
+        if (mergedItems[item.item_name]) {
+          // Item already exists, combine quantities and totals
+          mergedItems[item.item_name].quantity += item.quantity;
+          mergedItems[item.item_name].total_price += parseFloat(item.total_price);
+        } else {
+          // New item, add to merged items
+          mergedItems[item.item_name] = {
+            ...item,
+            total_price: parseFloat(item.total_price)
+          };
+        }
+      });
+
+      // Convert back to array
+      const finalMergedData = Object.values(mergedItems);
+      
+      setFinalData(finalMergedData);
+      setSelectedTable(`Merged: ${tablesToMerge.join(', ')}`);
+      setIsBillSaved(false);
+      
+    } catch (error) {
+      console.error("Error auto-merging tables:", error);
+      toast.error("Error occurred while merging tables");
+    }
+  };
+
+  // Merge selected tables and show combined bill
+  const handleMergeTables = async () => {
+    if (selectedTables.length < 2) {
+      toast.error("Please select at least 2 tables to merge");
+      return;
+    }
+
+    // Use the auto-merge function
+    await autoMergeTables(selectedTables);
+    toast.success(`Successfully merged ${selectedTables.length} tables`);
+  };
+
 
   // Runs when discAmount or discountType changes
   useEffect(() => {
-    if (finalData.length === 0) return; // Prevent running when there's no data
+    if (finalData.length === 0 || !TaxesData || TaxesData.length === 0) return; // Prevent running when there's no data
 
-    let discountAmount = discAmount;
+    let discountAmount = parseFloat(discAmount) || 0;
 
     // Calculate subtotal safely
     const subtotalValue = finalData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
@@ -243,59 +406,96 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
     // Adjust discount calculation based on type
     if (formdata.discountType === "percentage") {
-      discountAmount = Math.min((subtotalValue * discAmount) / 100, subtotalValue); // Prevent over-discount
+      discountAmount = Math.min((subtotalValue * discountAmount) / 100, subtotalValue); // Prevent over-discount
     } else {
       discountAmount = Math.min(discountAmount, subtotalValue); // Prevent over-discount for amount
     }
-    //setDiscAmount(discountAmount);
+
     // Calculate subtotal after discount
     const subtotalAfterDiscount = subtotalValue - discountAmount;
     setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));
 
-    // Calculate tax (7%)
-    //calculate tax bases on setting include or exclude
+    // Calculate tax based on settings
     let taxValue = 0;
+    let totalAmountValue = 0;
+    
+    const taxRate = parseFloat(TaxesData[0].taxvalue) || 0;
+    
     if (TaxesData[0].included === "true") {
-      taxValue = (subtotalAfterDiscount * TaxesData[0].taxvalue) / (100 + TaxesData[0].taxvalue);
-      settaxAmount(taxValue.toFixed(2));
-
-      // Calculate total amount after tax
-      //const totalAmountValue = subtotalAfterDiscount + taxValue;
-      settotalAmount(subtotalAfterDiscount.toFixed(2));
-
-      // Round-off amount
-      const roundedTotal = Math.round(subtotalAfterDiscount);
-      const roundoffValue = roundedTotal - subtotalAfterDiscount;
-      setroundoffAmount(roundoffValue.toFixed(2));
-
-      // Set final grand total
-      setgrandAmount(roundedTotal.toFixed(2));
+      // Tax included in price
+      taxValue = (subtotalAfterDiscount * taxRate) / (100 + taxRate);
+      totalAmountValue = subtotalAfterDiscount;
+    } else {
+      // Tax excluded from price
+      taxValue = subtotalAfterDiscount * (taxRate / 100);
+      totalAmountValue = subtotalAfterDiscount + taxValue;
     }
-    else {
-      taxValue = subtotalAfterDiscount * (TaxesData[0].taxvalue / 100);
-      settaxAmount(taxValue.toFixed(2));
+    
+    settaxAmount(taxValue.toFixed(2));
+    settotalAmount(totalAmountValue.toFixed(2));
 
-      // Calculate total amount after tax
-      const totalAmountValue = subtotalAfterDiscount + taxValue;
-      settotalAmount(totalAmountValue.toFixed(2));
+    // Round-off amount
+    const roundedTotal = Math.round(totalAmountValue);
+    const roundoffValue = roundedTotal - totalAmountValue;
+    setroundoffAmount(roundoffValue.toFixed(2));
 
-      // Round-off amount
-      const roundedTotal = Math.round(totalAmountValue);
-      const roundoffValue = roundedTotal - totalAmountValue;
-      setroundoffAmount(roundoffValue.toFixed(2));
+    // Set final grand total
+    setgrandAmount(roundedTotal.toFixed(2));
 
-      // Set final grand total
-      setgrandAmount(roundedTotal.toFixed(2));
-
-    }
-
-
-  }, [discAmount, formdata.discountType, finalData]); // Dependencies prevent infinite looping
+  }, [discAmount, formdata.discountType, finalData, TaxesData]); // Added TaxesData to dependencies
 
 
   const handleBillHistory = async () => {
     navigate(`/reports/billhistory`);
   };
+
+  // ✅ Send bill summary to customer display
+  const sendBillSummaryToCustomerDisplay = () => {
+    if (customerDisplayManager.isDisplayConnected() && finalData.length > 0) {
+      try {
+        // Prepare bill summary data
+        const billSummary = {
+          tableNumber: selectedTable,
+          items: finalData.map(item => ({
+            iname: item.item_name,
+            item_name: item.item_name,
+            quantity: item.quantity,
+            offerprice: item.total_price / item.quantity,
+            price: item.total_price / item.quantity,
+            total_price: item.total_price
+          })),
+          subtotal: subtotal,
+          discount: discAmount,
+          discountType: formdata.discountType,
+          subtotalAfterDiscount: subtotalAfterDiscount,
+          tax: taxAmount,
+          grandTotal: grandAmount,
+          paymentMode: formdata.pmode,
+          status: 'BILL_CONFIRMATION',
+          message: 'Please confirm your order'
+        };
+
+        // Send bill confirmation to customer display
+        customerDisplayManager.sendBillConfirmation(billSummary);
+        
+        // console.log("Bill summary sent to customer display");
+      } catch (error) {
+        console.error("Error sending bill summary to customer display:", error);
+      }
+    }
+  };
+
+  // ✅ Handle modal close and clear customer display
+  const handleModalClose = () => {
+    // Clear bill confirmation from customer display
+    if (customerDisplayManager.isDisplayConnected()) {
+      customerDisplayManager.sendCustomMessage('NORMAL_MODE', 'normal');
+    }
+    
+    // Call the original onClose function
+    onClose();
+  };
+
   const handlePrintClick = async (itemId) => {
     try {
 
@@ -432,8 +632,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                         <tr>
                           <td>${item.item_name}</td>
                           <td>${item.quantity}</td>
-                          <td>฿ ${item.total_price / item.quantity}</td>
-                          <td>฿ ${item.total_price}</td>
+                          <td>${currencySign} ${item.total_price / item.quantity}</td>
+                          <td>${currencySign} ${item.total_price}</td>
                         </tr>
                       `
           )
@@ -441,18 +641,19 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                 </tbody>
               </table>
                <div class="total-row">
-              <span>Subtotal: ฿ ${myfinalbilldata[0].subtotal}</span><br>
-              <span>Discount: ฿ ${myfinalbilldata[0].discount_amount}</span><br>
-              <span>Subtotal After Discount: ฿ ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
+              <span>Subtotal: ${currencySign} ${myfinalbilldata[0].subtotal}</span><br>
+              <span>Discount: ${currencySign} ${myfinalbilldata[0].discount_amount}</span><br>
+              <span>Subtotal After Discount: ${currencySign} ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
 
-              <span>Tax (7%): ฿ ${myfinalbilldata[0].tax}</span><br>
-              <span>Round Off: ฿ ${myfinalbilldata[0].roundoff}</span><br>
-              <span>Total Amount: ฿ ${myfinalbilldata[0].grand_total}</span>
+              <span>Tax (7%): ${currencySign} ${myfinalbilldata[0].tax}</span><br>
+              <span>Round Off: ${currencySign} ${myfinalbilldata[0].roundoff}</span><br>
+              <span>Total Amount: ${currencySign} ${myfinalbilldata[0].grand_total}</span>
             </div>
               
             </div>
             <div class="footer">
               <p>Printed on ${new Date().toLocaleString()}</p>
+              <p>Cashier: ${getUserName() || 'N/A'}</p>
               <p>Powered by ${companyInfo[0].developer}</p>
             </div>
           </body>
@@ -521,104 +722,222 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
   };
 
 
-  const handleSaveBill = async () => {
+  const handleSaveBill = async (overrideMode) => {
     try {
+      const selectedPaymentMode = (overrideMode || formdata.pmode || "").trim();
+
+      // Validate payment mode is selected
+      if (!selectedPaymentMode) {
+        toast.error("Please select a payment mode before saving the bill.");
+        return;
+      }
+
+      // console.log("Current formdata.pmode:", selectedPaymentMode); // ✅ Debug payment mode
+      // console.log("Full formdata:", formdata); // ✅ Debug full form data
+
       // Validate customer details if payment mode is Credit
-      if (formdata.pmode === "Credit" && (!customerDetails.name || !customerDetails.phone || !customerDetails.email)) {
-        alert("Please enter customer details before saving the bill.");
+      if (selectedPaymentMode === "Credit" && (!customerDetails.name || !customerDetails.phone || !customerDetails.email)) {
+        toast.error("Please enter customer details before saving the bill for Credit payment.");
         setCustomerModalOpen(true);
         return;
       }
 
-      // Calculate subtotal, tax, discount, round off, and grand total
-      const subtotal = finalData.reduce((acc, item) => acc + item.total_price, 0);
-      const tax = subtotal * 0.07; // Assuming 7% tax
-      const grandTotal = subtotal + tax;
-
-      // Calculate discount amount based on the type (percentage or amount)
-      let finaldiscount_amount = discAmount;
-      if (formdata.discountType === "percentage") {
-        finaldiscount_amount = (subtotal * discAmount) / 100; // Calculate percentage discount
+      // Validate that we have tax data
+      if (!TaxesData || TaxesData.length === 0) {
+        toast.error("Tax information not loaded. Please try again.");
+        return;
       }
-      let billstatus = 0;
-      if (formdata.pmode === "Credit") {
-        billstatus = 1;
+
+      // Validate that we have items to bill
+      if (!finalData || finalData.length === 0) {
+        toast.error("No items to bill. Please add items first.");
+        return;
+      }
+
+      // Validate that a table is selected
+      if (!selectedTable) {
+        toast.error("Please select a table before saving the bill.");
+        return;
+      }
+
+      // console.log("Starting bill save process for payment mode:", selectedPaymentMode);
+
+      // Calculate subtotal safely (same as useEffect calculation)
+      const calculatedSubtotal = finalData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
+      
+      // Calculate discount amount based on the type (same as useEffect)
+      let finaldiscount_amount = parseFloat(discAmount) || 0;
+      if (formdata.discountType === "percentage") {
+        finaldiscount_amount = Math.min((calculatedSubtotal * finaldiscount_amount) / 100, calculatedSubtotal);
+      } else {
+        finaldiscount_amount = Math.min(finaldiscount_amount, calculatedSubtotal);
+      }
+      
+      // Calculate subtotal after discount
+      const calculatedSubtotalAfterDiscount = calculatedSubtotal - finaldiscount_amount;
+      
+      // Calculate tax based on settings (same as useEffect)
+      let calculatedTaxAmount = 0;
+      let calculatedTotalAmount = 0;
+      
+      if (TaxesData[0].included === "true") {
+        // Tax included calculation
+        calculatedTaxAmount = (calculatedSubtotalAfterDiscount * TaxesData[0].taxvalue) / (100 + TaxesData[0].taxvalue);
+        calculatedTotalAmount = calculatedSubtotalAfterDiscount;
+      } else {
+        // Tax excluded calculation
+        calculatedTaxAmount = calculatedSubtotalAfterDiscount * (TaxesData[0].taxvalue / 100);
+        calculatedTotalAmount = calculatedSubtotalAfterDiscount + calculatedTaxAmount;
+      }
+      
+      // Calculate round off
+      const roundedTotal = Math.round(calculatedTotalAmount);
+      const calculatedRoundoffAmount = roundedTotal - calculatedTotalAmount;
+      
+      // Final grand total
+      const calculatedGrandTotal = roundedTotal;
+      
+      // Determine bill status - 0 for paid, 1 for unpaid/credit
+      let billstatus = 0; // Default to paid
+      if (selectedPaymentMode === "Credit") {
+        billstatus = 1; // Unpaid for credit
       }
 
       //prepare the request body
+      const setupDate = await getNextSetupDate(); // ✅ Get next setup date
+      
       const billData = {
-        customer_id: formdata.pmode === "Credit" ? customerDetails.custid || null : null, // ✅ Fix: Use null if undefined
-        tablenumber: selectedTable || "", // ✅ Fix: Ensure table number is assigned
-        subtotal: subtotal || 0, // ✅ Default to 0 if undefined
-
-        discount_type: formdata.discountType || "amount", // ✅ Ensure default value
-        discount_value: discAmount || 0, // ✅ Default discount
-        discount_amount: finaldiscount_amount || 0, // ✅ Default to 0
-        subtotal_afterdiscount: subtotalAfterDiscount || 0, // ✅ Default to 0
-        tax: taxAmount || 0, // ✅ Default to 0 if undefined
-        round_off: roundoffAmount || 0, // ✅ Default to 0
-        grand_total: grandAmount || 0, // ✅ Default to 0
-        //  grand_total_: totalAmount || 0, // ✅ Default to 0
-        payment_mode: formdata.pmode || "Cash", // ✅ Default to Cash
-        status: billstatus // ✅ Default to 0
+        customer_id: selectedPaymentMode === "Credit" ? customerDetails.custid || null : null,
+        tablenumber: selectedTables.length > 0 ? selectedTables.join(', ') : (selectedTable || ""),
+        subtotal: calculatedSubtotal.toFixed(2),
+        discount_type: formdata.discountType || "amount",
+        discount_value: parseFloat(discAmount) || 0,
+        discount_amount: finaldiscount_amount.toFixed(2),
+        subtotal_afterdiscount: calculatedSubtotalAfterDiscount.toFixed(2),
+        tax: calculatedTaxAmount.toFixed(2),
+        total_amount: calculatedTotalAmount.toFixed(2),
+        round_off: calculatedRoundoffAmount.toFixed(2),
+        grand_total: calculatedGrandTotal.toFixed(2),
+        payment_mode: selectedPaymentMode || "Cash", // ✅ Ensure payment mode is not empty
+        status: billstatus,
+        setup_date: setupDate // ✅ Add setup_date column
       };
 
+      // console.log('Payment mode being sent to API:', billData.payment_mode); // ✅ Debug API data
+      // console.log('Full billData object:', billData); // ✅ Debug full object
 
-      // Log the bill data being sent to the API
-      //console.log('Sending bill data:', billData);
+      // ✅ Additional validation to ensure payment_mode is valid
+      if (!billData.payment_mode || billData.payment_mode.trim() === "") {
+        billData.payment_mode = "Cash"; // Force default to Cash
+        console.warn("Payment mode was empty, defaulting to Cash");
+      }
+
+      // Add detailed logging for payment mode
+      // console.log('Payment mode details:');
+      // console.log('- formdata.pmode:', formdata.pmode);
+      // console.log('- typeof formdata.pmode:', typeof formdata.pmode);
+      // console.log('- billData.payment_mode:', billData.payment_mode);
+      // console.log('- typeof billData.payment_mode:', typeof billData.payment_mode);
+
+      // Validate calculated values match display values
+      const displaySubtotal = parseFloat(subtotal);
+      const displayGrandTotal = parseFloat(grandAmount);
+      
+      if (Math.abs(calculatedSubtotal - displaySubtotal) > 0.01) {
+        console.warn("Subtotal mismatch:", { calculated: calculatedSubtotal, display: displaySubtotal });
+      }
+      
+      if (Math.abs(calculatedGrandTotal - displayGrandTotal) > 0.01) {
+        console.warn("Grand total mismatch:", { calculated: calculatedGrandTotal, display: displayGrandTotal });
+      }
+
+      // console.log('Sending bill data to API:', billData);
+      
+      // Add detailed logging for payment mode
+      // console.log('Payment mode details:');
+      // console.log('- formdata.pmode:', formdata.pmode);
+      // console.log('- typeof formdata.pmode:', typeof formdata.pmode);
+      // console.log('- billData.payment_mode:', billData.payment_mode);
+      // console.log('- typeof billData.payment_mode:', typeof billData.payment_mode);
 
       // Save the final bill and ledger entries simultaneously in one request
       const response = await axios.post(
-        "/savebill",  // Change to the API route that saves both bill & ledger
+        "/savebill",  // API route that saves both bill & ledger
         billData,
-        getHeaders() // Assuming you have a function for headers
+        getHeaders()
       );
 
-      //console.log('API Response:', response.data);  // Log the response from the API
+      // console.log('API Response:', response.data);
 
+      if (!response.data || !response.data.bill_id) {
+        throw new Error("Invalid response from server - no bill ID returned");
+      }
 
       const { bill_id } = response.data; // Get the inserted bill ID
-      // alert(bill_id);
       setLatestBillId(bill_id);
-      // ✅ Call print function directly
-      //handlePrintClick(bill_id);
 
-      // 🔥 **Update the state to hold the new bill_id**
-      // ✅ Use functional update to ensure latest state
+      // console.log('Bill saved successfully with ID:', bill_id);
 
-      // Update the table status
-      await updateData(
-        "tablelist",
-        { status: "0" }, // Mark table as "closed"
-        { name: selectedTable }
-      );
-
-      // Update order items status and attach invoice number
-      await updateData("order_items", {
-        status: "0", // Mark orders as completed
-        invoice_number: bill_id, // Attach the invoice number
-      },
-        {
-          table_number: selectedTable, // Match the table number
-          status: "1", // Only update active orders
+      // Update table status - handle both single table and merged tables
+      if (selectedTables.length > 0) {
+        // Merged tables scenario
+        for (const tableName of selectedTables) {
+          await updateData(
+            "tablelist",
+            { status: "0" }, // Mark table as "closed"
+            { name: tableName }
+          );
+          
+          // Update order items for each table
+          await updateData("order_items", {
+            status: "0", // Mark orders as completed
+            invoice_number: bill_id, // Attach the invoice number
+            setup_date: setupDate // ✅ Add setup_date when updating order_items
+          },
+            {
+              table_number: tableName, // Match the table number
+              status: "1", // Only update active orders
+            }
+          );
         }
-      );
+      } else {
+        // Single table scenario
+        await updateData(
+          "tablelist",
+          { status: "0" }, // Mark table as "closed"
+          { name: selectedTable }
+        );
+
+        // Update order items status and attach invoice number
+        await updateData("order_items", {
+          status: "0", // Mark orders as completed
+          invoice_number: bill_id, // Attach the invoice number
+          setup_date: setupDate // ✅ Add setup_date when updating order_items
+        },
+          {
+            table_number: selectedTable, // Match the table number
+            status: "1", // Only update active orders
+          }
+        );
+      }
 
       // Refresh the table list
       await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
 
-      // ✅ Immediately pass the latest bill ID to the print function
-      //alert(bill_id);
-      //handlePrintClick(bill_id);
-
-
       // Show success toast message
-      toast.success("Bill saved successfully!");
+      toast.success(`Bill saved successfully! Bill ID: ${bill_id}`);
       setIsBillSaved(true);
+      
     } catch (err) {
-      console.error("Error occurred during bill save:", err.message);  // Log the error
-      toast.error("Error saving bill.");
+      console.error("Error occurred during bill save:", err);
+      toast.error(`Error saving bill: ${err.message || 'Unknown error'}`);
     }
+  };
+
+  // Quick-pay helper to set payment mode and save in one click
+  const handleQuickPayment = async (mode) => {
+    setFormData((prev) => ({ ...prev, pmode: mode }));
+    await handleSaveBill(mode);
   };
   // useEffect(() => {
   //   if (latestBillId) {
@@ -628,35 +947,39 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
 
 
-  const handleGenetotal_priceBill = async () => {
-    const printContent = printRef.current.innerHTML;
-    // alert(billId);
-    // await fetchData("final_bill", setFinalBillData, "id", { id: billId });
-    // await fetchData("order_items", setOrderItemsData, "id", { invoice_number: billId });
-    // Check if inv_time exists in finalBillData
+  const handlePrintBill = async () => {
+    try {
+      // Check if bill is already saved
+      if (!isBillSaved) {
+        toast.error("Please save the bill first before printing.");
+        return;
+      }
 
-    const newWindow = window.open("", "_blank");
+      // Now show the print preview
+      const printContent = printRef.current.innerHTML;
 
-    newWindow.document.write(`
-      <html>
-        <head>
-          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              font-family: 'Cambria', monospace; /* Common font for receipts */
-            }
-            body {
-              font-size: 18px; /* Increased font size for better readability */
-              width: 80mm; /* Common thermal printer size */
-            }
-            .bill-header {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              grid-gap: 5px;
-              text-align: center;
-              margin-bottom: 10px;
-            }
+      const newWindow = window.open("", "_blank");
+
+      newWindow.document.write(`
+        <html>
+          <head>
+            <style>
+              html, body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Cambria', monospace; /* Common font for receipts */
+              }
+              body {
+                font-size: 18px; /* Increased font size for better readability */
+                width: 80mm; /* Common thermal printer size */
+              }
+              .bill-header {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-gap: 5px;
+                text-align: center;
+                margin-bottom: 10px;
+              }
             .bill-header h2 {
               grid-column: span 2;
               margin: 0;
@@ -738,12 +1061,26 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
             <div class="company-info">
               <p>${companyInfo[0].address}</p>
               <p>Tax:${companyInfo[0].tax_id}</p>
-            
-           
             </div>
-             
-                
-          
+          </div>
+          <div class="bill-bill-body">
+            <table class="table">
+              <tr>
+                <th class="header">Bill ID: ${latestBillId}</th>
+                <th class="header">${selectedTable}</th>
+              </tr>
+              <tr>
+                <th>Date: ${getCurrentDate()}</th>
+                <th>Time: ${getCurrentTime()}</th>
+              </tr>
+              <tr>
+                <th colspan="2">Payment Mode: ${formdata.pmode || 'Cash'}</th>
+              </tr>
+              <tbody> 
+                <tr></tr>
+                <tr></tr>
+              </tbody>
+            </table>
           </div>
           <div class="bill-body">
             <table class="table">
@@ -762,8 +1099,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
                   <tr>
                     <td>${item.item_name}</td>
                     <td>${item.quantity}</td>
-                    <td>฿ ${Number(item.total_price / item.quantity).toFixed(2)}</td>
-                    <td>฿ ${Number(item.total_price).toFixed(2)}</td>
+                    <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
+                    <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
                  
                   </tr>
                 `
@@ -772,15 +1109,17 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
               </tbody>
             </table>
             <div class="total-row">
-              <span>Subtotal: ฿ ${subtotal}</span><br>
-              <span>Subtotal after Discount: ฿ ${subtotalAfterDiscount}</span><br>
-              <span>Tax (7%): ฿ ${taxAmount}</span><br>
-              <span>Round Off: ฿ ${roundoffAmount}</span><br>
-              <span>Total Amount: ฿ ${grandAmount}</span>
+              <span>Subtotal: ${currencySign} ${subtotal}</span><br>
+              <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span><br>
+              <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount}</span><br>
+              <span>Tax (7%): ${currencySign} ${taxAmount}</span><br>
+              <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
+              <span>Total Amount: ${currencySign} ${grandAmount}</span>
             </div>
           </div>
           <div class="footer">
-            <p>Powered by CloudPOS !! </p>
+            <p>Operated By: ${getUserName() || 'N/A'}</p>
+            <p>Powered by chefmate POS !! </p>
           </div>
         </body>
       </html>
@@ -793,7 +1132,20 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
     newWindow.onload = () => {
       newWindow.print(); // Print the document
       newWindow.close(); // Close the window after printing
+      
+      // Notify customer display that bill is completed
+      customerDisplayManager.sendCustomMessage("Bill printed successfully. Thank you for your visit!");
+      
+      // Clear bill confirmation after a short delay
+      setTimeout(() => {
+        customerDisplayManager.clearCustomerDisplay();
+      }, 3000);
     };
+    
+    } catch (error) {
+      console.error("Error in print and save:", error);
+      toast.error("Error occurred while saving and printing bill.");
+    }
   };
   useEffect(() => {
     if (finalData.length > 0) {
@@ -808,6 +1160,15 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
         await fetchData("companyinfo", setcompanyInfo, "id", {});
         await setpaymentOptions(await fetchComboData("paymentoptions", "name"));
+        
+        // Fetch currency sign from coresetting table
+        const coreSettings = await fetchData("coresetting", null, "id", {});
+        if (coreSettings && coreSettings.length > 0) {
+          const currencyFromSettings = coreSettings.find(setting => setting.setting_name === "currency_sign");
+          if (currencyFromSettings) {
+            setCurrencySign(currencyFromSettings.setting_value);
+          }
+        }
       } catch (error) {
         console.error("Error in useEffect:", error);
       }
@@ -815,6 +1176,27 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
 
     fetchAndSetData();
   }, []);  // ✅ This ensures it runs only once when the component mounts
+
+  // useEffect to handle refresh trigger from parent component (when KOT is sent)
+  useEffect(() => {
+    if (refreshTrigger && isOpen) {
+      // console.log("Refresh trigger received, updating table list...");
+      fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+    }
+  }, [refreshTrigger, isOpen]);
+
+  // useEffect to auto-refresh table list when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // console.log("Modal opened, refreshing table list...");
+      fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      
+      // ✅ Send bill summary to customer display when modal opens
+      setTimeout(() => {
+        sendBillSummaryToCustomerDisplay();
+      }, 500); // Small delay to ensure data is loaded
+    }
+  }, [isOpen, finalData, selectedTable, subtotal, grandAmount]); // Added dependencies
 
 
   // Dependency array ensures it runs only when finalData updates
@@ -855,429 +1237,350 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose }) => {
         style={customStyles}
         ariaHideApp={false}
       >
-        <ToastContainer />
-        <div className="row mt-4">
-          <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Running Tables List"
-              headerColor="darkblue"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div className="panel panel-default card-view">
-                <div className="row justify-content-center">
-                  {TotalTablelist.length > 0 ? (
-                    TotalTablelist.map((tables, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleTableHistory(tables.name, "0")}
-                        className={`col-lg-2 col-md-3 col-sm-4 col-6 mb-4`}
-                        style={{
-                          cursor: "pointer",
-                          transition: "transform 0.3s, box-shadow 0.3s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "scale(1.05)";
-                          e.currentTarget.style.boxShadow =
-                            "0px 4px 8px rgba(17, 218, 33, 0.2)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "scale(1)";
-                          e.currentTarget.style.boxShadow = "none";
-                        }}
+        <div className="bill-modal-container">
+          <ToastContainer />
+          
+          {/* Header */}
+          <div className="bill-modal-header">
+            <h2 className="bill-modal-title">Final Summary - {selectedTable}</h2>
+            <div className="bill-modal-actions">
+              <button onClick={refreshTables} className="refresh-btn">
+                <FaRedo size={16} />
+              </button>
+              <button onClick={handleModalClose} className="close-btn">
+                <FaTimes size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Tables Section */}
+          <div className="tables-section">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+              <h4 style={{ margin: "0", color: "#495057" }}>Running Tables List</h4>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <button
+                  onClick={toggleMergeMode}
+                  className={`btn ${isMergeMode ? 'btn-warning' : 'btn-info'}`}
+                  style={{ fontSize: "12px", padding: "5px 10px" }}
+                >
+                  {isMergeMode ? 'Exit Merge' : 'Merge Tables'}
+                </button>
+                {isMergeMode && selectedTables.length > 0 && (
+                  <span style={{ fontSize: "12px", color: "#28a745", fontWeight: "bold" }}>
+                    {selectedTables.length} table{selectedTables.length > 1 ? 's' : ''} selected
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {isMergeMode && (
+              <div style={{ marginBottom: "10px", padding: "8px", backgroundColor: "#e3f2fd", borderRadius: "4px", fontSize: "12px" }}>
+                <strong>Merge Mode:</strong> Click on tables to select them for merging. Bill summary will update automatically. 
+                {selectedTables.length > 0 && (
+                  <span style={{ color: "#28a745", fontWeight: "bold" }}>
+                    <br />Selected: {selectedTables.join(', ')}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            <div className="tables-grid">
+              {TotalTablelist && Array.isArray(TotalTablelist) && TotalTablelist.length > 0 ? (
+                TotalTablelist.map((tables, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handleTableSelection(tables.name)}
+                    className={`table-card ${tables.status === 0 ? "available" : "occupied"} ${
+                      isMergeMode && selectedTables.includes(tables.name) ? "selected-for-merge" : ""
+                    } ${!isMergeMode && selectedTable === tables.name ? "active-table" : ""}`}
+                  >
+                    <img
+                      src={`../../dist/img/tables/table.png`}
+                      alt={`Table ${index + 1}`}
+                      onError={(e) => {
+                        e.target.src = "../../dist/img/tables/table.png";
+                      }}
+                    />
+                    <h6>{tables.name}</h6>
+                    <span className={`table-status ${tables.status === 0 ? "available" : "occupied"}`}>
+                      {tables.status === 0 ? "Available" : "Occupied"}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="loading-message">Loading tables...</div>
+              )}
+            </div>
+          </div>
+
+        
+        {/* Horizontal rule */}
+        {/* Main Content */}
+          <div className="bill-content">
+            {/* Left Side - Bill Summary */}
+            <div className="bill-summary-section" ref={printRef}>
+              <div className="bill-summary-header">
+                Bill Summary
+              </div>
+              
+              <div className="bill-table-container">
+                <table className="bill-table">
+                  <thead>
+                    <tr>
+                      <th className="text-start">Item</th>
+                      <th>Qty</th>
+                      <th>Unit Price</th>
+                      <th className="text-end">Total Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {finalData && Array.isArray(finalData) && finalData.length > 0 ? (
+                      finalData.map((item, index) => (
+                        <tr key={index}>
+                          <td className="text-start">{item.item_name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{currencySign} {(item.total_price / item.quantity).toFixed(2)}</td>
+                          <td className="text-end">{currencySign} {Number(item.total_price).toFixed(2)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="empty-table-message">
+                          Table is Empty
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {finalData.length > 0 && (
+                <div className="bill-totals">
+                  <div className="total-row">
+                    <span className="label">Subtotal</span>
+                    <span className="value">{currencySign} {subtotal}</span>
+                  </div>
+                  <div className="total-row">
+                    <span className="label">Discount</span>
+                    <span className="value">
+                      {formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}
+                    </span>
+                  </div>
+                  <div className="total-row">
+                    <span className="label">Subtotal After Discount</span>
+                    <span className="value">{currencySign} {subtotalAfterDiscount}</span>
+                  </div>
+                  <div className="total-row">
+                    <span className="label">Tax ({TaxesData[0]?.taxvalue || 0}%)</span>
+                    <span className="value">{currencySign} {taxAmount}</span>
+                  </div>
+                  <div className="total-row">
+                    <span className="label">Total Amount</span>
+                    <span className="value">{currencySign} {totalAmount}</span>
+                  </div>
+                  <div className="total-row">
+                    <span className="label">Round Off Amount</span>
+                    <span className="value">{currencySign} {roundoffAmount}</span>
+                  </div>
+                  <div className="total-row">
+                    <span className="label">Grand Total</span>
+                    <span className="value">{currencySign} {grandAmount}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Side - Payment & Customer Info (Column 2) */}
+            <div className="payment-section">
+              {/* Customer Information Card */}
+              <div className="payment-card">
+                <div className="payment-card-header">
+                  Customer Information
+                </div>
+                <div className="payment-card-body">
+                  <div className="form-group">
+                    <label>Customer Mobile Number</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={phones}
+                      onChange={(e) => setphones(e.target.value)}
+                      placeholder="Enter mobile number"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setCustomerModalOpen(true)}
+                    className="btn btn-info btn-full-width"
+                  >
+                    Add Customer Details
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Details Card */}
+              <div className="payment-card">
+                <div className="payment-card-header">
+                  Change Money
+                </div>
+                <div className="payment-card-body">
+                  {/* <div className="form-group">
+                    <label>Payment Mode</label>
+                    <p className="text-muted" style={{ fontSize: '12px', marginBottom: '4px' }}>
+                      Choose a payment below to finalize the bill.
+                    </p>
+                  </div> */}
+
+                  <div className="form-group">
+                    <label>Amount Received</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={formdata.paidAmount}
+                      onChange={handleChangeMoney}
+                      placeholder="Enter received amount"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Change Money</label>
+                    <input
+                      type="text"
+                      className={`form-control change-money ${changeMoney >= 0 ? 'positive' : 'negative'}`}
+                      value={`${currencySign} ${changeMoney}`}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Third Column - Discounts & Actions */}
+            <div className="payment-section discount-column">
+              {/* Discount Card */}
+              <div className="payment-card">
+                <div className="payment-card-header">
+                  Discount Options
+                </div>
+                <div className="payment-card-body">
+                  <div className="discount-controls">
+                    <div className="discount-input">
+                      <label>Discount Amount</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={discAmount}
+                        onChange={(e) => setDiscAmount(e.target.value)}
+                        placeholder="Enter discount"
+                      />
+                    </div>
+                    <div className="discount-type-select">
+                      <label>Type</label>
+                      <select
+                        className="form-select"
+                        value={formdata.discountType}
+                        onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value }))}
                       >
-                        <div
-                          className={`table-card p-4 text-center border w-100 rounded`}
-                          style={{
-                            backgroundColor:
-                              tables.status === 0 ? "#bf0202" : "#dc3545", // Green for available, red for occupied
-                            color: "white",
+                        <option value="percentage">%</option>
+                        <option value="fixed">{currencySign}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="action-buttons">
+                    <button
+                      onClick={() => {
+                        if (!phones) {
+                          toast.error("Please enter customer phone first.");
+                          return;
+                        }
+                        setLineQRModalOpen(true);
+                      }}
+                      className="btn btn-warning"
+                    >
+                      LINE Discount
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!customerDetails.phone) {
+                          toast.error("Please enter customer phone first.");
+                          return;
+                        }
+                        setLineQRModalOpen(true);
+                      }}
+                      className="btn btn-info"
+                    >
+                      WhatsApp Discount
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="payment-card">
+                <div className="payment-card-body">
+                  <div className="action-buttons">
+                    {!isBillSaved && (
+                      <div className="d-flex gap-2 flex-wrap mb-2">
+                        <button
+                          type="button"
+                          className={`btn ${formdata.pmode === 'Cash' ? 'btn-success' : 'btn-outline-success'}`}
+                          onClick={() => handleQuickPayment('Cash')}
+                          disabled={!finalData || finalData.length === 0}
+                        >
+                          Cash
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn ${formdata.pmode === 'Card' ? 'btn-success' : 'btn-outline-primary'}`}
+                          onClick={() => handleQuickPayment('Card')}
+                          disabled={!finalData || finalData.length === 0}
+                        >
+                          Card
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => handleQuickPayment('QR Scan')}
+                          disabled={!finalData || finalData.length === 0}
+                          style={{ 
+                            backgroundColor: formdata.pmode === 'QR Scan' ? '#20c997' : '#e9ecef',
+                            color: 'black',
+                            border: formdata.pmode === 'QR Scan' ? '2px solid #20c997' : '1px solid #dee2e6',
+                            fontWeight: formdata.pmode === 'QR Scan' ? 'bold' : 'normal'
                           }}
                         >
-                          <img
-                            src={`../../dist/img/tables/table.png`}
-                            alt={`Table ${index + 1}`}
-                            className="img-fluid mb-2"
-                            style={{ width: "50px", height: "50px" }}
-                          />
-                          <h6 className="font-weight-bold">{tables.name}</h6>
-                          <small
-                            style={{
-                              backgroundColor: "rgba(7, 194, 22, 0.3)",
-                              padding: "3px 8px",
-                              borderRadius: "5px",
-                              fontSize: "12px",
-                              color: "white",
-                            }}
-                          >
-                            {tables.status === 0 ? "Available" : "Occupied"}
-                          </small>
-                        </div>
+                          QR Scan
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn ${formdata.pmode === 'Entertainment' ? 'btn-danger' : 'btn-outline-danger'}`}
+                          onClick={() => handleQuickPayment('Entertainment')}
+                          disabled={!finalData || finalData.length === 0}
+                        >
+                          Entertainment
+                        </button>
                       </div>
-                    ))
-                  ) : (
-                    <p>Loading tables...</p>
-                  )}
-                </div>
-              </div>
-            </CardComponent>
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "10px 0", // Optional: adds some padding around the section
-          }}
-        >
-          <div className="row mt-4" style={{ flex: 1 }}>
-            <div className="col-lg-6 col-md-6 col-sm-6 col-xs-12">
-              <h4>Final Summary - {selectedTable}</h4> {/* Left-aligned text */}
-            </div>
-          </div>
-
-          <div
-            className="col-lg-4 col-md-4 col-sm-6 col-xs-12"
-            style={{ textAlign: "right" }}
-          >
-            <button
-              onClick={refreshTables}
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                marginRight: "10px", // Optional: adds space between the buttons
-              }}
-            >
-              <FaRedo size={20} color="green" /> {/* Refresh icon */}
-            </button>
-
-            <button
-              onClick={onClose}
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <FaTimes size={20} color="red" /> {/* Close icon */}
-            </button>
-          </div>
-        </div>
-        <div className="row">
-          <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12">
-            <div ref={printRef}>
-              <form onSubmit={handleSubmit}>
-                <div className="row">
-                  <table className="table table-bordered table-hover text-end">
-                    <thead className="table-dark">
-                      <tr>
-                        <th className="text-start">Item</th>
-                        <th>Qty</th>
-                        <th>Unit Price</th>
-                        <th>Total Price</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {finalData.length > 0 ? (
-                        finalData.map((item, index) => (
-                          <tr key={index}>
-                            <td className="text-start">{item.item_name}</td>
-                            <td>{item.quantity}</td>
-                            <td>
-                              ฿ {(item.total_price / item.quantity).toFixed(2)}
-                            </td>{" "}
-                            {/* Corrected unit price */}
-                            <td>฿ {Number(item.total_price).toFixed(2)}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="4" className="text-center">
-                            Table is Empty
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-
-                    {finalData.length > 0 && (
-                      <tfoot className="table-light">
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Subtotal</strong>
-                          </td>
-                          <td>
-                            ฿{" "}
-                            {subtotal}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Discount</strong>
-                          </td>
-                          <td>
-                            {formdata.discountType === "percentage" ? `${discAmount} %` : `฿ ${discAmount}`}
-                          </td>
-
-                        </tr>
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Subtotal After Discount</strong>
-                          </td>
-                          <td>
-                            ฿{" "}
-                            {subtotalAfterDiscount}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Tax ({TaxesData[0].taxvalue}%)</strong>
-                          </td>
-                          <td>
-                            ฿{" "}
-                            {taxAmount}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Total Amount</strong>
-                          </td>
-                          <td>
-                            ฿{" "}
-                            {totalAmount}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Round Off Amount</strong>
-                          </td>
-                          <td>
-                            ฿{" "}
-                            {roundoffAmount}
-                          </td>{" "}
-                          {/* Corrected Round Off Amount */}
-                        </tr>
-                        <tr>
-                          <td colSpan="3" className="text-end">
-                            <strong>Grand Total</strong>
-                          </td>
-                          <td>
-                            ฿{" "}
-                            {grandAmount}
-                          </td>
-                        </tr>
-                      </tfoot>
                     )}
-                  </table>
-
-
+                    {isBillSaved && (
+                      <button
+                        onClick={handlePrintBill}
+                        className="btn btn-primary"
+                      >
+                        Print Bill
+                      </button>
+                    )}
+                    <button
+                      onClick={handleBillHistory}
+                      className="btn btn-info"
+                    >
+                      Bill History
+                    </button>
+                  </div>
                 </div>
-              </form>
-            </div>
-          </div>
-          <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-            <div className="col-12">
-              <TextfieldwithLabel
-                id="phones"
-                //  value={` ${formdata.phones}`} // Display the change amount with currency formatting
-                onChange={(e) => setphones(e.target.value)} // Only update state
-                value={phones}
-                type="number"
-                name="phones"
-                lable="Customer Mobile Number"
-              />
-            </div>
-            <div className="col-12">
-              <TextfieldwithLabel
-                id="paidAmount"
-                onChange={handleChangeMoney} // Call the function on input change
-                value={formdata.paidAmount}
-                type="text"
-                name="paidAmount"
-                lable="Recieved"
-              />
-            </div>
-            <div className="col-12">
-              <TextfieldwithLabel
-                id="changeMoney"
-                value={`฿ ${changeMoney}`} // Display the change amount with currency formatting
-                type="text"
-                name="changeMoney"
-                lable="Change Money"
-                style={{
-                  color: changeMoney < 0 ? "red" : "green", // Red for insufficient payment, green for extra payment
-                  fontWeight: "bold",
-                }}
-                readOnly // Make it read-only as it's calculated dynamically
-              />
-            </div>
-            <div className="col-12">
-              <div className="form-group">
-                <label
-                  className="control-label mb-10"
-                  style={{ marginLeft: "15px" }}
-                >
-                  Payment Mode
-                </label>
-
-                <select
-                  id="pmode"
-                  name="pmode"
-                  className="form-select custom-select"
-                  style={{
-                    borderRadius: "4px",
-                    border: "2px solid #17a2b8",
-                    height: "45px", // Increased height
-                    width: "95%", // Full width of the parent
-                    marginLeft: "15px", // Ensure no margin that could offset alignment
-                  }} // Stylish combo box
-                  onChange={handleComboChange}
-                  value={formdata.pmode}
-                >
-
-                  {paymentOptions.map((pmt) => (
-                    <option key={pmt.name} value={pmt.name}>
-                      {pmt.name}
-                    </option>
-                  ))}
-                </select>
               </div>
-
-            </div>
-            <div className="col-12">
-              <div className="form-group">
-                <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
-                  Discount Type
-                </label>
-                <select
-                  id="discountType"
-                  name="discountType"
-                  className="form-select custom-select"
-                  style={{
-                    borderRadius: "4px",
-                    border: "2px solid #17a2b8",
-                    height: "45px", // Increased height
-                    width: "95%", // Full width of the parent
-                    marginLeft: "15px", // Ensure no margin that could offset alignment
-                  }}
-                  onChange={handleDiscountTypeChange}
-                  value={formdata.discountType} // Adding discountType to formdata
-                >
-                  <option value="amount" selected>Amount</option>
-                  <option value="percentage">Percentage</option>
-
-                </select>
-              </div>
-            </div>
-            <div className="col-12">
-              <label className="control-label mb-10" style={{ marginLeft: "15px" }}>
-                Discount Value
-              </label>
-              <TextfieldwithLabel
-                id="discAmount"
-                onChange={(e) => setDiscAmount(e.target.value)} // Only update state
-                value={discAmount}
-                type="text"
-                name="discAmount"
-                label="Discount"
-              />
-
-            </div>
-            <div className="d-flex justify-content-between mt-4">
-
-              <button
-
-                onClick={() => handlePrintClick(latestBillId)}
-                className="btn btn-danger mb-2 custom-btn"
-              >
-                Print Bill
-              </button>
-              {/* This button help to save and print bill together on one click */}
-              {!isBillSaved && (
-                <button onClick={handleSaveBill} className="btn btn-primary mb-2 custom-btn">
-                  Save  Bill
-                </button>
-
-              )}
-              <div className="col-12">
-                <button
-                  className="btn btn-warning"
-                  onClick={() => {
-                    if (!customerDetails.phones) {
-                      toast.error("Please enter customer phone first.");
-                      setLineQRModalOpen(true);
-                      return;
-                    }
-                    // Simulate check with backend — or do it in real
-                    alert(phones);
-                    axios.post('/checkline', { phone: phones })
-                      .then(res => {
-                        if (res.data.eligible) {
-                          setLineQRModalOpen(true);
-                        } else {
-                          toast.error("Discount already claimed for this number.");
-                        }
-                      })
-                      .catch(err => {
-                        console.error(err);
-                        toast.error("Error checking discount eligibility.");
-                      });
-                  }}
-                >
-                  Discount via LINE
-                </button>
-                <button
-                  onClick={handleBillHistory}
-                  className="btn btn-success mt-2 custom-btn"
-                >
-                  Bill History
-                </button>
-                <button
-                  className="btn btn-info"
-                  onClick={() => {
-                    if (!customerDetails.phone) {
-                      toast.error("Please enter customer phone first.");
-                      setLineQRModalOpen(true);
-                      return;
-                    }
-                    // Simulate check with backend — or do it in real
-                    axios.post('/checkline', { phone: customerDetails.phone })
-                      .then(res => {
-                        if (res.data.eligible) {
-                          setLineQRModalOpen(true);
-                        } else {
-                          toast.error("Discount already claimed for this number.");
-                        }
-                      })
-                      .catch(err => {
-                        console.error(err);
-                        toast.error("Error checking discount eligibility.");
-                      });
-                  }}
-                >
-                  Discount via Whatsapp
-                </button>
-              </div>
-
-
-              {/* this button used only when user dont want to print bill only make save bill */}
-              {/* <button
-                onClick={handleSaveBill}
-                className="btn btn-darkblue mb-2 custom-btn"
-              >
-                Save Bill
-              </button> */}
-
             </div>
           </div>
         </div>
-        {/* Horizontal rule */}
-
-
-
-
-
       </Modal>
       <LineQRDiscountModal
         isOpen={isLineQRModalOpen}

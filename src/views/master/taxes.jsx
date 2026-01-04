@@ -17,6 +17,7 @@ import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
 import { SubmitButton } from "../../components/Buttons/Textfield";
 import DataTable from "../../components/data-tables/dataTable";
 import SimpleDataTable from "../../components/data-tables/SimpledataTable";
+import EditTaxModal from "../../components/Modals/EditTaxModal";
 import fetchData from "../../functions/fetchData";
 
 export default function Taxes() {
@@ -24,7 +25,8 @@ export default function Taxes() {
   //  const headers = { Authorization: authheader().access_token };
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
-  const [editId, setEditId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedTax, setSelectedTax] = useState(null);
 
   const [formdata, setFormData] = useState({
     taxname: "",
@@ -48,16 +50,25 @@ export default function Taxes() {
     }));
   };
 const handleEditClick = (item) => {
-  alert(item);
-  const newForm = {
-    taxname: item.taxname,
-    taxvalue: item.taxvalue,
-    included: item.included,
-  };
-  setFormData(newForm);
-  setEditId(item.id);
-  console.log("Form data updated:", newForm);
+  console.log("Editing item:", item);
+  setSelectedTax(item);
+  setShowEditModal(true);
 };
+
+const handleCloseEditModal = () => {
+  setShowEditModal(false);
+  setSelectedTax(null);
+};
+
+const handleUpdateSuccess = async () => {
+  // Refresh the data after successful update
+  try {
+    await fetchData("taxes", setData, "id", {});
+  } catch (error) {
+    console.error("Error refreshing data after update:", error);
+  }
+};
+
 useEffect(() => {
   console.log("Formdata changed:", formdata);
 }, [formdata]);
@@ -68,43 +79,39 @@ useEffect(() => {
     e.preventDefault();
 
     try {
-      if (editId) {
-        // Update logic
-        await axios.put(
-          `/updatedata/taxes/${editId}`,
-          {
-            taxname: formdata.taxname,
-            taxvalue: formdata.taxvalue,
-            included: formdata.included,
-          },
-          getHeaders()
-        );
-        toast.success("Tax updated successfully!");
-      } else {
-        // Add logic
-        await axios.post(
-          "/insertdata/taxes",
-          {
-            taxname: formdata.taxname,
-            taxvalue: formdata.taxvalue,
-            included: formdata.included,
-          },
-          getHeaders()
-        );
-        toast.success("Tax added successfully!");
-      }
+      // Only add new tax (no edit functionality in main form)
+      await axios.post(
+        "/insertdata/taxes",
+        {
+          taxname: formdata.taxname,
+          taxvalue: formdata.taxvalue,
+          included: formdata.included,
+        },
+        getHeaders()
+      );
+      toast.success("Tax added successfully!");
 
       await fetchData("taxes", setData, "id", {});
       setFormData({ taxname: "", taxvalue: "", included: false });
-      setEditId(null); // reset to add mode
       setErrors({});
     } catch (err) {
-      toast.error("Error submitting form");
+      toast.error("Error adding tax");
       console.error(err.message);
     }
   };
 
 
+
+  const handleDeleteSuccess = async () => {
+    // Refresh the data after successful deletion
+    try {
+      await fetchData("taxes", setData, "id", {});
+      toast.success("Tax deleted successfully!");
+    } catch (error) {
+      console.error("Error refreshing data after deletion:", error);
+      toast.error("Error refreshing data");
+    }
+  };
 
   useEffect(() => {
     const fetchAndSetData = async () => {
@@ -126,7 +133,7 @@ useEffect(() => {
         <div className="row">
           <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
             <CardComponent
-              title="Add Table Name"
+              title="Add New Tax"
               headerColor="darkorange"
               pull="left"
               bodyClass="panel-body"
@@ -169,11 +176,9 @@ useEffect(() => {
                       <label className="control-label mb-12"></label>
                       <SubmitButton
                         type="submit"
-                        name={editId ? "Update" : "Save"}
+                        name="Save"
                         cls="btn btn-darkblue btn-anim"
                       />
-
-
                     </div>
                   </form>
                 </div>
@@ -193,12 +198,21 @@ useEffect(() => {
                 data={data}
                 tablename="taxes"
                 onEditClick={handleEditClick}
+                onDeleteSuccess={handleDeleteSuccess}
               />
             )}
 
 
           </div>
         </div>
+
+        {/* Edit Tax Modal */}
+        <EditTaxModal
+          isOpen={showEditModal}
+          onClose={handleCloseEditModal}
+          taxData={selectedTax}
+          onUpdateSuccess={handleUpdateSuccess}
+        />
       </Layout>
     </>
   );

@@ -13,8 +13,11 @@ const fetchDataFromTwoTables = async (tblname1, tblname2, col1, col2, setData, o
         url += `?where=${whereParams}`;
     }
     
+   // console.log("fetchDataFromTwoTables URL:", url);
+    
     const response = await axios.get(url, getHeaders());
-   // console.log(url);
+    //console.log("fetchDataFromTwoTables response:", response.data);
+    
     // If a setData function is provided, update the state with the fetched data
     if (setData && typeof setData === 'function') {
         setData(response.data.data);

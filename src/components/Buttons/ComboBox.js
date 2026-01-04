@@ -27,7 +27,7 @@ const ComboBox = ({ id, name, lable, onChange, tablename, groupby, value, displa
     // Fetch data based on selected value
     try {
       const data = await fetchComboData(tablename, groupby);
-      console.log('Fetched data based on selection:', data);
+    //  console.log('Fetched data based on selection:', data);
     } catch (error) {
       setError('An error occurred while fetching data.');
     }

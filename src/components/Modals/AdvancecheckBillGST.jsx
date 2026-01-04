@@ -17,6 +17,7 @@ import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
 import LineQRDiscountModal from "./LineQRDiscountModal";
+import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
 
 
 const customStyles = {
@@ -512,6 +513,7 @@ const [paidAmount, setPaidAmount] = useState(0);
              
               <p>Note: ${myfinalbilldata[0].special_note}</p>
               <p>Printed on ${new Date().toLocaleString()}</p>
+              <p>Cashier: ${getUserName() || 'N/A'}</p>
               <p>Powered by Cloudnet Softwares </p>
             </div>
           </body>
@@ -814,6 +816,7 @@ const [paidAmount, setPaidAmount] = useState(0);
             </div>
           </div>
           <div class="footer">
+            <p>Cashier: ${getUserName() || 'N/A'}</p>
             <p>Powered by CloudPOS !! </p>
           </div>
         </body>

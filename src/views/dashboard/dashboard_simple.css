@@ -1,0 +1,42 @@
+/* Simple Dashboard Styles */
+
+.card {
+  border-radius: 10px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.table-responsive {
+  border-radius: 8px;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  border: none;
+  font-weight: 600;
+}
+
+.table-striped tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0 15px;
+  }
+  
+  .card-body h3 {
+    font-size: 1.5rem;
+  }
+}

@@ -1,549 +1,275 @@
 /* eslint-disable no-undef */
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { format } from "date-fns";
-
-import Layout from "../../layout/Layout";
-import Header from "../../components/Header";
 import CardComponent from "../../components/cards/CardComponent";
-import { getHeaders } from "../../utility/getHeader";
-
-import {
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Legend,
-  CartesianGrid,
-  AreaChart,
-  Area,
-  ComposedChart,
-  RadialBarChart,
-  RadialBar
-} from "recharts";
-
-// Custom color palette
-const COLORS = {
-  primary: "#4e73df",
-  secondary: "#858796",
-  success: "#1cc88a",
-  info: "#36b9cc",
-  warning: "#f6c23e",
-  danger: "#e74a3b",
-  light: "#f8f9fc",
-  dark: "#5a5c69",
-  purple: "#6f42c1",
-  pink: "#e83e8c",
-  teal: "#20c9a6"
-};
-
-const CHART_COLORS = [
-  "#4e73df", "#1cc88a", "#36b9cc", "#f6c23e",
-  "#e74a3b", "#6f42c1", "#e83e8c", "#20c9a6"
-];
+import { FaCashRegister, FaChartBar, FaSignOutAlt, FaStore } from "react-icons/fa";
 
 export default function CashierDashboard() {
-  const [salesData, setSalesData] = useState([]);
-  const [purchaseData, setPurchaseData] = useState([]);
-  const [summary, setSummary] = useState({
-    totalSales: 0,
-    totalPurchase: 0,
-    todaySales: 0,
-    todayPurchases: 0,
-    transactionsCount: 0,
-    topProduct: '',
-    profitMargin: 0,
-    customerStats: {
-      repeat: 0,
-      new: 0
-    },
-    topCustomers: [],
-    lowStockItems: []
-  });
-  const [todaySummary, setTodaySummary] = useState({
-    todaySales: 0,
-    yesterdaySales: 0,
-    todayPurchases: 0,
-    yesterdayPurchases: 0
-  });
-  const [toptenProducts, setTopProducts] = useState([]);
-  const [lowStockAlerts, setLowStockAlerts] = useState([]);
-  const [dateRange, setDateRange] = useState('week');
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true);
-        const [salesRes, purchaseRes, summaryRes, todaysummaryRes, lowStock,getTopproducts] = await Promise.all([
-          axios.get(`/report/sale?range=${dateRange}`, getHeaders()),
-          axios.get(`/report/purchase?range=${dateRange}`, getHeaders()),
-          axios.get("/report/summary", getHeaders()),
-          axios.get("/report/todaysummary", getHeaders()),
-          axios.get("/report/getlowstockalert", getHeaders()),
-          axios.get("/report/gettopproducts", getHeaders()),
-        ]);
+  const handleLogout = () => {
+    // Clear auth tokens
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('uname');
+    sessionStorage.removeItem('uname');
+    
+    toast.success("Logged out successfully!");
+    
+    // Navigate to login page
+    setTimeout(() => {
+      navigate('/login');
+    }, 1000);
+  };
 
-        setSalesData(salesRes.data);
-        setPurchaseData(purchaseRes.data);
+  const navigateToPage = (path) => {
+    navigate(path);
+  };
 
-        setSummary(prev => ({
-          ...prev,
-           totalSales: summaryRes.data.totalSales,
-          totalPurchase: summaryRes.data.totalPurchase,
-          topProduct: summaryRes.data.topProduct,
-          profitMargin: summaryRes.data.totalSales > 0
-            ? ((summaryRes.data.totalSales - summaryRes.data.totalPurchase) / summaryRes.data.totalSales * 100).toFixed(2)
-            : 0,
-          lowStockItems: lowStock.data.map(item => ({
-            ...item,
-            stock: item.closing_stock
-          })),
-          topProductList: getTopproducts.data.map(item => ({
-            ...item,
-            stock: item.closing_stock
-          })),
-        }));
+  // Responsive styles
+  const containerStyle = {
+    width: '100vw', 
+    height: '100vh', 
+    backgroundColor: '#f8f9fa',
+    position: 'relative',
+    overflow: 'auto',
+    display: 'flex',
+    flexDirection: 'column'
+  };
 
-        setTodaySummary(todaysummaryRes.data);
+  const headerStyle = {
+    backgroundColor: '#bd510aff',
+    color: 'white',
+    padding: '20px',
+    textAlign: 'center',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+  };
 
-        // Set low stock alerts data here
-        setLowStockAlerts(lowStock.data);
-        setTopProducts(getTopproducts.data);
+  const mainContentStyle = {
+    flex: 1,
+    padding: '40px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
 
-      } catch (error) {
-        toast.error("Failed to load dashboard data");
-        console.error("Error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const cardContentStyle = {
+    padding: '30px 20px'
+  };
 
-    fetchDashboardData();
-  }, [dateRange]);
+  const buttonStyle = {
+    width: '100%',
+    padding: '12px 24px',
+    fontSize: '16px',
+    fontWeight: '600',
+    borderRadius: '8px',
+    border: 'none',
+    transition: 'all 0.3s ease'
+  };
 
+  const footerStyle = {
+    backgroundColor: '#6c757d',
+    color: 'white',
+    padding: '15px 20px',
+    textAlign: 'center',
+    fontSize: '14px'
+  };
 
-  const combinedData = salesData.map((sale, index) => ({
-    date: sale.date,
-    salesAmount: sale.amount,
-    purchaseAmount: purchaseData[index]?.amount || 0,
-    transactions: Math.floor(sale.amount / 100)
-  }));
-
-  // Radial chart data for customer stats
-  const customerRadialData = [
-    {
-      name: 'Repeat',
-      value: summary.customerStats?.repeat || 0,
-      fill: COLORS.success
-    },
-    {
-      name: 'New',
-      value: summary.customerStats?.new || 0,
-      fill: COLORS.info
-    }
-  ];
+  // Responsive adjustments
+  const isMobile = window.innerWidth <= 768;
+  
+  if (isMobile) {
+    mainContentStyle.padding = '20px 15px';
+    cardContentStyle.padding = '20px 15px';
+    buttonStyle.fontSize = '14px';
+    buttonStyle.padding = '10px 20px';
+  }
 
   return (
-    <Layout>
-      <Header title="POS Dashboard" />
-      <ToastContainer />
-
-      {/* Date Range Filter */}
-
-
-      {/* Key Metrics Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3 col-6 mb-3">
-          <CardComponent
-            title="Today's Sales"
-            headerColor='primary'
-            small
-            gradient
-          >
-            <div className="h4 text-white">฿{todaySummary.todaySales}</div>
-            {summary.todaySales > 0 && (
-              <small className="text-white opacity-75">
-                ↑ {((todaySummary.todaySales - todaySummary.yesterdaySales) / todaySummary.yesterdaySales * 100).toFixed(1)}% from yesterday
-              </small>
-            )}
-          </CardComponent>
-        </div>
-
-        {/* <div className="col-md-2 col-6 mb-3">
-          <CardComponent
-            title="Today's Purchases"
-            headerColor='warning'
-            small
-            gradient
-          >
-            <div className="h4 text-white">฿{todaySummary.todayPurchases}</div>
-          </CardComponent>
-        </div> */}
-
-        <div className="col-md-3 col-6 mb-3">
-          <CardComponent
-            title="Net Profit"
-            headerColor='success'
-            small
-            gradient
-          >
-            <div className="h4 text-white">฿{(todaySummary.todaySales - todaySummary.todayPurchases).toFixed(2)}</div>
-            <small className="text-white opacity-75">Margin: {todaySummary.profitMargin}%</small>
-          </CardComponent>
-        </div>
-
-        <div className="col-md-3 col-6 mb-3">
-          <CardComponent
-            title="Transactions"
-            headerColor='info'
-            small
-            gradient
-          >
-            <div className="h4 text-white">{todaySummary.todayTransactionCount}</div>
-          </CardComponent>
-        </div>
-
-        {/* <div className="col-md-2 col-6 mb-3">
-          <CardComponent
-            title="Top Product"
-            headerColor='danger'
-            small
-            gradient
-          >
-            <div className="h6 text-white text-truncate">{summary.topProduct || "N/A"}</div>
-          </CardComponent>
-        </div> */}
-
-        <div className="col-md-3 col-6 mb-3">
-          <CardComponent
-            title="Stock Alerts"
-            headerColor='info'
-            small
-            gradient
-          >
-            <div className="h4 text-white">{summary.lowStockItems?.length || 0}</div>
-            <small className="text-white opacity-75">Items low in stock</small>
-          </CardComponent>
-        </div>
-      </div>
-
-      {/* Main Charts Row */}
-      <div className="row">
-        <div className="col-lg-6 mb-4">
-          <CardComponent
-            title="Sales Overview"
-            headerColor={COLORS.primary}
-            customHeader={
-              <div className="d-flex justify-content-between align-items-center">
-                <h6 className="m-0 font-weight-bold">Sales Overview</h6>
-                <i className="fas fa-chart-line fa-2x text-gray-300"></i>
-              </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: COLORS.dark }}
-                />
-                <YAxis tick={{ fill: COLORS.dark }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="amount"
-                  stroke={COLORS.primary}
-                  strokeWidth={2}
-                  dot={{ fill: COLORS.primary, r: 4 }}
-                  activeDot={{ r: 6, fill: COLORS.primary }}
-                  name="Sales (฿)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardComponent>
-        </div>
-
-        <div className="col-lg-6 mb-4">
-          <CardComponent
-            title="Purchase Overview"
-            headerColor={COLORS.warning}
-            customHeader={
-              <div className="d-flex justify-content-between align-items-center">
-                <h6 className="m-0 font-weight-bold">Purchase Overview</h6>
-                <i className="fas fa-shopping-cart fa-2x text-gray-300"></i>
-              </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={purchaseData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: COLORS.dark }}
-                />
-                <YAxis tick={{ fill: COLORS.dark }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="amount"
-                  fill={COLORS.warning}
-                  radius={[4, 4, 0, 0]}
-                  name="Purchases (฿)"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardComponent>
-        </div>
-      </div>
-
-      {/* Second Row */}
-      <div className="row mb-4">
-        <div className="col-lg-4 mb-4">
-          <CardComponent
-            title="Sales vs Purchase"
-            headerColor={COLORS.success}
-            customHeader={
-              <div className="d-flex justify-content-between align-items-center">
-                <h6 className="m-0 font-weight-bold">Sales vs Purchase</h6>
-                <i className="fas fa-percentage fa-2x text-gray-300"></i>
-              </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={300}>
-              {summary.totalSales > 0 || summary.totalPurchase > 0 ? (
-                <PieChart width={300} height={300}>
-                  <Pie
-                    dataKey="value"
-                    data={[
-                      { name: "Sales", value: summary.totalSales },
-                      { name: "Purchase", value: summary.totalPurchase },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    <Cell fill={COLORS.primary} />
-                    <Cell fill={COLORS.warning} />
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => `$${value}`}
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              ) : (
-                <div>No sales or purchase data</div>
-              )}
-
-            </ResponsiveContainer>
-          </CardComponent>
-        </div>
-
+    <>
+      {/* ✅ Full Screen Cashier Dashboard Container */}
+      <div style={containerStyle}>
         
-
-        <div className="col-lg-4 mb-4">
-          <CardComponent
-            title="Transactions & Profit"
-            headerColor={COLORS.teal}
-            customHeader={
-              <div className="d-flex justify-content-between align-items-center">
-                <h6 className="m-0 font-weight-bold">Transactions & Profit</h6>
-                <i className="fas fa-exchange-alt fa-2x text-gray-300"></i>
-              </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={combinedData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: COLORS.dark }}
-                />
-                <YAxis
-                  yAxisId="left"
-                  orientation="left"
-                  tick={{ fill: COLORS.dark }}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fill: COLORS.dark }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar
-                  yAxisId="left"
-                  dataKey="transactions"
-                  fill={COLORS.purple}
-                  name="Transactions"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="salesAmount"
-                  stroke={COLORS.teal}
-                  strokeWidth={2}
-                  dot={{ fill: COLORS.teal, r: 4 }}
-                  activeDot={{ r: 6, fill: COLORS.teal }}
-                  name="Sales ($)"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardComponent>
-        </div>
-      </div>
-
-      {/* Third Row */}
-      <div className="row mb-4">
-        <div className="col-lg-6 mb-4">
-          <CardComponent
-            title="Monthly Comparison"
-            headerColor={COLORS.info}
-            customHeader={
-              <div className="d-flex justify-content-between align-items-center">
-                <h6 className="m-0 font-weight-bold">Monthly Comparison</h6>
-                <i className="fas fa-balance-scale fa-2x text-gray-300"></i>
-              </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={combinedData}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorPurchases" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.warning} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={COLORS.warning} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: COLORS.dark }}
-                />
-                <YAxis tick={{ fill: COLORS.dark }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="salesAmount"
-                  stroke={COLORS.primary}
-                  fillOpacity={1}
-                  fill="url(#colorSales)"
-                  name="Sales ($)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="purchaseAmount"
-                  stroke={COLORS.warning}
-                  fillOpacity={1}
-                  fill="url(#colorPurchases)"
-                  name="Purchases ($)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardComponent>
+        {/* ✅ Dashboard Header */}
+        <div style={headerStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <FaStore size={isMobile ? 20 : 24} />
+            <h2 style={{ margin: 0, fontWeight: 'bold', fontSize: isMobile ? '1.5rem' : '2rem' }}>ChefMate Cashier Dashboard</h2>
+          </div>
+          <p style={{ margin: '5px 0 0 0', opacity: 0.8, fontSize: isMobile ? '14px' : '16px' }}>Welcome back! Select an option below to continue</p>
         </div>
 
-        <div className="col-lg-4 mb-4">
-          <CardComponent
-            title="Summary & Alerts"
-            headerColor={COLORS.danger}
-            customHeader={
-              <div className="d-flex justify-content-between align-items-center">
-                <h6 className="m-0 font-weight-bold">Summary & Alerts</h6>
-                <i className="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-              </div>
-            }
-          >
-            <div className="row">
- 
-
-  <div className="col-lg-8 col-md-6 col-sm-12 mb-3">
-    <div className="card border-0 shadow-sm h-100">
-      <div className="card-header bg-white py-2">
-        <h6 className="m-0 font-weight-bold text-gray-800">Low Stock Alerts</h6>
-      </div>
-      <div className="card-body p-0">
-        {lowStockAlerts.length > 0 ? (
-          <ul className="list-group list-group-flush">
-            {lowStockAlerts.map((item, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center py-2"
-              >
-                <span>{item.iname}</span>
-                <span
-                  className="badge badge-pill"
-                  style={{
-                    backgroundColor:
-                      item.closing_stock < 5 ? COLORS.danger : COLORS.warning,
-                    color: 'white'
-                  }}
+        <ToastContainer />
+        
+        {/* ✅ Main Content Area */}
+        <div style={mainContentStyle}>
+          
+          {/* ✅ Navigation Cards Container */}
+          <div className="container">
+            <div className="row justify-content-center">
+              
+              {/* POS Page Card */}
+              <div className="col-lg-4 col-md-6 col-sm-12 mb-4">
+                <CardComponent
+                  title="Point of Sale (POS)"
+                  headerColor="primary"
+                  pull="center"
+                  bodyClass="text-center"
+                  style={{ height: '100%' }}
                 >
-                  {item.closing_stock} left
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="alert alert-success m-2">All items are well stocked</div>
-        )}
-      </div>
-    </div>
-  </div>
-  
-</div>
+                  <div style={cardContentStyle}>
+                    <FaCashRegister 
+                      size={isMobile ? 50 : 60} 
+                      style={{ 
+                        color: '#007bff', 
+                        marginBottom: '20px',
+                        display: 'block',
+                        margin: '0 auto 20px auto'
+                      }} 
+                    />
+                    <h5 style={{ fontWeight: 'bold', marginBottom: '15px', color: '#333', fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+                      POS System
+                    </h5>
+                    <p style={{ color: '#666', marginBottom: '25px', fontSize: isMobile ? '13px' : '14px' }}>
+                      Process sales, manage orders, and handle customer transactions
+                    </p>
+                    <button 
+                      className="btn btn-primary btn-lg"
+                      onClick={() => navigateToPage('/sale/pos')}
+                      style={{ 
+                        ...buttonStyle,
+                        background: 'linear-gradient(45deg, #007bff, #0056b3)',
+                        boxShadow: '0 4px 12px rgba(0,123,255,0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,123,255,0.4)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,123,255,0.3)";
+                      }}
+                    >
+                      Open POS
+                    </button>
+                  </div>
+                </CardComponent>
+              </div>
 
-          </CardComponent>
+              {/* Sale Reports Card */}
+              <div className="col-lg-4 col-md-6 col-sm-12 mb-4">
+                <CardComponent
+                  title="Sales Reports"
+                  headerColor="success"
+                  pull="center"
+                  bodyClass="text-center"
+                  style={{ height: '100%' }}
+                >
+                  <div style={cardContentStyle}>
+                    <FaChartBar 
+                      size={isMobile ? 50 : 60} 
+                      style={{ 
+                        color: '#28a745', 
+                        marginBottom: '20px',
+                        display: 'block',
+                        margin: '0 auto 20px auto'
+                      }} 
+                    />
+                    <h5 style={{ fontWeight: 'bold', marginBottom: '15px', color: '#333', fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+                      Sales Reports
+                    </h5>
+                    <p style={{ color: '#666', marginBottom: '25px', fontSize: isMobile ? '13px' : '14px' }}>
+                      View sales analytics, daily reports, and transaction history
+                    </p>
+                    <button 
+                      className="btn btn-success btn-lg"
+                      onClick={() => navigateToPage('/reports/billhistory')}
+                      style={{ 
+                        ...buttonStyle,
+                        background: 'linear-gradient(45deg, #28a745, #1e7e34)',
+                        boxShadow: '0 4px 12px rgba(40,167,69,0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 6px 16px rgba(40,167,69,0.4)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(40,167,69,0.3)";
+                      }}
+                    >
+                      View Reports
+                    </button>
+                  </div>
+                </CardComponent>
+              </div>
+
+              {/* Logout Card */}
+              <div className="col-lg-4 col-md-6 col-sm-12 mb-4">
+                <CardComponent
+                  title="Account"
+                  headerColor="danger"
+                  pull="center"
+                  bodyClass="text-center"
+                  style={{ height: '100%' }}
+                >
+                  <div style={cardContentStyle}>
+                    <FaSignOutAlt 
+                      size={isMobile ? 50 : 60} 
+                      style={{ 
+                        color: '#dc3545', 
+                        marginBottom: '20px',
+                        display: 'block',
+                        margin: '0 auto 20px auto'
+                      }} 
+                    />
+                    <h5 style={{ fontWeight: 'bold', marginBottom: '15px', color: '#333', fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+                      Logout
+                    </h5>
+                    <p style={{ color: '#666', marginBottom: '25px', fontSize: isMobile ? '13px' : '14px' }}>
+                      End your session and return to the login screen
+                    </p>
+                    <button 
+                      className="btn btn-danger btn-lg"
+                      onClick={handleLogout}
+                      style={{ 
+                        ...buttonStyle,
+                        background: 'linear-gradient(45deg, #dc3545, #c82333)',
+                        boxShadow: '0 4px 12px rgba(220,53,69,0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 6px 16px rgba(220,53,69,0.4)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(220,53,69,0.3)";
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </CardComponent>
+              </div>
+
+            </div>
+          </div>
+          
+        </div> {/* ✅ Close main content area */}
+        
+        {/* ✅ Footer */}
+        <div style={footerStyle}>
+          <p style={{ margin: 0 }}>
+            © 2025 ChefMate POS System | Cashier Station | 
+            <span style={{ marginLeft: '10px', opacity: 0.8 }}>
+              {new Date().toLocaleDateString()}
+            </span>
+          </p>
         </div>
-      </div>
-    </Layout>
+        
+      </div> {/* ✅ Close full screen container */}
+    </>
   );
 }
