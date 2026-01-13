@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import React, { useState } from 'react'
+import useAutoLogout from './hooks/useAutoLogout'
 // 🚨 SUBSCRIPTION SYSTEM DISABLED 🚨
 // import { SubscriptionProvider, FeatureProtectedRoute } from './lib/subscription-system'
 import Dashboard from "./views/dashboard/dashboard";
@@ -39,6 +40,7 @@ import NewSale from './views/pos/sale';
 import vatSale from './views/pos/vatsale';
 import Quotation from './views/pos/quotation';
 import QuotationHistory from './views/pos/quotationHistory';
+import Kiosk from './views/pos/Kiosk';
 //expenses
 import SupplierLedgerEntry from './views/expenses/supplierLedgerEntry';
 
@@ -77,6 +79,7 @@ import Layout from './layout/Layout';
 import CompanyInfo from './views/settings/companyInfo';
 import CoreSetting from './views/settings/coreSetting';
 import MenuPermissions from './views/settings/menuPermissions';
+import PrintSetting from './views/settings/printSetting';
 import Taxes from './views/master/taxes';
 import Units from './views/master/units';
 
@@ -89,12 +92,13 @@ import { Views } from 'react-big-calendar';
 // Dummy FeatureProtectedRoute that always returns children
 const FeatureProtectedRoute = ({ children }) => children;
 
-function App() {
+// Wrapper component to use useAutoLogout inside Router context
+function AppRoutes() {
+  // Auto-logout when token expires or user is inactive
+  useAutoLogout();
+  
   return (
-    // 🚨 SUBSCRIPTION PROVIDER DISABLED 🚨
-    // <SubscriptionProvider>
-      <Router>
-        <Routes>
+    <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
@@ -108,6 +112,7 @@ function App() {
           <Route path="/public" element={<PublicAccess />} />
           <Route path="/boarding-pass" element={<BoardingPass />} />
           <Route path="/vending-machine" element={<VendingMachine />} />
+          <Route path="/kiosk" element={<Kiosk />} />
 
           {/* Protected Routes with Feature Control */}
           <Route path="/master/newsupplier" element={
@@ -347,7 +352,21 @@ function App() {
               <MenuPermissions />
             </FeatureProtectedRoute>
           } />
+          <Route path="/setting/printsetting" element={
+            <FeatureProtectedRoute route="/setting/printsetting">
+              <PrintSetting />
+            </FeatureProtectedRoute>
+          } />
         </Routes>
+  );
+}
+
+function App() {
+  return (
+    // 🚨 SUBSCRIPTION PROVIDER DISABLED 🚨
+    // <SubscriptionProvider>
+      <Router>
+        <AppRoutes />
       </Router>
     // </SubscriptionProvider>
   );

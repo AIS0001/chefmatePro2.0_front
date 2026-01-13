@@ -1,0 +1,44 @@
+{
+  "name": "thermal-printer-agent",
+  "version": "1.0.0",
+  "description": "Local Node.js Agent Server for thermal printer control via ESC/POS commands",
+  "main": "server.js",
+  "bin": {
+    "thermal-printer-agent": "server.js",
+    "install-service": "install-windows-service.js",
+    "uninstall-service": "uninstall-windows-service.js"
+  },
+  "pkg": {
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test-print.js",
+    "install-windows-service": "node install-windows-service.js",
+    "uninstall-windows-service": "node uninstall-windows-service.js"
+  },
+  "keywords": [
+    "thermal-printer",
+    "escpos",
+    "printer-agent",
+    "pos"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-network": "^3.0.0-alpha.1",
+    "escpos-usb": "^3.0.0-alpha.4",
+    "express": "^4.18.2",
+    "node-windows": "^1.0.0-beta.8"
+  },
+  "optionalDependencies": {
+    "pdf-to-printer": "^5.6.0"
+  }
+}

@@ -127,6 +127,7 @@ const fullMenu = [
       { name: 'Taxes', path: '/setting/taxes' },
       { name: 'Units', path: '/setting/units' },
       { name: 'Menu Permissions', path: '/setting/menupermissions' },
+      { name: 'Print Setting', path: '/setting/printsetting' },
 
     ]
   },

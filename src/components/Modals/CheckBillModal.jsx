@@ -8,6 +8,8 @@ import { fetchComboData, fetchComboDataWithWhere } from "../../services/api";
 import { getHeaders } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import { SubmitButton } from "../Buttons/Textfield";
+import { Modal as AntModal, Table, Row, Col, Card, Button, Input, Select, Space, Statistic, Badge, Spin, Divider, Tag } from "antd";
+import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CardComponent from "../../components/cards/CardComponent";
@@ -17,9 +19,12 @@ import updateData from "../../functions/updateData";
 import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
 import LineQRDiscountModal from "./LineQRDiscountModal";
+import QRPaymentModal from "../QRPaymentModal";
 import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
+import { printInvoice, printKioskInvoice } from "../../services/thermalPrinter";
+import { generateQRForCheckBill } from "../../services/qrPaymentService";
 import "./CheckBillModal.css";
 
 
@@ -94,6 +99,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
+  const [isQRPaymentModalOpen, setQRPaymentModalOpen] = useState(false);
 
 
   // Handle table selection
@@ -238,6 +244,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   };
   const [subtotal, setSubtotal] = useState(0);
   const [discAmount, setDiscAmount] = useState(0);
+  const [calculatedDiscountAmount, setCalculatedDiscountAmount] = useState(0); // Track actual discount amount
   const [taxAmount, settaxAmount] = useState(0);
   const [roundoffAmount, setroundoffAmount] = useState(0);
   const [grandAmount, setgrandAmount] = useState(0);
@@ -411,6 +418,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       discountAmount = Math.min(discountAmount, subtotalValue); // Prevent over-discount for amount
     }
 
+    // Store the calculated discount amount
+    setCalculatedDiscountAmount(discountAmount);
+
     // Calculate subtotal after discount
     const subtotalAfterDiscount = subtotalValue - discountAmount;
     setsubtotalAfterDiscount(subtotalAfterDiscount.toFixed(2));
@@ -447,6 +457,89 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
   const handleBillHistory = async () => {
     navigate(`/reports/billhistory`);
+  };
+
+  // ✅ Handle ESC/POS Thermal Printer Invoice Printing
+  const handlePrintBillESCPOS = async () => {
+    try {
+      if (!isBillSaved) {
+        toast.error("Please save the bill first before printing.");
+        return;
+      }
+
+      // Detect mode: KIOSK if table is "Walk-in" or contains "kiosk", otherwise CheckBill
+      const isKioskMode = selectedTable && (selectedTable.toLowerCase() === "walk-in" || selectedTable.toLowerCase().includes("kiosk"));
+
+      // Prepare invoice data for thermal printer
+      const invoiceData = {
+        billId: latestBillId || "0",
+        queueNumber: selectedTable || "Walk-in",
+        companyName: companyInfo && companyInfo[0] ? companyInfo[0].name : "CHEFMATE",
+        companyAddress: companyInfo && companyInfo[0] ? companyInfo[0].address : "Sol 13, Pattaya-20150",
+        companyPhone: companyInfo && companyInfo[0] ? companyInfo[0].phone_number : "",
+        companyTaxId: companyInfo && companyInfo[0] ? companyInfo[0].tax_id : "",
+        timestamp: new Date().toLocaleString(),
+        items: finalData.map(item => ({
+          item_name: item.item_name,
+          quantity: item.quantity,
+          price: (item.total_price / item.quantity).toFixed(2),
+          total: Number(item.total_price).toFixed(2)
+        })),
+        subtotal: Number(subtotal).toFixed(2),
+        discountPercent: formdata.discountType === "percentage" ? discAmount : 0,
+        discountAmount: Number(calculatedDiscountAmount).toFixed(2),
+        subtotalAfterDiscount: Number(subtotalAfterDiscount).toFixed(2),
+        taxPercent: 7,
+        taxAmount: Number(taxAmount).toFixed(2),
+        roundOff: "0.00",
+        total: Number(grandAmount).toFixed(2),
+        paymentMethod: formdata.pmode || "CASH",
+        operatedBy: "3130"
+      };
+
+      toast.loading("Printing invoice...");
+      
+      // Use appropriate print function based on mode
+      const success = isKioskMode 
+        ? await printKioskInvoice(invoiceData)
+        : await printInvoice(invoiceData);
+      
+      if (success) {
+        toast.dismiss();
+        toast.success("Invoice printed successfully!");
+      } else {
+        toast.dismiss();
+        toast.error("Failed to print invoice. Make sure ThermalAgent server is running on port 6001.");
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error("❌ Error printing invoice:", error);
+      toast.error("Error printing invoice: " + error.message);
+    }
+  };
+
+  // ✅ Generate QR code for CheckBill payment
+  const handleGenerateQRCode = async () => {
+    try {
+      if (!isBillSaved) {
+        toast.error("Please save the bill first before generating QR code.");
+        return;
+      }
+
+      toast.loading("Generating QR code...");
+      const qrData = await generateQRForCheckBill(grandAmount);
+      
+      if (qrData) {
+        toast.dismiss();
+        toast.success("QR code generated successfully!");
+        console.log("QR Data:", qrData);
+        // You can use qrData here if needed for additional processing
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error("❌ Error generating QR code:", error);
+      toast.error("Error generating QR code: " + error.message);
+    }
   };
 
   // ✅ Send bill summary to customer display
@@ -1237,349 +1330,406 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         style={customStyles}
         ariaHideApp={false}
       >
-        <div className="bill-modal-container">
+        <div style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
           <ToastContainer />
           
-          {/* Header */}
-          <div className="bill-modal-header">
-            <h2 className="bill-modal-title">Final Summary - {selectedTable}</h2>
-            <div className="bill-modal-actions">
-              <button onClick={refreshTables} className="refresh-btn">
-                <FaRedo size={16} />
-              </button>
-              <button onClick={handleModalClose} className="close-btn">
-                <FaTimes size={16} />
-              </button>
-            </div>
+          {/* Header with Ant Design */}
+          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Bill Summary - {selectedTable}</h2>
+            <Space>
+              <Button type="primary" icon={<ReloadOutlined />} size="small" onClick={refreshTables} />
+              <Button danger icon={<CloseOutlined />} size="small" onClick={handleModalClose} />
+            </Space>
           </div>
 
-          {/* Tables Section */}
-          <div className="tables-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-              <h4 style={{ margin: "0", color: "#495057" }}>Running Tables List</h4>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <button
+          <Divider style={{ margin: '12px 0' }} />
+
+          {/* Tables Section - Touchscreen Friendly */}
+          <Card size="small" style={{ marginBottom: '20px', padding: '16px' }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1890ff' }}>🏪 Tables</h4>
+                <Button 
+                  type={isMergeMode ? 'primary' : 'default'} 
+                  size="large"
                   onClick={toggleMergeMode}
-                  className={`btn ${isMergeMode ? 'btn-warning' : 'btn-info'}`}
-                  style={{ fontSize: "12px", padding: "5px 10px" }}
+                  style={{ fontSize: '13px', fontWeight: '600', minWidth: '100px', height: '40px' }}
                 >
-                  {isMergeMode ? 'Exit Merge' : 'Merge Tables'}
-                </button>
-                {isMergeMode && selectedTables.length > 0 && (
-                  <span style={{ fontSize: "12px", color: "#28a745", fontWeight: "bold" }}>
-                    {selectedTables.length} table{selectedTables.length > 1 ? 's' : ''} selected
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            {isMergeMode && (
-              <div style={{ marginBottom: "10px", padding: "8px", backgroundColor: "#e3f2fd", borderRadius: "4px", fontSize: "12px" }}>
-                <strong>Merge Mode:</strong> Click on tables to select them for merging. Bill summary will update automatically. 
-                {selectedTables.length > 0 && (
-                  <span style={{ color: "#28a745", fontWeight: "bold" }}>
-                    <br />Selected: {selectedTables.join(', ')}
-                  </span>
-                )}
-              </div>
-            )}
-            
-            <div className="tables-grid">
-              {TotalTablelist && Array.isArray(TotalTablelist) && TotalTablelist.length > 0 ? (
-                TotalTablelist.map((tables, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleTableSelection(tables.name)}
-                    className={`table-card ${tables.status === 0 ? "available" : "occupied"} ${
-                      isMergeMode && selectedTables.includes(tables.name) ? "selected-for-merge" : ""
-                    } ${!isMergeMode && selectedTable === tables.name ? "active-table" : ""}`}
-                  >
-                    <img
-                      src={`../../dist/img/tables/table.png`}
-                      alt={`Table ${index + 1}`}
-                      onError={(e) => {
-                        e.target.src = "../../dist/img/tables/table.png";
-                      }}
-                    />
-                    <h6>{tables.name}</h6>
-                    <span className={`table-status ${tables.status === 0 ? "available" : "occupied"}`}>
-                      {tables.status === 0 ? "Available" : "Occupied"}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="loading-message">Loading tables...</div>
-              )}
-            </div>
-          </div>
-
-        
-        {/* Horizontal rule */}
-        {/* Main Content */}
-          <div className="bill-content">
-            {/* Left Side - Bill Summary */}
-            <div className="bill-summary-section" ref={printRef}>
-              <div className="bill-summary-header">
-                Bill Summary
+                  {isMergeMode ? '✕ Exit' : '➕ Merge'}
+                </Button>
               </div>
               
-              <div className="bill-table-container">
-                <table className="bill-table">
-                  <thead>
-                    <tr>
-                      <th className="text-start">Item</th>
-                      <th>Qty</th>
-                      <th>Unit Price</th>
-                      <th className="text-end">Total Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {finalData && Array.isArray(finalData) && finalData.length > 0 ? (
-                      finalData.map((item, index) => (
-                        <tr key={index}>
-                          <td className="text-start">{item.item_name}</td>
-                          <td>{item.quantity}</td>
-                          <td>{currencySign} {(item.total_price / item.quantity).toFixed(2)}</td>
-                          <td className="text-end">{currencySign} {Number(item.total_price).toFixed(2)}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="4" className="empty-table-message">
-                          Table is Empty
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {finalData.length > 0 && (
-                <div className="bill-totals">
-                  <div className="total-row">
-                    <span className="label">Subtotal</span>
-                    <span className="value">{currencySign} {subtotal}</span>
-                  </div>
-                  <div className="total-row">
-                    <span className="label">Discount</span>
-                    <span className="value">
-                      {formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}
-                    </span>
-                  </div>
-                  <div className="total-row">
-                    <span className="label">Subtotal After Discount</span>
-                    <span className="value">{currencySign} {subtotalAfterDiscount}</span>
-                  </div>
-                  <div className="total-row">
-                    <span className="label">Tax ({TaxesData[0]?.taxvalue || 0}%)</span>
-                    <span className="value">{currencySign} {taxAmount}</span>
-                  </div>
-                  <div className="total-row">
-                    <span className="label">Total Amount</span>
-                    <span className="value">{currencySign} {totalAmount}</span>
-                  </div>
-                  <div className="total-row">
-                    <span className="label">Round Off Amount</span>
-                    <span className="value">{currencySign} {roundoffAmount}</span>
-                  </div>
-                  <div className="total-row">
-                    <span className="label">Grand Total</span>
-                    <span className="value">{currencySign} {grandAmount}</span>
-                  </div>
-                </div>
+              {isMergeMode && selectedTables.length > 0 && (
+                <Tag color="success" style={{ fontSize: '13px', padding: '6px 12px' }}>✓ Selected: {selectedTables.join(', ')}</Tag>
               )}
-            </div>
-
-            {/* Right Side - Payment & Customer Info (Column 2) */}
-            <div className="payment-section">
-              {/* Customer Information Card */}
-              <div className="payment-card">
-                <div className="payment-card-header">
-                  Customer Information
-                </div>
-                <div className="payment-card-body">
-                  <div className="form-group">
-                    <label>Customer Mobile Number</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={phones}
-                      onChange={(e) => setphones(e.target.value)}
-                      placeholder="Enter mobile number"
-                    />
-                  </div>
-                  <button
-                    onClick={() => setCustomerModalOpen(true)}
-                    className="btn btn-info btn-full-width"
-                  >
-                    Add Customer Details
-                  </button>
-                </div>
-              </div>
-
-              {/* Payment Details Card */}
-              <div className="payment-card">
-                <div className="payment-card-header">
-                  Change Money
-                </div>
-                <div className="payment-card-body">
-                  {/* <div className="form-group">
-                    <label>Payment Mode</label>
-                    <p className="text-muted" style={{ fontSize: '12px', marginBottom: '4px' }}>
-                      Choose a payment below to finalize the bill.
-                    </p>
-                  </div> */}
-
-                  <div className="form-group">
-                    <label>Amount Received</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formdata.paidAmount}
-                      onChange={handleChangeMoney}
-                      placeholder="Enter received amount"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Change Money</label>
-                    <input
-                      type="text"
-                      className={`form-control change-money ${changeMoney >= 0 ? 'positive' : 'negative'}`}
-                      value={`${currencySign} ${changeMoney}`}
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Third Column - Discounts & Actions */}
-            <div className="payment-section discount-column">
-              {/* Discount Card */}
-              <div className="payment-card">
-                <div className="payment-card-header">
-                  Discount Options
-                </div>
-                <div className="payment-card-body">
-                  <div className="discount-controls">
-                    <div className="discount-input">
-                      <label>Discount Amount</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        value={discAmount}
-                        onChange={(e) => setDiscAmount(e.target.value)}
-                        placeholder="Enter discount"
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+                {TotalTablelist && Array.isArray(TotalTablelist) && TotalTablelist.length > 0 ? (
+                  TotalTablelist.map((tables, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleTableSelection(tables.name)}
+                      style={{
+                        padding: '12px 8px',
+                        border: `3px solid ${isMergeMode && selectedTables.includes(tables.name) ? '#1890ff' : tables.status === 0 ? '#d9d9d9' : '#ff4d4f'}`,
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: !isMergeMode && selectedTable === tables.name ? '#e6f7ff' : 'transparent',
+                        transition: 'all 0.2s',
+                        minHeight: '80px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        boxShadow: isMergeMode && selectedTables.includes(tables.name) ? '0 4px 12px rgba(24,144,255,0.3)' : 'none'
+                      }}
+                    >
+                      <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '6px' }}>{tables.name}</div>
+                      <Badge 
+                        status={tables.status === 0 ? 'success' : 'error'} 
+                        text={tables.status === 0 ? 'Free' : 'Busy'}
+                        style={{ fontSize: '12px', fontWeight: '600' }}
                       />
                     </div>
-                    <div className="discount-type-select">
-                      <label>Type</label>
-                      <select
-                        className="form-select"
-                        value={formdata.discountType}
-                        onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value }))}
-                      >
-                        <option value="percentage">%</option>
-                        <option value="fixed">{currencySign}</option>
-                      </select>
+                  ))
+                ) : (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#999', padding: '20px', fontSize: '14px' }}>Loading...</div>
+                )}
+              </div>
+            </Space>
+          </Card>
+
+        
+        {/* Main Content - Two Column Layout - Touchscreen Friendly */}
+          <Row gutter={[16, 20]}>
+            {/* Left Side - Bill Summary */}
+            <Col xs={24} md={14}>
+              <Card size="small" ref={printRef} style={{ padding: '16px' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700', color: '#1890ff' }}>📋 Bill Items</h4>
+                <Table
+                  columns={[
+                    { title: 'Item', dataIndex: 'item_name', key: 'item_name', width: '50%', render: (text) => <span style={{ fontSize: '13px', fontWeight: '500' }}>{text}</span> },
+                    { title: 'Qty', dataIndex: 'quantity', key: 'quantity', width: '15%', align: 'center', render: (text) => <span style={{ fontSize: '14px', fontWeight: '700' }}>{text}</span> },
+                    { title: 'Unit Price', dataIndex: 'unit_price', key: 'unit_price', width: '17%', align: 'right', render: (text) => <span style={{ fontSize: '13px' }}>{currencySign} {text}</span> },
+                    { title: 'Total', dataIndex: 'total_price', key: 'total_price', width: '18%', align: 'right', render: (text) => <strong style={{ fontSize: '14px', color: '#1890ff' }}>{currencySign} {Number(text).toFixed(2)}</strong> },
+                  ]}
+                  dataSource={finalData?.map((item, index) => ({
+                    ...item,
+                    key: index,
+                    unit_price: (item.total_price / item.quantity).toFixed(2)
+                  })) || []}
+                  pagination={false}
+                  size="small"
+                  locale={{ emptyText: 'No items' }}
+                  style={{ marginBottom: '16px' }}
+                />
+                
+                {/* Bill Totals - Touchscreen Friendly */}
+                {finalData.length > 0 && (
+                  <Card size="small" style={{ backgroundColor: '#fafafa', marginTop: '16px', padding: '16px' }}>
+                    <Row gutter={[12, 12]}>
+                      <Col span={12}><span style={{ fontSize: '13px', color: '#666' }}>Subtotal</span></Col>
+                      <Col span={12} style={{ textAlign: 'right' }}><span style={{ fontSize: '14px', fontWeight: '600' }}>{currencySign} {subtotal}</span></Col>
+                      
+                      <Col span={12}><span style={{ fontSize: '13px', color: '#666' }}>Discount</span></Col>
+                      <Col span={12} style={{ textAlign: 'right' }}><span style={{ fontSize: '14px', fontWeight: '600', color: '#ff7a45' }}>{formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span></Col>
+                      
+                      <Col span={12}><span style={{ fontSize: '13px', color: '#666' }}>After Discount</span></Col>
+                      <Col span={12} style={{ textAlign: 'right' }}><span style={{ fontSize: '14px', fontWeight: '600' }}>{currencySign} {subtotalAfterDiscount}</span></Col>
+                      
+                      <Col span={12}><span style={{ fontSize: '13px', color: '#666' }}>Tax ({TaxesData[0]?.taxvalue || 0}%)</span></Col>
+                      <Col span={12} style={{ textAlign: 'right' }}><span style={{ fontSize: '14px', fontWeight: '600' }}>{currencySign} {taxAmount}</span></Col>
+                      
+                      <Divider style={{ margin: '10px 0' }} />
+                      
+                      <Col span={12}><strong style={{ fontSize: '16px', color: '#1890ff' }}>Grand Total</strong></Col>
+                      <Col span={12} style={{ textAlign: 'right' }}><strong style={{ fontSize: '18px', color: '#1890ff' }}>{currencySign} {grandAmount}</strong></Col>
+                    </Row>
+                  </Card>
+                )}
+              </Card>
+            </Col>
+
+            {/* Right Side - Payment & Customer Info - Two Vertical Sections - Touchscreen Friendly */}
+            <Col xs={24} md={5}>
+              <Space direction="vertical" style={{ width: '100%' }} size="large">
+                {/* Customer Info Card */}
+                <Card size="small" className="customer-card" style={{ padding: '16px' }}>
+                  <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: '700', color: '#1890ff' }}>👤 Customer</h4>
+                  <Input 
+                    type="tel"
+                    size="large"
+                    placeholder="Mobile number"
+                    value={phones}
+                    onChange={(e) => setphones(e.target.value)}
+                    style={{ marginBottom: '12px', fontSize: '14px', height: '44px' }}
+                  />
+                  <Button type="dashed" size="large" block onClick={() => setCustomerModalOpen(true)} style={{ height: '44px', fontSize: '13px', fontWeight: '600' }}>
+                    📝 Add Details
+                  </Button>
+                </Card>
+
+                {/* Payment Info Card */}
+                <Card size="small" className="payment-info-card" style={{ padding: '16px' }}>
+                  <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: '700', color: '#fa8c16' }}>💵 Change Money</h4>
+                  <Input 
+                    type="number"
+                    size="large"
+                    placeholder="Amount received"
+                    value={formdata.paidAmount}
+                    onChange={handleChangeMoney}
+                    style={{ marginBottom: '12px', fontSize: '14px', height: '44px' }}
+                  />
+                  <div className="change-display" style={{ padding: '14px', backgroundColor: changeMoney >= 0 ? '#f6ffed' : '#fff1f0', borderRadius: '6px', marginBottom: '8px', border: changeMoney >= 0 ? '2px solid #52c41a' : '2px solid #ff4d4f' }}>
+                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>Change</div>
+                    <div style={{ fontSize: '24px', fontWeight: '800', color: changeMoney >= 0 ? '#52c41a' : '#ff4d4f' }}>
+                      {currencySign} {changeMoney}
                     </div>
                   </div>
+                </Card>
+              </Space>
+            </Col>
 
-                  <div className="action-buttons">
-                    <button
-                      onClick={() => {
-                        if (!phones) {
-                          toast.error("Please enter customer phone first.");
-                          return;
-                        }
-                        setLineQRModalOpen(true);
-                      }}
-                      className="btn btn-warning"
-                    >
-                      LINE Discount
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!customerDetails.phone) {
-                          toast.error("Please enter customer phone first.");
-                          return;
-                        }
-                        setLineQRModalOpen(true);
-                      }}
-                      className="btn btn-info"
-                    >
-                      WhatsApp Discount
-                    </button>
+            {/* Right-Right Side - Discount & Payment Methods */}
+            <Col xs={24} md={5}>
+              <Space direction="vertical" style={{ width: '100%' }} size="large">
+                <Card
+                  size="small"
+                  className="discount-options-card"
+                  style={{
+                    backgroundColor: '#f0f5ff',
+                    borderColor: '#b6e1ff',
+                    borderRadius: 8,
+                    padding: '16px'
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 16, fontSize: 15, color: '#1890ff' }}>
+                    💰 Discount Options
                   </div>
-                </div>
-              </div>
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    <Row gutter={[12, 12]}>
+                      <Col span={12}>
+                        <div style={{ fontSize: 13, marginBottom: 6, color: '#595959', fontWeight: 600 }}>Amount</div>
+                        <Input
+                          type="number"
+                          size="large"
+                          value={discAmount}
+                          onChange={(e) => setDiscAmount(e.target.value)}
+                          placeholder="0"
+                          style={{ backgroundColor: '#fff7f1', fontSize: '14px', height: '40px' }}
+                        />
+                      </Col>
+                      <Col span={12}>
+                        <div style={{ fontSize: 13, marginBottom: 6, color: '#595959', fontWeight: 600 }}>Type</div>
+                        <Select
+                          size="large"
+                          style={{ width: '100%' }}
+                          value={formdata.discountType}
+                          onChange={(value) => setFormData(prev => ({ ...prev, discountType: value }))}
+                          options={[
+                            { label: '%', value: 'percentage' },
+                            { label: currencySign, value: 'fixed' }
+                          ]}
+                        />
+                      </Col>
+                    </Row>
 
-              {/* Action Buttons */}
-              <div className="payment-card">
-                <div className="payment-card-body">
-                  <div className="action-buttons">
-                    {!isBillSaved && (
-                      <div className="d-flex gap-2 flex-wrap mb-2">
-                        <button
-                          type="button"
-                          className={`btn ${formdata.pmode === 'Cash' ? 'btn-success' : 'btn-outline-success'}`}
-                          onClick={() => handleQuickPayment('Cash')}
-                          disabled={!finalData || finalData.length === 0}
-                        >
-                          Cash
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn ${formdata.pmode === 'Card' ? 'btn-success' : 'btn-outline-primary'}`}
-                          onClick={() => handleQuickPayment('Card')}
-                          disabled={!finalData || finalData.length === 0}
-                        >
-                          Card
-                        </button>
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={() => handleQuickPayment('QR Scan')}
-                          disabled={!finalData || finalData.length === 0}
-                          style={{ 
-                            backgroundColor: formdata.pmode === 'QR Scan' ? '#20c997' : '#e9ecef',
-                            color: 'black',
-                            border: formdata.pmode === 'QR Scan' ? '2px solid #20c997' : '1px solid #dee2e6',
-                            fontWeight: formdata.pmode === 'QR Scan' ? 'bold' : 'normal'
+                    <Divider style={{ margin: '10px 0' }} />
+
+                    <Row gutter={[10, 10]} style={{ display: 'none' }}>
+                      <Col span={12}>
+                        <Button
+                          type="default"
+                          size="large"
+                          block
+                          onClick={() => {
+                            if (!phones) {
+                              toast.error("Please enter customer phone first.");
+                              return;
+                            }
+                            setLineQRModalOpen(true);
+                          }}
+                          style={{
+                            backgroundColor: '#e6f7ff',
+                            color: '#1890ff',
+                            borderColor: '#91d5ff',
+                            fontWeight: '600',
+                            fontSize: '13px',
+                            height: '40px'
                           }}
                         >
-                          QR Scan
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn ${formdata.pmode === 'Entertainment' ? 'btn-danger' : 'btn-outline-danger'}`}
-                          onClick={() => handleQuickPayment('Entertainment')}
-                          disabled={!finalData || finalData.length === 0}
+                          LINE
+                        </Button>
+                      </Col>
+                      <Col span={12}>
+                        <Button
+                          type="default"
+                          size="large"
+                          block
+                          onClick={() => {
+                            if (!customerDetails.phone) {
+                              toast.error("Please enter customer phone first.");
+                              return;
+                            }
+                            setLineQRModalOpen(true);
+                          }}
+                          style={{
+                            backgroundColor: '#e6f4ea',
+                            color: '#25a745',
+                            borderColor: '#95e1b3',
+                            fontWeight: '600',
+                            fontSize: '13px',
+                            height: '40px'
+                          }}
                         >
-                          Entertainment
-                        </button>
-                      </div>
+                          WhatsApp
+                        </Button>
+                      </Col>
+                    </Row>
+                  </Space>
+                </Card>
+
+                {/* Payment Method Card - Touchscreen Friendly */}
+                <Card
+                  size="small"
+                  className="payment-method-card"
+                  style={{
+                    backgroundColor: '#fff7e6',
+                    borderColor: '#ffd591',
+                    borderRadius: 8,
+                    padding: '16px'
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 16, fontSize: 15, color: '#fa8c16' }}>
+                    💳 Payment Method
+                  </div>
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    {!isBillSaved && (
+                      <Row gutter={[10, 10]}>
+                        <Col xs={12}>
+                          <Button
+                            type={formdata.pmode === 'Cash' ? 'primary' : 'default'}
+                            size="large"
+                            block
+                            onClick={() => handleQuickPayment('Cash')}
+                            disabled={!finalData || finalData.length === 0}
+                            style={
+                              formdata.pmode === 'Cash'
+                                ? { backgroundColor: '#52c41a', borderColor: '#52c41a', color: '#fff', fontSize: '13px', fontWeight: '600', height: '48px' }
+                                : { backgroundColor: '#f6ffed', color: '#52c41a', borderColor: '#b7eb8f', fontSize: '13px', fontWeight: '600', height: '48px' }
+                            }
+                          >
+                            💵 Cash
+                          </Button>
+                        </Col>
+                        <Col xs={12}>
+                          <Button
+                            type={formdata.pmode === 'Card' ? 'primary' : 'default'}
+                            size="large"
+                            block
+                            onClick={() => handleQuickPayment('Card')}
+                            disabled={!finalData || finalData.length === 0}
+                            style={
+                              formdata.pmode === 'Card'
+                                ? { backgroundColor: '#1890ff', borderColor: '#1890ff', color: '#fff', fontSize: '13px', fontWeight: '600', height: '48px' }
+                                : { backgroundColor: '#e6f7ff', color: '#1890ff', borderColor: '#91d5ff', fontSize: '13px', fontWeight: '600', height: '48px' }
+                            }
+                          >
+                            💳 Card
+                          </Button>
+                        </Col>
+                        <Col xs={12}>
+                          <Button
+                            type="default"
+                            size="large"
+                            block
+                            onClick={() => {
+                              handleGenerateQRCode();
+                              setQRPaymentModalOpen(true);
+                            }}
+                            disabled={!finalData || finalData.length === 0}
+                            style={
+                              formdata.pmode === 'QR Scan'
+                                ? { backgroundColor: '#13c2c2', borderColor: '#13c2c2', color: '#fff', fontSize: '13px', fontWeight: '600', height: '48px' }
+                                : { backgroundColor: '#e6fffb', color: '#13c2c2', borderColor: '#87e8de', fontSize: '13px', fontWeight: '600', height: '48px' }
+                            }
+                          >
+                            📱 QR Scan
+                          </Button>
+                        </Col>
+                        <Col xs={12}>
+                          <Button
+                            type="default"
+                            size="large"
+                            block
+                            onClick={() => handleQuickPayment('Entertainment')}
+                            disabled={!finalData || finalData.length === 0}
+                            style={
+                              formdata.pmode === 'Entertainment'
+                                ? { backgroundColor: '#ff7a45', borderColor: '#ff7a45', color: '#fff', fontSize: '13px', fontWeight: '600', height: '48px' }
+                                : { backgroundColor: '#fff7e6', color: '#ff7a45', borderColor: '#ffbb96', fontSize: '13px', fontWeight: '600', height: '48px' }
+                            }
+                          >
+                            🎉 Entertainment
+                          </Button>
+                        </Col>
+                      </Row>
                     )}
                     {isBillSaved && (
-                      <button
-                        onClick={handlePrintBill}
-                        className="btn btn-primary"
-                      >
-                        Print Bill
-                      </button>
+                      <Space style={{ width: '100%' }} size="small">
+                        <Button
+                          type="primary"
+                          size="large"
+                          flex
+                          onClick={handlePrintBill}
+                          style={{ backgroundColor: '#1890ff', borderColor: '#1890ff', fontSize: '14px', fontWeight: '700', height: '50px' }}
+                        >
+                          🖨️ Print Bill
+                        </Button>
+                        <Button
+                          type="primary"
+                          size="large"
+                          flex
+                          onClick={handlePrintBillESCPOS}
+                          style={{ backgroundColor: '#faad14', borderColor: '#faad14', color: '#fff', fontSize: '14px', fontWeight: '700', height: '50px' }}
+                        >
+                          🖨️ ESC/POS
+                        </Button>
+                      </Space>
                     )}
-                    <button
-                      onClick={handleBillHistory}
-                      className="btn btn-info"
-                    >
-                      Bill History
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </Space>
+                </Card>
+
+                {/* Bill History Card - Touchscreen Friendly */}
+                <Card
+                  size="small"
+                  style={{
+                    backgroundColor: '#fafafa',
+                    borderColor: '#f0f0f0',
+                    borderRadius: 8,
+                    padding: '16px'
+                  }}
+                >
+                  <Button
+                    onClick={handleBillHistory}
+                    size="large"
+                    block
+                    style={{
+                      backgroundColor: '#e6f4ea',
+                      color: '#25a745',
+                      borderColor: '#95e1b3',
+                      fontWeight: '700',
+                      fontSize: '14px',
+                      height: '48px'
+                    }}
+                  >
+                    📋 Bill History
+                  </Button>
+                </Card>
+              </Space>
+            </Col>
+          </Row>
         </div>
       </Modal>
       <LineQRDiscountModal
@@ -1599,6 +1749,17 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         onSaveCustomerDetails={(details) => {
           setCustomerDetails(details);
           setCustomerModalOpen(false);
+        }}
+      />
+
+      <QRPaymentModal
+        visible={isQRPaymentModalOpen}
+        onClose={() => setQRPaymentModalOpen(false)}
+        billAmount={grandAmount}
+        onPaymentSuccess={() => {
+          setQRPaymentModalOpen(false);
+          setFormData(prev => ({ ...prev, pmode: 'QR Scan' }));
+          handleQuickPayment('QR Scan');
         }}
       />
     </>

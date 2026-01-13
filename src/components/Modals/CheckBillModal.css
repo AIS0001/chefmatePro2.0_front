@@ -696,3 +696,114 @@
 .btn-success:hover {
   background-color: #218838;
 }
+
+/* Soft Color Styling for Cards */
+.customer-card {
+  background-color: #f5f7fa !important;
+  border-color: #e8eef5 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.customer-card .ant-card-head {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e8eef5 !important;
+}
+
+.payment-info-card {
+  background-color: #faf9f7 !important;
+  border-color: #f0ede8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.payment-info-card .ant-card-head {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #f0ede8 !important;
+}
+
+.discount-options-card {
+  background: linear-gradient(135deg, #f0f5ff 0%, #e6f4ff 100%) !important;
+  border: 1px solid #b6e1ff !important;
+  box-shadow: 0 2px 12px rgba(24, 144, 255, 0.08) !important;
+}
+
+.discount-options-card .ant-card-head {
+  background-color: transparent !important;
+  border-bottom: none !important;
+}
+
+.payment-method-card {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe8cc 100%) !important;
+  border: 1px solid #ffd591 !important;
+  box-shadow: 0 2px 12px rgba(250, 140, 22, 0.08) !important;
+}
+
+.payment-method-card .ant-card-head {
+  background-color: transparent !important;
+  border-bottom: none !important;
+}
+
+.change-display {
+  padding: 12px 8px !important;
+  border-radius: 6px !important;
+  background-color: #f6ffed !important;
+  border: 1px solid #b7eb8f !important;
+  transition: all 0.3s ease !important;
+}
+
+.change-display:hover {
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.1) !important;
+}
+
+/* Action Card */
+.action-card {
+  background-color: #fafafa !important;
+  border-color: #f0f0f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Ant Design Input and Select Soft Colors */
+.customer-card .ant-input,
+.payment-info-card .ant-input,
+.discount-options-card .ant-input {
+  background-color: #ffffff !important;
+  border-color: #d9d9d9 !important;
+  transition: all 0.3s ease !important;
+}
+
+.customer-card .ant-input:focus,
+.payment-info-card .ant-input:focus,
+.discount-options-card .ant-input:focus {
+  background-color: #fafafa !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+}
+
+.discount-options-card .ant-select-selector {
+  background-color: #ffffff !important;
+  border-color: #d9d9d9 !important;
+}
+
+.discount-options-card .ant-select-selector:focus,
+.discount-options-card .ant-select-focused .ant-select-selector {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+}
+
+/* Button Soft Colors */
+.discount-options-card .ant-btn {
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.payment-method-card .ant-btn {
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  min-height: 32px !important;
+}
+
+.ant-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}

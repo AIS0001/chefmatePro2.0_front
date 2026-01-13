@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout, isTokenExpired } from "../utility/auth";
 
-const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutes
+const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
 const SESSION_LIMIT = 3 * 60 * 60 * 1000; // 3 hours
 
 export default function useAutoLogout() {

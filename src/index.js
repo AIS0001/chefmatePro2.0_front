@@ -19,7 +19,7 @@ import { startOfDay } from 'date-fns';
 //  export const baseURL = "https://www.balibeachcluapi.livecloudnet.com";  // Use export
 //  axios.defaults.baseURL = "https://www.balibeachcluapi.livecloudnet.com/api";
 
-export const baseURL = "http://127.0.0.1:4402";  // Use export
+export const baseURL = "http://localhost:4402";  // Use export
 axios.defaults.baseURL = "http://localhost:4402/api";
 
 

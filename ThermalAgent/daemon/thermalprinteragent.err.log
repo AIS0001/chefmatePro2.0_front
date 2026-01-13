@@ -1,0 +1,1803 @@
+node:internal/modules/cjs/loader:1147
+  throw err;
+  ^
+
+Error: Cannot find module 'E:\wheel_clean\agent\node_modules\node-windows\lib\wrapper.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1144:15)
+    at Module._load (node:internal/modules/cjs/loader:985:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v21.4.0
+node:internal/modules/cjs/loader:1147
+  throw err;
+  ^
+
+Error: Cannot find module 'E:\wheel_clean\agent\node_modules\node-windows\lib\wrapper.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1144:15)
+    at Module._load (node:internal/modules/cjs/loader:985:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v21.4.0
+(node:7736) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1595:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1595:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+(node:3804) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+❌ Uncaught Exception: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1872:16)
+    at listenInCluster (node:net:1920:12)
+    at Server.listen (node:net:2008:7)
+    at Function.listen (C:\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\ThermalAgent\server.js:185:5)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 6001
+}
+Stack: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1872:16)
+    at listenInCluster (node:net:1920:12)
+    at Server.listen (node:net:2008:7)
+    at Function.listen (C:\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\ThermalAgent\server.js:185:5)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+(node:22656) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+❌ Uncaught Exception: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1872:16)
+    at listenInCluster (node:net:1920:12)
+    at Server.listen (node:net:2008:7)
+    at Function.listen (C:\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\ThermalAgent\server.js:185:5)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 6001
+}
+Stack: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1872:16)
+    at listenInCluster (node:net:1920:12)
+    at Server.listen (node:net:2008:7)
+    at Function.listen (C:\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\ThermalAgent\server.js:185:5)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+(node:15760) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+❌ Uncaught Exception: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1872:16)
+    at listenInCluster (node:net:1920:12)
+    at Server.listen (node:net:2008:7)
+    at Function.listen (C:\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\ThermalAgent\server.js:185:5)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 6001
+}
+Stack: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1872:16)
+    at listenInCluster (node:net:1920:12)
+    at Server.listen (node:net:2008:7)
+    at Function.listen (C:\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\ThermalAgent\server.js:185:5)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1435:10)
+    at Module.load (node:internal/modules/cjs/loader:1207:32)
+    at Module._load (node:internal/modules/cjs/loader:1023:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+(node:19780) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:20968) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1595:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+(node:2056) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763352533037.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352533037.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352533037.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352533037.ps1"
+C:\Windows\TEMP\print_1763352533037.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352533037.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352533037.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352533037.ps1"
+C:\Windows\TEMP\print_1763352533037.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352533037.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352533037.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 54204ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352533037.ps1"
+C:\Windows\TEMP\print_1763352533037.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352533037.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352533037.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763352597154.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352597154.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352597154.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352597154.ps1"
+C:\Windows\TEMP\print_1763352597154.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352597154.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352597154.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352597154.ps1"
+C:\Windows\TEMP\print_1763352597154.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352597154.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352597154.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 53999ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352597154.ps1"
+C:\Windows\TEMP\print_1763352597154.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352597154.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352597154.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763352716056.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352716056.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352716056.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352716056.ps1"
+C:\Windows\TEMP\print_1763352716056.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352716056.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352716056.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352716056.ps1"
+C:\Windows\TEMP\print_1763352716056.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352716056.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352716056.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 54014ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763352716056.ps1"
+C:\Windows\TEMP\print_1763352716056.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763352716056.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763352716056.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763353031764.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353031764.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353031764.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763353031764.ps1"
+C:\Windows\TEMP\print_1763353031764.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353031764.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353031764.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763353031764.ps1"
+C:\Windows\TEMP\print_1763353031764.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353031764.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353031764.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 55822ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763353031764.ps1"
+C:\Windows\TEMP\print_1763353031764.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353031764.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353031764.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763353109345.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353109345.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353109345.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763353109345.ps1"
+C:\Windows\TEMP\print_1763353109345.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353109345.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353109345.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763353109345.ps1"
+C:\Windows\TEMP\print_1763353109345.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353109345.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353109345.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 54058ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763353109345.ps1"
+C:\Windows\TEMP\print_1763353109345.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763353109345.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763353109345.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763570829620.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763570829620.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763570829620.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763570829620.ps1"
+C:\Windows\TEMP\print_1763570829620.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763570829620.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763570829620.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763570829620.ps1"
+C:\Windows\TEMP\print_1763570829620.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763570829620.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763570829620.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 57530ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763570829620.ps1"
+C:\Windows\TEMP\print_1763570829620.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763570829620.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763570829620.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763571848453.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763571848453.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763571848453.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763571848453.ps1"
+C:\Windows\TEMP\print_1763571848453.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763571848453.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763571848453.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763571848453.ps1"
+C:\Windows\TEMP\print_1763571848453.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763571848453.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763571848453.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 54938ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763571848453.ps1"
+C:\Windows\TEMP\print_1763571848453.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763571848453.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763571848453.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763572094686.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763572094686.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763572094686.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763572094686.ps1"
+C:\Windows\TEMP\print_1763572094686.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763572094686.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763572094686.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763572094686.ps1"
+C:\Windows\TEMP\print_1763572094686.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763572094686.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763572094686.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 54512ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763572094686.ps1"
+C:\Windows\TEMP\print_1763572094686.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763572094686.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763572094686.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763740843091.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740843091.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740843091.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740843091.ps1"
+C:\Windows\TEMP\print_1763740843091.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740843091.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740843091.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740843091.ps1"
+C:\Windows\TEMP\print_1763740843091.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740843091.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740843091.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 57537ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740843091.ps1"
+C:\Windows\TEMP\print_1763740843091.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740843091.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740843091.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763740877945.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740877945.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740877945.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740877945.ps1"
+C:\Windows\TEMP\print_1763740877945.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740877945.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740877945.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740877945.ps1"
+C:\Windows\TEMP\print_1763740877945.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740877945.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740877945.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 73493ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740877945.ps1"
+C:\Windows\TEMP\print_1763740877945.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740877945.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740877945.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763740933726.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740933726.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740933726.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740933726.ps1"
+C:\Windows\TEMP\print_1763740933726.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740933726.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740933726.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740933726.ps1"
+C:\Windows\TEMP\print_1763740933726.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740933726.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740933726.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 55924ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763740933726.ps1"
+C:\Windows\TEMP\print_1763740933726.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763740933726.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763740933726.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763742504130.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763742504130.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763742506432.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763742506432.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763742506432.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763742506432.ps1"
+C:\Windows\TEMP\print_1763742506432.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763742506432.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763742506432.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763742506432.ps1"
+C:\Windows\TEMP\print_1763742506432.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763742506432.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763742506432.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25590ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763742506432.ps1"
+C:\Windows\TEMP\print_1763742506432.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763742506432.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763742506432.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763743654778.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763743654778.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763743656743.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743656743.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743656743.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763743656743.ps1"
+C:\Windows\TEMP\print_1763743656743.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743656743.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743656743.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763743656743.ps1"
+C:\Windows\TEMP\print_1763743656743.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743656743.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743656743.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25036ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763743656743.ps1"
+C:\Windows\TEMP\print_1763743656743.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743656743.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743656743.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763743680452.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763743680452.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763743682101.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743682101.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743682101.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763743682101.ps1"
+C:\Windows\TEMP\print_1763743682101.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743682101.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743682101.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763743682101.ps1"
+C:\Windows\TEMP\print_1763743682101.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743682101.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743682101.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24572ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763743682101.ps1"
+C:\Windows\TEMP\print_1763743682101.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763743682101.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763743682101.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763744396765.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744396765.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763744399334.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744399334.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744399334.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744399334.ps1"
+C:\Windows\TEMP\print_1763744399334.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744399334.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744399334.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744399334.ps1"
+C:\Windows\TEMP\print_1763744399334.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744399334.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744399334.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25980ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744399334.ps1"
+C:\Windows\TEMP\print_1763744399334.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744399334.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744399334.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763744422441.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744422441.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763744424172.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744424172.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744424172.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744424172.ps1"
+C:\Windows\TEMP\print_1763744424172.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744424172.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744424172.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744424172.ps1"
+C:\Windows\TEMP\print_1763744424172.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744424172.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744424172.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24642ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744424172.ps1"
+C:\Windows\TEMP\print_1763744424172.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744424172.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744424172.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763744607351.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744607351.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763744609429.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744609429.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744609429.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744609429.ps1"
+C:\Windows\TEMP\print_1763744609429.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744609429.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744609429.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744609429.ps1"
+C:\Windows\TEMP\print_1763744609429.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744609429.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744609429.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25066ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744609429.ps1"
+C:\Windows\TEMP\print_1763744609429.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744609429.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744609429.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763744748127.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744748127.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763744750054.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744750054.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744750054.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744750054.ps1"
+C:\Windows\TEMP\print_1763744750054.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744750054.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744750054.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744750054.ps1"
+C:\Windows\TEMP\print_1763744750054.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744750054.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744750054.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25160ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744750054.ps1"
+C:\Windows\TEMP\print_1763744750054.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744750054.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744750054.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763744774515.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744774515.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763744776651.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744776651.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744776651.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744776651.ps1"
+C:\Windows\TEMP\print_1763744776651.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744776651.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744776651.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744776651.ps1"
+C:\Windows\TEMP\print_1763744776651.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744776651.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744776651.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25553ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763744776651.ps1"
+C:\Windows\TEMP\print_1763744776651.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763744776651.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763744776651.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745071651.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745071651.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745073654.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745073654.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745073654.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745073654.ps1"
+C:\Windows\TEMP\print_1763745073654.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745073654.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745073654.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745073654.ps1"
+C:\Windows\TEMP\print_1763745073654.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745073654.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745073654.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25091ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745073654.ps1"
+C:\Windows\TEMP\print_1763745073654.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745073654.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745073654.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745092153.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745092153.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745094934.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745094934.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745094934.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745094934.ps1"
+C:\Windows\TEMP\print_1763745094934.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745094934.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745094934.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745094934.ps1"
+C:\Windows\TEMP\print_1763745094934.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745094934.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745094934.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 26012ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745094934.ps1"
+C:\Windows\TEMP\print_1763745094934.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745094934.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745094934.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745118677.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745118677.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745120362.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745120362.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745120362.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745120362.ps1"
+C:\Windows\TEMP\print_1763745120362.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745120362.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745120362.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745120362.ps1"
+C:\Windows\TEMP\print_1763745120362.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745120362.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745120362.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24688ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745120362.ps1"
+C:\Windows\TEMP\print_1763745120362.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745120362.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745120362.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745144427.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745144427.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745146069.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745146069.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745146069.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745146069.ps1"
+C:\Windows\TEMP\print_1763745146069.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745146069.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745146069.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745146069.ps1"
+C:\Windows\TEMP\print_1763745146069.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745146069.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745146069.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24597ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745146069.ps1"
+C:\Windows\TEMP\print_1763745146069.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745146069.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745146069.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745169491.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745169491.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745171242.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745171242.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745171242.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745171242.ps1"
+C:\Windows\TEMP\print_1763745171242.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745171242.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745171242.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745171242.ps1"
+C:\Windows\TEMP\print_1763745171242.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745171242.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745171242.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24754ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745171242.ps1"
+C:\Windows\TEMP\print_1763745171242.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745171242.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745171242.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745281749.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745281749.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745283435.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745283435.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745283435.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745283435.ps1"
+C:\Windows\TEMP\print_1763745283435.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745283435.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745283435.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745283435.ps1"
+C:\Windows\TEMP\print_1763745283435.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745283435.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745283435.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24655ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745283435.ps1"
+C:\Windows\TEMP\print_1763745283435.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745283435.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745283435.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745306836.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745306836.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745308857.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745308857.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745308857.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745308857.ps1"
+C:\Windows\TEMP\print_1763745308857.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745308857.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745308857.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745308857.ps1"
+C:\Windows\TEMP\print_1763745308857.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745308857.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745308857.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24998ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745308857.ps1"
+C:\Windows\TEMP\print_1763745308857.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745308857.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745308857.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745332388.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745332388.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745334023.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745334023.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745334023.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745334023.ps1"
+C:\Windows\TEMP\print_1763745334023.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745334023.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745334023.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745334023.ps1"
+C:\Windows\TEMP\print_1763745334023.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745334023.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745334023.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24503ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745334023.ps1"
+C:\Windows\TEMP\print_1763745334023.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745334023.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745334023.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763745357467.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745357467.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763745359157.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745359157.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745359157.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745359157.ps1"
+C:\Windows\TEMP\print_1763745359157.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745359157.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745359157.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745359157.ps1"
+C:\Windows\TEMP\print_1763745359157.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745359157.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745359157.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 24707ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763745359157.ps1"
+C:\Windows\TEMP\print_1763745359157.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763745359157.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763745359157.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.80',
+  port: 9100
+}
+C:\Windows\TEMP\print_spooler_1763746472322.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763746472322.ps1
+ 
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1763746474226.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763746474226.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763746474226.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763746474226.ps1"
+C:\Windows\TEMP\print_1763746474226.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763746474226.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763746474226.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763746474226.ps1"
+C:\Windows\TEMP\print_1763746474226.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763746474226.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763746474226.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 25087ms: Primary: connect ETIMEDOUT 192.168.1.80:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1763746474226.ps1"
+C:\Windows\TEMP\print_1763746474226.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1763746474226.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1763746474226.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.216:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.216',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1764080874454.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764080874454.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764080874454.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764080874454.ps1"
+C:\Windows\TEMP\print_1764080874454.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764080874454.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764080874454.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764080874454.ps1"
+C:\Windows\TEMP\print_1764080874454.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764080874454.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764080874454.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 56726ms: Primary: connect ETIMEDOUT 192.168.1.216:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764080874454.ps1"
+C:\Windows\TEMP\print_1764080874454.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764080874454.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764080874454.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.81:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.81',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1764385919367.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764385919367.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764385919367.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764385919367.ps1"
+C:\Windows\TEMP\print_1764385919367.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764385919367.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764385919367.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764385919367.ps1"
+C:\Windows\TEMP\print_1764385919367.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764385919367.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764385919367.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 54677ms: Primary: connect ETIMEDOUT 192.168.1.81:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764385919367.ps1"
+C:\Windows\TEMP\print_1764385919367.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764385919367.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764385919367.ps1
+ 
+
+❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.81:9100
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '192.168.1.81',
+  port: 9100
+}
+"PORTPROMPT:" is not a recognized device.
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764387731691.ps1"
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+
+❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764387731691.ps1"
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+
+❌ All printing methods failed
+❌ Print failed after 55632ms: Primary: connect ETIMEDOUT 192.168.1.81:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764387731691.ps1"
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+

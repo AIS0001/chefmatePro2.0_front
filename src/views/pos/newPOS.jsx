@@ -20,6 +20,7 @@ import TableSelectionModal from "../../components/Modals/TableSelectionModal";
 import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // ✅ Added icons
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
+import { printKOT as printKOTThermal } from "../../services/thermalPrinter"; // ✅ Import thermal KOT printer (renamed to avoid conflict)
 import "./newPOS.css"; // ✅ Import POS styles
 
 
@@ -27,10 +28,10 @@ import "./newPOS.css"; // ✅ Import POS styles
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
   
-  // const baseURL = 'http://localhost:4402';
+  const baseURL = 'http://localhost:4402';
   
  //  const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
-   const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
+  //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
    
   let currentDate = format(new Date(), "yyyy-MM-dd");
@@ -578,6 +579,120 @@ const decreaseItemQuantity = (index) => {
       toast.success("KOT sent to printer!");
     } else {
       toast.error("Unable to open print window. Please check popup blocker settings.");
+    }
+  };
+
+  // Send KOT via ESC/POS thermal printer
+  const handleSendKOTESCPOS = async () => {
+    if (!selectedTable) {
+      toast.error('Please select a table!');
+      return;
+    }
+
+    if (cart.length === 0) {
+      toast.error('Cart is empty!');
+      return;
+    }
+
+    try {
+      toast.info('Processing order...');
+
+      // Get the next setup date
+      const setupDate = await getNextSetupDate();
+
+      // Prepare order items early for faster processing
+      const orderItems = cart.map(item => ({
+        order_number: maxNumber,
+        table_number: selectedTable,
+        item_name: item.iname,
+        quantity: parseFloat(item.quantity.toFixed(2)),
+        price: parseFloat(item.offerprice),
+        total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
+        status: "1",
+        uom: item.uom || "",
+        weight_based: item.weight === "weight" ? 1 : 0,
+        setup_date: setupDate,
+        // Add category information for reporting
+        category_id: item.category_id || null,
+        category_name: item.category_name || null,
+        subcategory_id: item.subcategory_id || null,
+        // Add table category for filtering
+        table_cat_id: selectedTableCategory || null,
+      }));
+
+      // Save order data in parallel
+      const [response, response1] = await Promise.all([
+        axios.post(`/insertdata/orders`, {
+          userid: getUserName(),
+          order_number: maxNumber,
+          table_number: selectedTable,
+          total_amount: total,
+          status: "1",
+        }, getHeaders()),
+        
+        axios.post(`/insertdatabulk/order_items`, {
+          items: orderItems
+        }, getHeaders())
+      ]);
+
+      if (response1.data.success) {
+        console.log("✅ ORDER SAVED SUCCESSFULLY");
+        toast.success(response.data.message);
+        setOrderNumber((prevOrder) => prevOrder + 1);
+
+        // Prepare KOT data with same format as existing KOT
+        const kotData = {
+          table: selectedTable,
+          orderNumber: maxNumber,
+          timestamp: new Date().toISOString(),
+          items: cart.map(item => ({
+            item_name: item.iname,
+            quantity: parseFloat(item.quantity.toFixed(2))
+          })),
+          total: total.toFixed(2)
+        };
+
+        // Print KOT using thermal printer service
+        const printResult = await printKOTThermal(kotData, {
+          showSuccessMessage: false, // We'll show custom message
+          showErrorMessage: false    // We'll handle errors here
+        });
+
+        if (printResult) {
+          console.log('✅ KOT sent to thermal printer successfully');
+          toast.success('Order saved and KOT sent to thermal printer!');
+        } else {
+          toast.warning('Order saved but KOT print failed. Check printer.');
+        }
+        
+        // Clear cart after successful operations
+        setCart([]);
+        setTotal(0);
+        
+        // Update table status and refresh data in background
+        Promise.all([
+          updateData("tablelist", { status: '1' }, { name: selectedTable }),
+          fetchData("tablelist", setTotaltablelist, "id", {}),
+          getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
+        ]).then(() => {
+          setRefreshTrigger(prev => prev + 1);
+          console.log("KOT ESC/POS sent successfully, data refreshed...");
+        });
+        
+      } else {
+        toast.error("Failed to save the order!");
+      }
+    } catch (error) {
+      console.error('❌ Error in handleSendKOTESCPOS:', error);
+      
+      // Check if it's a network/connection error
+      if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
+        toast.error('⚠️ Connection error! Check your network and printer server.', {
+          autoClose: 5000
+        });
+      } else {
+        toast.error('Error: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+      }
     }
   };
 
@@ -1143,7 +1258,14 @@ const decreaseItemQuantity = (index) => {
                               alt={item.iname}
                               onClick={() => addItemToOrder(index, item)}
                               className="item-image"
-                              style={{ marginBottom: '5px' }}
+                              style={{ 
+                                marginBottom: '5px',
+                                width: '100%',
+                                height: '120px',
+                                objectFit: 'cover',
+                                borderRadius: '6px',
+                                cursor: 'pointer'
+                              }}
                             />
                             <h5 className="item-name" style={{ fontSize: '13px', margin: '3px 0' }}>{item.iname}</h5>
                             <p className="item-price" style={{ fontSize: '12px', margin: '2px 0' }}>฿ {item.offerprice}.00</p>
@@ -1224,6 +1346,14 @@ const decreaseItemQuantity = (index) => {
                         title="Print KOT to Kitchen & Cashier"
                       > 
                         <FaPrint className="me-1" />Send KOT
+                      </button>
+                      <button 
+                        className="btn btn-success" 
+                        onClick={handleSendKOTESCPOS}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                        title="Send KOT via ESC/POS Thermal Printer"
+                      > 
+                        <FaPrint className="me-1" />KOT ESC/POS
                       </button>
                       <button 
                         className="btn btn-danger" 

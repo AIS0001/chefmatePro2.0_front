@@ -1,6 +1,6 @@
-// Updated BillHistory.jsx
+// Updated BillHistory.jsx with Ant Design
 import React, { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { CSVLink } from "react-csv";
 import jsPDF from "jspdf";
@@ -16,6 +16,34 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import {
+  Table,
+  Card,
+  Button,
+  DatePicker,
+  Select,
+  Input,
+  Row,
+  Col,
+  Tabs,
+  Space,
+  Statistic,
+  Empty,
+  Modal,
+  Tooltip as AntTooltip,
+  Tag,
+  InputNumber,
+} from "antd";
+import {
+  FilterOutlined,
+  ClearOutlined,
+  FileExcelOutlined,
+  FilePdfOutlined,
+  ArrowLeftOutlined,
+  HomeOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
 
 import Layout from "../../layout/Layout";
 import Header from "../../components/Header";
@@ -25,23 +53,37 @@ import fetchData from "../../functions/fetchData";
 import logo from "../../assets/logo.png";
 import BillItemModal from "../../components/Modals/BillItemModal";
 import { getUserType } from "../../utility/auth";
-import { FaHome, FaArrowLeft } from "react-icons/fa";
+
+const PAYMENT_MODES = [
+  { label: "Cash", value: "Cash" },
+  { label: "Credit", value: "Credit" },
+  { label: "Bank Transfer", value: "Bank Transfer" },
+  { label: "Entertainment", value: "Entertainment" },
+  { label: "UPI", value: "UPI" },
+  { label: "QR Code", value: "QR Code" },
+];
 
 export default function BillHistory() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
-  const [startDate, setStartDate] = useState(localStorage.getItem("startDate") || "");
-  const [endDate, setEndDate] = useState(localStorage.getItem("endDate") || "");
-  const [paymentMode, setPaymentMode] = useState(localStorage.getItem("paymentMode") || "");
-  const [orderNoSearch, setOrderNoSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
   const [activeTab, setActiveTab] = useState("active");
-  const [cancelledTotal, setCancelledTotal] = useState(0);
-  const [tableFilter, setTableFilter] = useState("");
-  const [amountFilter, setAmountFilter] = useState({ min: "", max: "" });
-  const [sortBy, setSortBy] = useState("date");
-  const [sortOrder, setSortOrder] = useState("desc");
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    startDate: localStorage.getItem("startDate") ? dayjs(localStorage.getItem("startDate")) : null,
+    endDate: localStorage.getItem("endDate") ? dayjs(localStorage.getItem("endDate")) : null,
+    paymentMode: localStorage.getItem("paymentMode") || "",
+    invoiceNo: "",
+    tableNumber: "",
+    minAmount: null,
+    maxAmount: null,
+    sortBy: "date",
+    sortOrder: "descend",
+  });
+
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   const navigate = useNavigate();
   const userType = getUserType();
@@ -67,66 +109,57 @@ export default function BillHistory() {
 
   // Filter change effect
   useEffect(() => {
-    localStorage.setItem("startDate", startDate);
-    localStorage.setItem("endDate", endDate);
-    localStorage.setItem("paymentMode", paymentMode);
+    if (filters.startDate) {
+      localStorage.setItem("startDate", filters.startDate.format("YYYY-MM-DD"));
+    } else {
+      localStorage.removeItem("startDate");
+    }
+    if (filters.endDate) {
+      localStorage.setItem("endDate", filters.endDate.format("YYYY-MM-DD"));
+    } else {
+      localStorage.removeItem("endDate");
+    }
+    localStorage.setItem("paymentMode", filters.paymentMode);
+    
     if (data.length > 0) {
       applyFilters();
     }
-  }, [startDate, endDate, paymentMode, activeTab, orderNoSearch, tableFilter, amountFilter, sortBy, sortOrder]);
+  }, [filters, data, activeTab]);
 
   const applyFilters = () => {
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    if (filters.startDate && filters.endDate && filters.startDate.isAfter(filters.endDate)) {
       toast.error("Invalid date range: Start Date is after End Date");
       return;
     }
 
     let filtered = [...data];
     
-    // Debug: Log raw data status values
-    console.log("Raw data status values:", data.map(item => ({ id: item.id, status: item.status, type: typeof item.status })));
-    console.log("Total raw data count:", data.length);
-    
-    // TEMPORARY: Show all data first to debug
-    console.log("Active tab:", activeTab);
-    console.log("All data:", data);
-    
     // Filter by status (active/cancelled)
     if (activeTab === "cancelled") {
       filtered = filtered.filter(item => item.status === 2 || item.status === "2");
-      console.log("Filtered cancelled bills:", filtered.length);
     } else {
       filtered = filtered.filter(item => item.status !== 2 && item.status !== "2");
-      console.log("Filtered active bills:", filtered.length);
-    }
-    
-    // TEMPORARY: If no filtered data, show all data for debugging
-    if (filtered.length === 0) {
-      console.log("No filtered data found, showing all data for debugging");
-      filtered = [...data];
     }
     
     // Filter by date range
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999); // Include the entire end date
+    if (filters.startDate && filters.endDate) {
+      const start = filters.startDate.startOf('day').toDate();
+      const end = filters.endDate.endOf('day').toDate();
       
       filtered = filtered.filter(item => {
         if (!item.setup_date) return false;
         const itemDate = new Date(item.setup_date);
         return itemDate >= start && itemDate <= end;
       });
-    } else if (startDate) {
-      const start = new Date(startDate);
+    } else if (filters.startDate) {
+      const start = filters.startDate.startOf('day').toDate();
       filtered = filtered.filter(item => {
         if (!item.setup_date) return false;
         const itemDate = new Date(item.setup_date);
         return itemDate >= start;
       });
-    } else if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
+    } else if (filters.endDate) {
+      const end = filters.endDate.endOf('day').toDate();
       filtered = filtered.filter(item => {
         if (!item.setup_date) return false;
         const itemDate = new Date(item.setup_date);
@@ -135,30 +168,30 @@ export default function BillHistory() {
     }
     
     // Filter by payment mode
-    if (paymentMode) {
-      filtered = filtered.filter(item => item.payment_mode === paymentMode);
+    if (filters.paymentMode) {
+      filtered = filtered.filter(item => item.payment_mode === filters.paymentMode);
     }
     
     // Filter by invoice number
-    if (orderNoSearch) {
+    if (filters.invoiceNo) {
       filtered = filtered.filter(item => 
-        item.id.toString().includes(orderNoSearch.toLowerCase())
+        item.id.toString().includes(filters.invoiceNo.toLowerCase())
       );
     }
     
     // Filter by table
-    if (tableFilter) {
+    if (filters.tableNumber) {
       filtered = filtered.filter(item => 
-        item.table_number && item.table_number.toLowerCase().includes(tableFilter.toLowerCase())
+        item.table_number && item.table_number.toLowerCase().includes(filters.tableNumber.toLowerCase())
       );
     }
     
     // Filter by amount range
-    if (amountFilter.min || amountFilter.max) {
+    if (filters.minAmount !== null || filters.maxAmount !== null) {
       filtered = filtered.filter(item => {
         const amount = parseFloat(item.grand_total || 0);
-        const minAmount = parseFloat(amountFilter.min || 0);
-        const maxAmount = parseFloat(amountFilter.max || Infinity);
+        const minAmount = filters.minAmount !== null ? parseFloat(filters.minAmount) : 0;
+        const maxAmount = filters.maxAmount !== null ? parseFloat(filters.maxAmount) : Infinity;
         return amount >= minAmount && amount <= maxAmount;
       });
     }
@@ -167,7 +200,7 @@ export default function BillHistory() {
     filtered.sort((a, b) => {
       let aValue, bValue;
       
-      switch (sortBy) {
+      switch (filters.sortBy) {
         case "date":
           aValue = new Date(a.setup_date + " " + (a.inv_time || "00:00:00"));
           bValue = new Date(b.setup_date + " " + (b.inv_time || "00:00:00"));
@@ -189,7 +222,7 @@ export default function BillHistory() {
           bValue = b.id;
       }
       
-      if (sortOrder === "asc") {
+      if (filters.sortOrder === "ascend") {
         return aValue > bValue ? 1 : -1;
       } else {
         return aValue < bValue ? 1 : -1;
@@ -197,52 +230,46 @@ export default function BillHistory() {
     });
     
     setFilteredData(filtered);
-    
-    // Calculate totals
-    if (activeTab === "cancelled") {
-      const total = filtered.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
-      setCancelledTotal(total.toFixed(2));
-    }
   };
   const clearFilters = () => {
-    setStartDate("");
-    setEndDate("");
-    setPaymentMode("");
-    setOrderNoSearch("");
-    setTableFilter("");
-    setAmountFilter({ min: "", max: "" });
-    setSortBy("date");
-    setSortOrder("desc");
+    setFilters({
+      startDate: null,
+      endDate: null,
+      paymentMode: "",
+      invoiceNo: "",
+      tableNumber: "",
+      minAmount: null,
+      maxAmount: null,
+      sortBy: "date",
+      sortOrder: "descend",
+    });
     localStorage.removeItem("startDate");
     localStorage.removeItem("endDate");
     localStorage.removeItem("paymentMode");
+    toast.success("Filters cleared!");
   };
 
  const exportPDF = () => {
   const doc = new jsPDF();
   doc.addImage(logo, "PNG", 150, 10, 40, 15);
   doc.setFontSize(16);
-  doc.text("Bill History", 14, 20);
+  doc.text("Bill History Report", 14, 20);
 
-  const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Grand Total", "Payment Mode"];
+  const tableColumn = ["Invoice No", "Date", "Time", "Table", "Subtotal", "Tax", "Grand Total", "Payment Mode"];
   const tableRows = [];
-
-  let totalSubtotal = 0;
-  let totalGrandTotal = 0;
 
   filteredData.forEach(item => {
     const subtotal = parseFloat(item.subtotal_afterdiscount) || 0;
+    const tax = parseFloat(item.tax) || 0;
     const grandTotal = parseFloat(item.grand_total) || 0;
-
-    totalSubtotal += subtotal;
-    totalGrandTotal += grandTotal;
 
     tableRows.push([
       item.id,
-      item.setup_date,
+      format(parseISO(item.setup_date), "dd/MM/yyyy"),
       item.inv_time,
       item.table_number,
       subtotal.toFixed(2),
+      tax.toFixed(2),
       grandTotal.toFixed(2),
       item.payment_mode,
     ]);
@@ -250,10 +277,11 @@ export default function BillHistory() {
 
   // Add total row
   tableRows.push([
-    { content: "Total", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+    { content: "TOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
     totalSubtotal.toFixed(2),
-    totalGrandTotal.toFixed(2),
-    "" // Empty payment mode column
+    totalTax.toFixed(2),
+    totalAmount.toFixed(2),
+    "" 
   ]);
 
   doc.autoTable({
@@ -263,13 +291,17 @@ export default function BillHistory() {
     styles: { fontSize: 10 },
   });
 
-  doc.save("salereport.pdf");
+  doc.save(`salereport-${dayjs().format("YYYY-MM-DD")}.pdf`);
 };
 
 
   const handleViewItems = (row) => {
     setSelectedBill(row);
     setShowModal(true);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const monthlyData = (() => {
@@ -320,262 +352,406 @@ export default function BillHistory() {
     navigate(-1);
   };
 
+  // Calculate totals
+  const totalAmount = filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
+  const totalSubtotal = filteredData.reduce((acc, item) => acc + parseFloat(item.subtotal_afterdiscount || 0), 0);
+  const totalTax = filteredData.reduce((acc, item) => acc + parseFloat(item.tax || 0), 0);
+
   // Check if mobile device
   const isMobile = window.innerWidth <= 768;
 
-  // Render content without Layout/Header for cashiers
+  // Render content with Ant Design
   const renderContent = () => (
     <>
-      <ToastContainer />
-      
       {/* Cashier Navigation Header */}
       {isCashier && (
-        <div style={{
-          backgroundColor: '#343a40',
-          color: 'white',
-          padding: isMobile ? '10px 15px' : '15px 20px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          marginBottom: '20px'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            flexWrap: isMobile ? 'wrap' : 'nowrap',
-            gap: isMobile ? '10px' : '15px'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: isMobile ? '10px' : '15px',
-              flexWrap: 'wrap'
-            }}>
-              <button 
-                className="btn btn-outline-light btn-sm"
-                onClick={navigateBack}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '5px',
-                  borderRadius: '6px',
-                  fontSize: isMobile ? '12px' : '14px',
-                  padding: isMobile ? '5px 10px' : '8px 12px'
-                }}
-              >
-                <FaArrowLeft size={isMobile ? 12 : 14} />
-                Back
-              </button>
-              <h4 style={{ 
-                margin: 0, 
-                fontWeight: 'bold',
-                fontSize: isMobile ? '1.2rem' : '1.5rem'
-              }}>
-                Sales Reports
-              </h4>
-            </div>
-            <button 
-              className="btn btn-outline-light btn-sm"
-              onClick={navigateToDashboard}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '5px',
-                borderRadius: '6px',
-                fontSize: isMobile ? '12px' : '14px',
-                padding: isMobile ? '5px 10px' : '8px 12px'
-              }}
-            >
-              <FaHome size={isMobile ? 12 : 14} />
-              Dashboard
-            </button>
-          </div>
-        </div>
+        <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card style={{ borderRadius: "8px" }}>
+              <Space style={{ width: "100%", justifyContent: "space-between", display: "flex" }}>
+                <Space>
+                  <Button 
+                    type="default" 
+                    onClick={navigateBack} 
+                    icon={<ArrowLeftOutlined />}
+                  >
+                    Back
+                  </Button>
+                  <h3 style={{ margin: 0 }}>Sales Reports</h3>
+                </Space>
+                <Button 
+                  type="primary" 
+                  onClick={navigateToDashboard} 
+                  icon={<HomeOutlined />}
+                >
+                  Dashboard
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
       )}
 
-      <CardComponent>
-         <div className="d-flex mb-3">
-          <button
-            className={`btn btn-${activeTab === "active" ? "primary" : "outline-primary"} me-2`}
-            onClick={() => setActiveTab("active")}
-          >
-            Active Bills
-          </button>
-          <button
-            className={`btn btn-${activeTab === "cancelled" ? "danger" : "outline-danger"}`}
-            onClick={() => setActiveTab("cancelled")}
-          >
-            Cancelled Bills
-          </button>
-        </div>
-        <div className="row mb-3">
-          <div className="col-md-3">
-            <label>Start Date</label>
-            <input 
-              type="date" 
-              className="form-control" 
-              value={startDate} 
-              onChange={(e) => setStartDate(e.target.value)} 
-            />
-          </div>
-          <div className="col-md-3">
-            <label>End Date</label>
-            <input 
-              type="date" 
-              className="form-control" 
-              value={endDate} 
-              onChange={(e) => setEndDate(e.target.value)} 
-            />
-          </div>
-          <div className="col-md-3">
-            <label>Payment Mode</label>
-            <select 
-              className="form-control" 
-              value={paymentMode} 
-              onChange={(e) => setPaymentMode(e.target.value)}
+      {/* Tab Section */}
+      <Card style={{ marginBottom: 24 }}>
+        <Tabs 
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: "active",
+              label: (
+                <span>
+                  <Tag color="blue">Active Bills</Tag>
+                </span>
+              ),
+            },
+            {
+              key: "cancelled",
+              label: (
+                <span>
+                  <Tag color="red">Cancelled Bills</Tag>
+                </span>
+              ),
+            },
+          ]}
+        />
+      </Card>
+
+      {/* Filter Section */}
+      <Card style={{ marginBottom: 24 }} title={<><FilterOutlined /> Sale Filters</>}>
+        {/* Primary Filters */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Date Range</label>
+              <DatePicker.RangePicker
+                style={{ width: "100%" }}
+                value={filters.startDate && filters.endDate ? [filters.startDate, filters.endDate] : null}
+                onChange={(dates) => {
+                  if (dates) {
+                    handleFilterChange("startDate", dates[0]);
+                    handleFilterChange("endDate", dates[1]);
+                  } else {
+                    handleFilterChange("startDate", null);
+                    handleFilterChange("endDate", null);
+                  }
+                }}
+                format="YYYY-MM-DD"
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Payment Mode</label>
+              <Select
+                placeholder="Select payment mode"
+                allowClear
+                value={filters.paymentMode || undefined}
+                onChange={(value) => handleFilterChange("paymentMode", value || "")}
+                options={[{ label: "All", value: "" }, ...PAYMENT_MODES]}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Invoice No.</label>
+              <Input
+                placeholder="Search invoice"
+                value={filters.invoiceNo}
+                onChange={(e) => handleFilterChange("invoiceNo", e.target.value)}
+                allowClear
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Table Number</label>
+              <Input
+                placeholder="Search table"
+                value={filters.tableNumber}
+                onChange={(e) => handleFilterChange("tableNumber", e.target.value)}
+                allowClear
+              />
+            </div>
+          </Col>
+        </Row>
+
+        {/* Advanced Filters */}
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Min Amount (฿)</label>
+              <InputNumber
+                placeholder="Minimum"
+                style={{ width: "100%" }}
+                value={filters.minAmount}
+                onChange={(value) => handleFilterChange("minAmount", value)}
+                precision={2}
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Max Amount (฿)</label>
+              <InputNumber
+                placeholder="Maximum"
+                style={{ width: "100%" }}
+                value={filters.maxAmount}
+                onChange={(value) => handleFilterChange("maxAmount", value)}
+                precision={2}
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Sort By</label>
+              <Select
+                value={filters.sortBy}
+                onChange={(value) => handleFilterChange("sortBy", value)}
+                options={[
+                  { label: "Date & Time", value: "date" },
+                  { label: "Amount", value: "amount" },
+                  { label: "Table", value: "table" },
+                  { label: "Invoice No.", value: "invoice" },
+                ]}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Sort Order</label>
+              <Select
+                value={filters.sortOrder}
+                onChange={(value) => handleFilterChange("sortOrder", value)}
+                options={[
+                  { label: "Descending", value: "descend" },
+                  { label: "Ascending", value: "ascend" },
+                ]}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </Col>
+        </Row>
+
+        {/* Action Buttons */}
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24} sm={12} md={4}>
+            <Button 
+              type="primary" 
+              danger 
+              onClick={clearFilters}
+              icon={<ClearOutlined />}
+              block
+              size="small"
             >
-              <option value="">All</option>
-              <option value='Cash'>Cash</option>
-              <option value='Credit'>Credit</option>
-              <option value='Bank Transfer'>Bank Transfer</option>
-              <option value='Entertainment'>Entertainment</option>
-              <option value='UPI'>UPI</option>
-              <option value='QR Code'>QR Code</option>
-            </select>
-          </div>
-          <div className="col-md-3">
-            <label>Invoice No.</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={orderNoSearch} 
-              onChange={(e) => setOrderNoSearch(e.target.value)} 
-              placeholder="Search invoice number"
-            />
-          </div>
-        </div>
-        
-        <div className="row mb-3">
-          <div className="col-md-3">
-            <label>Table Number</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={tableFilter} 
-              onChange={(e) => setTableFilter(e.target.value)} 
-              placeholder="Search table number"
-            />
-          </div>
-          <div className="col-md-3">
-            <label>Min Amount</label>
-            <input 
-              type="number" 
-              className="form-control" 
-              value={amountFilter.min} 
-              onChange={(e) => setAmountFilter(prev => ({ ...prev, min: e.target.value }))} 
-              placeholder="Minimum amount"
-            />
-          </div>
-          <div className="col-md-3">
-            <label>Max Amount</label>
-            <input 
-              type="number" 
-              className="form-control" 
-              value={amountFilter.max} 
-              onChange={(e) => setAmountFilter(prev => ({ ...prev, max: e.target.value }))} 
-              placeholder="Maximum amount"
-            />
-          </div>
-          <div className="col-md-3">
-            <label>Sort By</label>
-            <select 
-              className="form-control" 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="date">Date & Time</option>
-              <option value="amount">Amount</option>
-              <option value="table">Table</option>
-              <option value="invoice">Invoice No.</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="row mb-3">
-          <div className="col-md-3">
-            <label>Sort Order</label>
-            <select 
-              className="form-control" 
-              value={sortOrder} 
-              onChange={(e) => setSortOrder(e.target.value)}
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-          </div>
-          <div className="col-md-9 d-flex align-items-end">
-            <button className="btn btn-info me-2" onClick={clearFilters}>Clear All Filters</button>
-          </div>
-        </div>
-        
-        <div className="row mb-3">
-          <div className="col-md-3 d-flex align-items-end">
+              Clear Filters
+            </Button>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
             <CSVLink
               data={filteredData.length > 0 ? filteredData : data}
-              filename="salereport.csv"
-              className="btn btn-success w-100"
+              filename={`salereport-${dayjs().format("YYYY-MM-DD")}.csv`}
+              style={{ textDecoration: "none", display: "block" }}
             >
-              Export CSV
+              <Button 
+                type="primary" 
+                icon={<FileExcelOutlined />}
+                block
+                size="small"
+              >
+                CSV
+              </Button>
             </CSVLink>
-          </div>
-          <div className="col-md-3 d-flex align-items-end">
-            <button className="btn btn-danger w-100" onClick={exportPDF}>Export PDF</button>
-          </div>
-          <div className="col-md-6 d-flex align-items-end">
-            <div className="alert alert-info w-100 mb-0">
-              <strong>Total Records:</strong> {filteredData.length} | 
-              <strong> Filtered from:</strong> {data.length} total bills
-            </div>
-          </div>
-        </div>
-      </CardComponent>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Button 
+              type="danger" 
+              icon={<FilePdfOutlined />}
+              onClick={exportPDF}
+              block
+              size="small"
+            >
+              PDF
+            </Button>
+          </Col>
+        </Row>
+      </Card>
 
-      <div className="row">
-        <div className="col-12">
-          {filteredData.length === 0 ? (
-            <p>No data available.</p>
-          ) : (
-            <DataTable columns={columns} data={filteredData} tablename="final_bill" />
-          )}
-          <div className="mt-3">
-          
-            <h5>
-              {activeTab === "cancelled" ? (
-                <>Cancelled Bill Total: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
-              ) : (
-                <>Total Sale: ฿{filteredData.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0).toFixed(2)}</>
-              )}
-            </h5>
+      {/* Data Table Section */}
+      <Card style={{ marginBottom: 24 }} title="Sales Records">
+        {filteredData.length === 0 ? (
+          <Empty description="No records found" />
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <Table
+              columns={[
+                {
+                  title: "Inv. No.",
+                  dataIndex: "id",
+                  key: "id",
+                  width: 100,
+                  render: (text, record) => (
+                    <Button 
+                      type="link" 
+                      onClick={() => handleViewItems(record)}
+                    >
+                      #{text}
+                    </Button>
+                  ),
+                  sorter: (a, b) => a.id - b.id,
+                },
+                {
+                  title: "Date",
+                  dataIndex: "setup_date",
+                  key: "setup_date",
+                  render: (text) => format(parseISO(text), "dd/MM/yyyy"),
+                  sorter: (a, b) => new Date(a.setup_date) - new Date(b.setup_date),
+                },
+                {
+                  title: "Time",
+                  dataIndex: "inv_time",
+                  key: "inv_time",
+                  width: 80,
+                },
+                {
+                  title: "Table",
+                  dataIndex: "table_number",
+                  key: "table_number",
+                  render: (text) => <Tag color="cyan">{text}</Tag>,
+                },
+                {
+                  title: "Subtotal",
+                  dataIndex: "subtotal_afterdiscount",
+                  key: "subtotal_afterdiscount",
+                  render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
+                  align: "right",
+                },
+                {
+                  title: "Tax",
+                  dataIndex: "tax",
+                  key: "tax",
+                  render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
+                  align: "right",
+                },
+                {
+                  title: "Grand Total",
+                  dataIndex: "grand_total",
+                  key: "grand_total",
+                  render: (text) => <strong>฿{parseFloat(text || 0).toFixed(2)}</strong>,
+                  align: "right",
+                },
+                {
+                  title: "Payment",
+                  dataIndex: "payment_mode",
+                  key: "payment_mode",
+                  render: (text) => {
+                    const colorMap = {
+                      "Cash": "green",
+                      "Credit": "blue",
+                      "Bank Transfer": "purple",
+                      "UPI": "orange",
+                      "QR Code": "red",
+                      "Entertainment": "cyan",
+                    };
+                    return <Tag color={colorMap[text] || "default"}>{text}</Tag>;
+                  },
+                },
+                {
+                  title: "Action",
+                  key: "action",
+                  width: 80,
+                  render: (_, record) => (
+                    <AntTooltip title="View Items">
+                      <Button 
+                        type="primary" 
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleViewItems(record)}
+                      />
+                    </AntTooltip>
+                  ),
+                },
+              ]}
+              dataSource={filteredData.map((item, index) => ({ ...item, key: index }))}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+              }}
+              size="small"
+              scroll={{ x: 1200 }}
+            />
           </div>
-        </div>
-      </div>
+        )}
+      </Card>
 
-      <div className="row">
-        <CardComponent>
-          <div className="mt-4">
-            <h5>Monthly Sales Summary</h5>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="total" fill="#2334d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardComponent>
-      </div>
+      {/* Summary Cards */}
+      <Card style={{ marginBottom: 24 }} title="Summary">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Total Sale"
+              value={totalAmount}
+              prefix="฿"
+              precision={2}
+              valueStyle={{ color: "#52c41a" }}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Total Subtotal"
+              value={totalSubtotal}
+              prefix="฿"
+              precision={2}
+              valueStyle={{ color: "#1890ff" }}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Total Tax"
+              value={totalTax}
+              prefix="฿"
+              precision={2}
+              valueStyle={{ color: "#f5222d" }}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Records Count"
+              value={filteredData.length}
+              valueStyle={{ color: "#722ed1" }}
+            />
+          </Col>
+        </Row>
+      </Card>
 
+      {/* Monthly Chart */}
+      <Card title="Monthly Sales Summary">
+        {monthlyData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={monthlyData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => `฿${value.toFixed(2)}`} />
+              <Bar dataKey="total" fill="#1890ff" name="Total Sales" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <Empty description="No data to display" />
+        )}
+      </Card>
+
+      {/* Modal */}
       {showModal && (
         <BillItemModal
           isOpen={showModal}
@@ -589,14 +765,11 @@ export default function BillHistory() {
   // Main return statement with conditional rendering
   return isCashier ? (
     <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
-      backgroundColor: '#f8f9fa',
-      overflow: 'auto'
+      padding: "24px",
+      backgroundColor: "#f0f2f5",
+      minHeight: "100vh",
     }}>
-      <div style={{ padding: isCashier ? '0' : '20px' }}>
-        {renderContent()}
-      </div>
+      {renderContent()}
     </div>
   ) : (
     <Layout>

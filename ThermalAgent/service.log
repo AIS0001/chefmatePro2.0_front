@@ -1,0 +1,717 @@
+[2025-11-29T03:25:43.466Z] [2025-11-29T03:25:43.466Z] POST /print
+[2025-11-29T03:25:43.467Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T03:25:43.467Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T03:25:43.467Z] ✅ Network printer device created
+[2025-11-29T03:25:50.490Z] ✅ Print job sent successfully via escpos
+[2025-11-29T03:25:50.491Z] ✅ Print completed in 7024ms
+[2025-11-29T03:26:21.366Z] [2025-11-29T03:26:21.366Z] POST /print
+[2025-11-29T03:26:21.367Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T03:26:21.368Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T03:26:21.368Z] ✅ Network printer device created
+[2025-11-29T03:26:21.370Z] ✅ Print job sent successfully via escpos
+[2025-11-29T03:26:21.371Z] ✅ Print completed in 4ms
+[2025-11-29T03:30:36.553Z] [2025-11-29T03:30:36.553Z] POST /print
+[2025-11-29T03:30:36.553Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T03:30:36.554Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T03:30:36.554Z] ✅ Network printer device created
+[2025-11-29T03:30:36.558Z] ✅ Print job sent successfully via escpos
+[2025-11-29T03:30:36.558Z] ✅ Print completed in 5ms
+[2025-11-29T03:41:16.588Z] [2025-11-29T03:41:16.588Z] POST /print
+[2025-11-29T03:41:16.589Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T03:41:16.589Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T03:41:16.589Z] ✅ Network printer device created
+[2025-11-29T03:41:16.600Z] ✅ Print job sent successfully via escpos
+[2025-11-29T03:41:16.600Z] ✅ Print completed in 11ms
+[2025-11-29T03:41:17.122Z] [2025-11-29T03:41:17.122Z] POST /print
+[2025-11-29T03:41:17.123Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T03:41:17.123Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T03:41:17.123Z] ✅ Network printer device created
+[2025-11-29T03:41:38.170Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.81:9100
+[2025-11-29T03:41:38.172Z] ⚠️  Primary method failed, trying fallback...
+[2025-11-29T03:41:38.173Z] 🖨️  Using Windows printer...
+[2025-11-29T03:41:39.164Z] 🖨️  Printing to: Microsoft Print to PDF
+[2025-11-29T03:41:39.164Z] 📦 Data size: 44020 bytes
+[2025-11-29T03:41:39.164Z] 🔧 Method 1: Windows Print Spooler API...
+[2025-11-29T03:42:09.169Z] ⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+[2025-11-29T03:42:09.169Z] 🔧 Method 2: Direct port access...
+[2025-11-29T03:42:11.647Z] 📌 Printer port: PORTPROMPT:
+[2025-11-29T03:42:11.690Z] ⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1764387729169.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+[2025-11-29T03:42:11.690Z] 🔧 Method 3: PowerShell file write...
+[2025-11-29T03:42:12.753Z] ERROR: ❌ PowerShell method also failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764387731691.ps1"
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+
+[2025-11-29T03:42:12.754Z] ERROR: ❌ All Windows print methods failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764387731691.ps1"
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+
+[2025-11-29T03:42:12.754Z] ERROR: ❌ All printing methods failed
+[2025-11-29T03:42:12.755Z] ERROR: ❌ Print failed after 55632ms: Primary: connect ETIMEDOUT 192.168.1.81:9100, Fallback: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_1764387731691.ps1"
+C:\Windows\TEMP\print_1764387731691.ps1 : Exception calling "WriteAllBytes" with "2" argument(s): "The given path's 
+format is not supported."
+At C:\Windows\TEMP\print_1764387731691.ps1:25 char:5
++     Write-Error $_.Exception.Message
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_1764387731691.ps1
+ 
+
+[2025-11-29T03:43:25.395Z] [2025-11-29T03:43:25.395Z] POST /print
+[2025-11-29T03:43:25.396Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T03:43:25.396Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T03:43:25.396Z] ✅ Network printer device created
+[2025-11-29T03:43:25.407Z] ✅ Print job sent successfully via escpos
+[2025-11-29T03:43:25.408Z] ✅ Print completed in 12ms
+[2025-11-29T04:14:09.884Z] [2025-11-29T04:14:09.884Z] POST /print
+[2025-11-29T04:14:09.886Z] 📄 Received print job (58696 chars base64)
+[2025-11-29T04:14:09.887Z] 🔍 Connecting to network printer at 192.168.1.81:9100...
+[2025-11-29T04:14:09.888Z] ✅ Network printer device created
+[2025-11-29T04:14:09.900Z] ✅ Print job sent successfully via escpos
+[2025-11-29T04:14:09.901Z] ✅ Print completed in 15ms
+[2025-12-15T21:14:46.882Z] 🚀 Service starting...
+[2025-12-15T21:14:46.895Z] Working directory: C:\ThermalAgent
+[2025-12-15T21:14:46.895Z] Node version: v24.8.0
+[2025-12-15T21:14:46.899Z] ✅ Printer manager initialized
+[2025-12-15T21:14:46.904Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:14:46.904Z] 🖨️  THERMAL PRINTER AGENT SERVER
+[2025-12-15T21:14:46.905Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:14:46.905Z] ✅ Server running on port 6001
+[2025-12-15T21:14:46.905Z] 🌐 http://localhost:6001
+[2025-12-15T21:14:46.905Z] 📋 Printer Type: network
+[2025-12-15T21:14:46.906Z] 🌐 Printer IP: 192.168.1.81
+[2025-12-15T21:14:46.906Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:14:46.906Z] 📡 Endpoints:
+[2025-12-15T21:14:46.906Z]    GET  /        - Health check
+[2025-12-15T21:14:46.906Z]    GET  /printers - List available printers
+[2025-12-15T21:14:46.906Z]    POST /print   - Print ESC/POS data
+[2025-12-15T21:14:46.906Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:16:18.427Z] 🚀 Service starting...
+[2025-12-15T21:16:18.438Z] Working directory: C:\ThermalAgent
+[2025-12-15T21:16:18.439Z] Node version: v24.8.0
+[2025-12-15T21:16:18.440Z] ✅ Printer manager initialized
+[2025-12-15T21:16:18.443Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:16:18.443Z] 🖨️  THERMAL PRINTER AGENT SERVER
+[2025-12-15T21:16:18.443Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:16:18.443Z] ✅ Server running on port 6001
+[2025-12-15T21:16:18.444Z] 🌐 http://localhost:6001
+[2025-12-15T21:16:18.444Z] 📋 Printer Type: network
+[2025-12-15T21:16:18.444Z] 🌐 Printer IP: 192.168.1.81
+[2025-12-15T21:16:18.444Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-12-15T21:16:18.444Z] 📡 Endpoints:
+[2025-12-15T21:16:18.444Z]    GET  /        - Health check
+[2025-12-15T21:16:18.444Z]    GET  /printers - List available printers
+[2025-12-15T21:16:18.445Z]    POST /print   - Print ESC/POS data
+[2025-12-15T21:16:18.445Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T00:56:16.861Z] 🚀 Service starting...
+[2026-01-13T00:56:16.863Z] Working directory: D:\Projects\chefmate\chefmate_front\ThermalAgent
+[2026-01-13T00:56:16.864Z] Node version: v20.19.6
+[2026-01-13T00:56:16.865Z] ✅ Printer manager initialized
+[2026-01-13T00:56:16.865Z] 📋 Configured printers: 2
+[2026-01-13T00:56:16.866Z]    1. 192.168.1.100:9100
+[2026-01-13T00:56:16.866Z]    2. 192.168.1.101:9100
+[2026-01-13T00:56:16.868Z] ERROR: ❌ Uncaught Exception: Error: listen EADDRINUSE: address already in use :::6001
+[2026-01-13T00:56:16.871Z] ERROR: Stack: Error: listen EADDRINUSE: address already in use :::6001
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (D:\Projects\chefmate\chefmate_front\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (D:\Projects\chefmate\chefmate_front\ThermalAgent\server.js:353:5)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+[2026-01-13T00:56:49.459Z] 🚀 Service starting...
+[2026-01-13T00:56:49.461Z] Working directory: D:\Projects\chefmate\chefmate_front\ThermalAgent
+[2026-01-13T00:56:49.461Z] Node version: v20.19.6
+[2026-01-13T00:56:49.463Z] ✅ Printer manager initialized
+[2026-01-13T00:56:49.463Z] 📋 Configured printers: 2
+[2026-01-13T00:56:49.464Z]    1. 192.168.1.100:9100
+[2026-01-13T00:56:49.464Z]    2. 192.168.1.101:9100
+[2026-01-13T00:56:49.466Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T00:56:49.467Z] 🖨️  THERMAL PRINTER AGENT SERVER
+[2026-01-13T00:56:49.469Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T00:56:49.469Z] ✅ Server running on port 7001
+[2026-01-13T00:56:49.470Z] 🌐 http://localhost:7001
+[2026-01-13T00:56:49.470Z] 📋 Printer Type: network
+[2026-01-13T00:56:49.470Z] 🌐 Primary Printer IP: 192.168.1.81
+[2026-01-13T00:56:49.471Z] 
+🔗 Configured Multi-Printers:
+[2026-01-13T00:56:49.471Z]    1. 192.168.1.100:9100
+[2026-01-13T00:56:49.471Z]    2. 192.168.1.101:9100
+[2026-01-13T00:56:49.471Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T00:56:49.472Z] 📡 Endpoints:
+[2026-01-13T00:56:49.472Z]    GET  /            - Health check
+[2026-01-13T00:56:49.472Z]    GET  /printers    - List available printers
+[2026-01-13T00:56:49.473Z]    GET  /status      - Get printer configuration status
+[2026-01-13T00:56:49.473Z]    POST /print       - Print single (ESC/POS data)
+[2026-01-13T00:56:49.473Z]    POST /print-multi - Print multi-printer (simultaneous/sequential)
+[2026-01-13T00:56:49.474Z]    POST /print-two-ip- Print to two specific IP addresses
+[2026-01-13T00:56:49.474Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T00:57:11.592Z] [2026-01-13T00:57:11.592Z] GET /
+[2026-01-13T00:57:11.822Z] [2026-01-13T00:57:11.822Z] GET /favicon.ico
+[2026-01-13T00:57:26.926Z] [2026-01-13T00:57:26.926Z] GET /printers
+[2026-01-13T01:18:36.924Z] [2026-01-13T01:18:36.924Z] POST /print-multi
+[2026-01-13T01:18:36.926Z] 📄 Received multi-printer job (47384 chars base64)
+[2026-01-13T01:18:36.926Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:18:36.928Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:18:36.929Z] 🔌 Connecting to printer 1 at 192.168.1.100:9100...
+[2026-01-13T01:18:36.931Z] 🔌 Connecting to printer 2 at 192.168.1.101:9100...
+[2026-01-13T01:18:57.965Z] ERROR: ❌ Printer 1: Failed to open device: connect ETIMEDOUT 192.168.1.100:9100
+[2026-01-13T01:18:57.966Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.101:9100
+[2026-01-13T01:18:57.966Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:18:57.967Z]    Total: 2
+[2026-01-13T01:18:57.967Z]    Success: 0
+[2026-01-13T01:18:57.967Z]    Failed: 2
+[2026-01-13T01:18:57.968Z]    ❌ All printers failed - [192.168.1.100, 192.168.1.101]
+
+[2026-01-13T01:18:57.968Z] ✅ Multi-print completed in 21043ms
+[2026-01-13T01:24:59.068Z] [2026-01-13T01:24:59.068Z] POST /print-multi
+[2026-01-13T01:24:59.069Z] 📄 Received multi-printer job (50796 chars base64)
+[2026-01-13T01:24:59.069Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:24:59.070Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:24:59.070Z] 🔌 Connecting to printer 1 at 192.168.1.100:9100...
+[2026-01-13T01:24:59.071Z] 🔌 Connecting to printer 2 at 192.168.1.101:9100...
+[2026-01-13T01:25:20.103Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.101:9100
+[2026-01-13T01:25:20.119Z] ERROR: ❌ Printer 1: Failed to open device: connect ETIMEDOUT 192.168.1.100:9100
+[2026-01-13T01:25:20.119Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:25:20.120Z]    Total: 2
+[2026-01-13T01:25:20.120Z]    Success: 0
+[2026-01-13T01:25:20.120Z]    Failed: 2
+[2026-01-13T01:25:20.120Z]    ❌ All printers failed - [192.168.1.101, 192.168.1.100]
+
+[2026-01-13T01:25:20.121Z] ✅ Multi-print completed in 21052ms
+[2026-01-13T01:26:31.388Z] 🚀 Service starting...
+[2026-01-13T01:26:31.391Z] Working directory: D:\Projects\chefmate\chefmate_front\ThermalAgent
+[2026-01-13T01:26:31.391Z] Node version: v20.19.6
+[2026-01-13T01:26:31.393Z] ✅ Printer manager initialized
+[2026-01-13T01:26:31.393Z] 📋 Configured printers: 2
+[2026-01-13T01:26:31.394Z]    1. 192.168.1.216:9100
+[2026-01-13T01:26:31.394Z]    2. 192.168.1.217:9100
+[2026-01-13T01:26:31.398Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:26:31.398Z] 🖨️  THERMAL PRINTER AGENT SERVER
+[2026-01-13T01:26:31.398Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:26:31.399Z] ✅ Server running on port 7001
+[2026-01-13T01:26:31.399Z] 🌐 http://localhost:7001
+[2026-01-13T01:26:31.399Z] 📋 Printer Type: network
+[2026-01-13T01:26:31.400Z] 🌐 Primary Printer IP: 192.168.1.80
+[2026-01-13T01:26:31.400Z] 
+🔗 Configured Multi-Printers:
+[2026-01-13T01:26:31.400Z]    1. 192.168.1.216:9100
+[2026-01-13T01:26:31.401Z]    2. 192.168.1.217:9100
+[2026-01-13T01:26:31.401Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:26:31.401Z] 📡 Endpoints:
+[2026-01-13T01:26:31.401Z]    GET  /            - Health check
+[2026-01-13T01:26:31.402Z]    GET  /printers    - List available printers
+[2026-01-13T01:26:31.402Z]    GET  /status      - Get printer configuration status
+[2026-01-13T01:26:31.402Z]    POST /print       - Print single (ESC/POS data)
+[2026-01-13T01:26:31.402Z]    POST /print-multi - Print multi-printer (simultaneous/sequential)
+[2026-01-13T01:26:31.403Z]    POST /print-two-ip- Print to two specific IP addresses
+[2026-01-13T01:26:31.403Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:27:15.470Z] [2026-01-13T01:27:15.470Z] POST /print-multi
+[2026-01-13T01:27:15.471Z] 📄 Received multi-printer job (47384 chars base64)
+[2026-01-13T01:27:15.472Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:27:15.473Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:27:15.473Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T01:27:15.476Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T01:27:15.484Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T01:27:36.504Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:27:36.505Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:27:36.506Z]    Total: 2
+[2026-01-13T01:27:36.507Z]    Success: 1
+[2026-01-13T01:27:36.507Z]    Failed: 1
+[2026-01-13T01:27:36.508Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T01:27:36.508Z] ✅ Multi-print completed in 21037ms
+[2026-01-13T01:29:37.294Z] [2026-01-13T01:29:37.294Z] POST /print-multi
+[2026-01-13T01:29:37.296Z] 📄 Received multi-printer job (50796 chars base64)
+[2026-01-13T01:29:37.297Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:29:37.298Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:29:37.299Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T01:29:37.300Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T01:29:37.304Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T01:29:58.343Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:29:58.344Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:29:58.345Z]    Total: 2
+[2026-01-13T01:29:58.345Z]    Success: 1
+[2026-01-13T01:29:58.345Z]    Failed: 1
+[2026-01-13T01:29:58.345Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T01:29:58.346Z] ✅ Multi-print completed in 21050ms
+[2026-01-13T01:30:25.018Z] [2026-01-13T01:30:25.018Z] POST /print
+[2026-01-13T01:30:25.020Z] 📄 Received print job (67012 chars base64)
+[2026-01-13T01:30:25.021Z] 🔍 Connecting to network printer at 192.168.1.80:9100...
+[2026-01-13T01:30:25.022Z] ✅ Network printer device created
+[2026-01-13T01:30:46.058Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+[2026-01-13T01:30:46.061Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T01:30:46.061Z] 🖨️  Using Windows printer...
+[2026-01-13T01:30:47.311Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T01:30:47.311Z] 📦 Data size: 50257 bytes
+[2026-01-13T01:30:47.311Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T01:30:48.454Z] 📄 Spooler output: Initializing raw print job...
+Data size: 50257 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 21)
+[2026-01-13T01:30:48.455Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T01:30:48.456Z] ✅ Print completed in 23436ms
+[2026-01-13T01:32:36.241Z] [2026-01-13T01:32:36.241Z] POST /print
+[2026-01-13T01:32:36.242Z] 📄 Received print job (63596 chars base64)
+[2026-01-13T01:32:36.243Z] 🔍 Connecting to network printer at 192.168.1.80:9100...
+[2026-01-13T01:32:36.243Z] ✅ Network printer device created
+[2026-01-13T01:32:57.293Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.80:9100
+[2026-01-13T01:32:57.294Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T01:32:57.295Z] 🖨️  Using Windows printer...
+[2026-01-13T01:32:58.000Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T01:32:58.000Z] 📦 Data size: 47697 bytes
+[2026-01-13T01:32:58.000Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T01:32:58.819Z] 📄 Spooler output: Initializing raw print job...
+Data size: 47697 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 22)
+[2026-01-13T01:32:58.819Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T01:32:58.820Z] ✅ Print completed in 22578ms
+[2026-01-13T01:33:03.238Z] 
+⚠️  SIGINT received, shutting down gracefully...
+[2026-01-13T01:33:05.812Z] 🚀 Service starting...
+[2026-01-13T01:33:05.814Z] Working directory: D:\Projects\chefmate\chefmate_front\ThermalAgent
+[2026-01-13T01:33:05.815Z] Node version: v20.19.6
+[2026-01-13T01:33:05.817Z] ✅ Printer manager initialized
+[2026-01-13T01:33:05.817Z] 📋 Configured printers: 2
+[2026-01-13T01:33:05.818Z]    1. 192.168.1.216:9100
+[2026-01-13T01:33:05.818Z]    2. 192.168.1.217:9100
+[2026-01-13T01:33:05.822Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:33:05.823Z] 🖨️  THERMAL PRINTER AGENT SERVER
+[2026-01-13T01:33:05.823Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:33:05.824Z] ✅ Server running on port 7001
+[2026-01-13T01:33:05.824Z] 🌐 http://localhost:7001
+[2026-01-13T01:33:05.824Z] 📋 Printer Type: network
+[2026-01-13T01:33:05.825Z] 🌐 Primary Printer IP: 192.168.1.217
+[2026-01-13T01:33:05.825Z] 
+🔗 Configured Multi-Printers:
+[2026-01-13T01:33:05.826Z]    1. 192.168.1.216:9100
+[2026-01-13T01:33:05.826Z]    2. 192.168.1.217:9100
+[2026-01-13T01:33:05.827Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:33:05.827Z] 📡 Endpoints:
+[2026-01-13T01:33:05.827Z]    GET  /            - Health check
+[2026-01-13T01:33:05.828Z]    GET  /printers    - List available printers
+[2026-01-13T01:33:05.828Z]    GET  /status      - Get printer configuration status
+[2026-01-13T01:33:05.829Z]    POST /print       - Print single (ESC/POS data)
+[2026-01-13T01:33:05.829Z]    POST /print-multi - Print multi-printer (simultaneous/sequential)
+[2026-01-13T01:33:05.830Z]    POST /print-two-ip- Print to two specific IP addresses
+[2026-01-13T01:33:05.830Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:33:11.710Z] [2026-01-13T01:33:11.710Z] POST /print
+[2026-01-13T01:33:11.712Z] 📄 Received print job (63596 chars base64)
+[2026-01-13T01:33:11.713Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T01:33:11.714Z] ✅ Network printer device created
+[2026-01-13T01:33:32.746Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:33:32.748Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T01:33:32.749Z] 🖨️  Using Windows printer...
+[2026-01-13T01:33:33.453Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T01:33:33.453Z] 📦 Data size: 47697 bytes
+[2026-01-13T01:33:33.454Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T01:33:34.439Z] 📄 Spooler output: Initializing raw print job...
+Data size: 47697 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 23)
+[2026-01-13T01:33:34.440Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T01:33:34.441Z] ✅ Print completed in 22729ms
+[2026-01-13T01:35:22.854Z] [2026-01-13T01:35:22.854Z] POST /print-multi
+[2026-01-13T01:35:22.857Z] 📄 Received multi-printer job (47384 chars base64)
+[2026-01-13T01:35:22.858Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:35:22.860Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:35:22.862Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T01:35:22.864Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T01:35:43.911Z] ERROR: ❌ Printer 1: Failed to open device: connect ETIMEDOUT 192.168.1.216:9100
+[2026-01-13T01:35:43.913Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:35:43.913Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:35:43.913Z]    Total: 2
+[2026-01-13T01:35:43.914Z]    Success: 0
+[2026-01-13T01:35:43.914Z]    Failed: 2
+[2026-01-13T01:35:43.914Z]    ❌ All printers failed - [192.168.1.216, 192.168.1.217]
+
+[2026-01-13T01:35:43.914Z] ✅ Multi-print completed in 21057ms
+[2026-01-13T01:36:27.177Z] 
+⚠️  SIGINT received, shutting down gracefully...
+[2026-01-13T01:36:34.638Z] 🚀 Service starting...
+[2026-01-13T01:36:34.641Z] Working directory: D:\Projects\chefmate\chefmate_front\ThermalAgent
+[2026-01-13T01:36:34.641Z] Node version: v20.19.6
+[2026-01-13T01:36:34.642Z] ✅ Printer manager initialized
+[2026-01-13T01:36:34.643Z] 📋 Configured printers: 2
+[2026-01-13T01:36:34.643Z]    1. 192.168.1.216:9100
+[2026-01-13T01:36:34.643Z]    2. 192.168.1.217:9100
+[2026-01-13T01:36:34.646Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:36:34.647Z] 🖨️  THERMAL PRINTER AGENT SERVER
+[2026-01-13T01:36:34.647Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:36:34.648Z] ✅ Server running on port 7001
+[2026-01-13T01:36:34.648Z] 🌐 http://localhost:7001
+[2026-01-13T01:36:34.648Z] 📋 Printer Type: network
+[2026-01-13T01:36:34.649Z] 🌐 Primary Printer IP: 192.168.1.217
+[2026-01-13T01:36:34.649Z] 
+🔗 Configured Multi-Printers:
+[2026-01-13T01:36:34.649Z]    1. 192.168.1.216:9100
+[2026-01-13T01:36:34.650Z]    2. 192.168.1.217:9100
+[2026-01-13T01:36:34.651Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:36:34.651Z] 📡 Endpoints:
+[2026-01-13T01:36:34.651Z]    GET  /            - Health check
+[2026-01-13T01:36:34.652Z]    GET  /printers    - List available printers
+[2026-01-13T01:36:34.652Z]    GET  /status      - Get printer configuration status
+[2026-01-13T01:36:34.652Z]    POST /print       - Print single (ESC/POS data)
+[2026-01-13T01:36:34.652Z]    POST /print-multi - Print multi-printer (simultaneous/sequential)
+[2026-01-13T01:36:34.653Z]    POST /print-two-ip- Print to two specific IP addresses
+[2026-01-13T01:36:34.653Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-01-13T01:36:52.583Z] [2026-01-13T01:36:52.583Z] POST /print-multi
+[2026-01-13T01:36:52.585Z] 📄 Received multi-printer job (50796 chars base64)
+[2026-01-13T01:36:52.585Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:36:52.586Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:36:52.587Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T01:36:52.589Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T01:36:52.595Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T01:37:03.442Z] [2026-01-13T01:37:03.442Z] POST /print
+[2026-01-13T01:37:03.443Z] 📄 Received print job (60184 chars base64)
+[2026-01-13T01:37:03.444Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T01:37:03.445Z] ✅ Network printer device created
+[2026-01-13T01:37:13.632Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:37:13.633Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:37:13.633Z]    Total: 2
+[2026-01-13T01:37:13.633Z]    Success: 1
+[2026-01-13T01:37:13.634Z]    Failed: 1
+[2026-01-13T01:37:13.634Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T01:37:13.635Z] ✅ Multi-print completed in 21051ms
+[2026-01-13T01:37:24.491Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:37:24.493Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T01:37:24.494Z] 🖨️  Using Windows printer...
+[2026-01-13T01:37:25.221Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T01:37:25.221Z] 📦 Data size: 45137 bytes
+[2026-01-13T01:37:25.222Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T01:37:26.091Z] 📄 Spooler output: Initializing raw print job...
+Data size: 45137 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 24)
+[2026-01-13T01:37:26.092Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T01:37:26.093Z] ✅ Print completed in 22650ms
+[2026-01-13T01:45:42.138Z] [2026-01-13T01:45:42.138Z] GET /printers
+[2026-01-13T01:46:31.070Z] [2026-01-13T01:46:31.070Z] POST /print-multi
+[2026-01-13T01:46:31.071Z] 📄 Received multi-printer job (50796 chars base64)
+[2026-01-13T01:46:31.072Z] ⚙️  Mode: simultaneous
+[2026-01-13T01:46:31.072Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T01:46:31.073Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T01:46:31.073Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T01:46:31.080Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T01:46:52.093Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T01:46:52.093Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T01:46:52.094Z]    Total: 2
+[2026-01-13T01:46:52.094Z]    Success: 1
+[2026-01-13T01:46:52.094Z]    Failed: 1
+[2026-01-13T01:46:52.095Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T01:46:52.095Z] ✅ Multi-print completed in 21024ms
+[2026-01-13T02:03:48.234Z] [2026-01-13T02:03:48.234Z] POST /print-multi
+[2026-01-13T02:03:48.237Z] 📄 Received multi-printer job (50796 chars base64)
+[2026-01-13T02:03:48.237Z] ⚙️  Mode: simultaneous
+[2026-01-13T02:03:48.238Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T02:03:48.239Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T02:03:48.242Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T02:03:48.248Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T02:04:09.267Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T02:04:09.269Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T02:04:09.269Z]    Total: 2
+[2026-01-13T02:04:09.271Z]    Success: 1
+[2026-01-13T02:04:09.272Z]    Failed: 1
+[2026-01-13T02:04:09.273Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T02:04:09.279Z] ✅ Multi-print completed in 21043ms
+[2026-01-13T02:04:20.491Z] [2026-01-13T02:04:20.491Z] POST /print
+[2026-01-13T02:04:20.493Z] 📄 Received print job (63596 chars base64)
+[2026-01-13T02:04:20.493Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T02:04:20.494Z] ✅ Network printer device created
+[2026-01-13T02:04:41.519Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T02:04:41.522Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T02:04:41.523Z] 🖨️  Using Windows printer...
+[2026-01-13T02:04:42.853Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T02:04:42.854Z] 📦 Data size: 47697 bytes
+[2026-01-13T02:04:42.854Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T02:04:44.863Z] 📄 Spooler output: Initializing raw print job...
+Data size: 47697 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 26)
+[2026-01-13T02:04:44.864Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T02:04:44.866Z] ✅ Print completed in 24373ms
+[2026-01-13T02:12:08.871Z] [2026-01-13T02:12:08.871Z] POST /print-multi
+[2026-01-13T02:12:08.873Z] 📄 Received multi-printer job (54212 chars base64)
+[2026-01-13T02:12:08.873Z] ⚙️  Mode: simultaneous
+[2026-01-13T02:12:08.874Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T02:12:08.875Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T02:12:08.876Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T02:12:08.879Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T02:12:27.962Z] [2026-01-13T02:12:27.962Z] POST /print-multi
+[2026-01-13T02:12:27.963Z] 📄 Received multi-printer job (43972 chars base64)
+[2026-01-13T02:12:27.964Z] ⚙️  Mode: simultaneous
+[2026-01-13T02:12:27.964Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T02:12:27.965Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T02:12:27.967Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T02:12:27.970Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T02:12:29.896Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T02:12:29.896Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T02:12:29.897Z]    Total: 2
+[2026-01-13T02:12:29.897Z]    Success: 1
+[2026-01-13T02:12:29.897Z]    Failed: 1
+[2026-01-13T02:12:29.897Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T02:12:29.898Z] ✅ Multi-print completed in 21025ms
+[2026-01-13T02:12:49.015Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T02:12:49.015Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T02:12:49.016Z]    Total: 2
+[2026-01-13T02:12:49.017Z]    Success: 1
+[2026-01-13T02:12:49.018Z]    Failed: 1
+[2026-01-13T02:12:49.018Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T02:12:49.019Z] ✅ Multi-print completed in 21056ms
+[2026-01-13T03:17:51.432Z] [2026-01-13T03:17:51.432Z] POST /print
+[2026-01-13T03:17:51.434Z] 📄 Received print job (51652 chars base64)
+[2026-01-13T03:17:51.435Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:17:51.436Z] ✅ Network printer device created
+[2026-01-13T03:18:12.481Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:18:12.484Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:18:12.484Z] 🖨️  Using Windows printer...
+[2026-01-13T03:18:13.354Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:18:13.355Z] 📦 Data size: 38737 bytes
+[2026-01-13T03:18:13.355Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:18:14.633Z] 📄 Spooler output: Initializing raw print job...
+Data size: 38737 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 27)
+[2026-01-13T03:18:14.634Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:18:14.634Z] ✅ Print completed in 23200ms
+[2026-01-13T03:19:37.868Z] [2026-01-13T03:19:37.868Z] POST /print
+[2026-01-13T03:19:37.869Z] 📄 Received print job (48664 chars base64)
+[2026-01-13T03:19:37.870Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:19:37.870Z] ✅ Network printer device created
+[2026-01-13T03:19:58.899Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:19:58.900Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:19:58.900Z] 🖨️  Using Windows printer...
+[2026-01-13T03:19:59.657Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:19:59.658Z] 📦 Data size: 36497 bytes
+[2026-01-13T03:19:59.658Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:20:00.499Z] 📄 Spooler output: Initializing raw print job...
+Data size: 36497 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 28)
+[2026-01-13T03:20:00.499Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:20:00.500Z] ✅ Print completed in 22631ms
+[2026-01-13T03:20:30.613Z] [2026-01-13T03:20:30.613Z] POST /print
+[2026-01-13T03:20:30.614Z] 📄 Received print job (54636 chars base64)
+[2026-01-13T03:20:30.615Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:20:30.615Z] ✅ Network printer device created
+[2026-01-13T03:20:51.651Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:20:51.652Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:20:51.654Z] 🖨️  Using Windows printer...
+[2026-01-13T03:20:52.360Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:20:52.360Z] 📦 Data size: 40977 bytes
+[2026-01-13T03:20:52.361Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:20:53.204Z] 📄 Spooler output: Initializing raw print job...
+Data size: 40977 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 29)
+[2026-01-13T03:20:53.205Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:20:53.206Z] ✅ Print completed in 22592ms
+[2026-01-13T03:25:32.792Z] [2026-01-13T03:25:32.792Z] POST /print
+[2026-01-13T03:25:32.793Z] 📄 Received print job (51652 chars base64)
+[2026-01-13T03:25:32.793Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:25:32.794Z] ✅ Network printer device created
+[2026-01-13T03:25:53.838Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:25:53.839Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:25:53.839Z] 🖨️  Using Windows printer...
+[2026-01-13T03:25:54.736Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:25:54.737Z] 📦 Data size: 38737 bytes
+[2026-01-13T03:25:54.737Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:25:56.139Z] 📄 Spooler output: Initializing raw print job...
+Data size: 38737 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 30)
+[2026-01-13T03:25:56.139Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:25:56.140Z] ✅ Print completed in 23348ms
+[2026-01-13T03:26:27.486Z] [2026-01-13T03:26:27.486Z] POST /print
+[2026-01-13T03:26:27.486Z] 📄 Received print job (51652 chars base64)
+[2026-01-13T03:26:27.487Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:26:27.487Z] ✅ Network printer device created
+[2026-01-13T03:26:46.815Z] [2026-01-13T03:26:46.815Z] POST /print
+[2026-01-13T03:26:46.817Z] 📄 Received print job (51652 chars base64)
+[2026-01-13T03:26:46.818Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:26:46.818Z] ✅ Network printer device created
+[2026-01-13T03:26:48.518Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:26:48.519Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:26:48.519Z] 🖨️  Using Windows printer...
+[2026-01-13T03:26:49.276Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:26:49.277Z] 📦 Data size: 38737 bytes
+[2026-01-13T03:26:49.277Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:26:50.187Z] 📄 Spooler output: Initializing raw print job...
+Data size: 38737 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 31)
+[2026-01-13T03:26:50.188Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:26:50.188Z] ✅ Print completed in 22702ms
+[2026-01-13T03:27:07.853Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:27:07.855Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:27:07.856Z] 🖨️  Using Windows printer...
+[2026-01-13T03:27:08.536Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:27:08.537Z] 📦 Data size: 38737 bytes
+[2026-01-13T03:27:08.537Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:27:09.284Z] 📄 Spooler output: Initializing raw print job...
+Data size: 38737 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 32)
+[2026-01-13T03:27:09.285Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:27:09.286Z] ✅ Print completed in 22469ms
+[2026-01-13T03:28:20.705Z] [2026-01-13T03:28:20.705Z] POST /print
+[2026-01-13T03:28:20.706Z] 📄 Received print job (51652 chars base64)
+[2026-01-13T03:28:20.707Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:28:20.707Z] ✅ Network printer device created
+[2026-01-13T03:28:41.733Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:28:41.734Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:28:41.734Z] 🖨️  Using Windows printer...
+[2026-01-13T03:28:42.368Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:28:42.368Z] 📦 Data size: 38737 bytes
+[2026-01-13T03:28:42.369Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:28:43.200Z] 📄 Spooler output: Initializing raw print job...
+Data size: 38737 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 33)
+[2026-01-13T03:28:43.201Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:28:43.201Z] ✅ Print completed in 22495ms
+[2026-01-13T03:30:17.871Z] [2026-01-13T03:30:17.871Z] POST /print
+[2026-01-13T03:30:17.872Z] 📄 Received print job (54636 chars base64)
+[2026-01-13T03:30:17.873Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:30:17.874Z] ✅ Network printer device created
+[2026-01-13T03:30:38.909Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:30:38.912Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:30:38.913Z] 🖨️  Using Windows printer...
+[2026-01-13T03:30:39.538Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:30:39.538Z] 📦 Data size: 40977 bytes
+[2026-01-13T03:30:39.539Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:30:40.273Z] 📄 Spooler output: Initializing raw print job...
+Data size: 40977 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 34)
+[2026-01-13T03:30:40.273Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:30:40.274Z] ✅ Print completed in 22402ms
+[2026-01-13T03:31:48.175Z] [2026-01-13T03:31:48.175Z] POST /print
+[2026-01-13T03:31:48.175Z] 📄 Received print job (54636 chars base64)
+[2026-01-13T03:31:48.176Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:31:48.176Z] ✅ Network printer device created
+[2026-01-13T03:32:09.221Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:32:09.223Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:32:09.224Z] 🖨️  Using Windows printer...
+[2026-01-13T03:32:09.889Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:32:09.889Z] 📦 Data size: 40977 bytes
+[2026-01-13T03:32:09.890Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:32:10.699Z] 📄 Spooler output: Initializing raw print job...
+Data size: 40977 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 35)
+[2026-01-13T03:32:10.699Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:32:10.700Z] ✅ Print completed in 22525ms
+[2026-01-13T03:34:16.746Z] [2026-01-13T03:34:16.746Z] POST /print
+[2026-01-13T03:34:16.747Z] 📄 Received print job (45676 chars base64)
+[2026-01-13T03:34:16.747Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:34:16.748Z] ✅ Network printer device created
+[2026-01-13T03:34:37.782Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:34:37.782Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:34:37.783Z] 🖨️  Using Windows printer...
+[2026-01-13T03:34:38.417Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:34:38.418Z] 📦 Data size: 34257 bytes
+[2026-01-13T03:34:38.419Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:34:39.162Z] 📄 Spooler output: Initializing raw print job...
+Data size: 34257 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 36)
+[2026-01-13T03:34:39.162Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:34:39.163Z] ✅ Print completed in 22416ms
+[2026-01-13T03:34:53.482Z] [2026-01-13T03:34:53.482Z] POST /print
+[2026-01-13T03:34:53.483Z] 📄 Received print job (45676 chars base64)
+[2026-01-13T03:34:53.484Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:34:53.485Z] ✅ Network printer device created
+[2026-01-13T03:35:14.528Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:35:14.529Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:35:14.529Z] 🖨️  Using Windows printer...
+[2026-01-13T03:35:15.188Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:35:15.189Z] 📦 Data size: 34257 bytes
+[2026-01-13T03:35:15.189Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:35:15.953Z] 📄 Spooler output: Initializing raw print job...
+Data size: 34257 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 37)
+[2026-01-13T03:35:15.953Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:35:15.954Z] ✅ Print completed in 22471ms
+[2026-01-13T03:36:41.493Z] [2026-01-13T03:36:41.493Z] POST /print
+[2026-01-13T03:36:41.494Z] 📄 Received print job (45676 chars base64)
+[2026-01-13T03:36:41.496Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:36:41.497Z] ✅ Network printer device created
+[2026-01-13T03:37:02.552Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:37:02.553Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:37:02.554Z] 🖨️  Using Windows printer...
+[2026-01-13T03:37:03.221Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:37:03.221Z] 📦 Data size: 34257 bytes
+[2026-01-13T03:37:03.221Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:37:04.014Z] 📄 Spooler output: Initializing raw print job...
+Data size: 34257 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 38)
+[2026-01-13T03:37:04.015Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:37:04.016Z] ✅ Print completed in 22522ms
+[2026-01-13T03:37:55.255Z] [2026-01-13T03:37:55.255Z] POST /print
+[2026-01-13T03:37:55.255Z] 📄 Received print job (48664 chars base64)
+[2026-01-13T03:37:55.256Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:37:55.257Z] ✅ Network printer device created
+[2026-01-13T03:38:10.763Z] [2026-01-13T03:38:10.763Z] POST /print
+[2026-01-13T03:38:10.764Z] 📄 Received print job (48664 chars base64)
+[2026-01-13T03:38:10.765Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T03:38:10.765Z] ✅ Network printer device created
+[2026-01-13T03:38:16.304Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:38:16.306Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:38:16.307Z] 🖨️  Using Windows printer...
+[2026-01-13T03:38:16.964Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:38:16.965Z] 📦 Data size: 36497 bytes
+[2026-01-13T03:38:16.965Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:38:17.733Z] 📄 Spooler output: Initializing raw print job...
+Data size: 36497 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 39)
+[2026-01-13T03:38:17.733Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:38:17.734Z] ✅ Print completed in 22479ms
+[2026-01-13T03:38:31.790Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T03:38:31.791Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T03:38:31.791Z] 🖨️  Using Windows printer...
+[2026-01-13T03:38:32.426Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T03:38:32.427Z] 📦 Data size: 36497 bytes
+[2026-01-13T03:38:32.427Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T03:38:33.327Z] 📄 Spooler output: Initializing raw print job...
+Data size: 36497 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 40)
+[2026-01-13T03:38:33.328Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T03:38:33.328Z] ✅ Print completed in 22564ms

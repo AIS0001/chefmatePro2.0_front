@@ -1,0 +1,1273 @@
+🚀 Service starting...
+Working directory: E:\wheel_clean\agent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-16T05:02:54.472Z] GET /
+[2025-11-16T05:03:19.419Z] GET /
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-16T10:20:40.550Z] GET /
+[2025-11-16T10:20:44.474Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Brother MFC-L2700D series
+📦 Data size: 32020 bytes
+🔧 Method 1: Windows Print Spooler API...
+📄 Spooler output: Initializing raw print job...
+Data size: 32020 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 5)
+✅ Print job submitted via Windows Spooler
+✅ Print completed in 22053ms
+[2025-11-16T10:21:20.003Z] POST /print
+📄 Received print job (196 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Brother MFC-L2700D series
+📦 Data size: 147 bytes
+🔧 Method 1: Windows Print Spooler API...
+📄 Spooler output: Initializing raw print job...
+Data size: 147 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 6)
+✅ Print job submitted via Windows Spooler
+✅ Print completed in 21700ms
+[2025-11-16T10:22:11.285Z] GET /
+[2025-11-16T10:22:18.829Z] GET /printers
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-16T10:27:52.287Z] GET /
+[2025-11-16T10:27:57.202Z] POST /print
+📄 Received print job (196 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Brother MFC-L2700D series
+📦 Data size: 147 bytes
+🔧 Method 1: Windows Print Spooler API...
+📄 Spooler output: Initializing raw print job...
+Data size: 147 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 7)
+✅ Print job submitted via Windows Spooler
+✅ Print completed in 21822ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v21.4.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.216
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-16T10:28:58.469Z] GET /
+[2025-11-16T10:29:05.838Z] POST /print
+📄 Received print job (196 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 2ms
+[2025-11-16T10:29:11.610Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 1ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.216
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-17T03:28:20.692Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 7ms
+[2025-11-17T03:28:27.493Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 8ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-17T03:29:11.273Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 9ms
+[2025-11-17T03:29:12.728Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-17T03:46:46.949Z] GET /
+[2025-11-17T03:46:54.662Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 10ms
+[2025-11-17T03:48:09.312Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 8ms
+[2025-11-17T03:48:41.748Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-17T03:49:35.673Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-17T03:50:00.279Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-17T04:06:50.007Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 32020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763352462331.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.80
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-17T04:07:48.686Z] GET /
+[2025-11-17T04:07:53.187Z] GET /printers
+[2025-11-17T04:08:00.107Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 32020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763352531817.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-17T04:09:04.340Z] POST /print
+📄 Received print job (72 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 54 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763352595982.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-17T04:11:03.197Z] POST /print
+📄 Received print job (72 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 54 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763352714919.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-17T04:16:17.250Z] POST /print
+📄 Received print job (196 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+[2025-11-17T04:16:26.121Z] GET /
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 147 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763353029579.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-17T04:17:23.867Z] GET /
+[2025-11-17T04:17:36.483Z] POST /print
+📄 Received print job (140 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 103 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763353108151.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-17T14:08:49.172Z] GET /
+[2025-11-17T14:09:15.349Z] POST /print
+📄 Received print job (42696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 11ms
+[2025-11-17T14:13:00.289Z] GET /
+[2025-11-17T14:13:00.293Z] GET /
+[2025-11-17T14:13:46.564Z] GET /
+[2025-11-17T14:15:25.830Z] GET /
+[2025-11-17T14:16:11.954Z] GET /
+[2025-11-17T14:16:11.957Z] GET /
+[2025-11-17T14:16:47.788Z] GET /
+[2025-11-17T14:16:59.310Z] GET /
+[2025-11-17T14:17:04.469Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 49ms
+[2025-11-17T14:17:38.661Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-17T14:19:14.392Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-17T14:22:24.148Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 7ms
+[2025-11-17T14:22:24.694Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 2ms
+[2025-11-17T14:24:14.325Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 7ms
+[2025-11-17T14:24:30.706Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 23ms
+[2025-11-17T14:24:31.304Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-17T14:24:31.837Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 3ms
+[2025-11-17T14:50:35.739Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-17T14:51:01.961Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-17T14:51:02.489Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 3ms
+[2025-11-17T14:51:42.650Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 43ms
+[2025-11-17T15:08:40.605Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 11ms
+[2025-11-17T15:11:44.874Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 9ms
+[2025-11-18T03:26:53.169Z] GET /
+[2025-11-19T16:46:13.692Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763570826245.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-19T17:03:14.847Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763571846870.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-19T17:07:21.391Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763572093238.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T15:59:46.865Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+[2025-11-21T16:00:06.177Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763740839506.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763740875253.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T16:01:19.677Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763740931750.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T16:28:02.119Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763742504130.ps1"
+C:\Windows\TEMP\print_spooler_1763742504130.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763742504130.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763742504838.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T16:47:12.925Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763743654778.ps1"
+C:\Windows\TEMP\print_spooler_1763743654778.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763743654778.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763743655366.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T16:47:38.711Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763743680452.ps1"
+C:\Windows\TEMP\print_spooler_1763743680452.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763743680452.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763743681013.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T16:59:34.767Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763744396765.ps1"
+C:\Windows\TEMP\print_spooler_1763744396765.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744396765.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763744397635.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:00:00.756Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763744422441.ps1"
+C:\Windows\TEMP\print_spooler_1763744422441.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744422441.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763744423035.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:03:05.559Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763744607351.ps1"
+C:\Windows\TEMP\print_spooler_1763744607351.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744607351.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763744607916.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:05:26.280Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763744748127.ps1"
+C:\Windows\TEMP\print_spooler_1763744748127.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744748127.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763744748742.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:05:52.721Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763744774515.ps1"
+C:\Windows\TEMP\print_spooler_1763744774515.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763744774515.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763744775201.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:10:49.829Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+[2025-11-21T17:11:10.367Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745071651.ps1"
+C:\Windows\TEMP\print_spooler_1763745071651.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745071651.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745072330.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745092153.ps1"
+C:\Windows\TEMP\print_spooler_1763745092153.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745092153.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745092973.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:11:36.909Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745118677.ps1"
+C:\Windows\TEMP\print_spooler_1763745118677.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745118677.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745119252.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:12:02.634Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745144427.ps1"
+C:\Windows\TEMP\print_spooler_1763745144427.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745144427.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745144975.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:12:27.754Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745169491.ps1"
+C:\Windows\TEMP\print_spooler_1763745169491.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745169491.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745170074.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:14:19.965Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745281749.ps1"
+C:\Windows\TEMP\print_spooler_1763745281749.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745281749.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745282301.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:14:45.143Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745306836.ps1"
+C:\Windows\TEMP\print_spooler_1763745306836.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745306836.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745307484.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:15:10.680Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745332388.ps1"
+C:\Windows\TEMP\print_spooler_1763745332388.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745332388.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745332921.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:15:35.708Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763745357467.ps1"
+C:\Windows\TEMP\print_spooler_1763745357467.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763745357467.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763745358018.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-21T17:34:10.516Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.80:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: Command failed: powershell -ExecutionPolicy Bypass -File "C:\Windows\TEMP\print_spooler_1763746472322.ps1"
+C:\Windows\TEMP\print_spooler_1763746472322.ps1 : Print error: Exception calling "AddJob" with "1" argument(s): 
+"Printing was canceled. Win32 error: Your file waiting to be printed was deleted.
+"
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,print_spooler_1763746472322.ps1
+ 
+
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1763746472953.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.216
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-21T17:34:48.660Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-21T17:34:58.025Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-21T17:35:13.240Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+[2025-11-21T17:40:55.412Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.216
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-25T14:23:34.612Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 14ms
+[2025-11-25T14:26:59.049Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1764080871317.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-25T14:33:46.242Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 9ms
+[2025-11-25T14:34:04.513Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-25T14:35:44.149Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+[2025-11-25T14:35:47.900Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-25T14:36:43.946Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+[2025-11-25T14:36:53.369Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 3ms
+[2025-11-25T14:38:30.681Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+[2025-11-25T14:47:26.167Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+[2025-11-25T14:47:26.691Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 2ms
+[2025-11-25T14:47:45.917Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.216:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 3ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.81
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-11-29T03:10:26.499Z] GET /
+[2025-11-29T03:10:39.025Z] GET /printers
+[2025-11-29T03:11:06.056Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1764385918267.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-29T03:24:36.272Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 14ms
+[2025-11-29T03:25:24.933Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 6ms
+[2025-11-29T03:25:43.466Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 7024ms
+[2025-11-29T03:26:21.366Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 4ms
+[2025-11-29T03:30:36.553Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 5ms
+[2025-11-29T03:41:16.588Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 11ms
+[2025-11-29T03:41:17.122Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+⚠️  Primary method failed, trying fallback...
+🖨️  Using Windows printer...
+🖨️  Printing to: Microsoft Print to PDF
+📦 Data size: 44020 bytes
+🔧 Method 1: Windows Print Spooler API...
+⚠️  Spooler method failed: spawnSync C:\Windows\system32\cmd.exe ETIMEDOUT
+🔧 Method 2: Direct port access...
+📌 Printer port: PORTPROMPT:
+⚠️  Direct port method failed: Command failed: cmd /c copy /b "C:\Windows\TEMP\print_1764387729169.prn" "PORTPROMPT:"
+"PORTPROMPT:" is not a recognized device.
+
+🔧 Method 3: PowerShell file write...
+[2025-11-29T03:43:25.395Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 12ms
+[2025-11-29T04:14:09.884Z] POST /print
+📄 Received print job (58696 chars base64)
+🔍 Connecting to network printer at 192.168.1.81:9100...
+✅ Network printer device created
+✅ Print job sent successfully via escpos
+✅ Print completed in 15ms
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.81
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Service starting...
+Working directory: C:\ThermalAgent
+Node version: v24.8.0
+✅ Printer manager initialized
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖨️  THERMAL PRINTER AGENT SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Server running on port 6001
+🌐 http://localhost:6001
+📋 Printer Type: network
+🌐 Printer IP: 192.168.1.81
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 Endpoints:
+   GET  /        - Health check
+   GET  /printers - List available printers
+   POST /print   - Print ESC/POS data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
