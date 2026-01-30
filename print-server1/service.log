@@ -1,0 +1,11 @@
+[2026-01-20T03:42:03.251Z] 🚀 ChefMate Print Server starting...
+[2026-01-20T03:42:03.253Z] Working directory: D:\Projects\chefmate\chefmate_front\print-server
+[2026-01-20T03:42:03.253Z] Node version: v20.19.6
+[2026-01-20T03:42:03.259Z] 🖨️  Print server running on http://localhost:7001
+[2026-01-20T03:42:03.259Z] 🔧 Configured printers: [object Object]
+[2026-01-20T03:42:03.261Z] 📁 Temp directory: D:\Projects\chefmate\chefmate_front\print-server\temp
+[2026-01-20T03:42:03.262Z] Available endpoints:
+[2026-01-20T03:42:03.262Z]   POST /print-kot - Print KOT to thermal printers
+[2026-01-20T03:42:03.262Z]   GET /printers - List available printers
+[2026-01-20T03:42:03.263Z]   POST /test-print - Send test print
+[2026-01-20T03:42:03.263Z]   GET /health - Health check

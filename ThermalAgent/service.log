@@ -715,3 +715,83 @@ Printer is valid and available
 Print job submitted successfully (Job ID: 40)
 [2026-01-13T03:38:33.328Z] ✅ Print job submitted via Windows Spooler
 [2026-01-13T03:38:33.328Z] ✅ Print completed in 22564ms
+[2026-01-13T04:38:27.153Z] [2026-01-13T04:38:27.153Z] POST /print-multi
+[2026-01-13T04:38:27.155Z] 📄 Received multi-printer job (50796 chars base64)
+[2026-01-13T04:38:27.156Z] ⚙️  Mode: simultaneous
+[2026-01-13T04:38:27.157Z] 📤 Sending to 2 printer(s)...
+[2026-01-13T04:38:27.158Z] 🔌 Connecting to printer 1 at 192.168.1.216:9100...
+[2026-01-13T04:38:27.160Z] 🔌 Connecting to printer 2 at 192.168.1.217:9100...
+[2026-01-13T04:38:27.168Z] ✅ Printer 1 (192.168.1.216): Print job sent successfully
+[2026-01-13T04:38:48.197Z] ERROR: ❌ Printer 2: Failed to open device: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T04:38:48.200Z] 
+📊 Multi-Printer Job Summary:
+[2026-01-13T04:38:48.201Z]    Total: 2
+[2026-01-13T04:38:48.202Z]    Success: 1
+[2026-01-13T04:38:48.203Z]    Failed: 1
+[2026-01-13T04:38:48.207Z]    ⚠️  Partial success - Success: [192.168.1.216], Failed: [192.168.1.217]
+
+[2026-01-13T04:38:48.208Z] ✅ Multi-print completed in 21053ms
+[2026-01-13T04:40:38.433Z] [2026-01-13T04:40:38.433Z] POST /print
+[2026-01-13T04:40:38.442Z] 📄 Received print job (77252 chars base64)
+[2026-01-13T04:40:38.444Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T04:40:38.446Z] ✅ Network printer device created
+[2026-01-13T04:40:59.491Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T04:40:59.493Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T04:40:59.493Z] 🖨️  Using Windows printer...
+[2026-01-13T04:41:00.557Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T04:41:00.557Z] 📦 Data size: 57937 bytes
+[2026-01-13T04:41:00.557Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T04:41:01.353Z] 📄 Spooler output: Initializing raw print job...
+Data size: 57937 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 41)
+[2026-01-13T04:41:01.353Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T04:41:01.354Z] ✅ Print completed in 22920ms
+[2026-01-13T04:43:18.884Z] [2026-01-13T04:43:18.884Z] POST /print
+[2026-01-13T04:43:18.886Z] 📄 Received print job (77252 chars base64)
+[2026-01-13T04:43:18.886Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T04:43:18.887Z] ✅ Network printer device created
+[2026-01-13T04:43:39.923Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T04:43:39.924Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T04:43:39.925Z] 🖨️  Using Windows printer...
+[2026-01-13T04:43:41.219Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T04:43:41.221Z] 📦 Data size: 57937 bytes
+[2026-01-13T04:43:41.221Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T04:43:43.105Z] 📄 Spooler output: Initializing raw print job...
+Data size: 57937 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 42)
+[2026-01-13T04:43:43.105Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T04:43:43.106Z] ✅ Print completed in 24221ms
+[2026-01-13T04:43:51.884Z] [2026-01-13T04:43:51.884Z] POST /print
+[2026-01-13T04:43:51.886Z] 📄 Received print job (60184 chars base64)
+[2026-01-13T04:43:51.887Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-13T04:43:51.887Z] ✅ Network printer device created
+[2026-01-13T04:44:12.941Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-13T04:44:12.943Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-13T04:44:12.944Z] 🖨️  Using Windows printer...
+[2026-01-13T04:44:14.196Z] 🖨️  Printing to: CP-Q1T
+[2026-01-13T04:44:14.197Z] 📦 Data size: 45137 bytes
+[2026-01-13T04:44:14.198Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-13T04:44:15.298Z] 📄 Spooler output: Initializing raw print job...
+Data size: 45137 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 43)
+[2026-01-13T04:44:15.299Z] ✅ Print job submitted via Windows Spooler
+[2026-01-13T04:44:15.300Z] ✅ Print completed in 23414ms
+[2026-01-14T15:37:13.607Z] [2026-01-14T15:37:13.606Z] POST /print
+[2026-01-14T15:37:13.615Z] 📄 Received print job (63596 chars base64)
+[2026-01-14T15:37:13.617Z] 🔍 Connecting to network printer at 192.168.1.217:9100...
+[2026-01-14T15:37:13.618Z] ✅ Network printer device created
+[2026-01-14T15:37:34.662Z] ERROR: ❌ Failed to open device: Error: connect ETIMEDOUT 192.168.1.217:9100
+[2026-01-14T15:37:34.668Z] ⚠️  Primary method failed, trying fallback...
+[2026-01-14T15:37:34.672Z] 🖨️  Using Windows printer...
+[2026-01-14T15:37:38.551Z] 🖨️  Printing to: CP-Q1T
+[2026-01-14T15:37:38.553Z] 📦 Data size: 47697 bytes
+[2026-01-14T15:37:38.556Z] 🔧 Method 1: Windows Print Spooler API...
+[2026-01-14T15:37:42.467Z] 📄 Spooler output: Initializing raw print job...
+Data size: 47697 bytes
+Printer is valid and available
+Print job submitted successfully (Job ID: 44)
+[2026-01-14T15:37:42.468Z] ✅ Print job submitted via Windows Spooler
+[2026-01-14T15:37:42.470Z] ✅ Print completed in 28857ms

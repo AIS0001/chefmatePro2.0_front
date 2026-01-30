@@ -39,8 +39,10 @@ const fullMenu = [
     submenu: [
       { name: 'Add New Item', path: '/inventory/newItem' },
       { name: 'Add New Stock', path: '/inventory/newStock' },
+      { name: 'Add New Stock (Ant)', path: '/inventory/newstock-ant' },
       { name: 'New Product', path: '/inventory/newproduct' },
       { name: 'Stock Report', path: '/inventory/stockreports' },
+      { name: 'Stock Reports (Ant)', path: '/inventory/stockreports-ant' },
 
 
     ]
@@ -54,6 +56,7 @@ const fullMenu = [
     submenu: [
        { name: 'Advance Order', path: '/sale/advanceorder' },
       { name: 'POS', path: '/sale/pos' },
+      { name: 'POS (Ant - Stock Managed)', path: '/sale/pos-ant' },
       { name: 'New Sale', path: '/sale/newsale' },
       { name: 'New Quotation', path: '/sale/quotation' },
      

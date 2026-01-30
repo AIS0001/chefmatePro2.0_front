@@ -38,6 +38,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     subcat: "",
     isstockable: false,
     min_stock: "",  // <-- added,
+    item_code: "",
   });
 
   const [getTax, setTax] = useState([]);
@@ -77,7 +78,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     e.preventDefault();
     console.log("[Add Item] formdata:", formdata);
     try {
-      // Log request body and headers
+      // Step 1: Create the item
       const requestBody = {
         iname: formdata.iname,
         unit: formdata.unit,
@@ -90,21 +91,43 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
         description: formdata.desc,
         isstockable: formdata.isstockable,
         min_stock: formdata.min_stock,
+        item_code: formdata.item_code,
       };
-      // console.log("[Add Item] Request body:", requestBody);
-      // console.log("[Add Item] Request headers:", getHeaders());
 
       const post1 = await axios.post(
         "/insertdata/items",
         requestBody,
         getHeaders()
       );
-     // console.log("[Add Item] post1 response:", post1);
 
+      const productId = post1.data.id;
+      console.log("✅ Item created with ID:", productId);
+
+      // Step 2: Create product units if stockable
+      if (formdata.isstockable) {
+        try {
+          await axios.post(
+            "/stock/units/create",
+            {
+              productId: productId,
+              unitName: formdata.unit,
+              unitType: "BASE",
+              isBaseUnit: true,
+              sellingPrice: parseFloat(formdata.offerprice || 0),
+              purchasePrice: parseFloat(formdata.mrp || 0)
+            },
+            getHeaders()
+          );
+          console.log("✅ Base unit created for stockable item");
+        } catch (unitErr) {
+          console.error("⚠️ Error creating unit (non-critical):", unitErr.message);
+        }
+      }
+
+      // Step 3: Upload images
       const formdata1 = e.target;
       const formData = new FormData();
       
-      // Check if images exist before processing
       if (formdata1.images && formdata1.images.files && formdata1.images.files.length > 0) {
         Array.from(formdata1.images.files).forEach((file, index) => {
           console.log(`📸 Adding image ${index + 1}:`, file.name, file.size, 'bytes');
@@ -114,33 +137,24 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
         console.log('⚠️ No images selected');
       }
       
-      formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
-      console.log('🆔 Product ID added:', post1.data.id);
+      formData.append("product_id", productId);
+      console.log('🆔 Product ID added:', productId);
 
       try {
-        // Check authentication before upload
         const token = getAuthToken();
         if (!token) {
           toast.error('Authentication required. Please log in again.');
           return;
         }
 
-        // Get proper auth headers (but don't include Content-Type)
         const authHeaders = getHeaders();
         
-        // console.log('📸 Uploading images for product ID:', post1.data.id);
-        // console.log('📸 Number of images:', formdata1.images.files ? formdata1.images.files.length : 0);
-        // console.log('🌐 API Base URL:', axios.defaults.baseURL);
-        // console.log('📡 Full URL:', `${axios.defaults.baseURL}/addnewproduct/item_images`);
-        // console.log('🔑 Token found:', !!token);
-        // console.log('📦 FormData entries:');
         for (let pair of formData.entries()) {
           console.log(pair[0], pair[1]);
         }
         
         const post2 = await axios.post("/addnewproduct/item_images", formData, {
           headers: {
-            // Only include Authorization - let axios set Content-Type with boundary
             'Authorization': authHeaders.headers.Authorization
           }
         });
@@ -149,7 +163,6 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       } catch (imgErr) {
         console.error('❌ Error uploading images:', imgErr);
         
-        // Enhanced error logging
         if (imgErr.response) {
           console.error('❌ Status:', imgErr.response.status);
           console.error('❌ Data:', imgErr.response.data);
@@ -173,19 +186,19 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
         }
       }
 
-      onItemAdded(); // Call this to trigger the reload function in NewItem
-      toast.success("Item added successfully!");
+      onItemAdded();
+      toast.success(formdata.isstockable ? "Item created with stock unit!" : "Item added successfully!");
       setImages([]);
       setTimeout(() => {
-        onClose(); // Close modal
+        onClose();
       }, 1000);
     } catch (err) {
-      toast.error("Error in adding Item");
-     // console.error("[Add Item] Error:", err);
+      toast.error("Error in adding Item: " + (err.response?.data?.message || err.message));
+      console.error("[Add Item] Error:", err);
       if (err.response) {
-        // console.error("[Add Item] Error response data:", err.response.data);
-        // console.error("[Add Item] Error response status:", err.response.status);
-        // console.error("[Add Item] Error response headers:", err.response.headers);
+        console.error("[Add Item] Error response data:", err.response.data);
+        console.error("[Add Item] Error response status:", err.response.status);
+        console.error("[Add Item] Error response headers:", err.response.headers);
       }
     }
     setErrors({});
@@ -232,6 +245,19 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       console.log("🔄 useEffect running - fetching combo data");
       
       try {
+        // Fetch next item code
+        try {
+          const itemCodeResponse = await axios.get("/getnextitemcode", getHeaders());
+          if (itemCodeResponse.data.success && itemCodeResponse.data.data) {
+            setFormData(prev => ({
+              ...prev,
+              item_code: itemCodeResponse.data.data.next_item_code
+            }));
+          }
+        } catch (err) {
+          console.error("Error fetching next item code:", err);
+        }
+        
         // Fetch basic combo data
       //  console.log("📦 Fetching units...");
         const unitsData = await fetchComboData("units", "name");
@@ -344,6 +370,16 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 type="text"
                 name="iname"
                 lable="Item Name"
+              />
+            </div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+              <TextfieldwithLabel
+                id="item_code"
+                onChange={(e) => handleInputChange(e)}
+                value={formdata.item_code}
+                type="number"
+                name="item_code"
+                lable="Item Code"
               />
             </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">

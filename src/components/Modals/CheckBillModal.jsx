@@ -23,7 +23,7 @@ import QRPaymentModal from "../QRPaymentModal";
 import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
-import { printInvoice, printKioskInvoice } from "../../services/thermalPrinter";
+import { printInvoice, printInvoiceToCashier, printKioskInvoice } from "../../services/thermalPrinter";
 import { generateQRForCheckBill } from "../../services/qrPaymentService";
 import "./CheckBillModal.css";
 
@@ -50,7 +50,7 @@ const customStyles = {
   },
   overlay: {
     zIndex: 1050,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    background: "linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(255, 255, 255, 0.1) 100%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -59,7 +59,8 @@ const customStyles = {
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0
+    bottom: 0,
+    backdropFilter: "blur(2px)"
   },
 };
 
@@ -132,8 +133,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   //   if (!customer) return null;
 
   const refreshTables = (event) => {
-    fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-    setIsBillSaved(false);
+    try {
+      fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      if (typeof setIsBillSaved === 'function') {
+        setIsBillSaved(false);
+      }
+    } catch (error) {
+      console.error('Error refreshing tables:', error);
+    }
   };
 
   // Function to refresh tables and clear bill summary
@@ -497,19 +504,19 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         operatedBy: "3130"
       };
 
-      toast.loading("Printing invoice...");
+      const toastId = toast.loading("Printing invoice...");
       
       // Use appropriate print function based on mode
       const success = isKioskMode 
         ? await printKioskInvoice(invoiceData)
-        : await printInvoice(invoiceData);
+        : await printInvoiceToCashier(invoiceData); // Print to Cashier printer (192.168.1.216)
       
       if (success) {
-        toast.dismiss();
-        toast.success("Invoice printed successfully!");
+        toast.dismiss(toastId);
+        toast.success("Invoice printed to Cashier printer successfully!");
       } else {
-        toast.dismiss();
-        toast.error("Failed to print invoice. Make sure ThermalAgent server is running on port 6001.");
+        toast.dismiss(toastId);
+        toast.error("Failed to print invoice. Make sure printer server is running on port 7001.");
       }
     } catch (error) {
       toast.dismiss();
@@ -526,11 +533,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         return;
       }
 
-      toast.loading("Generating QR code...");
+      const toastId = toast.loading("Generating QR code...");
       const qrData = await generateQRForCheckBill(grandAmount);
       
       if (qrData) {
-        toast.dismiss();
+        toast.dismiss(toastId);
         toast.success("QR code generated successfully!");
         console.log("QR Data:", qrData);
         // You can use qrData here if needed for additional processing
@@ -580,13 +587,30 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
   // ✅ Handle modal close and clear customer display
   const handleModalClose = () => {
-    // Clear bill confirmation from customer display
-    if (customerDisplayManager.isDisplayConnected()) {
-      customerDisplayManager.sendCustomMessage('NORMAL_MODE', 'normal');
+    try {
+      // Dismiss all active toasts to prevent errors
+      try {
+        toast.dismiss();
+      } catch (toastError) {
+        console.warn('Error dismissing toasts:', toastError);
+      }
+      
+      // Clear bill confirmation from customer display
+      if (customerDisplayManager.isDisplayConnected()) {
+        customerDisplayManager.sendCustomMessage('NORMAL_MODE', 'normal');
+      }
+      
+      // Call the original onClose function
+      if (typeof onClose === 'function') {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error closing modal:', error);
+      // Still try to close the modal even if there's an error
+      if (typeof onClose === 'function') {
+        onClose();
+      }
     }
-    
-    // Call the original onClose function
-    onClose();
   };
 
   const handlePrintClick = async (itemId) => {
@@ -1014,8 +1038,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         );
       }
 
-      // Refresh the table list
+      // Refresh the table list and UI
       await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      refreshTables(); // Auto-refresh tables modal with updated records
 
       // Show success toast message
       toast.success(`Bill saved successfully! Bill ID: ${bill_id}`);
@@ -1330,7 +1355,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         style={customStyles}
         ariaHideApp={false}
       >
-        <div style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: '12px' }}>
           <ToastContainer />
           
           {/* Header with Ant Design */}

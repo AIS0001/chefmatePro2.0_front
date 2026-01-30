@@ -15,7 +15,8 @@ const fetchDataFromTwoTables = async (tblname1, tblname2, col1, col2, setData, o
     
    // console.log("fetchDataFromTwoTables URL:", url);
     
-    const response = await axios.get(url, getHeaders());
+    const headers = getHeaders();
+    const response = await axios.get(url, headers);
     //console.log("fetchDataFromTwoTables response:", response.data);
     
     // If a setData function is provided, update the state with the fetched data

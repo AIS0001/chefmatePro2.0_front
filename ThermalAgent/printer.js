@@ -152,12 +152,12 @@ class PrinterManager {
     }
 
     console.log(`\n📋 Multi-Printer Job Starting`);
-    console.log(`   Printer 1: ${ip1}:${port1}`);
-    console.log(`   Printer 2: ${ip2}:${port2}\n`);
+    console.log(`   cashier : ${ip1}:${port1}`);
+    console.log(`   kitchen : ${ip2}:${port2}\n`);
 
     const printers = [
-      { ip: ip1, port: port1, name: 'Printer 1' },
-      { ip: ip2, port: port2, name: 'Printer 2' }
+      { ip: ip1, port: port1, name: 'cashier' },
+      { ip: ip2, port: port2, name: 'kitchen' }
     ];
 
     return this.printToMultiplePrinters(base64Data, printers);
@@ -173,7 +173,7 @@ class PrinterManager {
       printers.push({
         ip: this.multiPrinterConfig.printer1.ip,
         port: this.multiPrinterConfig.printer1.port || 9100,
-        name: 'Printer 1'
+        name: 'cashier'
       });
     }
     
@@ -181,7 +181,7 @@ class PrinterManager {
       printers.push({
         ip: this.multiPrinterConfig.printer2.ip,
         port: this.multiPrinterConfig.printer2.port || 9100,
-        name: 'Printer 2'
+        name: 'kitchen'
       });
     }
 

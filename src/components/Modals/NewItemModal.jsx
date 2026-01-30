@@ -9,6 +9,7 @@ import fetchData from "../../functions/fetchData";
 import { SubmitButton } from "../Buttons/Textfield";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { COMMON_LIQUOR_UNITS, COMMON_BOTTLE_SIZES } from "../../utility/unitConversions";
 
 const customStyles = {
   content: {
@@ -32,7 +33,11 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     unit: "",
     tax: "",
     subcat: "",
+    unit_type: "simple",
+    isstockable: "0",
+    bottle_capacity_ml: "",
   });
+  const [saleUnits, setSaleUnits] = useState([{ unit: "30ML Peg", factor: 30 }]);
  
   const [getTax, setTax] = useState([]);
   const [getUnit, setUnits] = useState([]);
@@ -53,6 +58,26 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       ...prevData,
       [name]: value,
     }));
+
+    // Reset unit configuration when switching unit types
+    if (name === "unit_type") {
+      if (value === "simple") {
+        setSaleUnits([]);
+        setFormData(prev => ({
+          ...prev,
+          bottle_capacity_ml: "",
+          purchase_unit: prev.unit,
+          base_unit: prev.unit
+        }));
+      } else if (value === "convertible") {
+        setSaleUnits(COMMON_LIQUOR_UNITS);
+        setFormData(prev => ({
+          ...prev,
+          purchase_unit: "Bottle",
+          base_unit: "ML"
+        }));
+      }
+    }
   };
   // Handle file changes and set preview
   const handleFileChange = (event) => {
@@ -69,6 +94,7 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     e.preventDefault();
     //console.log(formdata);
     try {
+      // Step 1: Create the item
       const post1 = await axios.post(
         "/insertdata/items",
         {
@@ -80,40 +106,120 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
           catid: formdata.category,
           subcatid: formdata.subcat,
           description: formdata.desc,
+          unit_type: formdata.unit_type,
+          base_unit: formdata.unit_type === 'simple' ? formdata.unit : 'ML',
+          purchase_unit: formdata.unit_type === 'simple' ? formdata.unit : 'Bottle',
+          bottle_capacity_ml: formdata.unit_type === 'convertible' ? formdata.bottle_capacity_ml : null,
+          sale_units: formdata.unit_type === 'convertible' ? JSON.stringify(saleUnits) : null,
+          isstockable: formdata.isstockable,
         },
         getHeaders()
       );
+
+      const productId = post1.data.id;
+      console.log("Item created with ID:", productId);
+
+      // Step 2: Create product units if stockable
+      if (formdata.isstockable === "1") {
+        if (formdata.unit_type === "convertible") {
+          // Create base unit (Bottle)
+          const baseUnitResponse = await axios.post(
+            "/stock/units/create",
+            {
+              productId: productId,
+              unitName: "Bottle",
+              unitType: "BASE",
+              isBaseUnit: true,
+              mlCapacity: parseInt(formdata.bottle_capacity_ml),
+              sellingPrice: parseFloat(formdata.offerprice || 0),
+              purchasePrice: parseFloat(formdata.mrp || 0)
+            },
+            getHeaders()
+          );
+
+          const baseUnitId = baseUnitResponse.data.data.id;
+          console.log("Base unit created with ID:", baseUnitId);
+
+          // Create derived units (pegs) and variants
+          for (const saleUnit of saleUnits) {
+            // Create derived unit
+            const derivedUnitResponse = await axios.post(
+              "/stock/units/create",
+              {
+                productId: productId,
+                unitName: saleUnit.unit,
+                unitType: "DERIVED",
+                isBaseUnit: false,
+                mlCapacity: parseInt(saleUnit.factor),
+                sellingPrice: parseFloat(saleUnit.price || 0),
+                conversionFactor: parseInt(saleUnit.factor) / parseInt(formdata.bottle_capacity_ml)
+              },
+              getHeaders()
+            );
+
+            // Create variant for this sale unit
+            await axios.post(
+              "/stock/variants/create",
+              {
+                productId: productId,
+                variantName: `${saleUnit.unit} - ${formdata.iname}`,
+                baseUnitId: baseUnitId,
+                quantityInBaseUnit: parseInt(saleUnit.factor) / parseInt(formdata.bottle_capacity_ml),
+                mlQuantity: parseInt(saleUnit.factor),
+                sellingPrice: parseFloat(saleUnit.price || 0),
+                costPrice: parseFloat(saleUnit.price || 0) * 0.8
+              },
+              getHeaders()
+            );
+          }
+
+          console.log("All units and variants created successfully");
+        } else {
+          // Simple unit - create single base unit
+          await axios.post(
+            "/stock/units/create",
+            {
+              productId: productId,
+              unitName: formdata.unit,
+              unitType: "BASE",
+              isBaseUnit: true,
+              sellingPrice: parseFloat(formdata.offerprice || 0),
+              purchasePrice: parseFloat(formdata.mrp || 0)
+            },
+            getHeaders()
+          );
+
+          console.log("Simple unit created successfully");
+        }
+      }
+
+      // Step 3: Upload images
       const formdata1 = e.target;
       const formData = new FormData();
       Array.from(formdata1.images.files).forEach((file) => {
         formData.append("images", file);
       });
-      console.log(post1.data.id);
-      formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
+      formData.append("product_id", productId);
 
-      const post2 = await axios.post("/addnewproduct/item_images", formData, {
+      await axios.post("/addnewproduct/item_images", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,  // Again, make sure the token is correct
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      // Immediately fetch updated data after adding an item
-     // await fetchData("items", setData, "id", {});
-      onItemAdded(); // Call this to trigger the reload function in NewItem
-      toast.success("Item added successfully!");
+
+      onItemAdded();
+      toast.success("Item created successfully with units and variants!");
       setImages([]);
-      // Optionally add a delay before closing the modal to ensure the toast is visible
+      
       setTimeout(() => {
-        onClose(); // Close modal
-      }, 1000); // Adjust the delay as needed
-      //console.log("Fetched data after add:", data);
+        onClose();
+      }, 1000);
     } catch (err) {
-      toast.error("Error in adding Item");
-      console.error(err.message);
+      toast.error("Error in adding Item: " + (err.response?.data?.message || err.message));
+      console.error(err);
     }
 
-    // Clear form data and errors
-    // setFormData({});
     setErrors({});
   };
  
@@ -280,26 +386,153 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 </select>
               </div>
             </div>
-            {/* <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
-              <TextfieldwithLabel
-                id="mrp"
-                onChange={(e) => handleInputChange(e)}
-                value={formdata.mrp}
-                type="number"
-                name="mrp"
-                lable="MRP"
-              />
-            </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
-              <TextfieldwithLabel
-                id="offerprice"
-                onChange={(e) => handleInputChange(e)}
-                value={formdata.offerprice}
-                type="number"
-                name="offerprice"
-                lable="Selling Price"
-              />
-            </div> */}
+              <div className="form-group">
+                <label
+                  className="control-label mb-10"
+                  style={{ marginLeft: "15px" }}
+                >
+                  Is Stockable?
+                </label>
+                <select
+                  id="isstockable"
+                  name="isstockable"
+                  className="form-select custom-select"
+                  style={{
+                    borderRadius: "4px",
+                    border: "2px solid #17a2b8",
+                    height: "45px",
+                    width: "95%",
+                    marginLeft: "15px",
+                  }}
+                  onChange={handleInputChange}
+                  value={formdata.isstockable}
+                >
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
+            </div>
+            {formdata.isstockable === "1" && (
+              <>
+                <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+                  <div className="form-group">
+                    <label
+                      className="control-label mb-10"
+                      style={{ marginLeft: "15px" }}
+                    >
+                      Unit Type
+                    </label>
+                    <select
+                      id="unit_type"
+                      name="unit_type"
+                      className="form-select custom-select"
+                      style={{
+                        borderRadius: "4px",
+                        border: "2px solid #17a2b8",
+                        height: "45px",
+                        width: "95%",
+                        marginLeft: "15px",
+                      }}
+                      onChange={handleInputChange}
+                      value={formdata.unit_type}
+                    >
+                      <option value="simple">Simple (Pcs/Cans)</option>
+                      <option value="convertible">Convertible (Bottles with ML)</option>
+                    </select>
+                  </div>
+                </div>
+                {formdata.unit_type === "convertible" && (
+                  <>
+                    <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+                      <div className="form-group">
+                        <label
+                          className="control-label mb-10"
+                          style={{ marginLeft: "15px" }}
+                        >
+                          Bottle Capacity (ML)
+                        </label>
+                        <select
+                          id="bottle_capacity_ml"
+                          name="bottle_capacity_ml"
+                          className="form-select custom-select"
+                          style={{
+                            borderRadius: "4px",
+                            border: "2px solid #17a2b8",
+                            height: "45px",
+                            width: "95%",
+                            marginLeft: "15px",
+                          }}
+                          onChange={handleInputChange}
+                          value={formdata.bottle_capacity_ml}
+                        >
+                          <option value="">Select Bottle Size</option>
+                          {COMMON_BOTTLE_SIZES.map((size, idx) => (
+                            <option key={idx} value={size.value}>
+                              {size.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                      <div className="form-group" style={{ marginLeft: "15px" }}>
+                        <label className="control-label mb-10">
+                          Sale Units Configuration
+                        </label>
+                        <div className="row">
+                          {saleUnits.map((saleUnit, idx) => (
+                            <div key={idx} className="col-lg-4 col-md-6 mb-2">
+                              <div className="input-group">
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  value={saleUnit.unit}
+                                  onChange={(e) => {
+                                    const newUnits = [...saleUnits];
+                                    newUnits[idx].unit = e.target.value;
+                                    setSaleUnits(newUnits);
+                                  }}
+                                  placeholder="Unit name"
+                                />
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  value={saleUnit.factor}
+                                  onChange={(e) => {
+                                    const newUnits = [...saleUnits];
+                                    newUnits[idx].factor = parseFloat(e.target.value);
+                                    setSaleUnits(newUnits);
+                                  }}
+                                  placeholder="ML"
+                                  style={{ maxWidth: "80px" }}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-sm"
+                                  onClick={() => setSaleUnits(saleUnits.filter((_, i) => i !== idx))}
+                                >
+                                  <i className="fas fa-times"></i>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="col-lg-4 col-md-6 mb-2">
+                            <button
+                              type="button"
+                              className="btn btn-info btn-sm"
+                              onClick={() => setSaleUnits([...saleUnits, { unit: "", factor: 0 }])}
+                            >
+                              <i className="fas fa-plus"></i> Add Sale Unit
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <div className="form-group">
                 <label

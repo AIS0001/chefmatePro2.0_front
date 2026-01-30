@@ -40,6 +40,8 @@ export default function NewPOS() {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [cart, setCart] = useState([]);
+  const [quickItemCode, setQuickItemCode] = useState("");
+  const [quickQty, setQuickQty] = useState("1");
   const [total, setTotal] = useState(0);
   const [maxNumber, setmaxNumber] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -53,8 +55,23 @@ export default function NewPOS() {
 
   // ✅ Customer Display States
   const [isCustomerDisplayOpen, setIsCustomerDisplayOpen] = useState(false);
+
   const [companyInfo, setCompanyInfo] = useState({});
 
+  // ✅ Draggable Action Card States
+  const [actionCardPos, setActionCardPos] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const actionCardRef = React.useRef(null);
+
+  // Position the action card at bottom-right on mount
+  useEffect(() => {
+    const cardWidth = actionCardRef.current?.offsetWidth || 340;
+    const cardHeight = actionCardRef.current?.offsetHeight || 220;
+    const x = Math.max(window.innerWidth - cardWidth - 20, 20);
+    const y = Math.max(window.innerHeight - cardHeight - 20, 20);
+    setActionCardPos({ x, y });
+  }, []);
 
   const showtableBillDetails = (contract) => {
     // setSelectedContract(contract);
@@ -70,6 +87,18 @@ export default function NewPOS() {
     Array.from({ length: 20 }, () => "vacant") // Default all tables to "vacant"
   );
   const navigate = useNavigate();
+
+  // Navigate to login when token is invalid/expired
+  const handleAuthError = (error) => {
+    const message = (error?.response?.data?.message || error?.message || '').toLowerCase();
+    if (error?.response?.status === 401 || message.includes('invalid or expired token')) {
+      toast.error('Session expired. Please login again.');
+      navigate('/login');
+      return true;
+    }
+    return false;
+  };
+
   const columns = [
     { label: "Product Id", field: "product_id" },
     { label: "Image", field: "filename" },
@@ -143,6 +172,7 @@ export default function NewPOS() {
       toast.success("Invoice number updated successfully!");
     } catch (error) {
       console.error("Error updating invoice number:", error);
+      if (handleAuthError(error)) return;
       toast.error("Failed to update invoice number.");
     }
   };
@@ -216,6 +246,7 @@ export default function NewPOS() {
     } catch (error) {
      // console.error("Error fetching items for subcategory:", error);
      // console.error("Error details:", error.response?.data || error.message);
+      if (handleAuthError(error)) return;
       setData([]); // Clear data on error
       toast.error("Failed to load items for this subcategory: " + (error.response?.data?.message || error.message));
     }
@@ -281,6 +312,53 @@ const addItemToOrder = (index, item) => {
   setCart(updatedCart);
   updateTotal(updatedCart);
 };
+
+  // Quick add by item code / barcode
+  const addItemByCode = (code, qty = 1) => {
+    const normalizedCode = (code || "").trim();
+    if (!normalizedCode) {
+      toast.error("Enter item code or barcode");
+      return;
+    }
+
+    const quantityToAdd = Math.max(Number(qty) || 1, 1);
+
+    const item = (data || []).find((i) => {
+      return (
+        `${i.barcode || ""}` === normalizedCode ||
+        `${i.item_code || ""}` === normalizedCode ||
+        `${i.id || ""}` === normalizedCode
+      );
+    });
+
+    if (!item) {
+      toast.error("Item not found for this code");
+      return;
+    }
+
+    const updatedCart = [...cart];
+    const existingIndex = updatedCart.findIndex((c) => c.id === item.id);
+
+    if (existingIndex !== -1) {
+      updatedCart[existingIndex].quantity += quantityToAdd;
+    } else {
+      updatedCart.push({
+        ...item,
+        quantity: quantityToAdd,
+        uom: item.uom || "",
+        subtotal: item.offerprice,
+        tax: item.tax || 0,
+        tax_amount: (((item.tax || 0) * item.offerprice) / 100).toFixed(2),
+        category_id: selectedCategory,
+        category_name: categories.find(cat => cat.id === selectedCategory)?.name || null,
+        subcategory_id: item.subcatid || null,
+      });
+    }
+
+    setCart(updatedCart);
+    updateTotal(updatedCart);
+    toast.success("Item added");
+  };
 
 
   // Decrease item quantity
@@ -684,6 +762,7 @@ const decreaseItemQuantity = (index) => {
       }
     } catch (error) {
       console.error('❌ Error in handleSendKOTESCPOS:', error);
+      if (handleAuthError(error)) return;
       
       // Check if it's a network/connection error
       if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
@@ -819,6 +898,7 @@ const decreaseItemQuantity = (index) => {
       // console.error('Error saving order:', error);
       // console.error('Error response:', error.response?.data);
       // console.error('Error status:', error.response?.status);
+      if (handleAuthError(error)) return;
       toast.error('Error saving order!');
     }
   };
@@ -914,6 +994,7 @@ const decreaseItemQuantity = (index) => {
     }
     } catch (error) {
       console.error('Error saving order:', error);
+      if (handleAuthError(error)) return;
       toast.error('Error saving order!');
     }
   };
@@ -983,6 +1064,7 @@ const decreaseItemQuantity = (index) => {
         // console.log("NewPOS Component: All data fetched successfully");
       } catch (error) {
         console.error("Error in NewPOS useEffect:", error);
+        if (handleAuthError(error)) return;
         toast.error("Error loading POS data: " + error.message);
       }
     };
@@ -1022,9 +1104,25 @@ const decreaseItemQuantity = (index) => {
             backgroundColor: '#dc3545',
             color: 'white',
             transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
             e.currentTarget.style.transform = "scale(1.05)";
+          }} ref={actionCardRef}>
+            <h6 
+              onMouseDown={handleDragStart}
+              style={{ 
+                margin: '0 0 12px 0', 
+                fontSize: '14px', 
+                fontWeight: '700', 
+                color: '#dc3545',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                userSelect: 'none',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                backgroundColor: isDragging ? '#f0f0f0' : 'transparent',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ☰ ⚙️ Actions
+            </h6>
             e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.25)";
           }}
           onMouseLeave={(e) => {
@@ -1295,7 +1393,54 @@ const decreaseItemQuantity = (index) => {
             >
               <div className="panel panel-default card-view" style={{ padding: '5px' }}>
                 <div className="row" style={{ margin: '0' }}>
-                  <div className="col-12">
+                  <div className="col-12" style={{ paddingBottom: '360px' }}>
+                    {/* Quick Add Item Card - Always Visible */}
+                    <div className="card" style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef', marginBottom: '12px' }}>
+                      <h6 style={{ fontWeight: '700', marginBottom: '10px', fontSize: '13px', color: '#495057' }}>⚡ Quick Add Item</h6>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          addItemByCode(quickItemCode, quickQty);
+                        }}
+                      >
+                        <input
+                          type="text"
+                          className="form-control mb-2"
+                          placeholder="Item Code / Barcode"
+                          value={quickItemCode}
+                          onChange={(e) => setQuickItemCode(e.target.value)}
+                          style={{ fontSize: '12px', height: '36px' }}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const qtyInput = document.getElementById('quick-qty-input');
+                              if (qtyInput && e.target.id !== 'quick-qty-input') {
+                                e.preventDefault();
+                                qtyInput.focus();
+                              }
+                            }
+                          }}
+                        />
+                        <input
+                          id="quick-qty-input"  
+                          type="number"
+                          min="1"
+                          className="form-control mb-2"
+                          placeholder="Quantity"
+                          value={quickQty}
+                          onChange={(e) => setQuickQty(e.target.value)}
+                          style={{ fontSize: '12px', height: '36px' }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addItemByCode(quickItemCode, quickQty);
+                            }
+                          }}
+                        />
+                        <small style={{ fontSize: '11px', color: '#6c757d' }}>Press Enter to move to quantity, Enter again to add</small>
+                      </form>
+                    </div>
+
                     {cart.length > 0 ? (
                       cart.map((item, index) => (
                         <>
@@ -1328,7 +1473,9 @@ const decreaseItemQuantity = (index) => {
                         </>
                       ))
                     ) : (
-                      <p style={{ fontSize: '12px', padding: '10px' }}>Your cart is empty.</p>
+                      <div style={{ padding: '10px' }}>
+                        <p style={{ fontSize: '12px', marginBottom: '8px' }}>Your cart is empty.</p>
+                      </div>
                     )}
                     <div className="total-container mt-2 d-flex justify-content-between align-items-center">
                       <h5 style={{ fontSize: '14px' }}>
@@ -1372,48 +1519,50 @@ const decreaseItemQuantity = (index) => {
 
         </div>
 
-        {/* Floating Action Buttons */}
-        <div
-          className="floating-action-buttons"
-          style={{
-            position: 'fixed',
-            right: '20px',
-            bottom: '80px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: '8px',
-            zIndex: 1000
-          }}
-        >
-          <button 
-            className="btn btn-success mb-1 custom-btn"
-            onClick={handleBillHistory}
-            style={{ width: '120px', padding: '10px 14px', fontSize: '12px', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            Bill History
-          </button>
-          <button 
-            className="btn btn-primary mb-1"
-            onClick={refreshTables}
-            style={{ width: '120px', padding: '10px 14px', fontSize: '12px', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            Refresh Tables
-          </button>
-          <button 
-            className="btn btn-warning mb-1"
-            onClick={showtableBillDetails}
-            style={{ width: '120px', padding: '10px 14px', fontSize: '12px', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            Check Bill
-          </button>
-          <button 
-            className="btn btn-danger mb-1"
-            onClick={() => navigate('/logout')}
-            style={{ width: '120px', padding: '10px 14px', fontSize: '12px', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            Logout
-          </button>
+        {/* Fixed Action Buttons Card */}
+        <div style={{
+          position: 'fixed',
+          top: `${actionCardPos.y}px`,
+          left: `${actionCardPos.x}px`,
+          zIndex: 1000,
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          padding: '16px',
+          minWidth: '320px',
+          maxWidth: '450px'
+        }}>
+          <h6 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#dc3545' }}>⚙️ Actions</h6>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button 
+              className="btn btn-success"
+              onClick={handleBillHistory}
+              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+            >
+              📋 Bill History
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={refreshTables}
+              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+            >
+              🔄 Refresh
+            </button>
+            <button 
+              className="btn btn-warning"
+              onClick={showtableBillDetails}
+              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+            >
+              💰 Check Bill
+            </button>
+            <button 
+              className="btn btn-danger"
+              onClick={() => navigate('/logout')}
+              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+            >
+              🚪 Logout
+            </button>
+          </div>
         </div>
         
         </div> {/* ✅ Close main content area */}
@@ -1437,3 +1586,4 @@ const decreaseItemQuantity = (index) => {
     </>
   );
 }
+

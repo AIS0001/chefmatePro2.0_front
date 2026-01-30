@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { ToastContainer, toast } from "react-toastify";
@@ -15,6 +15,7 @@ import fetchData from "../../functions/fetchData";
 import { deleteItem, deleteBulkItems } from "../../functions/delateData";
 import { isTokenExpired, logout } from "../../utility/auth";
 import NewItemModal from "../../components/Modals/NewItemModal";
+import NewItemModalAnt from "../../components/Modals/NewItemModalAnt";
 import NewItemPriceModal from "../../components/Modals/NewItemPriceModal";
 import BarcodeModal from "../../components/Modals/BarcodeModal";
 import EditItemModal from "../../components/Modals/EditItemModal";
@@ -34,12 +35,14 @@ export default function NewItem() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showModalItem, setShowModalItem] = useState(false);
+  const [showModalItemAnt, setShowModalItemAnt] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [reload, setReload] = useState(false); // Define reload state
   const [selectedItems, setSelectedItems] = useState([]); // For bulk delete
   const [selectAll, setSelectAll] = useState(false); // For select all checkbox
+  const [loading, setLoading] = useState(true); // Add loading state
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,6 +90,10 @@ export default function NewItem() {
   const AddNewItemButton = (contract) => {
     // setSelectedContract(contract);
     setShowModalItem(true);
+  };
+
+  const AddNewItemAntButton = () => {
+    setShowModalItemAnt(true);
   };
 
   const AddNewItemPriceButton = (contract) => {
@@ -540,18 +547,22 @@ export default function NewItem() {
     const fetchAndSetData = async () => {
       // Check token expiration before fetching data
       if (!checkTokenExpiration()) {
+        setLoading(false);
         return;
       }
       
       try {
+        setLoading(true); // Start loading
         const items = await fetchData("items", setData, "id", {});
         // console.log("Fetched data:", items);
         setData(items); // Ensure the data state is set with fetched items
         setOriginalData(items); // Store original data for filtering
         setFilteredData(items); // Initialize filtered data
         setTotalItems(items.length); // Set total count for pagination
+        setLoading(false); // Stop loading
       } catch (error) {
         console.error("Error in useEffect:", error);
+        setLoading(false); // Stop loading on error
         
         // Check if it's an authentication error
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
@@ -601,8 +612,8 @@ export default function NewItem() {
     // console.log("Updated data:", data);
   }, [data]);
 
-  // Filter function
-  const applyFilters = () => {
+  // Filter function - memoized
+  const applyFilters = useCallback(() => {
     let filtered = originalData;
 
     // Apply search filter
@@ -618,19 +629,19 @@ export default function NewItem() {
     setFilteredData(filtered);
     setTotalItems(filtered.length);
     setCurrentPage(1); // Reset to first page when filters change
-  };
+  }, [searchTerm, originalData]);
 
-  // Filter handlers
-  const handleSearchChange = (e) => {
+  // Filter handlers - memoized
+  const handleSearchChange = useCallback((e) => {
     setSearchTerm(e.target.value);
-  };
+  }, []);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm("");
     setFilteredData(originalData);
     setTotalItems(originalData.length);
     setCurrentPage(1);
-  };
+  }, [originalData]);
 
   // Apply filters whenever search term changes
   useEffect(() => {
@@ -1131,6 +1142,16 @@ export default function NewItem() {
                 
                 <button
                   type="button"
+                  name="addAnt"
+                  onClick={AddNewItemAntButton}
+                  className="btn btn-success btn-sm"
+                  title="Add New Item (Liquor/Multi-Unit)"
+                >
+                  <i className="fas fa-plus-circle"></i> Add Item (Ant)
+                </button>
+                
+                <button
+                  type="button"
                   name="generate"
                   onClick={GenerateBarcodeButton}
                   className="btn btn-secondary btn-sm"
@@ -1165,6 +1186,7 @@ export default function NewItem() {
                         />
                       </th>
                       <th>ID</th>
+                      <th>Item Code</th>
                       <th>Item Name</th>
                       <th>Unit</th>
                       <th>Tax (%)</th>
@@ -1186,6 +1208,7 @@ export default function NewItem() {
                           />
                         </td>
                         <td><strong>{item.id}</strong></td>
+                        <td>{item.item_code || 'N/A'}</td>
                         <td>{item.iname || 'N/A'}</td>
                         <td>{item.unit || 'N/A'}</td>
                         <td>{item.tax ? `${item.tax}%` : '0%'}</td>
@@ -1377,6 +1400,11 @@ export default function NewItem() {
               customer={selectedContract}
               onItemAdded={triggerReload} // Pass the reload function
               onClose={() => setShowModal(false)} // Close the modal
+            />
+            <NewItemModalAnt
+              isOpen={showModalItemAnt}
+              onItemAdded={triggerReload}
+              onClose={() => setShowModalItemAnt(false)}
             />
             <BarcodeModal
               isOpen={showBarcodeModal}

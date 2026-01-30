@@ -27,14 +27,17 @@ import PaymentOptions from './views/master/paymentOptions';
 
 import NewItem from './views/inventory/newItem';
 import NewStock from './views/inventory/newStock';
+import NewStockAntDesign from './views/inventory/newStockAntDesign';
 import EditItem from './views/inventory/editItem';
 import NewProduct from './views/inventory/newProduct1';
 import StockReport from './views/inventory/stockReport';
+import StockReportsAnt from './views/inventory/stockReportsAnt';
 
 
 import AdvanceOrder from './views/pos/advanceorder';
 import AdvanceOrdergstt from './views/pos/advanceOrderPosgst';
 import NewPOS from './views/pos/newPOS';
+import NewPOSAnt from './views/pos/newPOSAnt';
 import NewPOSGST from './views/pos/posGst';
 import NewSale from './views/pos/sale';
 import vatSale from './views/pos/vatsale';
@@ -156,6 +159,11 @@ function AppRoutes() {
               <PrivateRoute><NewStock /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
+          <Route path="/inventory/newstock-ant" element={
+            <FeatureProtectedRoute route="/inventory/newstock-ant">
+              <PrivateRoute><NewStockAntDesign /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
           <Route path="/inventory/edititem/:id" element={
             <FeatureProtectedRoute route="/inventory/edititem">
               <PrivateRoute><EditItem /></PrivateRoute>
@@ -171,13 +179,24 @@ function AppRoutes() {
               <PrivateRoute><StockReport /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
-
+          <Route path="/inventory/stockreports-ant" element={
+            <FeatureProtectedRoute route="/inventory/stockreports-ant">
+              <PrivateRoute><StockReportsAnt /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
           
           <Route path="/sale/pos" element={
             <FeatureProtectedRoute route="/sale/pos">
               <PrivateRoute><NewPOS /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
+
+          <Route path="/sale/pos-ant" element={
+            <FeatureProtectedRoute route="/sale/pos">
+              <PrivateRoute><NewPOSAnt /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+
           <Route path="/sale/advanceorder" element={
             <FeatureProtectedRoute route="/sale/advanceorder">
               <PrivateRoute><AdvanceOrder /></PrivateRoute>

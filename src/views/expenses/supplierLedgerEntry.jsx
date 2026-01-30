@@ -4,16 +4,27 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { format } from "date-fns";
 import fetchData from "../../functions/fetchData";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import Layout from "../../layout/Layout";
 import Header from "../../components/Header";
-import CardComponent from "../../components/cards/CardComponent";
-import { TextfieldwithLabel, SubmitButton } from "../../components/Buttons/Textfield";
 import { getHeaders } from "../../utility/getHeader";
-import DataTable from "../../components/data-tables/dataTable";
+import { Card, Input, Button, Select, DatePicker, Table, Space, Row, Col, Divider, Statistic } from 'antd';
+import { SaveOutlined, FilterOutlined, ClearOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+
+const { RangePicker } = DatePicker;
+const { TextArea } = Input;
 
 export default function SupplierLedgerEntry() {
-      const [data, setData] = useState([]);
+  const [data, setData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [originalData, setOriginalData] = useState([]);
+  const [companyInfo, setCompanyInfo] = useState({});
+  const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     transaction_id: "",
     date: format(new Date(), "yyyy-MM-dd"),
@@ -25,24 +36,33 @@ export default function SupplierLedgerEntry() {
     reference_id: "",
   });
 
-  const columns = [
-        { label: "Txn ID", field: "transaction_id" },
-        { label: "Date", field: "date" },
-        { label: "A/C Type", field: "account_type" },
-        { label: "A/C ID", field: "account_id" },
-        { label: "Description", field: "description" },
-        { label: "Debit", field: "debit_amount" },
-        { label: "Credit", field: "credit_amount" },
-        // { label: "Action", field: "actions" }
-    ];
+  // Filter states
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState("");
+
   const [suppliers, setSuppliers] = useState([]);
+
+  // Fetch company info for thermal printing
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const res = await fetchData("companyinfo", null, "id", {});
+        if (res && res.length > 0) {
+          setCompanyInfo(res[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching company info:", error);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
 
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-       // const res = await axios.get("/getdata/suppliers", getHeaders());
-        fetchData("suppliers", setSuppliers, "id", {});
-        
+        const supplierData = await fetchData("suppliers", null, "id", {});
+        setSuppliers(supplierData || []);
       } catch (err) {
         console.error("Error fetching suppliers:", err);
         toast.error("Failed to load suppliers.");
@@ -73,126 +93,543 @@ export default function SupplierLedgerEntry() {
         credit_amount: "",
         reference_id: "",
       });
+      
+      // Reload data
+      fetchLedgerData();
     } catch (error) {
       console.error(error);
       toast.error("Failed to save entry.");
     }
   };
-   useEffect(() => {
-        const fetchAndSetData =  () => {
-            try {
-               fetchData("ledger_entries", setData, "id", {account_type:'Purchase'});
-                //await fetchData("ledger_entries", setAllData, "id", {});
-                //setAllData(fetchedData); // Ensure Alldata gets a proper value
 
-                //console.log("Fetched Data:", fetchedData); // Debugging
-            } catch (error) {
-                console.error("Error in useEffect:", error);
-            }
-        };
+  const fetchLedgerData = async () => {
+    try {
+      setLoading(true);
+      const ledgerData = await fetchData("ledger_entries", null, "id", {account_type:'Purchase'});
+      console.log("Fetched ledger data:", ledgerData);
+      setData(ledgerData || []);
+      setOriginalData(ledgerData || []);
+      setFilteredData(ledgerData || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching ledger data:", error);
+      setLoading(false);
+      toast.error("Failed to load ledger entries");
+    }
+  };
 
-        fetchAndSetData();
-    }, []);
+  useEffect(() => {
+    fetchLedgerData();
+  }, []);
+
+  // Apply filters
+  const applyFilter = () => {
+    let filtered = originalData;
+
+    // Date range filter
+    if (startDate && endDate) {
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return itemDate >= start && itemDate <= end;
+      });
+    }
+
+    // Supplier filter
+    if (selectedSupplier) {
+      filtered = filtered.filter(item => item.account_id?.toString() === selectedSupplier.toString());
+    }
+
+    setFilteredData(filtered);
+    toast.success(`Filtered ${filtered.length} records`);
+  };
+
+  // Clear filters
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setSelectedSupplier("");
+    setFilteredData(originalData);
+    toast.info("Filters cleared");
+  };
+
+  // Get supplier name by ID
+  const getSupplierName = (supplierId) => {
+    const supplier = suppliers.find(s => s.id?.toString() === supplierId?.toString());
+    return supplier ? supplier.company_name : `ID: ${supplierId}`;
+  };
+
+  // Export to Excel
+  const exportToExcel = () => {
+    try {
+      const exportData = filteredData.map((item, index) => ({
+        'S.No.': index + 1,
+        'Transaction ID': item.transaction_id || '',
+        'Date': item.date || '',
+        'Supplier': getSupplierName(item.account_id),
+        'Description': item.description || '',
+        'Debit': parseFloat(item.debit_amount || 0).toFixed(2),
+        'Credit': parseFloat(item.credit_amount || 0).toFixed(2),
+        'Reference': item.reference_id || ''
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, "Supplier Ledger");
+      XLSX.writeFile(wb, `supplier_ledger_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Excel exported successfully!");
+    } catch (error) {
+      console.error("Excel export error:", error);
+      toast.error("Failed to export Excel");
+    }
+  };
+
+  // Export to PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      doc.setFontSize(18);
+      doc.text('Supplier Ledger Report', 14, 20);
+      doc.setFontSize(10);
+      doc.text(`Generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}`, 14, 28);
+      
+      const tableData = filteredData.map((item, index) => [
+        index + 1,
+        item.transaction_id || '',
+        item.date || '',
+        getSupplierName(item.account_id),
+        item.description || '',
+        `฿${parseFloat(item.debit_amount || 0).toFixed(2)}`,
+        `฿${parseFloat(item.credit_amount || 0).toFixed(2)}`
+      ]);
+
+      doc.autoTable({
+        head: [['S.No.', 'Txn ID', 'Date', 'Supplier', 'Description', 'Debit', 'Credit']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [23, 162, 184] }
+      });
+
+      doc.save(`supplier_ledger_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("PDF exported successfully!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
+  // Print Thermal Report
+  const printThermalReport = () => {
+    const printWindow = window.open("", "_blank");
+    
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    const tableRows = filteredData.map((item, index) => {
+      const debit = parseFloat(item.debit_amount || 0);
+      const credit = parseFloat(item.credit_amount || 0);
+      totalDebit += debit;
+      totalCredit += credit;
+
+      return `
+        <tr>
+          <td style="padding: 3px; text-align: left;">${index + 1}</td>
+          <td style="padding: 3px; text-align: left;">${item.transaction_id || ''}</td>
+          <td style="padding: 3px; text-align: left;">${item.date || ''}</td>
+          <td style="padding: 3px; text-align: left;">${getSupplierName(item.account_id)}</td>
+          <td style="padding: 3px; text-align: right;">฿${debit.toFixed(2)}</td>
+          <td style="padding: 3px; text-align: right;">฿${credit.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 12pt;
+            width: 80mm;
+            margin: 0;
+            padding: 5px 2px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+          }
+          .header h2 {
+            margin: 5px 0;
+            font-size: 16pt;
+            font-weight: bold;
+          }
+          .header p {
+            margin: 3px 0;
+            font-size: 10pt;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+          }
+          table th {
+            border-bottom: 1px solid #000;
+            padding: 5px 2px;
+            text-align: left;
+            font-size: 11pt;
+          }
+          table td {
+            padding: 4px 2px;
+            font-size: 11pt;
+          }
+          .summary {
+            border-top: 2px solid #000;
+            margin-top: 8px;
+            padding-top: 6px;
+          }
+          .summary div {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-weight: bold;
+            font-size: 11pt;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>${companyInfo.name || 'Restaurant Name'}</h2>
+          <p>${companyInfo.address || ''}</p>
+          <p>Tax ID: ${companyInfo.tax_id || ''}</p>
+          <p><strong>Supplier Ledger Report</strong></p>
+          <p>Date: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Txn ID</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th style="text-align: right;">Debit</th>
+              <th style="text-align: right;">Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+
+        <div class="summary">
+          <div>
+            <span>Total Debit:</span>
+            <span>฿${totalDebit.toFixed(2)}</span>
+          </div>
+          <div>
+            <span>Total Credit:</span>
+            <span>฿${totalCredit.toFixed(2)}</span>
+          </div>
+          <div>
+            <span>Balance:</span>
+            <span>฿${(totalDebit - totalCredit).toFixed(2)}</span>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Ant Design Table Columns
+  const columns = [
+    {
+      title: 'S.No.',
+      key: 'index',
+      render: (text, record, index) => index + 1,
+      width: 70,
+    },
+    {
+      title: 'Transaction ID',
+      dataIndex: 'transaction_id',
+      key: 'transaction_id',
+      sorter: (a, b) => (a.transaction_id || '').localeCompare(b.transaction_id || ''),
+    },
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      sorter: (a, b) => new Date(a.date) - new Date(b.date),
+      render: (date) => date || '-',
+    },
+    {
+      title: 'Supplier',
+      dataIndex: 'account_id',
+      key: 'account_id',
+      render: (account_id) => getSupplierName(account_id),
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (text) => text || '-',
+    },
+    {
+      title: 'Debit',
+      dataIndex: 'debit_amount',
+      key: 'debit_amount',
+      align: 'right',
+      render: (amount) => `฿${parseFloat(amount || 0).toFixed(2)}`,
+      sorter: (a, b) => parseFloat(a.debit_amount || 0) - parseFloat(b.debit_amount || 0),
+    },
+    {
+      title: 'Credit',
+      dataIndex: 'credit_amount',
+      key: 'credit_amount',
+      align: 'right',
+      render: (amount) => `฿${parseFloat(amount || 0).toFixed(2)}`,
+      sorter: (a, b) => parseFloat(a.credit_amount || 0) - parseFloat(b.credit_amount || 0),
+    },
+    {
+      title: 'Reference',
+      dataIndex: 'reference_id',
+      key: 'reference_id',
+      render: (text) => text || '-',
+    },
+  ];
+
+  // Calculate totals
+  const totalDebit = filteredData.reduce((sum, item) => sum + parseFloat(item.debit_amount || 0), 0);
+  const totalCredit = filteredData.reduce((sum, item) => sum + parseFloat(item.credit_amount || 0), 0);
+  const balance = totalDebit - totalCredit;
   return (
     <Layout>
       <Header title="Vendor Expense Logging" />
       <ToastContainer />
-      <CardComponent title="Track and log supplier bills, invoices, and payments" headerColor="primary" bodyClass="panel-body">
+      
+      {/* Entry Form */}
+      <Card title="Track and log supplier bills, invoices, and payments" style={{ marginBottom: 24 }}>
         <form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="col-md-4">
-              <TextfieldwithLabel
-                id="transaction_id"
+          <Row gutter={16}>
+            <Col xs={24} sm={12} md={8}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Transaction ID</label>
+              <Input
                 name="transaction_id"
                 value={formData.transaction_id}
                 onChange={handleInputChange}
-                type="text"
-                lable="Transaction ID"
+                placeholder="Transaction ID"
               />
-            </div>
-            <div className="col-md-4">
-              <TextfieldwithLabel
-                id="date"
+            </Col>
+            
+            <Col xs={24} sm={12} md={8}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date</label>
+              <Input
+                type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleInputChange}
-                type="date"
-                lable="Date"
               />
-            </div>
-            <div className="col-md-4">
-              <label className="control-label mb-2">Supplier Name</label>
-              <select
-               className="form-control"
-              required
-                name="account_id"
-                value={formData.account_id}
-                onChange={handleInputChange}
-                
+            </Col>
+            
+            <Col xs={24} sm={12} md={8}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Supplier Name</label>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Select Supplier"
+                value={formData.account_id || undefined}
+                onChange={(value) => setFormData(prev => ({ ...prev, account_id: value }))}
               >
-                <option value="">Select Supplier</option>
                 {suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
+                  <Select.Option key={supplier.id} value={supplier.id}>
                     {supplier.company_name}
-                  </option>
+                  </Select.Option>
                 ))}
-              </select>
-            </div>
-            <div className="col-md-6 mt-3">
-              <TextfieldwithLabel
-                id="description"
+              </Select>
+            </Col>
+            
+            <Col xs={24} sm={12} md={12}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Description</label>
+              <TextArea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                type="text"
-                lable="Description"
+                placeholder="Description"
+                rows={2}
               />
-            </div>
-            <div className="col-md-3 mt-3">
-              <TextfieldwithLabel
-                id="debit_amount"
+            </Col>
+            
+            <Col xs={24} sm={12} md={6}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Debit Amount</label>
+              <Input
+                type="number"
                 name="debit_amount"
                 value={formData.debit_amount}
                 onChange={handleInputChange}
-                type="number"
-                lable="Debit Amount"
+                placeholder="0.00"
+                prefix="฿"
               />
-            </div>
-            <div className="col-md-3 mt-3">
-              <TextfieldwithLabel
-                id="credit_amount"
+            </Col>
+            
+            <Col xs={24} sm={12} md={6}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Credit Amount (Optional)</label>
+              <Input
+                type="number"
                 name="credit_amount"
                 value={formData.credit_amount}
                 onChange={handleInputChange}
-                type="number"
-                lable="Credit Amount (Optional)"
+                placeholder="0.00"
+                prefix="฿"
               />
-            </div>
-            <div className="col-md-4 mt-3">
-              <TextfieldwithLabel
-                id="reference_id"
+            </Col>
+            
+            <Col xs={24} sm={12} md={8}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Reference ID (Optional)</label>
+              <Input
                 name="reference_id"
                 value={formData.reference_id}
                 onChange={handleInputChange}
-                type="text"
-                lable="Reference ID (Optional)"
+                placeholder="Reference ID"
               />
-            </div>
-            <div className="col-md-4 mt-4">
-                <label></label>
-              <SubmitButton type="submit" name="Save Entry" cls="btn btn-darkblue btn-anim" />
-            </div>
-          </div>
+            </Col>
+            
+            <Col xs={24} sm={12} md={4} style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} block>
+                Save Entry
+              </Button>
+            </Col>
+          </Row>
         </form>
-      </CardComponent>
+      </Card>
 
-        <div className="col-12 mt-4" id="tableid">
-    {data.length === 0 ? (
-      <p>No stock entries available.</p>
-    ) : (
-      <DataTable columns={columns} data={data} tablename="ledger_entries" />
-    )}
-  </div>
+      {/* Filters */}
+      <Card title="Filter Ledger Entries" style={{ marginBottom: 24 }}>
+        <Row gutter={16}>
+          <Col xs={24} sm={12} md={8}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date Range</label>
+            <Space direction="horizontal" style={{ width: '100%' }}>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="Start Date"
+                style={{ width: '100%' }}
+              />
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="End Date"
+                style={{ width: '100%' }}
+              />
+            </Space>
+          </Col>
+          
+          <Col xs={24} sm={12} md={8}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Supplier</label>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="All Suppliers"
+              value={selectedSupplier || undefined}
+              onChange={(value) => setSelectedSupplier(value || "")}
+              allowClear
+            >
+              {suppliers.map((supplier) => (
+                <Select.Option key={supplier.id} value={supplier.id}>
+                  {supplier.company_name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Col>
+          
+          <Col xs={24} sm={12} md={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <Space>
+              <Button type="primary" icon={<FilterOutlined />} onClick={applyFilter}>
+                Apply Filter
+              </Button>
+              <Button icon={<ClearOutlined />} onClick={clearFilters}>
+                Clear
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+
+        <Divider />
+
+        {/* Export Buttons */}
+        <Space wrap>
+          <Button type="primary" icon={<PrinterOutlined />} onClick={printThermalReport} style={{ background: '#722ed1', borderColor: '#722ed1' }}>
+            Print Thermal
+          </Button>
+          <Button danger icon={<FilePdfOutlined />} onClick={exportToPDF}>
+            Export PDF
+          </Button>
+          <Button type="primary" icon={<FileExcelOutlined />} onClick={exportToExcel} style={{ background: '#52c41a', borderColor: '#52c41a' }}>
+            Export Excel
+          </Button>
+        </Space>
+      </Card>
+
+      {/* Summary Statistics */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Total Debit"
+              value={totalDebit}
+              precision={2}
+              prefix="฿"
+              valueStyle={{ color: '#cf1322' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Total Credit"
+              value={totalCredit}
+              precision={2}
+              prefix="฿"
+              valueStyle={{ color: '#3f8600' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Balance"
+              value={balance}
+              precision={2}
+              prefix="฿"
+              valueStyle={{ color: balance >= 0 ? '#3f8600' : '#cf1322' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Data Table */}
+      <Card title={`Ledger Entries (${filteredData.length} records)`}>
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          rowKey={(record) => record.id || Math.random()}
+          loading={loading}
+          pagination={{
+            pageSize: 20,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} entries`,
+            pageSizeOptions: ['10', '20', '50', '100']
+          }}
+          scroll={{ x: true }}
+          size="small"
+        />
+      </Card>
     </Layout>
   );
 }

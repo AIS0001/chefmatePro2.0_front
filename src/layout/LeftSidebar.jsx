@@ -1,17 +1,20 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Layout, Menu, Button, Tooltip, Divider } from 'antd';
+import { LogoutOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import getMenuItems from "../components/MenuItems";
 import getMenuItems_vat from "../components/Menu_item_vat";
 import fetchData from "../functions/fetchData";
 
-
 export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [hoveredMenu, setHoveredMenu] = useState(null);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const sidebarRef = useRef(null);
+  const { Sider } = Layout;
 
   useEffect(() => {
     // Fetch tax_type from coresetting and set menu accordingly
@@ -41,137 +44,104 @@ export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
   // Handle menu link clicks for mobile
   const handleMenuLinkClick = (item) => {
     if (isMobile && !item.submenu) {
-      // Close mobile sidebar when clicking a direct link
       onClose();
     }
   };
 
-  // No submenu open/close on hover
-  const handleMouseEnter = () => {};
-  const handleMouseLeave = () => {};
+  // Convert menu items to Ant Design Menu format
+  const convertMenuItems = (items) => {
+    return items.map((item, index) => {
+      if (item.submenu) {
+        return {
+          key: index.toString(),
+          label: item.name,
+          icon: <i className={`zmdi zmdi-${item.icon}`} style={{ fontSize: '16px' }} />,
+          children: item.submenu.map((subItem, subIndex) => ({
+            key: `${index}-${subIndex}`,
+            label: <Link to={subItem.path}>{subItem.name}</Link>,
+          })),
+        };
+      } else {
+        return {
+          key: index.toString(),
+          label: <Link to={item.path || "#!"}>{item.name}</Link>,
+          icon: <i className={`zmdi zmdi-${item.icon}`} style={{ fontSize: '16px' }} />,
+        };
+      }
+    });
+  };
 
-  // Sidebar is considered open if isOpen or hovered while collapsed (desktop only)
-  // For mobile, always show content when sidebar is open
+  const handleLogout = () => {
+    navigate('/logout');
+  };
+
   const effectiveOpen = isMobile ? isOpen : (isOpen || (!isMobile && !isOpen && sidebarHovered));
+  const sidebarWidth = isMobile ? 240 : (effectiveOpen ? 240 : 80);
 
   return (
-   // ...existing code...
     <div
       ref={sidebarRef}
-      className={`fixed-sidebar-left ${effectiveOpen ? "open" : "collapsed"} ${isMobile && isOpen ? "mobile-open" : ""}`}
       style={{
-        overflowX: "hidden",
-        minHeight: "100vh",
-        width: isMobile ? 240 : (effectiveOpen ? 240 : 60), // Ensure enough width for text on mobile
-        transition: isMobile ? 'left 0.3s ease' : 'width 0.2s',
-        zIndex: 2000,
         position: 'fixed',
         left: isMobile ? (isOpen ? 0 : -240) : 0,
-        background: '#212121',
-        boxShadow: isMobile && isOpen ? '2px 0 8px rgba(0,0,0,0.08)' : 'none', // Optional: shadow for mobile
+        top: 64, // Below the header
+        height: 'calc(100vh - 64px)',
+        width: sidebarWidth,
+        background: '#001529',
+        transition: isMobile ? 'left 0.3s ease' : 'width 0.2s',
+        zIndex: 1999,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        boxShadow: isMobile && isOpen ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',
       }}
       onMouseEnter={() => { if (!isMobile && !isOpen) setSidebarHovered(true); }}
       onMouseLeave={() => { if (!isMobile && !isOpen) { setSidebarHovered(false); setHoveredMenu(null); } }}
     >
-      <ul className="nav navbar-nav side-nav nicescroll-bar" style={{ overflowX: "hidden", paddingLeft: isMobile ? 0 : undefined }}>
-        <li className="navigation-header" style={{ paddingLeft: isMobile ? 16 : undefined }}>
-          <span>Main</span>
-          <i className="zmdi zmdi-more"></i>
-        </li>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* Main Menu */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Menu
+            mode="inline"
+            theme="dark"
+            items={convertMenuItems(menuItems)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+            }}
+            itemLabelStyle={{ color: '#ffffff', fontWeight: 500 }}
+            inlineIndent={effectiveOpen ? 16 : 0}
+          />
+        </div>
 
-        {menuItems.map((item, index) => {
-          const showSubmenu = (isMobile || effectiveOpen) && activeMenu === index;
-          return (
-            <li
-              key={index}
-              style={{ position: 'relative', paddingLeft: isMobile ? 8 : undefined, paddingRight: isMobile ? 8 : undefined }}
+        {/* Divider */}
+        <Divider style={{ margin: '8px 0', borderColor: 'rgba(255, 255, 255, 0.15)' }} />
+
+        {/* Logout Button */}
+        <div style={{ padding: effectiveOpen ? '8px 16px' : '8px 8px', borderTop: '1px solid rgba(255, 255, 255, 0.15)' }}>
+          {effectiveOpen ? (
+            <Button
+              type="primary"
+              danger
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              block
+              style={{ background: '#ff4d4f', borderColor: '#ff4d4f' }}
             >
-              <Link
-                to={item.submenu ? "#!" : item.path || "#!"}
-                onClick={(e) => {
-                  if (item.submenu) {
-                    e.preventDefault();
-                    handleMenuClick(index);
-                  } else {
-                    handleMenuLinkClick(item);
-                  }
-                }}
-                data-toggle="collapse"
-                data-target={item.dataTargetId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: isMobile ? '10px 8px' : '10px 0',
-                  fontSize: isMobile ? '15px' : '14px',
-                  width: '100%',
-                  minHeight: '40px',
-                }}
-              >
-                <div style={{
-                  width: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: isMobile ? 12 : 20,
-                }}>
-                  <i className={`zmdi zmdi-${item.icon}`} style={{
-                    fontSize: 22,
-                    color: '#f9f9f9',
-                  }}></i>
-                </div>
-                {(isMobile || effectiveOpen) && (
-                  <span className="right-nav-text" style={{
-                    opacity: 1,
-                    fontWeight: 500,
-                    color: '#f9f9f9',
-                    flex: 1,
-                    textAlign: 'left',
-                  }}>
-                    {item.name}
-                  </span>
-                )}
-                {item.submenu && (isMobile || effectiveOpen) && (
-                  <div style={{ marginLeft: 'auto' }}>
-                    <i className={`zmdi zmdi-caret-${showSubmenu ? "up" : "down"}`}></i>
-                  </div>
-                )}
-              </Link>
-              {item.submenu && (
-                <ul
-                  className={`submenu ${showSubmenu ? "show" : ""}`}
-                  style={{
-                    background: isMobile ? '#212121' : undefined,
-                    paddingLeft: isMobile ? 24 : 0,
-                  }}
-                >
-                  {item.submenu.map((subItem, subIndex) => (
-                    <li key={subIndex}>
-                      <Link
-                        to={subItem.path}
-                        onClick={() => handleMenuLinkClick(subItem)}
-                        style={{
-                          fontSize: isMobile ? '14px' : '13px',
-                          padding: isMobile ? '8px 0' : '6px 0',
-                          color: 'white',
-                          display: 'block',
-                        }}
-                      >
-                        {subItem.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          );
-        })}
-
-        <li className="navigation-header" style={{ paddingLeft: isMobile ? 16 : undefined }}>
-          <span>Settings</span>
-          <i className="zmdi zmdi-more"></i>
-        </li>
-      </ul>
+              Logout
+            </Button>
+          ) : (
+            <Tooltip title="Logout" placement="right">
+              <Button
+                type="text"
+                icon={<LogoutOutlined />}
+                onClick={handleLogout}
+                block
+                style={{ color: '#f5222d' }}
+              />
+            </Tooltip>
+          )}
+        </div>
+      </div>
     </div>
-// ...existing code...
   );
 }

@@ -9,7 +9,8 @@ const getRunningTable = async (tblname, settableList) => {
     }
      
     console.log(url);
-    const response = await axios.get(url, getHeaders());
+    const headers = getHeaders();
+    const response = await axios.get(url, headers);
 
     if (settableList && typeof settableList === 'function') {
         settableList(response.data.data);

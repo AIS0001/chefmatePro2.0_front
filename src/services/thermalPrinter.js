@@ -14,8 +14,8 @@ export const generateTicketCanvas = (invoiceData) => {
   const paperWidth = 80 * dotsPerMM; // 80mm width = 640 pixels
   
   // Calculate dynamic height based on content
-  const baseHeight = 500; // Base height for headers, footers, and spacing
-  const itemHeight = 32; // Height per item
+  const baseHeight = 480; // Base height for fixed sections (headers, footers, spacing)
+  const itemHeight = 38; // Height per item (matches lineHeight = 38)
   const totalHeight = baseHeight + (invoiceData.items.length * itemHeight);
   
   canvas.width = paperWidth;
@@ -32,34 +32,34 @@ export const generateTicketCanvas = (invoiceData) => {
   const leftMargin = 15;
   const rightMargin = 90;
   let yPos = 15;
-  const lineHeight = 28;
+  const lineHeight = 38;
   
   // Company Name
-  ctx.font = 'bold 28px Arial';
+  ctx.font = 'bold 38px Arial';
   ctx.fillText(invoiceData.companyName || 'CHEFMATE', centerX, yPos);
   yPos += lineHeight;
   
   // Company Address
   if (invoiceData.companyAddress) {
-    ctx.font = '16px Arial';
+    ctx.font = '24px Arial';
     ctx.fillText(invoiceData.companyAddress, centerX, yPos);
     yPos += lineHeight - 5;
   }
   
   // Company Phone and Tax ID
   if (invoiceData.companyPhone) {
-    ctx.font = '20px Arial';
+    ctx.font = '24px Arial';
     ctx.fillText(invoiceData.companyPhone, centerX, yPos);
     yPos += lineHeight - 8;
   }
   
   // Tax ID
-  ctx.font = '20px Arial';
+  ctx.font = '24px Arial';
   ctx.fillText(`Tax:- ${invoiceData.companyTaxId || ''}`, centerX, yPos);
   yPos += lineHeight - 5;
   
   // Bill ID and Table Number on same line
-  ctx.font = 'bold 20px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.textAlign = 'left';
   ctx.fillText(`Bill ID: ${invoiceData.billId}`, leftMargin, yPos);
   ctx.textAlign = 'right';
@@ -67,7 +67,7 @@ export const generateTicketCanvas = (invoiceData) => {
   yPos += lineHeight;
   
   // Date and Time on same line
-  ctx.font = '20px Arial';
+  ctx.font = '24px Arial';
   const currentDate = new Date(invoiceData.timestamp);
   const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
   const formattedTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -78,9 +78,9 @@ export const generateTicketCanvas = (invoiceData) => {
   yPos += lineHeight;
   
   // Payment Mode
-  ctx.font = '20px Arial';
+  ctx.font = '24px Arial';
   ctx.textAlign = 'left';
-  ctx.fillText(`Payment Mode: ${invoiceData.paymentMethod || 'CASH'}`, leftMargin, yPos);
+  ctx.fillText(` Mode: ${invoiceData.paymentMethod || 'CASH'}`, leftMargin, yPos);
   yPos += lineHeight + 5;
   
   // Separator
@@ -88,7 +88,7 @@ export const generateTicketCanvas = (invoiceData) => {
   yPos += 10;
   
   // Items Header
-  ctx.font = 'bold 18px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.textAlign = 'left';
   ctx.fillText('Item', leftMargin, yPos);
   ctx.textAlign = 'center';
@@ -104,7 +104,7 @@ export const generateTicketCanvas = (invoiceData) => {
   yPos += 8;
   
   // Items
-  ctx.font = '16px Arial';
+  ctx.font = '24px Arial';
   if (invoiceData.items && invoiceData.items.length > 0) {
     invoiceData.items.forEach(item => {
       ctx.textAlign = 'left';
@@ -129,7 +129,7 @@ export const generateTicketCanvas = (invoiceData) => {
   yPos += 12;
   
   // Subtotal
-  ctx.font = '16px Arial';
+  ctx.font = '28px Arial';
   ctx.textAlign = 'left';
   ctx.fillText(`Subtotal:`, leftMargin, yPos);
   ctx.textAlign = 'right';
@@ -146,7 +146,7 @@ export const generateTicketCanvas = (invoiceData) => {
     yPos += lineHeight;
     
     // Subtotal after discount
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 28px Arial';
     ctx.textAlign = 'left';
     ctx.fillText(`Subtotal after Discount:`, leftMargin, yPos);
     ctx.textAlign = 'right';
@@ -155,7 +155,7 @@ export const generateTicketCanvas = (invoiceData) => {
   }
   
   // Tax
-  ctx.font = '16px Arial';
+  ctx.font = '28px Arial';
   ctx.textAlign = 'left';
   ctx.fillText(`Tax (${invoiceData.taxPercent || 7}%):`, leftMargin, yPos);
   ctx.textAlign = 'right';
@@ -170,7 +170,7 @@ export const generateTicketCanvas = (invoiceData) => {
   yPos += lineHeight;
   
   // Total Amount
-  ctx.font = 'bold 18px Arial';
+  ctx.font = 'bold 28px Arial';
   ctx.textAlign = 'left';
   ctx.fillText('Total Amount:', leftMargin, yPos);
   ctx.textAlign = 'right';
@@ -183,14 +183,14 @@ export const generateTicketCanvas = (invoiceData) => {
   
   // Operated By
   if (invoiceData.operatedBy) {
-    ctx.font = '16px Arial';
+    ctx.font = '28px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(`Operated By: ${invoiceData.operatedBy}`, centerX, yPos);
     yPos += lineHeight - 5;
   }
   
   // Footer message
-  ctx.font = '16px Arial';
+  ctx.font = '28px Arial';
   ctx.fillText('Powered by chefmate POS !!', centerX, yPos);
   yPos += lineHeight - 5;
   ctx.fillText('Thank You!', centerX, yPos);
@@ -212,7 +212,7 @@ export const generateKioskInvoiceCanvas = (invoiceData) => {
   
   // Calculate dynamic height based on content
   const baseHeight = 400;
-  const itemHeight = 28;
+  const itemHeight = 26; // Height per item (matches lineHeight = 26)
   const totalHeight = baseHeight + (invoiceData.items.length * itemHeight);
   
   canvas.width = paperWidth;
@@ -359,8 +359,8 @@ export const generateKOTCanvas = (kotData) => {
   const paperWidth = 80 * dotsPerMM; // 80mm width = 640 pixels
   
   // Calculate dynamic height based on content
-  const baseHeight = 380;
-  const itemHeight = 32;
+  const baseHeight = 420; // Optimized for minimal blank space with short tickets
+  const itemHeight = 40; // Height per item (matches lineHeight used during rendering)
   const totalHeight = baseHeight + (kotData.items.length * itemHeight);
   
   canvas.width = paperWidth;
@@ -390,15 +390,15 @@ export const generateKOTCanvas = (kotData) => {
   
   // Separator (full width)
   ctx.textAlign = 'left';
-  ctx.font = '18px Arial';
+  ctx.font = '24px Arial';
   // Calculate separator length based on full available width
-  const separatorLength = 45; // Approximately 45 dashes for 80mm width with this font
+  const separatorLength = 85; // Approximately 45 dashes for 80mm width with this font
   const separator = '-'.repeat(separatorLength);
   ctx.fillText(separator, leftMargin, yPos);
   yPos += lineHeight;
   
   // Table and Order Number on same line
-  ctx.font = 'bold 22px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.fillText(` ${kotData.table || 'N/A'}`, leftMargin, yPos);
   ctx.textAlign = 'right';
   ctx.fillText(`Order #: ${kotData.orderNumber || 'N/A'}`, canvas.width - rightMargin, yPos);
@@ -409,11 +409,11 @@ export const generateKOTCanvas = (kotData) => {
   const currentDate = new Date(kotData.timestamp || new Date());
   const formattedDate = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
   const formattedTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-  ctx.font = '20px Arial';
+  ctx.font = '24px Arial';
   ctx.fillText(`Date: ${formattedDate}`, leftMargin, yPos);
   ctx.textAlign = 'right';
   ctx.fillText(`Time: ${formattedTime}`, canvas.width - rightMargin, yPos);
-  yPos += lineHeight + 5;
+  yPos += lineHeight + 15;
   
   // Separator
   ctx.textAlign = 'left';
@@ -422,14 +422,14 @@ export const generateKOTCanvas = (kotData) => {
   yPos += lineHeight;
   
   // Item and Qty header
-  ctx.font = 'bold 22px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.fillText('Item', leftMargin, yPos);
   ctx.textAlign = 'right';
   ctx.fillText('Qty', canvas.width - rightMargin, yPos);
   yPos += lineHeight + 3;
   
   // Items list
-  ctx.font = '20px Arial';
+  ctx.font = '24px Arial';
   if (kotData.items && kotData.items.length > 0) {
     kotData.items.forEach(item => {
       const itemName = (item.item_name || item.iname || 'Item');
@@ -445,7 +445,7 @@ export const generateKOTCanvas = (kotData) => {
   
   // Double separator before total
   ctx.textAlign = 'left';
-  ctx.font = '18px Arial';
+  ctx.font = '24px Arial';
   ctx.fillText(separator, leftMargin, yPos);
   yPos += 5;
   ctx.fillText(separator, leftMargin, yPos);
@@ -455,7 +455,8 @@ export const generateKOTCanvas = (kotData) => {
   if (kotData.total !== undefined && kotData.total !== null) {
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(`Total: ฿ ${parseFloat(kotData.total).toFixed(2)}`, centerX, yPos);
+    ctx.fillText(`Powered by chefmate POS`, centerX, yPos);
+    // ctx.fillText(`Total: ฿ ${parseFloat(kotData.total).toFixed(2)}`, centerX, yPos);
     yPos += lineHeight;
   }
   
@@ -560,8 +561,15 @@ export const sendToThermalPrinter = async (escposData, options = {}) => {
     if (multiPrinter) {
       payload.sequential = sequential;
     }
+    
+    // Add printer index if specified
+    if (options.printerIndex !== undefined) {
+      payload.printerIndex = options.printerIndex;
+      console.log(`📍 Printer Index in payload: ${options.printerIndex}`);
+    }
 
     console.log(`📤 Sending to thermal printer(s) - Mode: ${multiPrinter ? (sequential ? 'sequential' : 'simultaneous') : 'single'}`);
+    console.log(`📋 Payload keys:`, Object.keys(payload));
 
     const response = await axios.post(endpoint, payload);
     
@@ -614,14 +622,46 @@ export const sendToThermalPrinter = async (escposData, options = {}) => {
  */
 export const printInvoice = async (invoiceData, options = {}) => {
   try {
-    console.log('🧾 Printing invoice...');
+    console.log('🧾 Printing invoice to Kitchen...');
     const canvas = generateTicketCanvas(invoiceData);
     const escposData = canvasToESCPOS(canvas);
-    return await sendToThermalPrinter(escposData, options);
+    // Send to Kitchen printer (index 0)
+    return await sendToThermalPrinter(escposData, {
+      ...options,
+      printerIndex: 0
+    });
   } catch (error) {
     console.error('❌ Error printing invoice:', error);
     if (options.showErrorMessage !== false) {
       message.error('Failed to print invoice');
+    }
+    return false;
+  }
+};
+
+/**
+ * Print invoice to cashier thermal printer
+ * @param {Object} invoiceData - Invoice data with full receipt details
+ * @param {Object} options - Print options
+ * @returns {Promise<boolean>} Success status
+ */
+export const printInvoiceToCashier = async (invoiceData, options = {}) => {
+  try {
+    console.log('🧾 Printing invoice to Cashier (192.168.1.216)...');
+    console.log('📍 Options passed:', options);
+    const canvas = generateTicketCanvas(invoiceData);
+    const escposData = canvasToESCPOS(canvas);
+    // Send to Cashier printer (index 1)
+    const result = await sendToThermalPrinter(escposData, {
+      ...options,
+      printerIndex: 1
+    });
+    console.log('✅ printInvoiceToCashier completed, result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error printing invoice to cashier:', error);
+    if (options.showErrorMessage !== false) {
+      message.error('Failed to print invoice to cashier');
     }
     return false;
   }

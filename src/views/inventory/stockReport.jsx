@@ -52,7 +52,8 @@ export default function StockReport() {
 
   const fetchInventory = async () => {
     try {
-      const res = await axios.get("/inventory/joined", getHeaders());
+      const headers = getHeaders();
+      const res = await axios.get("/inventory/joined", headers);
       setData(res.data);
       setFilteredData(res.data);
     } catch (err) {

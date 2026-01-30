@@ -15,7 +15,8 @@ const fetchData = async (tblname, setData, orderby, where) => {
         url += `/${whereParams}`;
     }
     try {
-        const response = await axios.get(url, getHeaders());
+        const headers = getHeaders();
+        const response = await axios.get(url, headers);
         if (setData && typeof setData === 'function') {
             setData(response.data.data);
         }
@@ -44,27 +45,22 @@ const fetchdatanotequal = async (tblname, setData, orderby, where) => {
         
        
     }
-    //console.log(url);
-    // if(tblname==="final_bill")
-    // {
-    //     console.log("Fetch url data");
-    //     console.log(url);
+    try {
+        const headers = getHeaders();
+        const response = await axios.get(url, headers);
 
-    // }
-    
-    const response = await axios.get(url, getHeaders());
-
-    // If a setData function is provided, update the state with the fetched data
-    if (setData && typeof setData === 'function') {
-        setData(response.data.data)
-      //  console.log(response.data.data);
-    //     if(tblname==="final_bill")
-    //         {
-    //             console.log("getch final bill data:");
-    //    console.log(response.data.data);
-    //         }
+        // If a setData function is provided, update the state with the fetched data
+        if (setData && typeof setData === 'function') {
+            setData(response.data.data)
+        }
+        return response.data.data;
+    } catch (error) {
+        console.error('fetchdatanotequal error:', error);
+        if (setData && typeof setData === 'function') {
+            setData([]);
+        }
+        return null;
     }
-    return response.data.data;
 }
 
 

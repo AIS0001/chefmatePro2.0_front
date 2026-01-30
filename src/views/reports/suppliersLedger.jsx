@@ -20,6 +20,7 @@ export default function SuppliersLedger() {
   const [suppliers, setSuppliers] = useState([]);
   const [formData, setFormData] = useState({ from: "", to: "", accountid: "", supplier_id: "" });
   const [totals, setTotals] = useState({ credit: 0, debit: 0, balance: 0 });
+  const [companyInfo, setCompanyInfo] = useState(null);
 
   const columns = [
     { label: "Txn ID", field: "transaction_id" },
@@ -89,6 +90,175 @@ export default function SuppliersLedger() {
     doc.save("SupplierLedger.pdf");
   };
 
+  const printThermalReport = () => {
+    const printWindow = window.open('', '', 'width=300,height=600');
+    const companyName = companyInfo?.company_name || 'Company Name';
+    const companyAddress = companyInfo?.address || 'Address';
+    const companyPhone = companyInfo?.phone || 'Phone';
+
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Supplier Ledger Report</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            margin: 0;
+            padding: 5px 2px;
+            width: 80mm;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 8px;
+          }
+          .company-name {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 3px;
+          }
+          .company-info {
+            font-size: 10pt;
+            margin: 2px 0;
+          }
+          .report-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 13pt;
+            margin: 10px 0;
+          }
+          .date-range {
+            text-align: center;
+            font-size: 10pt;
+            margin-bottom: 10px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 11pt;
+          }
+          th, td {
+            text-align: left;
+            padding: 4px 2px;
+            border-bottom: 1px solid #ddd;
+          }
+          th {
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+          }
+          .total-row {
+            font-weight: bold;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+          }
+          .summary {
+            margin-top: 15px;
+            border-top: 2px dashed #000;
+            padding-top: 10px;
+            font-size: 12pt;
+          }
+          .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+          }
+          .summary-item.total {
+            font-weight: bold;
+            font-size: 13pt;
+            border-top: 2px solid #000;
+            padding-top: 5px;
+            margin-top: 5px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 10pt;
+            border-top: 2px dashed #000;
+            padding-top: 8px;
+          }
+          @media print {
+            body { margin: 0; padding: 5px 2px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company-name">${companyName}</div>
+          <div class="company-info">${companyAddress}</div>
+          <div class="company-info">Phone: ${companyPhone}</div>
+        </div>
+        
+        <div class="report-title">Supplier Ledger Report</div>
+        ${formData.from || formData.to ? `
+          <div class="date-range">
+            ${formData.from ? `From: ${formatDate(formData.from)}` : ''}
+            ${formData.to ? ` To: ${formatDate(formData.to)}` : ''}
+          </div>
+        ` : ''}
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Debit</th>
+              <th>Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    data.forEach((item) => {
+      html += `
+        <tr>
+          <td>${formatDate(item.date)}</td>
+          <td>${item.description || '-'}</td>
+          <td>${parseFloat(item.debit_amount || 0).toFixed(2)}</td>
+          <td>${parseFloat(item.credit_amount || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+        
+        <div class="summary">
+          <div class="summary-item">
+            <span>Total Debit:</span>
+            <span>${totals.debit.toFixed(2)}</span>
+          </div>
+          <div class="summary-item">
+            <span>Total Credit:</span>
+            <span>${totals.credit.toFixed(2)}</span>
+          </div>
+          <div class="summary-item total">
+            <span>Balance:</span>
+            <span>${totals.balance.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div class="footer">
+          Printed on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}<br/>
+          Thank you!
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
   useEffect(() => {
     fetchData("ledger_entries", (res) => {
       setAllData(res);
@@ -97,6 +267,7 @@ export default function SuppliersLedger() {
     }, "id", {});
 
     fetchData("suppliers", setSuppliers, "id", {});
+    fetchData("company_info", (res) => setCompanyInfo(res[0]), "id", {});
   }, []);
 
   useEffect(() => {
@@ -130,6 +301,9 @@ export default function SuppliersLedger() {
          
           <div className="row">
             <div className="col-md-12">
+            <button className="btn btn-primary me-2" onClick={printThermalReport}>
+              Print Thermal
+            </button>
             <CSVLink
               data={[
                 ...data,

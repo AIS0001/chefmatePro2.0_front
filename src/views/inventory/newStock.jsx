@@ -87,7 +87,8 @@ export default function NewStock() {
         alert("Selected item not found");
       }
       // Fetch closing stock for the selected item
-      axios.get(`getclosingstock/${value}`, getHeaders())
+      const headers = getHeaders();
+      axios.get(`getclosingstock/${value}`, headers)
         .then(res => {
           const closing = parseFloat(res.data?.closing_stock) || 0;
           setFormData(prev => ({ ...updatedForm, opening_stock: closing.toFixed(2) }));
@@ -111,7 +112,8 @@ const handleFinalSave = async () => {
 
   try {
     // Step 1: Get all stock entries for this invoice
-    const res = await axios.get(`/getinvoiceitems/${formData.refno}`, getHeaders());
+    const headers = getHeaders();
+    const res = await axios.get(`/getinvoiceitems/${formData.refno}`, headers);
     const items = res.data || [];
 
     if (items.length === 0) {
@@ -123,7 +125,7 @@ const handleFinalSave = async () => {
     const totalNet = items.reduce((sum, item) => sum + parseFloat(item.netAmount || 0), 0);
 
     // Step 3: Check if ledger entry already exists
-    const ledgerCheck = await axios.get(`/checkledgerentry/${formData.refno}`, getHeaders());
+    const ledgerCheck = await axios.get(`/checkledgerentry/${formData.refno}`, headers);
     if (ledgerCheck.data.exists) {
       toast.info("Ledger entry already exists for this invoice.");
       return;
@@ -138,7 +140,7 @@ const handleFinalSave = async () => {
       description: "Final ledger entry from stock items",
       debit_amount: totalNet,
       credit_amount: 0
-    }, getHeaders());
+    }, headers);
 
     toast.success("Ledger entry created successfully.");
   } catch (err) {
@@ -150,14 +152,14 @@ const handleFinalSave = async () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("/insertdata/inventory", formData, getHeaders());
+      const headers = getHeaders();
+      await axios.post("/insertdata/inventory", formData, headers);
       toast.success("Stock entry added!");
 
-       //fetchData("inventory", setinvoiceItems, "id", { refno: formData.refno });
-      const invoiceItems = await axios.get(`/getinvoiceitems/${formData.refno}`, getHeaders());
+      //fetchData("inventory", setinvoiceItems, "id", { refno: formData.refno });
+      const invoiceItems = await axios.get(`/getinvoiceitems/${formData.refno}`, headers);
       const totalNet = invoiceItems.data.reduce((sum, item) => sum + parseFloat(item.netAmount || 0), 0);
-    //  alert(totalNet);
-  
+      //  alert(totalNet);
 
       setFormData({
         item_id: "",

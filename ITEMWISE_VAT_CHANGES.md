@@ -1,0 +1,236 @@
+# Changes to itemWiseSummaryVat.js
+
+## 1. Add Thermal Print Function (After line 492 - after XLSX.writeFile)
+
+```javascript
+    // Thermal Print Function
+    const printThermalReport = () => {
+        const printData = showCategorySummary
+            ? categorySummaryData
+            : showSubcategorySummary
+            ? subcategorySummaryData
+            : showTableCategorySummary
+            ? tableCategorySummaryData
+            : (filteredData.length > 0 ? filteredData : data);
+
+        const newWindow = window.open("", "_blank");
+        
+        let reportTitle = "Item-Wise VAT Summary";
+        let tableHeaders = "";
+        let tableRows = "";
+        let totalQty = 0;
+        let totalAmount = 0;
+
+        if (showCategorySummary || showSubcategorySummary || showTableCategorySummary) {
+            reportTitle = showCategorySummary ? "Category VAT Summary" 
+                        : showSubcategorySummary ? "Subcategory VAT Summary" 
+                        : "Table Category VAT Summary";
+            
+            tableHeaders = `
+                <tr>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">S.No.</th>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">Name</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Qty</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Amount</th>
+                </tr>
+            `;
+
+            printData.forEach((item, index) => {
+                const name = item.category_name || item.subcategory_name || item.table_category_name || '';
+                const qty = parseFloat(item.total_quantity || 0);
+                const amount = parseFloat(item.total_amount || 0);
+                totalQty += qty;
+                totalAmount += amount;
+
+                tableRows += `
+                    <tr>
+                        <td style="padding: 3px; text-align: left;">${index + 1}</td>
+                        <td style="padding: 3px; text-align: left;">${name}</td>
+                        <td style="padding: 3px; text-align: right;">${qty.toFixed(2)}</td>
+                        <td style="padding: 3px; text-align: right;">฿${amount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            tableHeaders = `
+                <tr>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">S.No.</th>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">Item Name</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Qty</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Amount</th>
+                </tr>
+            `;
+
+            printData.forEach((item, index) => {
+                const itemName = item.item_name || item.name || item.product_name || '';
+                const qty = parseFloat(item.quantity || item.qty || 0);
+                const amount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+                totalQty += qty;
+                totalAmount += amount;
+
+                tableRows += `
+                    <tr>
+                        <td style="padding: 3px; text-align: left;">${index + 1}</td>
+                        <td style="padding: 3px; text-align: left;">${itemName}</td>
+                        <td style="padding: 3px; text-align: right;">${qty.toFixed(2)}</td>
+                        <td style="padding: 3px; text-align: right;">฿${amount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        newWindow.document.write(`
+            <html>
+            <head>
+                <style>
+                    body {
+                        font-family: 'Courier New', monospace;
+                        font-size: 14px;
+                        width: 80mm;
+                        margin: 0;
+                        padding: 10px;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 10px;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 5px;
+                    }
+                    .header h2 {
+                        margin: 5px 0;
+                        font-size: 18px;
+                    }
+                    .header p {
+                        margin: 2px 0;
+                        font-size: 12px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 10px 0;
+                    }
+                    .summary {
+                        border-top: 1px solid #000;
+                        margin-top: 10px;
+                        padding-top: 5px;
+                    }
+                    .summary div {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 3px 0;
+                        font-weight: bold;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 15px;
+                        font-size: 12px;
+                        border-top: 1px solid #000;
+                        padding-top: 5px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>${companyInfo.name || 'Restaurant Name'}</h2>
+                    <p>${companyInfo.address || ''}</p>
+                    <p>Tax ID: ${companyInfo.tax_id || ''}</p>
+                    <p><strong>${reportTitle}</strong></p>
+                    <p>Date: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}</p>
+                    ${startDate && endDate ? `<p>Period: ${startDate} to ${endDate}</p>` : ''}
+                </div>
+
+                <table>
+                    <thead>
+                        ${tableHeaders}
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+
+                <div class="summary">
+                    <div>
+                        <span>Total Quantity:</span>
+                        <span>${totalQty.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span>Total Amount:</span>
+                        <span>฿${totalAmount.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>Powered by ChefMate POS</p>
+                    <p>Thank you!</p>
+                </div>
+            </body>
+            </html>
+        `);
+
+        newWindow.document.close();
+        setTimeout(() => {
+            newWindow.print();
+            newWindow.close();
+        }, 250);
+    };
+```
+
+## 2. Add Company Info fetch in useEffect (After line 497 - inside fetchDataAndCategories)
+
+Add this after the try block starts:
+```javascript
+                // Fetch company info for thermal printing
+                const companyData = await fetchData("companyinfo", null, "id", {});
+                if (companyData && companyData.length > 0) {
+                    setCompanyInfo(companyData[0]);
+                }
+```
+
+## 3. Add Print Button (Around line 665 - after Export Excel button)
+
+```javascript
+                                    <button className="btn btn-success me-2" onClick={exportExcel}>
+                                        Export Excel
+                                    </button>
+                                    <Button 
+                                        type="primary" 
+                                        icon={<PrinterOutlined />} 
+                                        onClick={printThermalReport}
+                                        style={{marginRight: '8px'}}
+                                    >
+                                        Print Thermal Report
+                                    </Button>
+```
+
+## 4. Replace DataTable with Ant Design Table (Around line 710)
+
+Instead of the current DataTable component, use:
+```javascript
+                    {data.length === 0 ? (
+                        <p>No data available</p>
+                    ) : (
+                        <Table
+                            columns={currentColumns.map(col => ({
+                                title: col.label,
+                                dataIndex: col.field,
+                                key: col.field,
+                                sorter: true,
+                                render: (text) => text || '-'
+                            }))}
+                            dataSource={currentData}
+                            rowKey={(record, index) => index}
+                            pagination={{
+                                pageSize: 50,
+                                showSizeChanger: true,
+                                showTotal: (total) => `Total ${total} items`,
+                                pageSizeOptions: ['10', '20', '50', '100', 'All']
+                            }}
+                            scroll={{ x: true }}
+                            size="small"
+                        />
+                    )}
+```
+
+Where:
+- currentColumns = the appropriate column set based on view mode
+- currentData = the appropriate data set based on view mode

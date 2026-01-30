@@ -25,7 +25,8 @@ const fetchdatanotequal = async (tblname, setData, orderby, where) => {
 
     // }
     
-    const response = await axios.get(url, getHeaders());
+    const headers = getHeaders();
+    const response = await axios.get(url, headers);
 
     // If a setData function is provided, update the state with the fetched data
     if (setData && typeof setData === 'function') {

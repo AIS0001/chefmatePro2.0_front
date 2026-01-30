@@ -18,11 +18,18 @@ import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import DataTable from "../../components/data-tables/dataTableGst";
 import fetchData from "../../functions/fetchData";
+import { Table, Button, DatePicker, Input, Select, Space, Card, Row, Col, Statistic, Divider } from "antd";
+import { PrinterOutlined, FilePdfOutlined, FileExcelOutlined, FilterOutlined, ClearOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
+
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 export default function ItemWiseSummaryVat() {
     let currentDate = format(new Date(), "yyyy-MM-dd");
     
     const [data, setData] = useState([]);
+    const [originalData, setOriginalData] = useState([]); // Store original ungrouped data
     const [categories, setCategories] = useState([]);
     const [subcategories, setSubcategories] = useState([]);
     const [tableCategories, setTableCategories] = useState([]);
@@ -45,34 +52,29 @@ export default function ItemWiseSummaryVat() {
     const [categorySummaryData, setCategorySummaryData] = useState([]);
     const [subcategorySummaryData, setSubcategorySummaryData] = useState([]);
     const [tableCategorySummaryData, setTableCategorySummaryData] = useState([]);
+    const [companyInfo, setCompanyInfo] = useState({});
 
     // Column definitions for VAT-specific display
     const columns = [
-        { label: "Inv. No.", field: "invoice_number", fallback: ["invoice_no", "bill_no"] },
-        { label: "Date", field: "setup_date", fallback: ["created_at", "date", "order_date"] },
+        // Invoice and Date columns hidden since grouped data aggregates multiple orders
+        // { label: "Inv. No.", field: "invoice_number", fallback: ["invoice_no", "bill_no"] },
+        // { label: "Date", field: "setup_date", fallback: ["created_at", "date", "order_date"] },
         { label: "Category", field: "category_name", fallback: ["cat_name"] },
         { label: "Subcategory", field: "subcategory_name", fallback: ["subcat_name", "sub_category"] },
-        { label: "Table Category", field: "table_category_name", fallback: ["table_cat_name"] },
         { label: "Item Name", field: "item_name", fallback: ["name", "product_name"] },
         { label: "Quantity", field: "quantity", fallback: ["qty"] },
-        { label: "UOM", field: "uom", fallback: ["unit"] },
-        { label: "Rate", field: "rate", fallback: ["price", "unit_price"] },
-        { label: "VAT %", field: "vat_rate", fallback: ["cgst", "tax_rate"] },
-        { label: "VAT Amount", field: "vat_amount", fallback: ["tax_amount"] },
         { label: "Total", field: "total_price", fallback: ["total", "total_amount"] },
     ];
 
     const categorySummaryColumns = [
         { label: "Category Name", field: "category_name" },
         { label: "Total Quantity", field: "total_quantity" },
-        { label: "Total VAT", field: "total_vat" },
         { label: "Total Amount", field: "total_amount" },
     ];
 
     const subcategorySummaryColumns = [
         { label: "Subcategory Name", field: "subcategory_name" },
         { label: "Total Quantity", field: "total_quantity" },
-        { label: "Total VAT", field: "total_vat" },
         { label: "Total Amount", field: "total_amount" },
     ];
 
@@ -85,8 +87,32 @@ export default function ItemWiseSummaryVat() {
 
     // Summary generation functions
     const generateCategorySummary = () => {
-        // Use the already filtered data that includes all active filters
-        const dataToSummarize = filteredData.length > 0 ? filteredData : data;
+        // Use originalData (ungrouped) to get category IDs, apply filters first
+        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
+            // Re-apply current filters to original data for summary
+            const itemName = item.item_name || item.name || item.product_name || "";
+            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
+            
+            const categoryId = item.catid || item.category_id || item.cat_id;
+            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
+            
+            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
+            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
+            
+            const tableCategoryId = item.table_cat_id || item.table_category_id;
+            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
+            
+            if (startDate || endDate) {
+                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
+                if (!dateField) return false;
+                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
+                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+                if ((start && itemDate < start) || (end && itemDate > end)) return false;
+            }
+            
+            return true;
+        }) : originalData;
         const summaryMap = {};
 
         console.log("=== CATEGORY SUMMARY DEBUG ===");
@@ -127,19 +153,53 @@ export default function ItemWiseSummaryVat() {
     };
 
     const generateSubcategorySummary = () => {
-        // Use the already filtered data that includes all active filters
-        const dataToSummarize = filteredData.length > 0 ? filteredData : data;
+        // Use originalData (ungrouped) to get subcategory IDs, apply filters first
+        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
+            const itemName = item.item_name || item.name || item.product_name || "";
+            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
+            
+            const categoryId = item.catid || item.category_id || item.cat_id;
+            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
+            
+            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
+            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
+            
+            const tableCategoryId = item.table_cat_id || item.table_category_id;
+            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
+            
+            if (startDate || endDate) {
+                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
+                if (!dateField) return false;
+                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
+                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+                if ((start && itemDate < start) || (end && itemDate > end)) return false;
+            }
+            
+            return true;
+        }) : originalData;
         const summaryMap = {};
 
         console.log("=== SUBCATEGORY SUMMARY DEBUG ===");
         console.log("Data to summarize count:", dataToSummarize.length);
+        console.log("Available subcategories:", subcategories);
 
         dataToSummarize.forEach(item => {
             const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
             if (!subcategoryId) return;
 
-            const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId.toString());
-            const subcatName = subcategory ? subcategory.subcat : `Unknown (ID: ${subcategoryId})`;
+            // Try to find subcategory name from the loaded subcategories OR from the item's data itself
+            let subcatName = item.subcategory_name || item.subcat_name || item.sub_category || '';
+            
+            if (!subcatName && subcategories.length > 0) {
+                const subcategory = subcategories.find(sub => sub.id.toString() === subcategoryId.toString());
+                subcatName = subcategory ? subcategory.subcat : '';
+            }
+            
+            // If still not found, use fallback
+            if (!subcatName) {
+                subcatName = `Unknown (ID: ${subcategoryId})`;
+            }
 
             if (!summaryMap[subcategoryId]) {
                 summaryMap[subcategoryId] = { 
@@ -169,8 +229,31 @@ export default function ItemWiseSummaryVat() {
     };
 
     const generateTableCategorySummary = () => {
-        // Use the already filtered data that includes all active filters (date, item name, category, etc.)
-        const dataToSummarize = filteredData.length > 0 ? filteredData : data;
+        // Use originalData (ungrouped) to get table category IDs, apply filters first
+        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
+            const itemName = item.item_name || item.name || item.product_name || "";
+            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
+            
+            const categoryId = item.catid || item.category_id || item.cat_id;
+            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
+            
+            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
+            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
+            
+            const tableCategoryId = item.table_cat_id || item.table_category_id;
+            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
+            
+            if (startDate || endDate) {
+                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
+                if (!dateField) return false;
+                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
+                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+                if ((start && itemDate < start) || (end && itemDate > end)) return false;
+            }
+            
+            return true;
+        }) : originalData;
         const summaryMap = {};
 
         console.log("=== TABLE CATEGORY SUMMARY DEBUG ===");
@@ -216,6 +299,40 @@ export default function ItemWiseSummaryVat() {
         setShowSubcategorySummary(false);
     };
 
+    // Group data by item name
+    const groupByItemName = (dataToGroup) => {
+        const grouped = {};
+        
+        dataToGroup.forEach(item => {
+            const itemName = item.item_name || item.name || item.product_name;
+            if (!itemName) return;
+            
+            if (!grouped[itemName]) {
+                grouped[itemName] = {
+                    item_name: itemName,
+                    category_name: item.category_name || item.cat_name || '',
+                    subcategory_name: item.subcategory_name || item.subcat_name || '',
+                    table_category_name: item.table_category_name || item.table_cat_name || '',
+                    quantity: 0,
+                    total_price: 0,
+                    vat_amount: 0,
+                    uom: item.uom || item.unit || '',
+                    vat_rate: item.vat_rate || item.cgst || item.tax_rate || 0,
+                    // Store IDs for summary generation
+                    catid: item.catid || item.category_id || item.cat_id,
+                    subcatid: item.subcatid || item.subcategory_id || item.subcat_id,
+                    table_cat_id: item.table_cat_id || item.table_category_id
+                };
+            }
+            
+            grouped[itemName].quantity += parseFloat(item.quantity || item.qty || 0);
+            grouped[itemName].total_price += parseFloat(item.total_price || item.total || item.total_amount || 0);
+            grouped[itemName].vat_amount += parseFloat(item.vat_amount || item.tax_amount || 0);
+        });
+        
+        return Object.values(grouped);
+    };
+
     // Helper function to get filtered data by date range
     const getFilteredByDateRange = () => {
         return data.filter(item => {
@@ -256,17 +373,17 @@ export default function ItemWiseSummaryVat() {
 
     // Filtering function
     const applyFilter = () => {
-        if (data.length === 0) return;
+        if (originalData.length === 0) return;
         
         // Validate date range
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-            console.warn("Invalid date range: Start date is after end date");
+            toast.error("Invalid date range: Start date must be before end date");
             return;
         }
         
         console.log("=== FILTER DEBUG INFO ===");
-        console.log("Total data items:", data.length);
-        console.log("Data sample:", data[0]);
+        console.log("Total original data items:", originalData.length);
+        console.log("Data sample:", originalData[0]);
         console.log("Current filters:", {
             startDate,
             endDate,
@@ -276,73 +393,77 @@ export default function ItemWiseSummaryVat() {
             selectedTableCatId
         });
         
-        const filtered = data.filter(item => {
-            const dateField = item.setup_date;
-            if (!dateField) return false;
+        const filtered = originalData.filter(item => {
+            // Date filter
+            if (startDate || endDate) {
+                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
+                if (!dateField) return false;
 
-            // Handle different date field names with better parsing
-            let itemDate;
-            try {
-                let dateString = dateField;
-                
-                // Handle various date formats
-                if (dateString.includes('T')) {
-                    dateString = dateString.split('T')[0]; // Take only date part (remove time)
-                }
-                
-                // Ensure valid date format
-                if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    itemDate = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
-                } else {
-                    itemDate = new Date(dateString);
-                }
-                
-                // Check if date is valid
-                if (isNaN(itemDate.getTime())) {
-                    console.warn(`Invalid date found: ${dateField} for item: ${item.item_name || 'Unknown'}`);
+                let itemDate;
+                try {
+                    let dateString = dateField;
+                    
+                    if (dateString.includes('T')) {
+                        dateString = dateString.split('T')[0];
+                    }
+                    
+                    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        itemDate = new Date(dateString + 'T00:00:00');
+                    } else {
+                        itemDate = new Date(dateString);
+                    }
+                    
+                    if (isNaN(itemDate.getTime())) {
+                        return false;
+                    }
+                } catch (e) {
                     return false;
                 }
-            } catch (e) {
-                console.warn(`Date parsing error for: ${dateField}`, e);
+                
+                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+
+                if ((start && itemDate < start) || (end && itemDate > end)) {
+                    return false;
+                }
+            }
+
+            // Item name filter
+            const itemName = item.item_name || item.name || item.product_name || "";
+            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) {
                 return false;
             }
-            
-            const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-            const end = endDate ? new Date(endDate + 'T23:59:59') : null;
 
-            const isWithinDateRange = (!start || itemDate >= start) && (!end || itemDate <= end);
-
-            // Handle different item name field variations
-            const itemName = item.item_name || item.name || item.product_name || "";
-            const matchesItemName =
-                !formdata.name ||
-                itemName.toLowerCase().includes(formdata.name.toLowerCase());
-
-            // Handle different category field variations
+            // Category filter
             const categoryId = item.catid || item.category_id || item.cat_id;
-            const matchesCategory =
-                !selectedCatId || categoryId?.toString() === selectedCatId.toString();
+            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) {
+                return false;
+            }
 
-            // Handle different subcategory field variations
+            // Subcategory filter
             const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
-            const matchesSubcategory =
-                !selectedSubCatId || subcategoryId?.toString() === selectedSubCatId.toString();
+            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) {
+                return false;
+            }
 
-            // Handle table category field
+            // Table category filter
             const tableCategoryId = item.table_cat_id || item.table_category_id;
-            const matchesTableCategory =
-                !selectedTableCatId || tableCategoryId?.toString() === selectedTableCatId.toString();
+            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) {
+                return false;
+            }
 
-            console.log(`Item: ${item.item_name || 'Unknown'}, Date: ${item.setup_date}, Table Cat ID: ${tableCategoryId}, Matches: date=${isWithinDateRange}, name=${matchesItemName}, cat=${matchesCategory}, subcat=${matchesSubcategory}, tablecat=${matchesTableCategory}`);
-
-            return isWithinDateRange && matchesItemName && matchesCategory && matchesSubcategory && matchesTableCategory;
+            return true;
         });
 
-        console.log(`=== FILTER RESULTS ===`);
-        console.log(`Filtered ${filtered.length} items from ${data.length} total`);
-        console.log("Filtered data sample:", filtered[0]);
-        console.log("Table category IDs in filtered data:", filtered.map(item => item.table_cat_id || item.table_category_id).filter(Boolean));
-        setFilteredData(filtered);
+        console.log("=== FILTER RESULTS ===");
+        console.log(`Filtered ${filtered.length} items from ${originalData.length} total`);
+        
+        // Group the filtered data by item name
+        const groupedFiltered = groupByItemName(filtered);
+        console.log(`Grouped into ${groupedFiltered.length} unique items`);
+        
+        setFilteredData(groupedFiltered);
+        toast.success(`Found ${groupedFiltered.length} items matching your filters`);
     };
 
     // Clear filters
@@ -353,7 +474,8 @@ export default function ItemWiseSummaryVat() {
         setSelectedCatId("");
         setSelectedSubCatId("");
         setSelectedTableCatId("");
-        setFilteredData(data);
+        const groupedData = groupByItemName(originalData);
+        setFilteredData(groupedData);
         setShowCategorySummary(false);
         setShowSubcategorySummary(false);
         setShowTableCategorySummary(false);
@@ -484,10 +606,202 @@ export default function ItemWiseSummaryVat() {
         XLSX.writeFile(workbook, "itemwise_vat_summary.xlsx");
     };
 
+    // Thermal Print Function
+    const printThermalReport = () => {
+        const printData = showCategorySummary
+            ? categorySummaryData
+            : showSubcategorySummary
+            ? subcategorySummaryData
+            : showTableCategorySummary
+            ? tableCategorySummaryData
+            : (filteredData.length > 0 ? filteredData : data);
+
+        const newWindow = window.open("", "_blank");
+        
+        let reportTitle = "Item-Wise VAT Summary";
+        let tableHeaders = "";
+        let tableRows = "";
+        let totalQty = 0;
+        let totalAmount = 0;
+
+        if (showCategorySummary || showSubcategorySummary || showTableCategorySummary) {
+            reportTitle = showCategorySummary ? "Category VAT Summary" 
+                        : showSubcategorySummary ? "Subcategory VAT Summary" 
+                        : "Table Category VAT Summary";
+            
+            tableHeaders = `
+                <tr>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">S.No.</th>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">Name</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Qty</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Amount</th>
+                </tr>
+            `;
+
+            printData.forEach((item, index) => {
+                const name = item.category_name || item.subcategory_name || item.table_category_name || '';
+                const qty = parseFloat(item.total_quantity || 0);
+                const amount = parseFloat(item.total_amount || 0);
+                totalQty += qty;
+                totalAmount += amount;
+
+                tableRows += `
+                    <tr>
+                        <td style="padding: 3px; text-align: left;">${index + 1}</td>
+                        <td style="padding: 3px; text-align: left;">${name}</td>
+                        <td style="padding: 3px; text-align: right;">${qty.toFixed(2)}</td>
+                        <td style="padding: 3px; text-align: right;">฿${amount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            tableHeaders = `
+                <tr>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">S.No.</th>
+                    <th style="border-bottom: 1px solid #000; text-align: left; padding: 5px;">Item Name</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Qty</th>
+                    <th style="border-bottom: 1px solid #000; text-align: right; padding: 5px;">Amount</th>
+                </tr>
+            `;
+
+            printData.forEach((item, index) => {
+                const itemName = item.item_name || item.name || item.product_name || '';
+                const qty = parseFloat(item.quantity || item.qty || 0);
+                const amount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+                totalQty += qty;
+                totalAmount += amount;
+
+                tableRows += `
+                    <tr>
+                        <td style="padding: 3px; text-align: left;">${index + 1}</td>
+                        <td style="padding: 3px; text-align: left;">${itemName}</td>
+                        <td style="padding: 3px; text-align: right;">${qty.toFixed(2)}</td>
+                        <td style="padding: 3px; text-align: right;">฿${amount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        newWindow.document.write(`
+            <html>
+            <head>
+                <style>
+                    body {
+                        font-family: 'Arial', 'Helvetica', sans-serif;
+                        font-size: 12pt;
+                        width: 80mm;
+                        margin: 0;
+                        padding: 5px 2px;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 10px;
+                        border-bottom: 2px solid #000;
+                        padding-bottom: 8px;
+                    }
+                    .header h2 {
+                        margin: 5px 0;
+                        font-size: 16pt;
+                        font-weight: bold;
+                        letter-spacing: 0.5px;
+                    }
+                    .header p {
+                        margin: 3px 0;
+                        font-size: 10pt;
+                        line-height: 1.4;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 8px 0;
+                    }
+                    table th {
+                        border-bottom: 1px solid #000;
+                        padding: 5px 2px;
+                        text-align: left;
+                        font-size: 11pt;
+                        font-weight: bold;
+                    }
+                    table td {
+                        padding: 4px 2px;
+                        font-size: 11pt;
+                    }
+                    .summary {
+                        border-top: 2px solid #000;
+                        margin-top: 8px;
+                        padding-top: 6px;
+                    }
+                    .summary div {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 4px 0;
+                        font-weight: bold;
+                        font-size: 11pt;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 10px;
+                        font-size: 10pt;
+                        border-top: 1px solid #000;
+                        padding-top: 5px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>${companyInfo.name || 'Restaurant Name'}</h2>
+                    <p>${companyInfo.address || ''}</p>
+                    <p>Tax ID: ${companyInfo.tax_id || ''}</p>
+                    <p><strong>${reportTitle}</strong></p>
+                    <p>Date: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}</p>
+                    ${startDate && endDate ? `<p>Period: ${startDate} to ${endDate}</p>` : ''}
+                </div>
+
+                <table>
+                    <thead>
+                        ${tableHeaders}
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+
+                <div class="summary">
+                    <div>
+                        <span>Total Quantity:</span>
+                        <span>${totalQty.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span>Total Amount:</span>
+                        <span>฿${totalAmount.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>Powered by ChefMate POS</p>
+                    <p>Thank you!</p>
+                </div>
+            </body>
+            </html>
+        `);
+
+        newWindow.document.close();
+        setTimeout(() => {
+            newWindow.print();
+            newWindow.close();
+        }, 250);
+    };
+
     // Data fetching useEffects
     useEffect(() => {
         const fetchDataAndCategories = async () => {
             try {
+                // Fetch company info for thermal printing
+                const companyData = await fetchData("companyinfo", null, "id", {});
+                if (companyData && companyData.length > 0) {
+                    setCompanyInfo(companyData[0]);
+                }
+
                 // Try the VAT-specific endpoint first, fallback to GST endpoint
                 let resData;
                 try {
@@ -498,8 +812,10 @@ export default function ItemWiseSummaryVat() {
                 }
                 
                 console.log("Fetched data sample:", resData.data[0]); // Debug log
-                setData(resData.data);
-                setFilteredData(resData.data);
+                setOriginalData(resData.data); // Store original ungrouped data
+                const groupedData = groupByItemName(resData.data);
+                setData(groupedData);
+                setFilteredData(groupedData);
             } catch (error) {
                 console.error("Error fetching order items:", error);
                 toast.error("Failed to load order items data");
@@ -579,124 +895,122 @@ export default function ItemWiseSummaryVat() {
                     <div className="col-12">
                         <CardComponent>
                             {/* Filter Section */}
-                            <div className="row mb-3">
-                                <div className="col-lg-3 col-md-4 col-sm-6 col-xs-12">
-                                    <label>Start Date</label>
-                                    <input 
-                                        type="date" 
-                                        className="form-control" 
-                                        value={startDate} 
-                                        onChange={(e) => setStartDate(e.target.value)} 
+                            <Row gutter={[16, 16]} style={{marginBottom: 20}}>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Start Date</label>
+                                    <DatePicker
+                                        style={{width: '100%'}}
+                                        value={startDate ? dayjs(startDate) : null}
+                                        onChange={(date, dateString) => setStartDate(dateString)}
+                                        format="YYYY-MM-DD"
                                     />
-                                </div>
-                                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                    <label>End Date</label>
-                                    <input 
-                                        type="date" 
-                                        className="form-control" 
-                                        value={endDate} 
-                                        onChange={(e) => setEndDate(e.target.value)} 
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>End Date</label>
+                                    <DatePicker
+                                        style={{width: '100%'}}
+                                        value={endDate ? dayjs(endDate) : null}
+                                        onChange={(date, dateString) => setEndDate(dateString)}
+                                        format="YYYY-MM-DD"
                                     />
-                                </div>
-                                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                    <label>Item Name</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Item Name</label>
+                                    <Input
+                                        placeholder="Enter item name"
                                         value={formdata.name}
                                         onChange={(e) => setFormData({ ...formdata, name: e.target.value })}
-                                        placeholder="Enter item name"
                                     />
-                                </div>
-                                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                    <label>Category</label>
-                                    <select
-                                        className="form-control"
-                                        value={selectedCatId}
-                                        onChange={(e) => setSelectedCatId(e.target.value)}
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Category</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        placeholder="All Categories"
+                                        value={selectedCatId || undefined}
+                                        onChange={(value) => setSelectedCatId(value || "")}
+                                        allowClear
                                     >
-                                        <option value="">All Categories</option>
                                         {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            <Option key={cat.id} value={cat.id}>{cat.name}</Option>
                                         ))}
-                                    </select>
-                                </div>
-                                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                    <label>Subcategory</label>
-                                    <select
-                                        className="form-control"
-                                        value={selectedSubCatId}
-                                        onChange={(e) => setSelectedSubCatId(e.target.value)}
+                                    </Select>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Subcategory</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        placeholder="All Subcategories"
+                                        value={selectedSubCatId || undefined}
+                                        onChange={(value) => setSelectedSubCatId(value || "")}
+                                        allowClear
                                     >
-                                        <option value="">All Subcategories</option>
                                         {subcategories.map(sub => (
-                                            <option key={sub.id} value={sub.id}>{sub.subcat}</option>
+                                            <Option key={sub.id} value={sub.id}>{sub.subcat}</Option>
                                         ))}
-                                    </select>
-                                </div>
-                                <div className="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                    <label>Table Category</label>
-                                    <select
-                                        className="form-control"
-                                        value={selectedTableCatId}
-                                        onChange={(e) => setSelectedTableCatId(e.target.value)}
+                                    </Select>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Table Category</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        placeholder="All Table Categories"
+                                        value={selectedTableCatId || undefined}
+                                        onChange={(value) => setSelectedTableCatId(value || "")}
+                                        allowClear
                                     >
-                                        <option value="">All Table Categories</option>
                                         {tableCategories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.cat_name}</option>
+                                            <Option key={cat.id} value={cat.id}>{cat.cat_name}</Option>
                                         ))}
-                                    </select>
-                                </div>
-                            </div>
+                                    </Select>
+                                </Col>
+                            </Row>
 
                             {/* Action Buttons */}
-                            <div className="row mt-3">
-                                <div className="col-12">
-                                    <button className="btn btn-primary me-2" onClick={applyFilter}>
-                                        Apply Filter
-                                    </button>
-                                    <button className="btn btn-info me-2" onClick={clearFilters}>
-                                        Clear Filters
-                                    </button>
-                                    <button className="btn btn-danger me-2" onClick={exportPDF}>
-                                        Export PDF
-                                    </button>
-                                    <button className="btn btn-success me-2" onClick={exportExcel}>
-                                        Export Excel
-                                    </button>
-                                </div>
-                            </div>
+                            <Divider />
+                            <Space wrap style={{marginBottom: 16}}>
+                                <Button type="primary" icon={<FilterOutlined />} onClick={applyFilter}>
+                                    Apply Filter
+                                </Button>
+                                <Button icon={<ClearOutlined />} onClick={clearFilters}>
+                                    Clear Filters
+                                </Button>
+                                <Button danger icon={<FilePdfOutlined />} onClick={exportPDF}>
+                                    Export PDF
+                                </Button>
+                                <Button type="primary" style={{background: '#52c41a', borderColor: '#52c41a'}} icon={<FileExcelOutlined />} onClick={exportExcel}>
+                                    Export Excel
+                                </Button>
+                                <Button type="primary" icon={<PrinterOutlined />} onClick={printThermalReport} style={{background: '#722ed1', borderColor: '#722ed1'}}>
+                                    Print Thermal
+                                </Button>
+                            </Space>
 
                             {/* Summary Buttons */}
-                            <div className="row mt-3">
-                                <div className="col-12">
-                                    <button className="btn btn-gradient-purple me-2" style={{background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)', border: 'none', color: 'white'}} onClick={generateCategorySummary}>
-                                        📊 Category Summary
-                                    </button>
-                                    <button className="btn btn-gradient-orange me-2" style={{background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)', border: 'none', color: 'white'}} onClick={generateSubcategorySummary}>
-                                        📈 Subcategory Summary
-                                    </button>
-                                    <button className="btn btn-gradient-teal me-2" style={{background: 'linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)', border: 'none', color: 'white'}} onClick={generateTableCategorySummary}>
-                                        🏷️ Table Category Summary
-                                    </button>
-                                </div>
-                            </div>
+                            <Space wrap style={{marginBottom: 16}}>
+                                <Button onClick={generateCategorySummary} style={{background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)', border: 'none', color: 'white'}}>
+                                    📊 Category Summary
+                                </Button>
+                                <Button onClick={generateSubcategorySummary} style={{background: 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)', border: 'none', color: 'white'}}>
+                                    📈 Subcategory Summary
+                                </Button>
+                                <Button onClick={generateTableCategorySummary} style={{background: 'linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)', border: 'none', color: 'white'}}>
+                                    🏷️ Table Category Summary
+                                </Button>
+                            </Space>
 
-                            {/* Back to Details Buttons */}
+                            {/* Back to Details Button */}
                             {(showCategorySummary || showSubcategorySummary || showTableCategorySummary) && (
-                                <div className="row mt-2">
-                                    <div className="col-12">
-                                        <button
-                                            className="btn btn-secondary"
-                                            onClick={() => {
-                                                setShowCategorySummary(false);
-                                                setShowSubcategorySummary(false);
-                                                setShowTableCategorySummary(false);
-                                            }}
-                                        >
-                                            Back to Item Details
-                                        </button>
-                                    </div>
+                                <div style={{marginTop: 16}}>
+                                    <Button
+                                        onClick={() => {
+                                            setShowCategorySummary(false);
+                                            setShowSubcategorySummary(false);
+                                            setShowTableCategorySummary(false);
+                                        }}
+                                    >
+                                        ← Back to Item Details
+                                    </Button>
                                 </div>
                             )}
                         </CardComponent>
@@ -704,68 +1018,116 @@ export default function ItemWiseSummaryVat() {
 
                     {/* Data Table Section */}
                     <div className="col-12">
-                        {data.length === 0 ? (
-                            <p>No data available</p>
-                        ) : (
-                            <DataTable
-                                columns={
-                                    showCategorySummary
-                                        ? categorySummaryColumns
-                                        : showSubcategorySummary
-                                        ? subcategorySummaryColumns
-                                        : showTableCategorySummary
-                                        ? tableCategorySummaryColumns
-                                        : columns
-                                }
-                                data={
-                                    showCategorySummary
-                                        ? categorySummaryData
-                                        : showSubcategorySummary
-                                        ? subcategorySummaryData
-                                        : showTableCategorySummary
-                                        ? tableCategorySummaryData
-                                        : (filteredData.length > 0 ? filteredData : data)
-                                }
-                                tablename={
-                                    showCategorySummary
-                                        ? "category_vat_summary"
-                                        : showSubcategorySummary
-                                        ? "subcategory_vat_summary"
-                                        : showTableCategorySummary
-                                        ? "table_category_vat_summary"
-                                        : "item_wise_vat_summary"
-                                }
-                            />
-                        )}
+                        <Card>
+                            {data.length === 0 ? (
+                                <p>No data available</p>
+                            ) : (
+                                <Table
+                                    columns={
+                                        (showCategorySummary
+                                            ? categorySummaryColumns
+                                            : showSubcategorySummary
+                                            ? subcategorySummaryColumns
+                                            : showTableCategorySummary
+                                            ? tableCategorySummaryColumns
+                                            : columns
+                                        ).map(col => ({
+                                            title: col.label,
+                                            dataIndex: col.field,
+                                            key: col.field,
+                                            sorter: (a, b) => {
+                                                const aVal = a[col.field];
+                                                const bVal = b[col.field];
+                                                if (typeof aVal === 'number') return aVal - bVal;
+                                                return String(aVal || '').localeCompare(String(bVal || ''));
+                                            },
+                                            render: (text, record) => {
+                                                // Format date field
+                                                if (col.field === 'setup_date' && text) {
+                                                    try {
+                                                        const dateStr = text.split('T')[0];
+                                                        return dateStr || text;
+                                                    } catch (e) {
+                                                        return text || '-';
+                                                    }
+                                                }
+                                                return text || '-';
+                                            }
+                                        }))
+                                    }
+                                    dataSource={(
+                                        showCategorySummary
+                                            ? categorySummaryData
+                                            : showSubcategorySummary
+                                            ? subcategorySummaryData
+                                            : showTableCategorySummary
+                                            ? tableCategorySummaryData
+                                            : filteredData
+                                    )}
+                                    rowKey={(record, index) => index}
+                                    pagination={{
+                                        pageSize: 50,
+                                        showSizeChanger: true,
+                                        showTotal: (total) => `Total ${total} items`,
+                                        pageSizeOptions: ['10', '20', '50', '100']
+                                    }}
+                                    scroll={{ x: true }}
+                                    size="small"
+                                />
+                            )}
 
-                        {/* Summary Totals */}
-                        <div className="mt-3 p-3 bg-light rounded">
-                            <div className="row">
-                                <div className="col-md-4">
-                                    <strong>Total Items:</strong> {(filteredData.length > 0 ? filteredData : data).length}
-                                </div>
-                                <div className="col-md-4">
-                                    <strong>Total VAT:</strong> ฿{
-                                        (filteredData.length > 0 ? filteredData : data)
-                                            .reduce((acc, item) => {
-                                                const vatAmount = item.vat_amount || item.tax_amount;
-                                                return acc + parseFloat(vatAmount || 0);
+                            {/* Summary Totals */}
+                            <Divider />
+                            <Row gutter={16}>
+                                <Col xs={24} sm={8}>
+                                    <Statistic 
+                                        title="Total Items" 
+                                        value={filteredData.length}
+                                        prefix="📦"
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8}>
+                                    <Statistic 
+                                        title="Total Quantity"
+                                        value={
+                                            filteredData.reduce((acc, item) => {
+                                                const qty = item.quantity || item.qty || item.total_quantity || 0;
+                                                return acc + parseFloat(qty);
                                             }, 0)
-                                            .toFixed(2)
-                                    }
-                                </div>
-                                <div className="col-md-4">
-                                    <strong>Grand Total:</strong> ฿{
-                                        (filteredData.length > 0 ? filteredData : data)
-                                            .reduce((acc, item) => {
-                                                const totalPrice = item.total_price || item.total || item.total_amount;
-                                                return acc + parseFloat(totalPrice || 0);
+                                        }
+                                        precision={2}
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8}>
+                                    <Statistic 
+                                        title="Total VAT"
+                                        value={
+                                            filteredData.reduce((acc, item) => {
+                                                const vatAmount = item.vat_amount || item.tax_amount || item.total_vat || 0;
+                                                return acc + parseFloat(vatAmount);
                                             }, 0)
-                                            .toFixed(2)
-                                    }
-                                </div>
-                            </div>
-                        </div>
+                                        }
+                                        precision={2}
+                                        prefix="฿"
+                                        valueStyle={{color: '#cf1322'}}
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8}>
+                                    <Statistic 
+                                        title="Grand Total"
+                                        value={
+                                            filteredData.reduce((acc, item) => {
+                                                const totalPrice = item.total_price || item.total || item.total_amount || 0;
+                                                return acc + parseFloat(totalPrice);
+                                            }, 0)
+                                        }
+                                        precision={2}
+                                        prefix="฿"
+                                        valueStyle={{color: '#3f8600', fontWeight: 'bold'}}
+                                    />
+                                </Col>
+                            </Row>
+                        </Card>
                     </div>
                 </div>
             </Layout>

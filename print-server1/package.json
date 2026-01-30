@@ -2,33 +2,45 @@
   "name": "chefmate-print-server",
   "version": "1.0.0",
   "description": "ChefMate KOT Thermal Print Server - Windows & Android compatible",
-  "main": "server-windows.js",
-  "bin": "server-windows.js",
+  "main": "server-escpos.js",
+  "bin": {
+    "chefmate-print-server": "server-escpos.js",
+    "install-service": "install-windows-service.js",
+    "uninstall-service": "uninstall-windows-service.js"
+  },
   "author": "ChefMate Team",
   "license": "MIT",
   "keywords": ["thermal", "printer", "pos", "kot", "restaurant"],
   "scripts": {
-    "start": "node server-windows.js",
-    "dev": "nodemon server-windows.js",
+    "start": "node server-escpos.js",
+    "dev": "nodemon server-escpos.js",
     "build": "node scripts/build-all.js",
-    "build:windows": "pkg . --targets node18-win-x64 --output ./dist/ChefMate-PrintServer-Windows.exe",
+    "build:windows": "pkg . --targets node18-win-x64 --output ./dist/print-server.exe",
     "build:windows-portable": "npm run build:windows && npm run package:portable",
+    "build:service": "npm run build:windows && npm run package:service",
     "build:android": "npm run build:android-setup",
     "package:portable": "node scripts/create-portable.js",
+    "package:service": "node scripts/create-service-package.js",
     "build:android-setup": "node scripts/create-android-package-fixed.js",
+    "install-windows-service": "node install-windows-service.js",
+    "uninstall-windows-service": "node uninstall-windows-service.js",
     "clean": "rimraf dist build temp/*.txt"
   },
   "pkg": {
-    "scripts": "server-windows.js",
+    "scripts": "server-escpos.js",
     "assets": [
       "test.html",
       "README.md"
+    ],
+    "targets": [
+      "node18-win-x64"
     ],
     "outputPath": "dist/"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "node-windows": "^1.0.0-beta.8"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
