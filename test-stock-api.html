@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #0b7dda;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #da190b;
+        }
+        .result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .info {
+            border-left-color: #2196F3;
+            background: #e3f2fd;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 Stock API Tester</h1>
+    <p>Test stock management endpoints to verify database operations</p>
+
+    <!-- Get Stock Level -->
+    <div class="container">
+        <h2>📊 1. Get Stock Level</h2>
+        <div class="form-group">
+            <label>Product ID:</label>
+            <input type="number" id="getStockProductId" value="1" placeholder="Enter Product ID">
+        </div>
+        <div class="form-group">
+            <label>Unit ID (Optional):</label>
+            <input type="number" id="getStockUnitId" placeholder="Leave empty for all units">
+        </div>
+        <button onclick="getStockLevel()">Get Stock Level</button>
+        <div id="getStockResult" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Add Stock -->
+    <div class="container">
+        <h2>➕ 2. Add Stock</h2>
+        <div class="grid">
+            <div class="form-group">
+                <label>Product ID: *</label>
+                <input type="number" id="addProductId" value="1" required>
+            </div>
+            <div class="form-group">
+                <label>Unit ID: *</label>
+                <input type="number" id="addUnitId" value="3" required>
+            </div>
+            <div class="form-group">
+                <label>Quantity: *</label>
+                <input type="number" id="addQuantity" value="10" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label>Reference Type:</label>
+                <select id="addReferenceType">
+                    <option value="PURCHASE">PURCHASE</option>
+                    <option value="ADJUSTMENT">ADJUSTMENT</option>
+                    <option value="OPENING_STOCK">OPENING_STOCK</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Notes:</label>
+            <textarea id="addNotes" rows="2" placeholder="e.g., Initial stock addition for testing">Initial stock addition via API test</textarea>
+        </div>
+        <button onclick="addStock()">Add Stock</button>
+        <div id="addStockResult" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Check Stock Balance Table -->
+    <div class="container">
+        <h2>🗄️ 3. Check Database Tables</h2>
+        <button onclick="checkStockBalance()">Check stock_balance Table</button>
+        <button class="secondary" onclick="checkStockTransactions()">Check stock_transactions Table</button>
+        <div id="dbCheckResult" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Get All Stock -->
+    <div class="container">
+        <h2>📋 4. Get All Stock</h2>
+        <button onclick="getAllStock()">Get All Stock</button>
+        <div id="allStockResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:4402';
+        
+        // Get authorization token from localStorage
+        function getHeaders() {
+            const token = localStorage.getItem('token') || 'test-token';
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.className = 'result ' + (isError ? 'error' : 'success');
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showInfo(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.className = 'result info';
+            el.textContent = message;
+        }
+
+        async function getStockLevel() {
+            const productId = document.getElementById('getStockProductId').value;
+            const unitId = document.getElementById('getStockUnitId').value;
+            
+            if (!productId) {
+                alert('Please enter Product ID');
+                return;
+            }
+
+            showInfo('getStockResult', '⏳ Loading...');
+
+            try {
+                let url = `${API_BASE}/stock/level/${productId}`;
+                if (unitId) url += `?unitId=${unitId}`;
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                const data = await response.json();
+                showResult('getStockResult', data, !response.ok);
+            } catch (error) {
+                showResult('getStockResult', { error: error.message }, true);
+            }
+        }
+
+        async function addStock() {
+            const productId = document.getElementById('addProductId').value;
+            const unitId = document.getElementById('addUnitId').value;
+            const quantity = document.getElementById('addQuantity').value;
+            const referenceType = document.getElementById('addReferenceType').value;
+            const notes = document.getElementById('addNotes').value;
+
+            if (!productId || !unitId || !quantity) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            showInfo('addStockResult', '⏳ Adding stock...');
+
+            try {
+                const payload = {
+                    productId: parseInt(productId),
+                    unitId: parseInt(unitId),
+                    quantity: parseFloat(quantity),
+                    referenceType: referenceType,
+                    notes: notes
+                };
+
+                console.log('Sending payload:', payload);
+
+                const response = await fetch(`${API_BASE}/stock/add`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                showResult('addStockResult', data, !response.ok);
+
+                if (response.ok) {
+                    setTimeout(() => {
+                        alert('✅ Stock added successfully! Check the database tables below.');
+                    }, 500);
+                }
+            } catch (error) {
+                showResult('addStockResult', { error: error.message }, true);
+            }
+        }
+
+        async function checkStockBalance() {
+            showInfo('dbCheckResult', '⏳ Checking stock_balance table...');
+
+            try {
+                const productId = document.getElementById('addProductId').value || 1;
+                const response = await fetch(`${API_BASE}/stock/level/${productId}`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    let html = '<strong>✅ stock_balance table records found:</strong>\n\n';
+                    html += '<table><thead><tr><th>Unit</th><th>Current</th><th>Reserved</th><th>Available</th><th>ML</th></tr></thead><tbody>';
+                    data.data.forEach(row => {
+                        html += `<tr>
+                            <td>${row.unit_name}</td>
+                            <td>${row.current_quantity}</td>
+                            <td>${row.reserved_quantity || 0}</td>
+                            <td>${row.available_quantity}</td>
+                            <td>${row.ml_capacity || '-'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    
+                    const el = document.getElementById('dbCheckResult');
+                    el.style.display = 'block';
+                    el.className = 'result success';
+                    el.innerHTML = html;
+                } else {
+                    showResult('dbCheckResult', {
+                        message: '❌ No records found in stock_balance table',
+                        suggestion: 'Add stock using the form above first',
+                        data: data
+                    }, true);
+                }
+            } catch (error) {
+                showResult('dbCheckResult', { error: error.message }, true);
+            }
+        }
+
+        async function checkStockTransactions() {
+            showInfo('dbCheckResult', '⏳ Checking stock_transactions table...');
+
+            try {
+                const productId = document.getElementById('addProductId').value || 1;
+                const response = await fetch(`${API_BASE}/stock/history/${productId}?limit=10`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    let html = '<strong>✅ stock_transactions table records found:</strong>\n\n';
+                    html += '<table><thead><tr><th>Type</th><th>Unit</th><th>Qty</th><th>Reference</th><th>Date</th><th>Notes</th></tr></thead><tbody>';
+                    data.data.forEach(row => {
+                        html += `<tr>
+                            <td><strong>${row.transaction_type}</strong></td>
+                            <td>${row.unit_name}</td>
+                            <td>${row.quantity}</td>
+                            <td>${row.reference_type}</td>
+                            <td>${new Date(row.transaction_date).toLocaleString()}</td>
+                            <td>${row.notes || '-'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    
+                    const el = document.getElementById('dbCheckResult');
+                    el.style.display = 'block';
+                    el.className = 'result success';
+                    el.innerHTML = html;
+                } else {
+                    showResult('dbCheckResult', {
+                        message: '❌ No records found in stock_transactions table',
+                        suggestion: 'Add stock using the form above first',
+                        data: data
+                    }, true);
+                }
+            } catch (error) {
+                showResult('dbCheckResult', { error: error.message }, true);
+            }
+        }
+
+        async function getAllStock() {
+            showInfo('allStockResult', '⏳ Loading all stock...');
+
+            try {
+                const response = await fetch(`${API_BASE}/stock/all`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                const data = await response.json();
+                showResult('allStockResult', data, !response.ok);
+            } catch (error) {
+                showResult('allStockResult', { error: error.message }, true);
+            }
+        }
+
+        // Show instructions on load
+        window.onload = function() {
+            console.log('🔬 Stock API Tester loaded');
+            console.log('Make sure your backend is running on http://localhost:4402');
+            console.log('Test steps:');
+            console.log('1. First check if stock exists (Get Stock Level)');
+            console.log('2. Add stock if needed');
+            console.log('3. Verify database tables updated correctly');
+        };
+    </script>
+</body>
+</html>

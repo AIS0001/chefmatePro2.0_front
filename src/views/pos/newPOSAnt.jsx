@@ -374,14 +374,16 @@ export default function NewPOSAnt() {
           console.log(`🔍 Checking stockability for item ID ${productId}: ${item.name}`);
           
           // Get the product details to check if it's stockable
-          const productResponse = await axios.get(`/fetchdata/items/id/${productId}`, headers);
+          const productResponse = await axios.get(`/stock/fetchdata/items/id/${productId}`, headers);
           console.log(`📦 Product API Response for ${item.name}:`, productResponse.data);
           
-          // Handle different response structures
+          // Handle response structure from the endpoint
           let product = null;
-          if (productResponse.data?.data && Array.isArray(productResponse.data.data)) {
-            product = productResponse.data.data[0]; // {status, data: []}
-          } else if (Array.isArray(productResponse.data)) {
+          if (productResponse.data?.success && productResponse.data?.data && Array.isArray(productResponse.data.data)) {
+            product = productResponse.data.data[0]; // {success: true, data: []}
+          } else if (productResponse.data?.data && Array.isArray(productResponse.data.data) && productResponse.data.data.length > 0) {
+            product = productResponse.data.data[0]; // data: [...]
+          } else if (Array.isArray(productResponse.data) && productResponse.data.length > 0) {
             product = productResponse.data[0]; // Direct array
           } else if (productResponse.data?.id) {
             product = productResponse.data; // Single object
@@ -415,33 +417,87 @@ export default function NewPOSAnt() {
           
           console.log(`✅ Item ${item.name} is stockable, proceeding with deduction...`);
           
-          // Get unit ID - use from cart if available, otherwise fetch BASE unit
+          // Get unit ID - use from cart if available, otherwise fetch unit with stock
           let unitId = item.unitId;
           
-          if (!unitId) {
-            try {
-              const unitResponse = await axios.get(
-                `/fetchdata/product_units/id?product_id=${item.id}`,
-                headers
-              );
+          // Always check stock levels to ensure selected unit has stock (or find alternative unit)
+          try {
+            // Get stock levels to find which unit has available stock
+            const stockLevelResponse = await axios.get(
+              `/stock/level/${productId}`,
+              headers
+            );
+            
+            console.log(`📊 Stock levels for ${item.name}:`, stockLevelResponse.data);
+            
+            if (stockLevelResponse.data?.success && stockLevelResponse.data?.data && Array.isArray(stockLevelResponse.data.data)) {
+              const stockLevels = stockLevelResponse.data.data;
               
-              if (unitResponse.data && unitResponse.data.length > 0) {
-                // Find BASE unit or use first unit as fallback
-                const baseUnit = unitResponse.data.find(u => u.unit_type === 'BASE' || u.is_base_unit === 1);
-                unitId = baseUnit ? baseUnit.id : unitResponse.data[0].id;
+              // Find unit with available stock
+              let selectedUnit = null;
+              
+              if (unitId) {
+                // If unit was pre-selected from cart, check if it has stock
+                selectedUnit = stockLevels.find(s => 
+                  parseInt(s.unit_id) === parseInt(unitId) && 
+                  parseFloat(s.available_quantity || 0) >= item.quantity
+                );
                 
-                console.log(`Using unit ${unitId} for product ${item.id} (${item.name})`);
+                if (selectedUnit) {
+                  console.log(`✅ Using pre-selected unit ${unitId} (${selectedUnit.unit_name}) with ${selectedUnit.available_quantity} available for ${item.name}`);
+                } else {
+                  console.warn(`⚠️ Pre-selected unit ${unitId} doesn't have sufficient stock. Finding alternative...`);
+                  // Fall back to finding any unit with stock
+                  selectedUnit = stockLevels.find(s => 
+                    parseFloat(s.available_quantity || 0) >= item.quantity
+                  );
+                  
+                  if (selectedUnit) {
+                    unitId = selectedUnit.unit_id;
+                    console.log(`✅ Switched to unit ${unitId} (${selectedUnit.unit_name}) with ${selectedUnit.available_quantity} available`);
+                  }
+                }
               } else {
-                throw new Error(`No units found for product ${item.id}`);
+                // No pre-selected unit, find one with stock
+                // First try to find BASE unit with stock
+                selectedUnit = stockLevels.find(s => 
+                  (s.unit_type === 'BASE' || s.is_base_unit === 1) && 
+                  parseFloat(s.available_quantity || 0) >= item.quantity
+                );
+                
+                // If no BASE unit with stock, find any unit with sufficient stock
+                if (!selectedUnit) {
+                  selectedUnit = stockLevels.find(s => 
+                    parseFloat(s.available_quantity || 0) >= item.quantity
+                  );
+                }
+                
+                // If still no unit found, try any unit with any stock
+                if (!selectedUnit) {
+                  selectedUnit = stockLevels.find(s => 
+                    parseFloat(s.available_quantity || 0) > 0
+                  );
+                }
+                
+                if (selectedUnit) {
+                  unitId = selectedUnit.unit_id;
+                  console.log(`✅ Using unit ${unitId} (${selectedUnit.unit_name}) with ${selectedUnit.available_quantity} available for ${item.name}`);
+                }
               }
-            } catch (unitError) {
-              console.error(`Error fetching unit for product ${item.id}:`, unitError);
-              return {
-                success: false,
-                error: `No stock unit configured for ${item.name}. Please configure product units.`,
-                itemName: item.name
-              };
+              
+              if (!selectedUnit) {
+                throw new Error(`No units with available stock found for product ${item.id}`);
+              }
+            } else {
+              throw new Error(`No stock levels found for product ${productId}`);
             }
+          } catch (unitError) {
+            console.error(`Error fetching stock levels for product ${productId}:`, unitError);
+            return {
+              success: false,
+              error: `Unable to verify stock for ${item.name}. Please try again.`,
+              itemName: item.name
+            };
           }
           
           // Deduct stock using variant-based API if variant is selected
@@ -450,10 +506,10 @@ export default function NewPOSAnt() {
           if (item.variantId) {
             // Use variant-based deduction for serving sizes (30ML, 60ML, etc.)
             const variantPayload = {
-              productId: item.productId || item.id,
-              variantId: item.variantId,
-              quantity: item.quantity,
-              referenceId: billId,
+              productId: parseInt(item.productId || item.id),
+              variantId: parseInt(item.variantId),
+              quantity: parseFloat(item.quantity),
+              referenceId: parseInt(billId),
               notes: `Sale - Order #${billId} - Table: ${selectedTable || "Walk-in"} - ${item.variantName}`,
             };
             
@@ -469,11 +525,11 @@ export default function NewPOSAnt() {
           } else {
             // Use standard stock deduction for regular items
             const stockPayload = {
-              productId: item.productId || item.id,
-              unitId: unitId,
-              quantity: item.quantity,
+              productId: parseInt(item.productId || item.id),
+              unitId: parseInt(unitId),
+              quantity: parseFloat(item.quantity),
               referenceType: "SALE",
-              referenceId: billId,
+              referenceId: parseInt(billId),
               notes: `Sale - Order #${billId} - Table: ${selectedTable || "Walk-in"}`,
             };
             
@@ -492,19 +548,31 @@ export default function NewPOSAnt() {
           
         } catch (itemError) {
           console.error(`❌ Error deducting stock for item ${item.name}:`, itemError);
+          console.error(`❌ Error response:`, itemError.response?.data);
+          console.error(`❌ Error status:`, itemError.response?.status);
           
-          // Check if it's insufficient stock error
-          if (itemError.response?.status === 400 && itemError.response?.data?.message?.includes('Insufficient stock')) {
-            return { 
-              success: false, 
-              error: `Insufficient stock for ${item.name}`,
-              itemName: item.name 
-            };
+          const errorMessage = itemError.response?.data?.message || itemError.message;
+          
+          // Check for specific error types
+          if (itemError.response?.status === 400) {
+            if (errorMessage.includes('Insufficient stock')) {
+              return { 
+                success: false, 
+                error: `Insufficient stock for ${item.name}`,
+                itemName: item.name 
+              };
+            } else if (errorMessage.includes('No stock available for this unit')) {
+              return { 
+                success: false, 
+                error: `No stock configured for ${item.name}. Please add stock in inventory first.`,
+                itemName: item.name 
+              };
+            }
           }
           
           return { 
             success: false, 
-            error: itemError.response?.data?.message || itemError.message,
+            error: errorMessage || `Failed to deduct stock for ${item.name}`,
             itemName: item.name 
           };
         }

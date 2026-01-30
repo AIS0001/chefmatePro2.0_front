@@ -314,6 +314,23 @@ export default function NewStockAntDesign() {
         setPurchaseNumber(response.data.data.purchaseNumber);
         setCurrentStep(2);
 
+        // Auto-populate stock conversions for all items in the purchase
+        const uniqueProductIds = [...new Set(purchaseItems.map(item => item.item_id))];
+        for (const productId of uniqueProductIds) {
+          try {
+            console.log("🔄 Populating conversions for product:", productId);
+            await axios.post(
+              `/stock/populate-conversions/${productId}`,
+              {},
+              getHeaders()
+            );
+            console.log(`✅ Conversions populated for product ${productId}`);
+          } catch (conversionError) {
+            console.warn(`⚠️ Failed to populate conversions for product ${productId}:`, conversionError.message);
+            // Non-blocking - don't prevent purchase completion
+          }
+        }
+
         // Reset form
         setTimeout(() => {
           itemForm.resetFields();

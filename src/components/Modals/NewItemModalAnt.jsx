@@ -320,6 +320,22 @@ const NewItemModalAnt = ({ isOpen, onClose, onItemAdded }) => {
         }
       }
 
+      // Auto-populate stock conversions for the product
+      if (values.isstockable) {
+        try {
+          console.log("🔄 Populating stock conversions for product:", productId);
+          const conversionResponse = await axios.post(
+            `/stock/populate-conversions/${productId}`,
+            {},
+            getHeaders()
+          );
+          console.log("✅ Stock conversions populated successfully:", conversionResponse.data);
+        } catch (conversionError) {
+          console.warn("⚠️ Stock conversions auto-population failed (non-critical):", conversionError.message);
+          // Don't block item creation if conversion population fails
+        }
+      }
+
       // Handle image uploads if any
       if (images.length > 0) {
         console.log("📸 Uploading", images.length, "images");
