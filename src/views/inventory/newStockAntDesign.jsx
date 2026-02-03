@@ -43,6 +43,7 @@ const { Option } = Select;
 const { Text } = Typography;
 
 export default function NewStockAntDesign() {
+  const baseURL = 'http://localhost:4402';
   const [itemForm] = Form.useForm();
   const [invoiceForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -144,7 +145,7 @@ export default function NewStockAntDesign() {
   const fetchAllStock = async () => {
     try {
       const headers = getHeaders();
-      const response = await axios.get("/stock/all", headers);
+      const response = await axios.get(`${baseURL}/api/stock/all`, headers);
       if (response.data?.success) setStockData(response.data.data);
     } catch (error) {
       console.error("Error fetching stock:", error);
@@ -161,7 +162,7 @@ export default function NewStockAntDesign() {
       
       // Fetch units
       const headers = getHeaders();
-      const response = await axios.get(`/stock/units/${productId}`, headers);
+      const response = await axios.get(`${baseURL}/api/stock/units/${productId}`, headers);
       const unitsData = response.data?.data || response.data;
       setUnits(Array.isArray(unitsData) ? unitsData : []);
     } catch (error) {
@@ -315,12 +316,12 @@ export default function NewStockAntDesign() {
         setCurrentStep(2);
 
         // Auto-populate stock conversions for all items in the purchase
-        const uniqueProductIds = [...new Set(purchaseItems.map(item => item.item_id))];
+        const uniqueProductIds = [...new Set(purchaseItems.map(item => item.productId))];
         for (const productId of uniqueProductIds) {
           try {
             console.log("🔄 Populating conversions for product:", productId);
             await axios.post(
-              `/stock/populate-conversions/${productId}`,
+              `${baseURL}/api/stock/populate-conversions/${productId}`,
               {},
               getHeaders()
             );

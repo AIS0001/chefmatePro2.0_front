@@ -60,7 +60,6 @@ const { Sider, Content } = Layout;
 const { Option } = Select;
 
 export default function NewPOSAnt() {
-  const baseURL = 'http://localhost:4402';
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -516,7 +515,7 @@ export default function NewPOSAnt() {
             console.log(`📤 Sending variant-based stock deduction for ${item.name} (${item.variantName}):`, variantPayload);
             
             response = await axios.post(
-              "/stock/remove-variant",
+              `/stock/remove-variant`,
               variantPayload,
               headers
             );
@@ -536,7 +535,7 @@ export default function NewPOSAnt() {
             console.log(`📤 Sending stock deduction request for ${item.name}:`, stockPayload);
             
             response = await axios.post(
-              "/stock/remove",
+              `/stock/remove`,
               stockPayload,
               headers
             );
@@ -993,7 +992,7 @@ export default function NewPOSAnt() {
                               item.filename ? (
                                 <img
                                   alt={item.iname}
-                                  src={`${baseURL}/uploads/${item.filename}`}
+                                  src={`/uploads/${item.filename}`}
                                   style={{
                                     height: 100,
                                     objectFit: "cover",
@@ -1001,7 +1000,7 @@ export default function NewPOSAnt() {
                                     cursor: "pointer"
                                   }}
                                   onError={(e) => {
-                                    e.target.src = `${baseURL}/uploads/placeholder.jpg`;
+                                    e.target.src = `/uploads/placeholder.jpg`;
                                   }}
                                 />
                               ) : null
