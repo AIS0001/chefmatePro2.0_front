@@ -1699,6 +1699,22 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                             🎉 Entertainment
                           </Button>
                         </Col>
+                        <Col xs={12}>
+                          <Button
+                            type={formdata.pmode === 'Credit' ? 'primary' : 'default'}
+                            size="large"
+                            block
+                            onClick={() => handleQuickPayment('Credit')}
+                            disabled={!finalData || finalData.length === 0}
+                            style={
+                              formdata.pmode === 'Credit'
+                                ? { backgroundColor: '#722ed1', borderColor: '#722ed1', color: '#fff', fontSize: '13px', fontWeight: '600', height: '48px' }
+                                : { backgroundColor: '#f9f0ff', color: '#722ed1', borderColor: '#d3adf7', fontSize: '13px', fontWeight: '600', height: '48px' }
+                            }
+                          >
+                            🧾 Credit
+                          </Button>
+                        </Col>
                       </Row>
                     )}
                     {isBillSaved && (

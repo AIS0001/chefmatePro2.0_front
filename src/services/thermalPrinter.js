@@ -533,7 +533,7 @@ export const canvasToESCPOS = (canvas) => {
  */
 export const sendToThermalPrinter = async (escposData, options = {}) => {
   const {
-    printerUrl = 'http://localhost:7001',
+    printerUrl = 'http://192.168.1.10:7001',
     multiPrinter = false,
     sequential = false,
     showSuccessMessage = false,

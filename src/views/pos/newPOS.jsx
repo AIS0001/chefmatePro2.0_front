@@ -28,9 +28,9 @@ import "./newPOS.css"; // ✅ Import POS styles
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
   
-  const baseURL = 'http://localhost:4402';
+  // const baseURL = 'http://localhost:4402';
   
- //  const baseURL = 'https://www.sharmachefapi.cloudnetsoftwares.com';
+   const baseURL = 'https://www.jlaungeapi.livecloudnet.com';
   //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
    
@@ -87,6 +87,18 @@ export default function NewPOS() {
     Array.from({ length: 20 }, () => "vacant") // Default all tables to "vacant"
   );
   const navigate = useNavigate();
+
+  const getDashboardPath = () => {
+    const userType = (localStorage.getItem("usertype") || sessionStorage.getItem("usertype") || "").toLowerCase();
+    if (userType === "cashier") return "/dashboard/cashier";
+    if (userType === "account") return "/dashboard/account";
+    if (userType === "manager") return "/dashboard/admin";
+    return "/dashboard";
+  };
+
+  const navigateToDashboard = () => {
+    navigate(getDashboardPath());
+  };
 
   // Navigate to login when token is invalid/expired
   const handleAuthError = (error) => {
@@ -1002,16 +1014,6 @@ const decreaseItemQuantity = (index) => {
     fetchData("tablelist", setTotaltablelist, "id", {});
   };
 
-  // ✅ Navigate to dashboard function
-  const navigateToDashboard = () => {
-    const userType = localStorage.getItem('usertype') || sessionStorage.getItem('usertype');
-    if (userType === 'Cashier') {
-      navigate('/CashierDashboard');
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
@@ -1084,16 +1086,18 @@ const decreaseItemQuantity = (index) => {
       }}>
         
         {/* ✅ Dashboard Navigation Button */}
-        {/* <button 
+        <button 
           className="btn dashboard-btn"
           onClick={navigateToDashboard}
           style={{ 
             position: 'fixed',
             top: '20px',
-            left: '20px',
+            right: '20px',
             zIndex: 1000,
-            borderRadius: '8px',
-            padding: '10px 15px',
+            borderRadius: '50%',
+            width: '48px',
+            height: '48px',
+            padding: '0',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -1104,25 +1108,10 @@ const decreaseItemQuantity = (index) => {
             backgroundColor: '#dc3545',
             color: 'white',
             transition: 'all 0.3s ease'
+          }}
+          title="Dashboard"
+          onMouseEnter={(e) => {
             e.currentTarget.style.transform = "scale(1.05)";
-          }} ref={actionCardRef}>
-            <h6 
-              onMouseDown={handleDragStart}
-              style={{ 
-                margin: '0 0 12px 0', 
-                fontSize: '14px', 
-                fontWeight: '700', 
-                color: '#dc3545',
-                cursor: isDragging ? 'grabbing' : 'grab',
-                userSelect: 'none',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                backgroundColor: isDragging ? '#f0f0f0' : 'transparent',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              ☰ ⚙️ Actions
-            </h6>
             e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.25)";
           }}
           onMouseLeave={(e) => {
@@ -1130,9 +1119,8 @@ const decreaseItemQuantity = (index) => {
             e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
           }}
         >
-          <FaHome size={16} />
-          <span className="dashboard-text">Dashboard</span>
-        </button> */}
+          <FaHome size={18} />
+        </button>
 
         {/* ✅ POS System Title */}
         <div className="pos-title" style={{
@@ -1269,7 +1257,7 @@ const decreaseItemQuantity = (index) => {
                 <div className="row" style={{ margin: '0' }}>
                   {categories.length > 0 ? (
                     categories.map((category, index) => (
-                      <div className="col-2 col-md-2 col-sm-6 col-xs-12" key={index} style={{ padding: '2px' }}>
+                      <div className="col-1 col-md-1 col-sm-3 col-xs-6" key={index} style={{ padding: '2px' }}>
                         <button
                           className="btn btn-primary category-btn"
                           onClick={() => handleCategoryClick(category.id)}
@@ -1393,7 +1381,7 @@ const decreaseItemQuantity = (index) => {
             >
               <div className="panel panel-default card-view" style={{ padding: '5px' }}>
                 <div className="row" style={{ margin: '0' }}>
-                  <div className="col-12" style={{ paddingBottom: '360px' }}>
+                  <div className="col-12" style={{ paddingBottom: '120px' }}>
                     {/* Quick Add Item Card - Always Visible */}
                     <div className="card" style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef', marginBottom: '12px' }}>
                       <h6 style={{ fontWeight: '700', marginBottom: '10px', fontSize: '13px', color: '#495057' }}>⚡ Quick Add Item</h6>
@@ -1449,22 +1437,22 @@ const decreaseItemQuantity = (index) => {
                             key={index}
                             style={{ padding: '3px 0' }}
                           >
-                            <h5 className="item-name mb-0" style={{ fontSize: '12px' }}>
+                            <h5 className=" mb-0 pos-cart-item-name">
                               {item.iname} x {formatQuantityForDisplay(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
                             </h5>
                             <div className="quantity-controls d-flex align-items-center">
                               <button
                                 className="btn btn-dark-custom btn-sm me-1"
                                 onClick={() => decreaseItemQuantity(index)}
-                                style={{ padding: '2px 6px', fontSize: '10px' }}
+                                style={{ padding: '1px 4px', fontSize: '18px' }}
                               >
                                 -
                               </button>
-                              <span className="quantity me-1" style={{ fontSize: '11px' }}>{item.quantity}</span>
+                              <span className="quantity me-1" style={{ fontSize: '8px' }}>{item.quantity}</span>
                               <button
                                 className="btn btn-dark-custom btn-sm"
                                 onClick={() => increaseItemQuantity(index)}
-                                style={{ padding: '2px 6px', fontSize: '10px' }}
+                                style={{ padding: '1px 4px', fontSize: '18px' }}
                               >
                                 +
                               </button>
@@ -1519,21 +1507,17 @@ const decreaseItemQuantity = (index) => {
 
         </div>
 
-        {/* Fixed Action Buttons Card */}
+        {/* Bottom Actions Container */}
         <div style={{
-          position: 'fixed',
-          top: `${actionCardPos.y}px`,
-          left: `${actionCardPos.x}px`,
-          zIndex: 1000,
+          marginTop: '24px',
           backgroundColor: 'white',
           borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           padding: '16px',
-          minWidth: '320px',
-          maxWidth: '450px'
+          width: '100%'
         }}>
           <h6 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#dc3545' }}>⚙️ Actions</h6>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
             <button 
               className="btn btn-success"
               onClick={handleBillHistory}

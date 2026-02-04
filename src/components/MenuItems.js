@@ -16,6 +16,7 @@ const fullMenu = [
     submenu: [
       { name: 'Analytics', path: '/dashboard/admin' },
       { name: 'Analytics', path: '/dashboard/analytics' },
+      { name: 'Accounts', path: '/dashboard/account' },
     ]
   },
     
@@ -145,8 +146,59 @@ const fullMenu = [
   //     "signOut": true
   //  }
 ];
+
+const accountVatReports = [
+  { name: 'Sale Report', path: '/reports/billhistory' },
+  { name: 'Quotation History', path: '/quotation-history' },
+  { name: 'Item Wise', path: '/reports/itemwisesummaryvat' },
+  { name: 'Preorders', path: '/reports/advanceorderreport' },
+  { name: 'Purchase Report', path: '/inventory/stockreports' },
+  { name: 'Low Stock Items', path: '/reports/lowstockitems' },
+  { name: 'Supplier Ledger', path: '/reports/supplierledger' },
+  { name: 'Customer Ledger', path: '/reports/saleledger' },
+  { name: 'Day Close', path: '/reports/dayclose' },
+];
+
+const accountMenu = [
+  {
+    name: 'Dashboard',
+    path: '/dashboard',
+    icon: 'folder',
+    dataTargetId: '#dashboard',
+    submenu: [
+      { name: 'Accounts', path: '/dashboard/account' },
+    ]
+  },
+  {
+    name: 'Reports',
+    path: '/pages/reports',
+    icon: 'chart',
+    dataTargetId: '#reports',
+    submenu: accountVatReports
+  },
+  {
+    name: 'Vouchers',
+    path: '/pages/vouchers',
+    icon: 'file-text',
+    dataTargetId: '#reports',
+    submenu: [
+      { name: 'Reciept Voucher', path: '/vouchers/recieptvoucher' },
+      { name: 'Payment Voucher', path: '/vouchers/paymentvoucher' },
+    ]
+  },
+  {
+    name: 'Expenses',
+    path: '/pages/expenses',
+    icon: 'minus-circle',
+    dataTargetId: '#reports',
+    submenu: [
+      { name: 'Add Expense', path: '/expenses/suppliersexpenses' },
+    ]
+  },
+];
 const getMenuItems = (usertype) => {
-  if (usertype === "Cashier")
+  const normalizedUsertype = (usertype || "").toLowerCase();
+  if (normalizedUsertype === "cashier")
     {
     return fullMenu
       .filter(item => ["Dashboard", "Sale GST", "Reports GST", "Vouchers", "Logout"].includes(item.name))
@@ -167,16 +219,8 @@ const getMenuItems = (usertype) => {
       });
   }
 
-  if (usertype === "Account") {
-    return fullMenu
-      .filter(item => ["Account Dashboard", "Reports", "Logout"].includes(item.name))
-      .map(item => {
-        if (item.name === "Reports" && item.submenu) {
-          // Show full Reports submenu for Account
-          return { ...item };
-        }
-        return item;
-      });
+  if (normalizedUsertype === "account") {
+    return accountMenu;
   }
 
   // Default for Admin or other full-access users

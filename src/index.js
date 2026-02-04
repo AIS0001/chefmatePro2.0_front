@@ -16,11 +16,11 @@ import { startOfDay } from 'date-fns';
 //  export const baseURL = "https://www.pindapi.livecloudnet.com";  // Use export
 //  axios.defaults.baseURL = "https://www.pindapi.livecloudnet.com/api";
 
-//  export const baseURL = "https://www.balibeachcluapi.livecloudnet.com";  // Use export
-//  axios.defaults.baseURL = "https://www.balibeachcluapi.livecloudnet.com/api";
+ export const baseURL = "https://www.jlaungeapi.livecloudnet.com";  // Use export
+ axios.defaults.baseURL = "https://www.jlaungeapi.livecloudnet.com/api";
 
-export const baseURL = "http://localhost:4402";  // Use export
-axios.defaults.baseURL = "http://localhost:4402/api";
+// export const baseURL = "http://localhost:4402";  // Use export
+// axios.defaults.baseURL = "http://localhost:4402/api";
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

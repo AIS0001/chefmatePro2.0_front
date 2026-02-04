@@ -1,11 +1,13 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import React, { useState } from 'react'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import useAutoLogout from './hooks/useAutoLogout'
 // 🚨 SUBSCRIPTION SYSTEM DISABLED 🚨
 // import { SubscriptionProvider, FeatureProtectedRoute } from './lib/subscription-system'
 import Dashboard from "./views/dashboard/dashboard";
 import CashierDashboard from "./views/dashboard/cashierDashboard";
-import AccoiuntDashboard from "./views/dashboard/dashboardAccount";
+import AccountDashboard from "./views/dashboard/accountDashboard";
 import AnalyticsDashboard from "./views/dashboard/analyticsDashboard";
 
 import AccessDenied from "./views/pages/accessDenied";
@@ -248,7 +250,7 @@ function AppRoutes() {
 
           <Route path="/dashboard/analytics" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
           <Route path="/dashboard/cashier" element={<PrivateRoute><CashierDashboard /></PrivateRoute>} />
-          <Route path="/dashboard/account" element={<PrivateRoute><AccoiuntDashboard /></PrivateRoute>} />
+          <Route path="/dashboard/account" element={<PrivateRoute><AccountDashboard /></PrivateRoute>} />
           <Route path="/dashboard/analytics" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
           <Route path="/dashboard/admin" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
@@ -385,6 +387,7 @@ function App() {
     // 🚨 SUBSCRIPTION PROVIDER DISABLED 🚨
     // <SubscriptionProvider>
       <Router>
+        <ToastContainer />
         <AppRoutes />
       </Router>
     // </SubscriptionProvider>
