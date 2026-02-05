@@ -10,7 +10,7 @@ import fetchData from "../../functions/fetchData";
 import { SubmitButton } from "../Buttons/Textfield";
 import { Modal as AntModal, Table, Row, Col, Card, Button, Input, Select, Space, Statistic, Badge, Spin, Divider, Tag } from "antd";
 import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CardComponent from "../../components/cards/CardComponent";
 import FinalBillModal from "./FinalBillModal";
@@ -129,15 +129,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     phone: "",
     email: "",
   });
+  const [isBillSaved, setIsBillSaved] = useState(false);
 
   //   if (!customer) return null;
 
   const refreshTables = (event) => {
     try {
       fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-      if (typeof setIsBillSaved === 'function') {
-        setIsBillSaved(false);
-      }
+      setIsBillSaved(false);
     } catch (error) {
       console.error('Error refreshing tables:', error);
     }
@@ -257,7 +256,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [grandAmount, setgrandAmount] = useState(0);
   const [totalAmount, settotalAmount] = useState(0);
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
-  const [isBillSaved, setIsBillSaved] = useState(false);
   const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
   const [currencySign, setCurrencySign] = useState("฿"); // Default to Thai Baht
 
@@ -504,46 +502,63 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         operatedBy: "3130"
       };
 
-      const toastId = toast.loading("Printing invoice...");
-      
-      // Use appropriate print function based on mode
-      const success = isKioskMode 
-        ? await printKioskInvoice(invoiceData)
-        : await printInvoiceToCashier(invoiceData); // Print to Cashier printer (192.168.1.216)
-      
-      if (success) {
-        toast.dismiss(toastId);
-        toast.success("Invoice printed to Cashier printer successfully!");
-      } else {
-        toast.dismiss(toastId);
-        toast.error("Failed to print invoice. Make sure printer server is running on port 7001.");
+      let toastId;
+      try {
+        toastId = toast.loading("Printing invoice...");
+        
+        // Use appropriate print function based on mode
+        const success = isKioskMode 
+          ? await printKioskInvoice(invoiceData)
+          : await printInvoiceToCashier(invoiceData); // Print to Cashier printer (192.168.1.216)
+        
+        if (success) {
+          if (toastId) {
+            toast.dismiss(toastId);
+          }
+          toast.success("Invoice printed to Cashier printer successfully!");
+        } else {
+          if (toastId) {
+            toast.dismiss(toastId);
+          }
+          toast.error("Failed to print invoice. Make sure printer server is running on port 7001.");
+        }
+      } catch (error) {
+        if (toastId) {
+          toast.dismiss(toastId);
+        }
+        console.error("❌ Error printing invoice:", error);
+        toast.error("Error printing invoice: " + error.message);
       }
     } catch (error) {
-      toast.dismiss();
-      console.error("❌ Error printing invoice:", error);
-      toast.error("Error printing invoice: " + error.message);
+      console.error("❌ Error in handlePrintBillESCPOS:", error);
+      toast.error("Error preparing invoice: " + error.message);
     }
   };
 
   // ✅ Generate QR code for CheckBill payment
   const handleGenerateQRCode = async () => {
+    let toastId;
     try {
       if (!isBillSaved) {
         toast.error("Please save the bill first before generating QR code.");
         return;
       }
 
-      const toastId = toast.loading("Generating QR code...");
+      toastId = toast.loading("Generating QR code...");
       const qrData = await generateQRForCheckBill(grandAmount);
       
       if (qrData) {
-        toast.dismiss(toastId);
+        if (toastId) {
+          toast.dismiss(toastId);
+        }
         toast.success("QR code generated successfully!");
         console.log("QR Data:", qrData);
         // You can use qrData here if needed for additional processing
       }
     } catch (error) {
-      toast.dismiss();
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
       console.error("❌ Error generating QR code:", error);
       toast.error("Error generating QR code: " + error.message);
     }
@@ -590,7 +605,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     try {
       // Dismiss all active toasts to prevent errors
       try {
-        toast.dismiss();
+        if (toast && typeof toast.dismiss === 'function') {
+          toast.dismiss();
+        }
       } catch (toastError) {
         console.warn('Error dismissing toasts:', toastError);
       }
@@ -1356,7 +1373,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         ariaHideApp={false}
       >
         <div style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: '12px' }}>
-          <ToastContainer />
           
           {/* Header with Ant Design */}
           <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

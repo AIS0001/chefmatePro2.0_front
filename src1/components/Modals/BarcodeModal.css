@@ -1,0 +1,366 @@
+/* Custom styles for BarcodeModal */
+.barcode-modal {
+      position: fixed;
+    top: 206px;
+    left: 300px;
+    width: 70%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex
+;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+}
+
+.barcode-modal .modal-dialog {
+  position: relative;
+  width: auto;
+  max-width: 85vw;
+  margin: 1rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 2rem);
+  z-index: 1070;
+}
+
+.barcode-modal .modal-content {
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.barcode-modal .modal-header {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.barcode-modal .modal-body {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #e8e8e8;
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.1) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.barcode-modal .modal-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* Thermal Printer Label Preview Styles - 50mm x 25mm (thermal paper) - HORIZONTAL LAYOUT */
+.thermal-label-preview {
+  width: 200px; /* Adjusted to better match thermal paper ratio */
+  height: 100px; /* Adjusted to better match thermal paper ratio */
+  border: 2px solid #000;
+  background: white;
+  padding: 2px;
+  margin: 8px;
+  box-sizing: border-box;
+  display: inline-block;
+  vertical-align: top;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  border-radius: 1px;
+  font-family: 'Courier New', monospace;
+}
+
+.item-name-preview {
+  font-size: 10px;
+  font-weight: bold;
+  margin: 0 0 1px 0;
+  height: 14px; /* Reduced height for larger barcode */
+  overflow: hidden;
+  line-height: 1.0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #000;
+  word-wrap: break-word;
+  hyphens: auto;
+  padding: 1px;
+}
+
+.barcode-container-preview {
+  height: 66px; /* Slightly reduced to accommodate item details */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1px 0;
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 2px;
+}
+
+.barcode-image-preview {
+  max-width: 196px; /* Maximum width for horizontal barcode (200px - 4px padding) */
+  max-height: 61px; /* Adjusted height for better barcode visibility */
+  object-fit: contain;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 1px;
+}
+
+.item-details-preview {
+  font-size: 8px;
+  margin: 0;
+  height: 16px; /* Increased height for better visibility */
+  display: flex;
+  flex-direction: row; /* Changed to row for horizontal layout */
+  justify-content: space-between; /* Space between price and unit */
+  align-items: center;
+  line-height: 1.1;
+  background: #e9ecef; /* More visible background */
+  border-radius: 2px;
+  padding: 2px 4px; /* Horizontal padding */
+  border: 1px solid #dee2e6; /* Added border for better visibility */
+}
+
+.item-price-preview {
+  font-size: 10px;
+  font-weight: bold;
+  /* color: #000; */
+  margin: 0;
+}
+
+.item-unit-preview {
+  font-size: 8px;
+  margin: 0;
+  color: #555;
+}
+
+/* Print styles for thermal printer - 50mm x 25mm */
+.thermal-label {
+  width: 50mm;
+  height: 25mm;
+  padding: 0.5mm;
+  margin: 0;
+  border: 1px solid #000;
+  display: block;
+  page-break-after: always;
+  text-align: center;
+  background: white;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.thermal-label:last-child {
+  page-break-after: avoid;
+}
+
+.item-name {
+  font-size: 8px;
+  font-weight: bold;
+  margin: 0 0 0.5mm 0;
+  height: 6mm;
+  overflow: hidden;
+  line-height: 1.0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barcode-container {
+  height: 16mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5mm 0;
+}
+
+.barcode-image {
+  max-width: 49mm; /* Maximum width for thermal label (50mm - 1mm padding) */
+  max-height: 14mm;
+  object-fit: contain;
+}
+
+.item-details {
+  font-size: 6px;
+  margin: 0;
+  height: 2.5mm;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  line-height: 1.0;
+  padding: 0 1mm;
+}
+
+.item-price {
+  font-size: 7px;
+  font-weight: bold;
+  /* color: #000; */
+  margin: 0;
+}
+
+.item-unit {
+  font-size: 6px;
+  margin: 0;
+}
+
+/* Thermal printer paper size indicator */
+.thermal-printer-info {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px 0;
+  text-align: center;
+  font-size: 12px;
+  color: #856404;
+}
+
+.thermal-printer-info .paper-size {
+  font-weight: bold;
+  color: #007bff;
+  font-size: 14px;
+}
+
+/* Hover effects for thermal labels */
+.thermal-label-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border-color: #007bff;
+  transition: all 0.3s ease;
+}
+
+.thermal-label-preview:hover .barcode-container-preview {
+  background: #f0f8ff;
+}
+
+/* Add thermal printer texture effect */
+.thermal-label-preview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 48%, rgba(0,0,0,0.02) 49%, rgba(0,0,0,0.02) 51%, transparent 52%);
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+/* Responsive adjustments for thermal printer preview */
+@media (max-width: 768px) {
+  .barcode-modal .modal-dialog {
+    max-width: 90vw;
+    margin: 0.5rem auto;
+  }
+  
+  .barcode-modal .modal-body {
+    padding: 15px;
+    max-height: 75vh;
+  }
+  
+  .thermal-label-preview {
+    width: 170px; /* Scaled for tablet */
+    height: 85px; /* Scaled for tablet */
+    margin: 6px;
+    padding: 2px;
+  }
+  
+  .item-name-preview {
+    font-size: 7px;
+    height: 14px;
+  }
+  
+  .barcode-container-preview {
+    height: 55px;
+  }
+  
+  .barcode-image-preview {
+    max-width: 166px; /* Maximum width for tablet (170px - 4px padding) */
+    max-height: 50px;
+  }
+  
+  .item-details-preview {
+    height: 14px;
+    font-size: 7px;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .item-price-preview {
+    font-size: 8px;
+  }
+  
+  .item-unit-preview {
+    font-size: 6px;
+  }
+  
+  .thermal-label-preview:hover {
+    transform: scale(1.05);
+  }
+}
+
+@media (max-width: 576px) {
+  .barcode-modal .modal-dialog {
+    max-width: 95vw;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+  
+  .barcode-modal .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .barcode-modal .modal-header {
+    border-radius: 0;
+  }
+  
+  .barcode-modal .modal-footer {
+    border-radius: 0;
+  }
+  
+  .thermal-label-preview {
+    width: 150px; /* Scaled for mobile */
+    height: 75px; /* Scaled for mobile */
+    margin: 4px;
+    padding: 2px;
+  }
+  
+  .item-name-preview {
+    font-size: 6px;
+    height: 12px;
+  }
+  
+  .barcode-container-preview {
+    height: 50px;
+  }
+  
+  .barcode-image-preview {
+    max-width: 146px; /* Maximum width for mobile (150px - 4px padding) */
+    max-height: 45px;
+  }
+  
+  .item-details-preview {
+    height: 12px;
+    font-size: 6px;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .item-price-preview {
+    font-size: 7px;
+  }
+  
+  .item-unit-preview {
+    font-size: 5px;
+  }
+  
+  .thermal-label-preview:hover {
+    transform: scale(1.05);
+  }
+}

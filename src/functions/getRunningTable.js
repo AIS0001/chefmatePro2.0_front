@@ -8,7 +8,7 @@ const getRunningTable = async (tblname, settableList) => {
         url += `/${tblname}`;
     }
      
-    console.log(url);
+   // console.log(url);
     const headers = getHeaders();
     const response = await axios.get(url, headers);
 

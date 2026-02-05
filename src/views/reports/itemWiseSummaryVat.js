@@ -36,6 +36,7 @@ export default function ItemWiseSummaryVat() {
     const [selectedCatId, setSelectedCatId] = useState("");
     const [selectedSubCatId, setSelectedSubCatId] = useState("");
     const [selectedTableCatId, setSelectedTableCatId] = useState("");
+    const [selectedItemGroup, setSelectedItemGroup] = useState("");
     const [filteredData, setFilteredData] = useState([]);
     const [taxType, setTaxType] = useState("VAT");
 
@@ -49,9 +50,11 @@ export default function ItemWiseSummaryVat() {
     const [showCategorySummary, setShowCategorySummary] = useState(false);
     const [showSubcategorySummary, setShowSubcategorySummary] = useState(false);
     const [showTableCategorySummary, setShowTableCategorySummary] = useState(false);
+    const [showItemGroupSummary, setShowItemGroupSummary] = useState(false);
     const [categorySummaryData, setCategorySummaryData] = useState([]);
     const [subcategorySummaryData, setSubcategorySummaryData] = useState([]);
     const [tableCategorySummaryData, setTableCategorySummaryData] = useState([]);
+    const [itemGroupSummaryData, setItemGroupSummaryData] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
 
     // Column definitions for VAT-specific display
@@ -80,6 +83,13 @@ export default function ItemWiseSummaryVat() {
 
     const tableCategorySummaryColumns = [
         { label: "Table Category Name", field: "table_category_name" },
+        { label: "Total Quantity", field: "total_quantity" },
+        { label: "Total VAT", field: "total_vat" },
+        { label: "Total Amount", field: "total_amount" },
+    ];
+
+    const itemGroupSummaryColumns = [
+        { label: "Item Group", field: "item_group" },
         { label: "Total Quantity", field: "total_quantity" },
         { label: "Total VAT", field: "total_vat" },
         { label: "Total Amount", field: "total_amount" },
@@ -150,6 +160,7 @@ export default function ItemWiseSummaryVat() {
         setShowCategorySummary(true);
         setShowSubcategorySummary(false);
         setShowTableCategorySummary(false);
+        setShowItemGroupSummary(false);
     };
 
     const generateSubcategorySummary = () => {
@@ -226,6 +237,7 @@ export default function ItemWiseSummaryVat() {
         setShowSubcategorySummary(true);
         setShowCategorySummary(false);
         setShowTableCategorySummary(false);
+        setShowItemGroupSummary(false);
     };
 
     const generateTableCategorySummary = () => {
@@ -297,6 +309,70 @@ export default function ItemWiseSummaryVat() {
         setShowTableCategorySummary(true);
         setShowCategorySummary(false);
         setShowSubcategorySummary(false);
+        setShowItemGroupSummary(false);
+    };
+
+    const generateItemGroupSummary = () => {
+        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
+            const itemName = item.item_name || item.name || item.product_name || "";
+            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
+            
+            const categoryId = item.catid || item.category_id || item.cat_id;
+            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
+            
+            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
+            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
+            
+            const tableCategoryId = item.table_cat_id || item.table_category_id;
+            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
+            
+            const itemGroup = item.item_group || "";
+            if (selectedItemGroup && itemGroup.toLowerCase() !== selectedItemGroup.toLowerCase()) return false;
+            
+            if (startDate || endDate) {
+                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
+                if (!dateField) return false;
+                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
+                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+                if ((start && itemDate < start) || (end && itemDate > end)) return false;
+            }
+            
+            return true;
+        }) : originalData;
+        const summaryMap = {};
+
+        console.log("=== ITEM GROUP SUMMARY DEBUG ===");
+        console.log("Data to summarize count:", dataToSummarize.length);
+
+        dataToSummarize.forEach(item => {
+            const itemGroup = item.item_group || "Unspecified";
+
+            if (!summaryMap[itemGroup]) {
+                summaryMap[itemGroup] = { 
+                    item_group: itemGroup, 
+                    total_quantity: 0,
+                    total_vat: 0,
+                    total_amount: 0 
+                };
+            }
+
+            const quantity = parseFloat(item.quantity || item.qty || 0);
+            const vatAmount = parseFloat(item.vat_amount || item.tax_amount || 0);
+            const totalAmount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+
+            summaryMap[itemGroup].total_quantity += quantity;
+            summaryMap[itemGroup].total_vat += vatAmount;
+            summaryMap[itemGroup].total_amount += totalAmount;
+        });
+
+        const summaryArray = Object.values(summaryMap);
+        console.log("Generated item group summary:", summaryArray);
+        setItemGroupSummaryData(summaryArray);
+        setShowItemGroupSummary(true);
+        setShowCategorySummary(false);
+        setShowSubcategorySummary(false);
+        setShowTableCategorySummary(false);
     };
 
     // Group data by item name
@@ -452,6 +528,12 @@ export default function ItemWiseSummaryVat() {
                 return false;
             }
 
+            // Item group filter
+            const itemGroup = item.item_group || "";
+            if (selectedItemGroup && itemGroup.toLowerCase() !== selectedItemGroup.toLowerCase()) {
+                return false;
+            }
+
             return true;
         });
 
@@ -474,14 +556,17 @@ export default function ItemWiseSummaryVat() {
         setSelectedCatId("");
         setSelectedSubCatId("");
         setSelectedTableCatId("");
+        setSelectedItemGroup("");
         const groupedData = groupByItemName(originalData);
         setFilteredData(groupedData);
         setShowCategorySummary(false);
         setShowSubcategorySummary(false);
         setShowTableCategorySummary(false);
+        setShowItemGroupSummary(false);
         setCategorySummaryData([]);
         setSubcategorySummaryData([]);
         setTableCategorySummaryData([]);
+        setItemGroupSummaryData([]);
     };
 
     // Export to PDF
@@ -870,7 +955,7 @@ export default function ItemWiseSummaryVat() {
         if (data.length > 0) {
             applyFilter();
         }
-    }, [data, startDate, endDate, formdata.name, selectedCatId, selectedSubCatId, selectedTableCatId]);
+    }, [data, startDate, endDate, formdata.name, selectedCatId, selectedSubCatId, selectedTableCatId, selectedItemGroup]);
 
     // Update summaries when filtered data changes
     useEffect(() => {
@@ -882,9 +967,11 @@ export default function ItemWiseSummaryVat() {
                 generateSubcategorySummary();
             } else if (showTableCategorySummary) {
                 generateTableCategorySummary();
+            } else if (showItemGroupSummary) {
+                generateItemGroupSummary();
             }
         }
-    }, [filteredData, showCategorySummary, showSubcategorySummary, showTableCategorySummary]);
+    }, [filteredData, showCategorySummary, showSubcategorySummary, showTableCategorySummary, showItemGroupSummary]);
 
     return (
         <>
@@ -964,6 +1051,20 @@ export default function ItemWiseSummaryVat() {
                                         ))}
                                     </Select>
                                 </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Item Group</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        placeholder="All Item Groups"
+                                        value={selectedItemGroup || undefined}
+                                        onChange={(value) => setSelectedItemGroup(value || "")}
+                                        allowClear
+                                    >
+                                        <Option value="Bar">Bar</Option>
+                                        <Option value="Food">Food</Option>
+                                        <Option value="Shisha">Shisha</Option>
+                                    </Select>
+                                </Col>
                             </Row>
 
                             {/* Action Buttons */}
@@ -997,16 +1098,20 @@ export default function ItemWiseSummaryVat() {
                                 <Button onClick={generateTableCategorySummary} style={{background: 'linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)', border: 'none', color: 'white'}}>
                                     🏷️ Table Category Summary
                                 </Button>
+                                <Button onClick={generateItemGroupSummary} style={{background: 'linear-gradient(45deg, #fa709a 0%, #fee140 100%)', border: 'none', color: 'white'}}>
+                                    🍹 Item Group Summary
+                                </Button>
                             </Space>
 
                             {/* Back to Details Button */}
-                            {(showCategorySummary || showSubcategorySummary || showTableCategorySummary) && (
+                            {(showCategorySummary || showSubcategorySummary || showTableCategorySummary || showItemGroupSummary) && (
                                 <div style={{marginTop: 16}}>
                                     <Button
                                         onClick={() => {
                                             setShowCategorySummary(false);
                                             setShowSubcategorySummary(false);
                                             setShowTableCategorySummary(false);
+                                            setShowItemGroupSummary(false);
                                         }}
                                     >
                                         ← Back to Item Details
@@ -1030,6 +1135,8 @@ export default function ItemWiseSummaryVat() {
                                             ? subcategorySummaryColumns
                                             : showTableCategorySummary
                                             ? tableCategorySummaryColumns
+                                            : showItemGroupSummary
+                                            ? itemGroupSummaryColumns
                                             : columns
                                         ).map(col => ({
                                             title: col.label,
@@ -1062,6 +1169,8 @@ export default function ItemWiseSummaryVat() {
                                             ? subcategorySummaryData
                                             : showTableCategorySummary
                                             ? tableCategorySummaryData
+                                            : showItemGroupSummary
+                                            ? itemGroupSummaryData
                                             : filteredData
                                     )}
                                     rowKey={(record, index) => index}

@@ -42,6 +42,7 @@ import {
   ArrowLeftOutlined,
   HomeOutlined,
   EyeOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -50,6 +51,7 @@ import Header from "../../components/Header";
 import CardComponent from "../../components/cards/CardComponent";
 import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
+import updateData from "../../functions/updateData";
 import logo from "../../assets/logo.png";
 import BillItemModal from "../../components/Modals/BillItemModal";
 import { getUserType } from "../../utility/auth";
@@ -300,6 +302,21 @@ export default function BillHistory() {
     setShowModal(true);
   };
 
+  const handleCancelBill = async (billId) => {
+    const confirmed = window.confirm("Are you sure you want to cancel this bill?");
+    if (!confirmed) return;
+
+    try {
+      await updateData("final_bill", { status: 2 }, { id: billId });
+      toast.success("Bill cancelled successfully!");
+      const updatedData = await fetchData("final_bill", null, "id", {});
+      setData(updatedData || []);
+    } catch (error) {
+      console.error("Error cancelling bill:", error);
+      toast.error("Failed to cancel bill");
+    }
+  };
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -336,9 +353,16 @@ export default function BillHistory() {
       label: "Action",
       field: "actions",
       render: (row) => (
-        <button className="btn btn-sm btn-info" onClick={() => handleViewItems(row)}>
-          View Items
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-sm btn-info" onClick={() => handleViewItems(row)}>
+            View Items
+          </button>
+          {(row.status !== 2 && row.status !== "2") && (
+            <button className="btn btn-sm btn-danger" onClick={() => handleCancelBill(row.id)}>
+              Cancel
+            </button>
+          )}
+        </div>
       ),
     },
   ];
@@ -551,7 +575,8 @@ export default function BillHistory() {
               onClick={clearFilters}
               icon={<ClearOutlined />}
               block
-              size="small"
+              size="large"
+              style={{ height: "40px", fontSize: "14px" }}
             >
               Clear Filters
             </Button>
@@ -566,7 +591,8 @@ export default function BillHistory() {
                 type="primary" 
                 icon={<FileExcelOutlined />}
                 block
-                size="small"
+                size="large"
+                style={{ height: "40px", fontSize: "14px" }}
               >
                 CSV
               </Button>
@@ -578,7 +604,8 @@ export default function BillHistory() {
               icon={<FilePdfOutlined />}
               onClick={exportPDF}
               block
-              size="small"
+              size="large"
+              style={{ height: "40px", fontSize: "14px" }}
             >
               PDF
             </Button>
@@ -668,16 +695,32 @@ export default function BillHistory() {
                 {
                   title: "Action",
                   key: "action",
-                  width: 80,
+                  width: 120,
                   render: (_, record) => (
-                    <AntTooltip title="View Items">
-                      <Button 
-                        type="primary" 
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleViewItems(record)}
-                      />
-                    </AntTooltip>
+                    <Space>
+                      <AntTooltip title="View Items">
+                        <Button 
+                          type="primary" 
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handleViewItems(record)}
+                        />
+                      </AntTooltip>
+                      {record.status !== "cancelled" && (
+                        <AntTooltip title="Cancel Bill">
+                          <Button 
+                            type="primary" 
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleCancelBill(record.id)}
+                          />
+                        </AntTooltip>
+                      )}
+                      {record.status === "cancelled" && (
+                        <Tag color="red">Cancelled</Tag>
+                      )}
+                    </Space>
                   ),
                 },
               ]}
