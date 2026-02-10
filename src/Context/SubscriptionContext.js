@@ -11,7 +11,6 @@ export const useSubscription = () => {
     currentPlan: 'enterprise',
     hasFeature: () => true,
     getFeatureValue: () => 'unlimited',
-    checkLimit: () => true,
     canAccessRoute: () => true,
     updateSubscription: () => Promise.resolve(),
     getFeatureUsage: () => ({ current: 0, limit: 'unlimited' }),

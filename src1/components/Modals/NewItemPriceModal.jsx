@@ -39,6 +39,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
     isstockable: false,
     min_stock: "",  // <-- added,
     item_code: "",
+    item_type: "",
   });
 
   const [getTax, setTax] = useState([]);
@@ -92,6 +93,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
         isstockable: formdata.isstockable,
         min_stock: formdata.min_stock,
         item_code: formdata.item_code,
+        item_type: formdata.item_type,
       };
 
       const post1 = await axios.post(
@@ -388,6 +390,36 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                   className="control-label mb-10"
                   style={{ marginLeft: "15px" }}
                 >
+                  Item Group
+                </label>
+
+                <select
+                  id="item_type"
+                  name="item_type"
+                  className="form-select custom-select"
+                  style={{
+                    borderRadius: "4px",
+                    border: "2px solid #17a2b8",
+                    height: "45px",
+                    width: "95%",
+                    marginLeft: "15px",
+                  }}
+                  onChange={handleComboChange}
+                  value={formdata.item_type}
+                >
+                  <option value="">Select Group</option>
+                  <option value="Bar">Bar</option>
+                  <option value="Food">Food</option>
+                  <option value="Shisha">Shisha</option>
+                </select>
+              </div>
+            </div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+              <div className="form-group">
+                <label
+                  className="control-label mb-10"
+                  style={{ marginLeft: "15px" }}
+                >
                   Unit
                 </label>
 
@@ -451,7 +483,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                   className="control-label mb-10"
                   style={{ marginLeft: "15px" }}
                 >
-                  Tax {taxType ? `(${taxType.toUpperCase()})` : ''}
+                  Tax 
                 </label>
 
                 <select

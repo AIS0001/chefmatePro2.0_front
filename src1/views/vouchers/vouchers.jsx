@@ -1,13 +1,12 @@
 /* eslint-disable no-undef */
 
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import fetchData from "../../functions/fetchData";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
-import CardComponent from "../../components/cards/CardComponent";
+import { Button, Card, Col, Form, Input, InputNumber, Row, Select } from "antd";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import DataTable from "../../components/data-tables/dataTable";
@@ -37,8 +36,7 @@ export default function Vouchers() {
         // fetchData("customers", setCustomers);
         fetchData("customers", setCustomers, "id", {});
     }, []);
-    const getOutStandingBalance = async (e) => {
-        const customerId = e.target.value;
+    const getOutStandingBalance = async (customerId) => {
         setSelectedCustomer(customerId); // Update selected customer state
 
         if (!customerId) {
@@ -97,9 +95,7 @@ export default function Vouchers() {
         setBalanceAfterPayment(remaining >= 0 ? remaining : 0);
     }, [paymentAmount, outstandingAmount]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
+    const handleSubmit = async () => {
         const paymentData = {
             customer_id: selectedCustomer,
             amount_paid: paymentAmount,
@@ -137,88 +133,93 @@ export default function Vouchers() {
     return (
         <Layout>
             <Header title="Reciept Vouchers" />
-            <ToastContainer />
+            <Row gutter={[16, 16]}>
+                <Col xs={24} md={10} lg={8}>
+                    <Card title="Create Receipt Voucher">
+                        <Form layout="vertical" onFinish={handleSubmit}>
+                            <Form.Item label="Customer Name">
+                                <Select
+                                    placeholder="Select customer"
+                                    allowClear
+                                    showSearch
+                                    value={selectedCustomer || undefined}
+                                    onChange={(value) => getOutStandingBalance(value || "")}
+                                    filterOption={(input, option) =>
+                                        (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                                    }
+                                    options={customers.map((customer) => ({
+                                        label: `${customer.id} - ${customer.phone || "N/A"} - ${customer.name}`,
+                                        value: customer.id,
+                                    }))}
+                                />
+                            </Form.Item>
 
-            <div className="row">
-                {/* Left Panel - Payment Form */}
-                <div className="col-lg-4 col-md-4 col-sm-12">
-                    <CardComponent title="Create Reciept Voucher" headerColor="darkblue">
-                        <form onSubmit={handleSubmit}>
-                            {/* Customer Selection */}
-                            <label>Customer Name:</label>
-                            <select value={selectedCustomer} onChange={getOutStandingBalance} className="form-control">
+                            <Form.Item label="Outstanding Amount">
+                                <Input value={`₹ ${outstandingAmount}`} readOnly />
+                            </Form.Item>
 
+                            <Form.Item label="Payment Mode">
+                                <Select
+                                    placeholder="Select payment mode"
+                                    allowClear
+                                    value={paymentMode || undefined}
+                                    onChange={(value) => setPaymentMode(value || "")}
+                                    options={[
+                                        { label: "Cash", value: "Cash" },
+                                        { label: "Bank", value: "Bank" },
+                                        { label: "Cheque", value: "Cheque" },
+                                        { label: "Online", value: "Online" },
+                                    ]}
+                                />
+                            </Form.Item>
 
-                                <option value="">Select Customer</option>
-                                {customers.map((customer) => (
-                                    <option key={customer.id} value={customer.id}>
-                                        {customer.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <Form.Item label="Amount Paid">
+                                <InputNumber
+                                    style={{ width: "100%" }}
+                                    min={0}
+                                    value={paymentAmount}
+                                    onChange={(value) => setPaymentAmount(value || "")}
+                                />
+                            </Form.Item>
 
-                            {/* Outstanding Amount */}
-                            <label>Outstanding Amount:</label>
-                            <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
+                            <Form.Item label="Reference Number (if applicable)">
+                                <Input
+                                    value={referenceNumber}
+                                    onChange={(e) => setReferenceNumber(e.target.value)}
+                                />
+                            </Form.Item>
 
-                            {/* Invoice Selection */}
+                            <Form.Item label="Remarks">
+                                <Input.TextArea
+                                    rows={3}
+                                    value={remarks}
+                                    onChange={(e) => setRemarks(e.target.value)}
+                                />
+                            </Form.Item>
 
+                            <Form.Item label="Balance After Payment">
+                                <Input value={`₹ ${balanceAfterPayment}`} readOnly />
+                            </Form.Item>
 
-                            {/* Payment Mode */}
-                            <label>Payment Mode:</label>
-                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="form-control">
-                                <option value="">Select Payment Mode</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Bank">Bank</option>
-                                <option value="Cheque">Cheque</option>
-                                <option value="Online">Online</option>
-                            </select>
-
-                            {/* Amount Paid */}
-                            <label>Amount Paid:</label>
-                            <input
-                                type="number"
-                                value={paymentAmount}
-                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                className="form-control"
-                            />
-
-                            {/* Reference Number */}
-                            <label>Reference Number (if applicable):</label>
-                            <input
-                                type="text"
-                                value={referenceNumber}
-                                onChange={(e) => setReferenceNumber(e.target.value)}
-                                className="form-control"
-                            />
-
-                            {/* Remarks */}
-                            <label>Remarks:</label>
-                            <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} className="form-control" />
-
-                            {/* Balance After Payment */}
-                            <label>Balance After Payment:</label>
-                            <input type="text" value={`₹ ${balanceAfterPayment}`} readOnly className="form-control" />
-                            <label></label>
-                            {/* Submit Button */}
-                            <div className="mt-3">
-                                <button type="submit" className="btn btn-darkblue btn-block">
+                            <Form.Item>
+                                <Button type="primary" htmlType="submit" block>
                                     Save Payment
-                                </button>
-                            </div>
-                        </form>
-                    </CardComponent>
-                </div>
+                                </Button>
+                            </Form.Item>
+                        </Form>
+                    </Card>
+                </Col>
 
-                {/* Right Panel - Payment History Table */}
-                <div className="col-lg-8 col-md-8 col-sm-12">
-                    {data.length === 0 ? (
-                        <p>No data available</p>
-                    ) : (
-                        <DataTable columns={columns} data={data} tablename="receipt_vouchers" />
-                    )}
-                </div>
-            </div>
+                <Col xs={24} md={14} lg={16}>
+                    <Card title="Receipt Voucher History">
+                        {data.length === 0 ? (
+                            <p>No data available</p>
+                        ) : (
+                            <DataTable columns={columns} data={data} tablename="receipt_vouchers" />
+                        )}
+                    </Card>
+                </Col>
+            </Row>
         </Layout>
     );
 }

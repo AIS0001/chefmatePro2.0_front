@@ -12,6 +12,7 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState([]);
 
   useEffect(() => {
     if (bill?.id && isOpen) {
@@ -19,13 +20,31 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
     }
   }, [bill, isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
+      fetchData("companyinfo", setCompanyInfo, "id", {});
+    }
+  }, [isOpen]);
+
   const fetchItems = async () => {
     setLoading(true);
     try {
-      // Fetch order items for this bill using the proper fetchData function
-      const items = await fetchData("order_items", null, "id", { order_id: bill.id });
-      if (items && items.length > 0) {
-        setItems(items);
+      // Fetch order items for this bill (invoice number preferred)
+      const invoiceId = bill?.id;
+      if (!invoiceId) {
+        setItems([]);
+        return;
+      }
+
+      const byInvoice = await fetchData("order_items", null, "id", { invoice_number: invoiceId });
+      if (byInvoice && byInvoice.length > 0) {
+        setItems(byInvoice);
+        return;
+      }
+
+      const byOrderId = await fetchData("order_items", null, "id", { order_id: invoiceId });
+      if (byOrderId && byOrderId.length > 0) {
+        setItems(byOrderId);
       } else {
         toast.info("No items found for this bill");
         setItems([]);
@@ -103,6 +122,206 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
       console.error("❌ Error in handleThermalPrint:", error);
       toast.error("Error preparing invoice: " + error.message);
     }
+  };
+
+  const handleThermalHtmlPrint = () => {
+    if (!bill?.id) {
+      toast.error("Bill ID is missing");
+      return;
+    }
+
+    if (!items.length) {
+      toast.error("No items to print");
+      return;
+    }
+
+    const company = companyInfo?.[0] || {};
+    const currencySign = "฿";
+    const subtotal = parseFloat(bill?.subtotal || bill?.subtotal_afterdiscount || 0);
+    const discountAmount = parseFloat(bill?.discount_amount || bill?.discount || 0);
+    const subtotalAfterDiscount = parseFloat(bill?.subtotal_afterdiscount || Math.max(subtotal - discountAmount, 0));
+    const taxAmount = parseFloat(bill?.tax || 0);
+    const roundoffAmount = parseFloat(bill?.roundoff || 0);
+    const grandAmount = parseFloat(bill?.grand_total || 0);
+    const billDate = bill?.setup_date || bill?.inv_date || "";
+    const billTime = bill?.inv_time || "";
+
+    const printContent = `
+      <html>
+        <head>
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Cambria', monospace;
+            }
+            body {
+              font-size: 18px;
+              width: 80mm;
+            }
+            .bill-header {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              grid-gap: 5px;
+              text-align: center;
+              margin-bottom: 10px;
+            }
+            .bill-header h2 {
+              grid-column: span 2;
+              margin: 0;
+              font-size: 24px;
+              font-weight: bold;
+            }
+            .bill-header .company-info {
+              grid-column: span 3;
+              text-align: center;
+            }
+            .bill-header .company-info p {
+              margin: 4px 0;
+              font-size: 18px;
+            }
+            .bill-header .contact-info {
+              display: flex;
+              justify-content: center;
+              grid-column: span 2;
+            }
+            .bill-header .left-col {
+              text-align: left;
+            }
+            .bill-header .right-col {
+              text-align: right;
+              margin-right: 20px;
+            }
+            .bill-header .tax-id {
+              text-align: left;
+              grid-column: span 2;
+              font-size: 16px;
+              margin: 0;
+            }
+            .table {
+              width: 100%;
+              margin-top: 1px;
+              border-collapse: collapse;
+            }
+            .table th, .table td {
+              text-align: left;
+              padding: 5px 0;
+              font-size: 18px;
+              line-height: 1.6;
+            }
+            .table th {
+              font-weight: bold;
+              border-bottom: 1px solid #000;
+            }
+            .table td {
+              border-bottom: 1px solid #ddd;
+            }
+            .table td.total {
+              font-weight: bold;
+              font-size: 18px;
+              margin-right: 2px;
+              border-bottom: 1px solid #000;
+            }
+            .total-row {
+              margin-top: 5px;
+              margin-right: 10px;
+              font-weight: bold;
+              text-align: right;
+              font-size: 18px;
+              line-height: 1.6;
+            }
+            .total-row span {
+              margin-left: 0px;
+            }
+            .footer {
+              margin-top: 15px;
+              text-align: center;
+              font-size: 18px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="bill-header">
+            <h2>${company?.name || "CHEFMATE"}</h2>
+            <div class="company-info">
+              <p>${company?.address || ""}</p>
+              <p>Tax:${company?.tax_id || ""}</p>
+            </div>
+          </div>
+          <div class="bill-bill-body">
+            <table class="table">
+              <tr>
+                <th class="header">Bill ID: ${bill?.id}</th>
+                <th class="header">${bill?.table_number || ""}</th>
+              </tr>
+              <tr>
+                <th>Date: ${billDate}</th>
+                <th>Time: ${billTime}</th>
+              </tr>
+              <tr>
+                <th colspan="2">Payment Mode: ${bill?.payment_mode || "Cash"}</th>
+              </tr>
+              <tbody>
+                <tr></tr>
+                <tr></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="bill-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items
+                  .map(
+                    (item) => `
+                      <tr>
+                        <td>${item.item_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
+                        <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            <div class="total-row">
+              <span>Subtotal: ${currencySign} ${subtotal.toFixed(2)}</span><br>
+              <span>Discount: ${currencySign} ${discountAmount.toFixed(2)}</span><br>
+              <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount.toFixed(2)}</span><br>
+              <span>Tax (7%): ${currencySign} ${taxAmount.toFixed(2)}</span><br>
+              <span>Round Off: ${currencySign} ${roundoffAmount.toFixed(2)}</span><br>
+              <span>Total Amount: ${currencySign} ${grandAmount.toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Operated By: N/A</p>
+            <p>Powered by chefmate POS !! </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const newWindow = window.open("", "_blank");
+    if (!newWindow) {
+      toast.error("Popup blocked. Please allow popups to print.");
+      return;
+    }
+
+    newWindow.document.write(printContent);
+    newWindow.document.close();
+
+    newWindow.onload = () => {
+      newWindow.print();
+      newWindow.close();
+    };
   };
 
   // Prepare data for VAT template
@@ -190,6 +409,13 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
         footer={[
           <Button key="close" onClick={onClose}>
             Close
+          </Button>,
+          <Button
+            key="print-html"
+            icon={<PrinterOutlined />}
+            onClick={handleThermalHtmlPrint}
+          >
+            Print Thermal (HTML)
           </Button>,
           <Button
             key="print"

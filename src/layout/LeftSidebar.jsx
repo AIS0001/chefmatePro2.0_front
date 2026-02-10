@@ -89,7 +89,7 @@ export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
         width: sidebarWidth,
         background: '#001529',
         transition: isMobile ? 'left 0.3s ease' : 'width 0.2s',
-        zIndex: 1999,
+        zIndex: 2001,
         overflowY: 'auto',
         overflowX: 'hidden',
         boxShadow: isMobile && isOpen ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',

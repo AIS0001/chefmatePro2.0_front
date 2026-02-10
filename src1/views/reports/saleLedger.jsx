@@ -5,11 +5,13 @@ import "react-toastify/dist/ReactToastify.css";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { CSVLink } from "react-csv";
+import logo from "../../assets/logo.png";
 
-import CardComponent from "../../components/cards/CardComponent";
+import { Button, Card, Col, DatePicker, Row, Select, Space } from "antd";
+import { FilterOutlined, FilePdfOutlined, FileExcelOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
 import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
 import { fetchComboData } from "../../services/api";
@@ -17,12 +19,13 @@ export default function BillHistory() {
   const [data, setData] = useState([]);
   const [Alldata, setAllData] = useState([]);
   const [customerdata, setCustomerdata] = useState([]);
+  const [companyInfo, setCompanyInfo] = useState({});
   const [Totals, setTotals] = useState({ credit: 0, debit: 0, balance: 0 });
   const [formdata, setFormData] = useState({
     from: "",
     to: "",
     accounttype: "",
-    customername: "",
+    account_id: "",
   });
 
   const columns = [
@@ -41,8 +44,23 @@ export default function BillHistory() {
     return isValid(date) ? fmt(date, "yyyy-MM-dd") : "";
   };
 
+  const loadImageAsDataUrl = (src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+
   const filterData = () => {
-    const { from, to, accounttype, customername } = formdata;
+    const { from, to, accounttype, account_id } = formdata;
     let filtered = [...Alldata];
 
     const safeFrom = formatDateSafe(from);
@@ -59,8 +77,8 @@ export default function BillHistory() {
       filtered = filtered.filter((r) => r.account_type === accounttype);
     }
 
-    if (customername) {
-      filtered = filtered.filter((r) => r.customer_name === customername);
+    if (account_id) {
+      filtered = filtered.filter((r) => r.account_id == account_id);
     }
 
  const credit = filtered.reduce((sum, r) => sum + (Number(r.credit_amount) || 0), 0);
@@ -70,16 +88,33 @@ setTotals({ credit, debit, balance: debit - credit });
     setData(filtered);
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     const doc = new jsPDF();
     const tableColumn = columns.map((col) => col.label);
     const tableRows = [];
+
+    try {
+      const logoDataUrl = await loadImageAsDataUrl(logo);
+      doc.addImage(logoDataUrl, "PNG", 8, 10, 18, 18);
+    } catch (err) {
+      console.warn("Failed to load logo for PDF:", err);
+    }
+
+    const headerX = 38;
+    doc.setFontSize(12);
+    doc.text(companyInfo.name || "Company Name", headerX, 16);
+    doc.setFontSize(9);
+    if (companyInfo.address) doc.text(companyInfo.address, headerX, 21);
+    const contactLine = [companyInfo.phone_number, companyInfo.email].filter(Boolean).join(" | ");
+    if (contactLine) doc.text(contactLine, headerX, 26);
+    if (companyInfo.tax_id) doc.text(`Tax ID: ${companyInfo.tax_id}`, headerX, 31);
+    doc.setFontSize(10);
+    doc.text("Sales Ledger Report", headerX, 36);
 
     data.forEach((row) => {
       tableRows.push([
         row.transaction_id,
         formatDateSafe(row.date),
-        row.customer_name,
         row.account_type,
         row.account_id,
         row.description,
@@ -93,7 +128,6 @@ setTotals({ credit, debit, balance: debit - credit });
       "",
       "",
       "",
-      "",
       "Balance: " + Totals.balance,
       (Totals.debit).toFixed(2),
       (Totals.credit).toFixed(2),
@@ -103,6 +137,7 @@ setTotals({ credit, debit, balance: debit - credit });
       head: [tableColumn],
       body: tableRows,
       theme: "grid",
+      startY: 42,
     });
 
     doc.save("ledger_report.pdf");
@@ -145,7 +180,7 @@ const resetFilters = () => {
     from: "",
     to: "",
     accounttype: "",
-    customername: "",
+    account_id: "",
   });
   setData(Alldata);
 };
@@ -156,8 +191,10 @@ const resetFilters = () => {
         const fetched = await fetchData("ledger_entries", null, "id", {});
         setAllData(fetched);
         setData(fetched);
-          const result = await fetchComboData("customers", "name");
-        setCustomerdata(result); // Don't filter to only names
+        const result = await fetchData("customers", null, "id", {});
+        setCustomerdata(result);
+        const companyData = await fetchData("companyinfo", null, "id", {});
+        setCompanyInfo(companyData?.[0] || {});
 
       } catch (e) {
         console.error("Error fetching data:", e);
@@ -175,85 +212,75 @@ const resetFilters = () => {
       <Header title="Sales Ledger" />
       <ToastContainer />
 
-      <div className="row mt-4">
-        <div className="col-12">
-          <CardComponent title="Filters">
-            <div className="row">
-              <div className="col-md-3">
-                <TextfieldwithLabel
-                  id="from"
-                  type="date"
-                  name="from"
-                  lable="From Date"
-                  value={formdata.from}
-                  onChange={(e) =>
-                    setFormData({ ...formdata, from: e.target.value })
-                  }
-                />
-              </div>
-              <div className="col-md-3">
-                <TextfieldwithLabel
-                  id="to"
-                  type="date"
-                  name="to"
-                  lable="To Date"
-                  value={formdata.to}
-                  onChange={(e) =>
-                    setFormData({ ...formdata, to: e.target.value })
-                  }
-                />
-              </div>
-              <div className="col-md-3">
-                <label className="control-label">A/C Type</label>
-                <select
-                  className="form-control"
-                  value={formdata.accounttype}
-                  onChange={(e) =>
-                    setFormData({ ...formdata, accounttype: e.target.value })
-                  }
-                >
-                  <option value="">Select</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Discount">Discount</option>
-                  <option value="Account Recievable">Account Recievable</option>
-                </select>
-              </div>
-              <div className="col-md-3">
-                <label className="control-label">Customer Name</label>
-   <select
-  className="form-control"
-  value={formdata.account_id}
-  onChange={(e) => {
-    const selectedId = e.target.value;
-    const selectedCustomer = customerdata.find(c => c.id == selectedId);
-
-    setFormData({
-      ...formdata,
-      customername: selectedCustomer?.name || "",
-      account_id: selectedId,
-    });
-
-    const fetched = Alldata.filter(entry => entry.account_id == selectedId);
-    setData(fetched);
-  }}
->
-  <option value="">Select</option>
-  {customerdata.map((cust, idx) => (
-    <option key={idx} value={cust.id}>
-      {cust.name}
-    </option>
-  ))}
-</select>
-
-
-
-
-              </div>
+      <Card style={{ marginBottom: 24 }} title={<><FilterOutlined /> Ledger Filters</>}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>From Date</label>
+              <DatePicker
+                style={{ width: "100%" }}
+                value={formdata.from ? dayjs(formdata.from) : null}
+                onChange={(date) => setFormData({ ...formdata, from: date ? date.format("YYYY-MM-DD") : "" })}
+                format="YYYY-MM-DD"
+              />
             </div>
-          </CardComponent>
-        </div>
-      </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>To Date</label>
+              <DatePicker
+                style={{ width: "100%" }}
+                value={formdata.to ? dayjs(formdata.to) : null}
+                onChange={(date) => setFormData({ ...formdata, to: date ? date.format("YYYY-MM-DD") : "" })}
+                format="YYYY-MM-DD"
+              />
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>A/C Type</label>
+              <Select
+                placeholder="Select account type"
+                allowClear
+                value={formdata.accounttype || undefined}
+                onChange={(value) => setFormData({ ...formdata, accounttype: value || "" })}
+                options={[
+                  { label: "Sales", value: "Sales" },
+                  { label: "Cash", value: "Cash" },
+                  { label: "Discount", value: "Discount" },
+                  { label: "Account Recievable", value: "Account Recievable" },
+                ]}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Customer Name</label>
+              <Select
+                placeholder="Select customer"
+                allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                value={formdata.account_id || undefined}
+                onChange={(value) => {
+                  setFormData({
+                    ...formdata,
+                    account_id: value || "",
+                  });
+                }}
+                options={customerdata.map((cust) => ({
+                  label: `${cust.id} - ${cust.phone || 'N/A'} - ${cust.name}`,
+                  value: cust.id,
+                }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </Col>
+        </Row>
+      </Card>
 
       <div className="row mt-3">
         <div className="col-12">

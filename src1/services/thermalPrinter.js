@@ -533,7 +533,7 @@ export const canvasToESCPOS = (canvas) => {
  */
 export const sendToThermalPrinter = async (escposData, options = {}) => {
   const {
-    printerUrl = 'http://192.168.1.10:7001',
+    printerUrl = 'http://localhost:7001',
     multiPrinter = false,
     sequential = false,
     showSuccessMessage = false,
@@ -753,6 +753,38 @@ export const printKOT = async (kotData, options = {}) => {
   }
 };
 
+/**
+ * Print KOT to cashier only
+ * @param {Object} kotData - KOT data containing table, orderNumber, items, total
+ * @param {Object} options - Print options
+ * @returns {Promise<boolean>} Success status
+ */
+export const printKOTToCashier = async (kotData, options = {}) => {
+  try {
+    console.log('🍳 Printing KOT to Cashier only...');
+    const canvas = generateKOTCanvas(kotData);
+    const escposData = canvasToESCPOS(canvas);
+    // Cashier printer is index 1
+    const result = await sendToThermalPrinter(escposData, {
+      ...options,
+      multiPrinter: false,
+      printerIndex: 1
+    });
+
+    if (result && options.showSuccessMessage !== false) {
+      message.success('KOT sent to cashier printer!');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Error printing KOT to cashier:', error);
+    if (options.showErrorMessage !== false) {
+      message.error('Failed to print KOT to cashier');
+    }
+    return false;
+  }
+};
+
 const thermalPrinterExports = {
   generateTicketCanvas,
   generateKioskInvoiceCanvas,
@@ -762,7 +794,8 @@ const thermalPrinterExports = {
   printInvoice,
   printKioskInvoice,
   printMultipleTickets,
-  printKOT
+  printKOT,
+  printKOTToCashier
 };
 
 export default thermalPrinterExports;

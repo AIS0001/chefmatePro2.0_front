@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link,useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
@@ -20,7 +20,7 @@ import TableSelectionModal from "../../components/Modals/TableSelectionModal";
 import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // ✅ Added icons
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
-import { printKOT as printKOTThermal } from "../../services/thermalPrinter"; // ✅ Import thermal KOT printer (renamed to avoid conflict)
+import { printKOT as printKOTThermal, printKOTToCashier } from "../../services/thermalPrinter"; // ✅ Import thermal KOT printer (renamed to avoid conflict)
 import "./newPOS.css"; // ✅ Import POS styles
 
 
@@ -41,6 +41,8 @@ export default function NewPOS() {
   const [subcategories, setSubcategories] = useState([]);
   const [cart, setCart] = useState([]);
   const [quickItemCode, setQuickItemCode] = useState("");
+  const [lastAddedAt, setLastAddedAt] = useState(0);
+  const itemCodeInputRef = useRef(null);
   const [quickQty, setQuickQty] = useState("1");
   const [total, setTotal] = useState(0);
   const [maxNumber, setmaxNumber] = useState(0);
@@ -323,10 +325,33 @@ const addItemToOrder = (index, item) => {
 
   setCart(updatedCart);
   updateTotal(updatedCart);
+  setQuickItemCode("");
+  setLastAddedAt(Date.now());
 };
 
+  const focusItemCodeInput = () => {
+    requestAnimationFrame(() => {
+      if (itemCodeInputRef.current) {
+        itemCodeInputRef.current.focus();
+        itemCodeInputRef.current.select();
+      }
+    });
+    setTimeout(() => {
+      if (itemCodeInputRef.current) {
+        itemCodeInputRef.current.focus();
+        itemCodeInputRef.current.select();
+      }
+    }, 0);
+  };
+
+  useEffect(() => {
+    if (lastAddedAt && itemCodeInputRef.current) {
+      focusItemCodeInput();
+    }
+  }, [lastAddedAt]);
+
   // Quick add by item code / barcode
-  const addItemByCode = (code, qty = 1) => {
+  const addItemByCode = async (code, qty = 1) => {
     const normalizedCode = (code || "").trim();
     if (!normalizedCode) {
       toast.error("Enter item code or barcode");
@@ -335,13 +360,35 @@ const addItemToOrder = (index, item) => {
 
     const quantityToAdd = Math.max(Number(qty) || 1, 1);
 
-    const item = (data || []).find((i) => {
+    let item = (data || []).find((i) => {
       return (
         `${i.barcode || ""}` === normalizedCode ||
         `${i.item_code || ""}` === normalizedCode ||
         `${i.id || ""}` === normalizedCode
       );
     });
+
+    if (!item) {
+      try {
+        const byItemCode = await fetchData("items", null, "id", { item_code: normalizedCode });
+        if (byItemCode && byItemCode.length > 0) {
+          item = byItemCode[0];
+        }
+      } catch (error) {
+        console.error("Error fetching item by code:", error);
+      }
+    }
+
+    if (!item) {
+      try {
+        const byId = await fetchData("items", null, "id", { id: normalizedCode });
+        if (byId && byId.length > 0) {
+          item = byId[0];
+        }
+      } catch (error) {
+        console.error("Error fetching item by id:", error);
+      }
+    }
 
     if (!item) {
       toast.error("Item not found for this code");
@@ -460,6 +507,61 @@ const decreaseItemQuantity = (index) => {
   }
 
   //Print KOT to thermal printers via print server
+
+  const getItemGroupKey = (item) => {
+    const raw = item?.item_group || item?.item_type || "";
+    return raw.toString().trim().toLowerCase();
+  };
+
+  const buildKotData = (items) => {
+    const totalAmount = items.reduce((sum, item) => {
+      const itemTotal =
+        typeof item.total_amount === "number"
+          ? item.total_amount
+          : parseFloat(item.total_amount || (item.price || item.offerprice || 0) * (item.quantity || 0));
+      return sum + (isNaN(itemTotal) ? 0 : itemTotal);
+    }, 0);
+
+    return {
+      table: selectedTable,
+      orderNumber: maxNumber,
+      timestamp: new Date().toISOString(),
+      items: items.map((item) => ({
+        item_name: item.item_name || item.iname,
+        quantity: parseFloat(item.quantity?.toFixed ? item.quantity.toFixed(2) : item.quantity)
+      })),
+      total: totalAmount.toFixed(2)
+    };
+  };
+
+  const printKOTByGroup = async (orderItems) => {
+    const barItems = orderItems.filter((item) => getItemGroupKey(item) === "bar");
+    const nonBarItems = orderItems.filter((item) => getItemGroupKey(item) !== "bar");
+
+    let foodResult = true;
+    let barResult = true;
+
+    if (nonBarItems.length > 0) {
+      foodResult = await printKOTThermal(buildKotData(nonBarItems), {
+        showSuccessMessage: false,
+        showErrorMessage: false
+      });
+    }
+
+    if (barItems.length > 0) {
+      barResult = await printKOTToCashier(buildKotData(barItems), {
+        showSuccessMessage: false,
+        showErrorMessage: false
+      });
+    }
+
+    return {
+      foodPrinted: nonBarItems.length > 0 ? foodResult : null,
+      barPrinted: barItems.length > 0 ? barResult : null,
+      hasFood: nonBarItems.length > 0,
+      hasBar: barItems.length > 0
+    };
+  };
 
   const printKOT = async (orderItems) => {
     try {
@@ -695,6 +797,7 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,
+        item_group: item.item_type || item.item_group || null,
         quantity: parseFloat(item.quantity.toFixed(2)),
         price: parseFloat(item.offerprice),
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
@@ -730,29 +833,16 @@ const decreaseItemQuantity = (index) => {
         toast.success(response.data.message);
         setOrderNumber((prevOrder) => prevOrder + 1);
 
-        // Prepare KOT data with same format as existing KOT
-        const kotData = {
-          table: selectedTable,
-          orderNumber: maxNumber,
-          timestamp: new Date().toISOString(),
-          items: cart.map(item => ({
-            item_name: item.iname,
-            quantity: parseFloat(item.quantity.toFixed(2))
-          })),
-          total: total.toFixed(2)
-        };
+        // Print KOT based on item group (Bar -> Cashier only, others -> multi)
+        const printResult = await printKOTByGroup(orderItems);
 
-        // Print KOT using thermal printer service
-        const printResult = await printKOTThermal(kotData, {
-          showSuccessMessage: false, // We'll show custom message
-          showErrorMessage: false    // We'll handle errors here
-        });
-
-        if (printResult) {
-          console.log('✅ KOT sent to thermal printer successfully');
-          toast.success('Order saved and KOT sent to thermal printer!');
+        if (
+          (printResult.hasFood && !printResult.foodPrinted) ||
+          (printResult.hasBar && !printResult.barPrinted)
+        ) {
+          toast.warning('Order saved but KOT print failed for some items.');
         } else {
-          toast.warning('Order saved but KOT print failed. Check printer.');
+          toast.success('Order saved and KOT sent to printer(s)!');
         }
         
         // Clear cart after successful operations
@@ -812,6 +902,7 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,
+        item_group: item.item_type || item.item_group || null,
         quantity: parseFloat(item.quantity.toFixed(2)),
         price: parseFloat(item.offerprice),
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
@@ -837,8 +928,8 @@ const decreaseItemQuantity = (index) => {
       //   table_cat_id: item.table_cat_id 
       // })));
 
-      // Print KOT immediately while saving data in background
-      windowPrintKOT(orderItems);
+      // Print KOT based on item group (Bar -> Cashier only, others -> multi)
+      await printKOTByGroup(orderItems);
       
       // console.log("=== SAVING TO DATABASE ===");
       // console.log("Orders API call data:", {
@@ -942,6 +1033,7 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,     // Assuming each item has a name property
+        item_group: item.item_type || item.item_group || null,
         quantity: parseFloat(item.quantity.toFixed(2)),    // Ensure quantity is properly formatted as decimal
         price: parseFloat(item.offerprice),      // Price per unit  
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)), // Total for this item
@@ -993,7 +1085,7 @@ const decreaseItemQuantity = (index) => {
       //     items: orderItems,
       //     total: total
       // });
-      printKOT(orderItems); // Call function to print the KOT
+      await printKOTByGroup(orderItems); // Print KOT by group
       setCart([]);
       setTotal(0);
       
@@ -1140,8 +1232,6 @@ const decreaseItemQuantity = (index) => {
           Chefmate POS System
         </div>
 
-        <ToastContainer />
-        
         {/* Floating Table Selection Button */}
         <button 
           className="btn btn-primary floating-table-btn"
@@ -1386,9 +1476,10 @@ const decreaseItemQuantity = (index) => {
                     <div className="card" style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef', marginBottom: '12px' }}>
                       <h6 style={{ fontWeight: '700', marginBottom: '10px', fontSize: '13px', color: '#495057' }}>⚡ Quick Add Item</h6>
                       <form
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                           e.preventDefault();
-                          addItemByCode(quickItemCode, quickQty);
+                          await addItemByCode(quickItemCode, quickQty);
+                          focusItemCodeInput();
                         }}
                       >
                         <input
@@ -1397,6 +1488,7 @@ const decreaseItemQuantity = (index) => {
                           placeholder="Item Code / Barcode"
                           value={quickItemCode}
                           onChange={(e) => setQuickItemCode(e.target.value)}
+                          ref={itemCodeInputRef}
                           style={{ fontSize: '12px', height: '36px' }}
                           autoFocus
                           onKeyDown={(e) => {
@@ -1418,10 +1510,12 @@ const decreaseItemQuantity = (index) => {
                           value={quickQty}
                           onChange={(e) => setQuickQty(e.target.value)}
                           style={{ fontSize: '12px', height: '36px' }}
-                          onKeyDown={(e) => {
+                          onKeyDown={async (e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              addItemByCode(quickItemCode, quickQty);
+                              await addItemByCode(quickItemCode, quickQty);
+                              setQuickQty("1");
+                              focusItemCodeInput();
                             }
                           }}
                         />

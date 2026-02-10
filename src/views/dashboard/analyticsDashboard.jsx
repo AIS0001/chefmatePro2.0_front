@@ -323,74 +323,8 @@ function AnalyticsDashboard() {
 
         {/* Main Content Row */}
         <div className="row">
-          {/* Left Column */}
-          <div className="col-lg-3 col-md-12 mb-4">
-            {/* Suppliers Outstanding Payment */}
-            <div className="analytics-panel agents-panel">
-              <div className="panel-header">
-                <h6>SUPPLIERS OUTSTANDING PAYMENT</h6>
-              </div>
-              <div className="panel-content">
-                <div className="agents-list">
-                  {suppliersData && suppliersData.length > 0 ? (
-                    suppliersData.map((supplier, index) => (
-                      <div key={index} className="agent-item">
-                        <div className="agent-name">{supplier.name}</div>
-                        <div className="agent-stats">
-                          <span className="stat-item">Orders: {supplier.orders}</span>
-                          <span className="stat-item">Amount: ฿{supplier.amount?.toLocaleString() || '0'}</span>
-                          <span className="stat-item">Rating: {supplier.rating}⭐</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-3">
-                      <p className="text-muted">No supplier data available</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Center Column */}
-          <div className="col-lg-6 col-md-12 mb-4">
-            {/* Monthly Sales vs Purchases Flow */}
-            <div className="analytics-panel chart-panel">
-              <div className="panel-header">
-                <h6>MONTHLY SALES VS PURCHASES FLOW</h6>
-              </div>
-              <div className="panel-content">
-                {monthlySalesData && monthlySalesData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={monthlySalesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#bdc3c7" />
-                      <XAxis dataKey="month" stroke="#2c3e50" fontSize={12} />
-                      <YAxis stroke="#2c3e50" fontSize={12} />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #bdc3c7',
-                          borderRadius: '8px',
-                          color: '#2c3e50'
-                        }}
-                      />
-                      <Bar dataKey="sales" fill="#27ae60" name="Sales" />
-                      <Bar dataKey="purchases" fill="#e74c3c" name="Purchases" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center py-5">
-                    <p className="text-muted">No sales data available</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="col-lg-3 col-md-12 mb-4">
-            {/* Order Status */}
+          {/* Order Status */}
+          <div className="col-lg-4 col-md-6 mb-4">
             <div className="analytics-panel status-panel">
               <div className="panel-header">
                 <h6>ORDER WISE STATUS</h6>
@@ -416,37 +350,9 @@ function AnalyticsDashboard() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Bottom Row */}
-        <div className="row">
-          {/* Total Sales & Expenses */}
-          <div className="col-lg-3 col-md-6 mb-4">
-            <div className="analytics-panel sales-panel">
-              <div className="panel-header">
-                <h6>TOTAL SALES & EXPENSES</h6>
-              </div>
-              <div className="panel-content">
-                <div className="sales-metrics">
-                  <div className="sales-item">
-                    <span className="sales-label">Total Sales</span>
-                    <span className="sales-value">฿{salesExpensesData.totalSales?.toLocaleString() || '0'}</span>
-                  </div>
-                  <div className="sales-item">
-                    <span className="sales-label">Total Expenses</span>
-                    <span className="sales-value">฿{salesExpensesData.totalExpenses?.toLocaleString() || '0'}</span>
-                  </div>
-                  <div className="sales-item profit">
-                    <span className="sales-label">Net Profit</span>
-                    <span className="sales-value">฿{salesExpensesData.netProfit?.toLocaleString() || '0'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Top Products */}
-          <div className="col-lg-3 col-md-6 mb-4">
+          <div className="col-lg-4 col-md-6 mb-4">
             <div className="analytics-panel agents-ranking-panel">
               <div className="panel-header">
                 <h6>TOP SELLING PRODUCTS</h6>
@@ -472,7 +378,7 @@ function AnalyticsDashboard() {
           </div>
 
           {/* Category Distribution */}
-          <div className="col-lg-3 col-md-6 mb-4">
+          <div className="col-lg-4 col-md-12 mb-4">
             <div className="analytics-panel suppliers-panel">
               <div className="panel-header">
                 <h6>CATEGORY DISTRIBUTION</h6>
@@ -520,9 +426,37 @@ function AnalyticsDashboard() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Bottom Row */}
+        <div className="row">
+          {/* Total Sales & Expenses */}
+          <div className="col-lg-4 col-md-6 mb-4">
+            <div className="analytics-panel sales-panel">
+              <div className="panel-header">
+                <h6>TOTAL SALES & EXPENSES</h6>
+              </div>
+              <div className="panel-content">
+                <div className="sales-metrics">
+                  <div className="sales-item">
+                    <span className="sales-label">Total Sales</span>
+                    <span className="sales-value">฿{salesExpensesData.totalSales?.toLocaleString() || '0'}</span>
+                  </div>
+                  <div className="sales-item">
+                    <span className="sales-label">Total Expenses</span>
+                    <span className="sales-value">฿{salesExpensesData.totalExpenses?.toLocaleString() || '0'}</span>
+                  </div>
+                  <div className="sales-item profit">
+                    <span className="sales-label">Net Profit</span>
+                    <span className="sales-value">฿{salesExpensesData.netProfit?.toLocaleString() || '0'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Customer Sources */}
-          <div className="col-lg-3 col-md-6 mb-4">
+          <div className="col-lg-4 col-md-6 mb-4">
             <div className="analytics-panel leads-panel">
               <div className="panel-header">
                 <h6>CUSTOMER SOURCES</h6>
@@ -556,12 +490,44 @@ function AnalyticsDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Revenue Overview */}
+          <div className="col-lg-4 col-md-12 mb-4">
+            <div className="analytics-panel bottom-chart-panel">
+              <div className="panel-header">
+                <h6>REVENUE OVERVIEW</h6>
+              </div>
+              <div className="panel-content">
+                {monthlySalesData && monthlySalesData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={150}>
+                    <BarChart data={monthlySalesData.slice(-6)}>
+                      <Bar dataKey="sales" fill="#3498db" />
+                      <XAxis dataKey="month" stroke="#2c3e50" fontSize={10} />
+                      <YAxis stroke="#2c3e50" fontSize={10} />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #bdc3c7',
+                          borderRadius: '8px',
+                          color: '#2c3e50'
+                        }}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-5">
+                    <p className="text-muted">No revenue data available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Bottom Charts Row */}
         <div className="row">
           {/* Daily Sales Trend */}
-          <div className="col-lg-4 col-md-12 mb-4">
+          <div className="col-lg-12 col-md-12 mb-4">
             <div className="analytics-panel bottom-chart-panel">
               <div className="panel-header">
                 <h6>DAILY SALES TREND</h6>
@@ -592,76 +558,6 @@ function AnalyticsDashboard() {
                 ) : (
                   <div className="text-center py-5">
                     <p className="text-muted">No daily sales data available</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Purchase Trends */}
-          <div className="col-lg-4 col-md-12 mb-4">
-            <div className="analytics-panel bottom-chart-panel">
-              <div className="panel-header">
-                <h6>PURCHASE TRENDS</h6>
-              </div>
-              <div className="panel-content">
-                {purchaseTrendsData && purchaseTrendsData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={150}>
-                    <LineChart data={purchaseTrendsData}>
-                      <Line 
-                        type="monotone" 
-                        dataKey="purchases" 
-                        stroke="#e74c3c" 
-                        strokeWidth={3}
-                        dot={{ fill: '#e74c3c', strokeWidth: 2, r: 4 }}
-                      />
-                      <XAxis dataKey="day" stroke="#2c3e50" fontSize={10} />
-                      <YAxis stroke="#2c3e50" fontSize={10} />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #bdc3c7',
-                          borderRadius: '8px',
-                          color: '#2c3e50'
-                        }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center py-5">
-                    <p className="text-muted">No purchase trends data available</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Revenue Overview */}
-          <div className="col-lg-4 col-md-12 mb-4">
-            <div className="analytics-panel bottom-chart-panel">
-              <div className="panel-header">
-                <h6>REVENUE OVERVIEW</h6>
-              </div>
-              <div className="panel-content">
-                {monthlySalesData && monthlySalesData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={150}>
-                    <BarChart data={monthlySalesData.slice(-6)}>
-                      <Bar dataKey="sales" fill="#3498db" />
-                      <XAxis dataKey="month" stroke="#2c3e50" fontSize={10} />
-                      <YAxis stroke="#2c3e50" fontSize={10} />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #bdc3c7',
-                          borderRadius: '8px',
-                          color: '#2c3e50'
-                        }}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center py-5">
-                    <p className="text-muted">No revenue data available</p>
                   </div>
                 )}
               </div>

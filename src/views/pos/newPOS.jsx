@@ -17,10 +17,12 @@ import { getUserName } from "../../functions/storageUtils";
 import updateData from "../../functions/updateData";
 import CheckBillModal from "../../components/Modals/CheckBillModal";
 import TableSelectionModal from "../../components/Modals/TableSelectionModal";
+import ReprintKOTModal from "../../components/Modals/ReprintKOTModal";
+import ReprintKOTOrderModal from "../../components/Modals/ReprintKOTOrderModal";
 import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // ✅ Added icons
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
-import { printKOT as printKOTThermal, printKOTToCashier } from "../../services/thermalPrinter"; // ✅ Import thermal KOT printer (renamed to avoid conflict)
+import { printKOT as printKOTThermal } from "../../services/thermalPrinter"; // ✅ Import thermal KOT printer (renamed to avoid conflict)
 import "./newPOS.css"; // ✅ Import POS styles
 
 
@@ -55,6 +57,17 @@ export default function NewPOS() {
   const [tableSelectionModal, setTableSelectionModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
 
+  // Reprint KOT states
+  const [reprintModalOpen, setReprintModalOpen] = useState(false);
+  const [reprintOrderModalOpen, setReprintOrderModalOpen] = useState(false);
+  const [reprintTable, setReprintTable] = useState("");
+  const [reprintOrderNumbers, setReprintOrderNumbers] = useState([]);
+  const [reprintOrderNumber, setReprintOrderNumber] = useState(null);
+  const [reprintOrderField, setReprintOrderField] = useState("order_number");
+  const [reprintItems, setReprintItems] = useState([]);
+  const [reprintLoadingOrders, setReprintLoadingOrders] = useState(false);
+  const [reprintLoadingItems, setReprintLoadingItems] = useState(false);
+
   // ✅ Customer Display States
   const [isCustomerDisplayOpen, setIsCustomerDisplayOpen] = useState(false);
 
@@ -83,6 +96,22 @@ export default function NewPOS() {
 
   const showTableSelection = () => {
     setTableSelectionModal(true);
+  };
+
+  const showReprintKOT = () => {
+    setReprintModalOpen(true);
+  };
+
+  const closeReprintKOT = () => {
+    setReprintModalOpen(false);
+    setReprintOrderModalOpen(false);
+    setReprintTable("");
+    setReprintOrderNumbers([]);
+    setReprintOrderNumber(null);
+    setReprintOrderField("order_number");
+    setReprintItems([]);
+    setReprintLoadingOrders(false);
+    setReprintLoadingItems(false);
   };
 
   const [tableStatus, setTableStatus] = useState(
@@ -508,61 +537,6 @@ const decreaseItemQuantity = (index) => {
 
   //Print KOT to thermal printers via print server
 
-  const getItemGroupKey = (item) => {
-    const raw = item?.item_group || item?.item_type || "";
-    return raw.toString().trim().toLowerCase();
-  };
-
-  const buildKotData = (items) => {
-    const totalAmount = items.reduce((sum, item) => {
-      const itemTotal =
-        typeof item.total_amount === "number"
-          ? item.total_amount
-          : parseFloat(item.total_amount || (item.price || item.offerprice || 0) * (item.quantity || 0));
-      return sum + (isNaN(itemTotal) ? 0 : itemTotal);
-    }, 0);
-
-    return {
-      table: selectedTable,
-      orderNumber: maxNumber,
-      timestamp: new Date().toISOString(),
-      items: items.map((item) => ({
-        item_name: item.item_name || item.iname,
-        quantity: parseFloat(item.quantity?.toFixed ? item.quantity.toFixed(2) : item.quantity)
-      })),
-      total: totalAmount.toFixed(2)
-    };
-  };
-
-  const printKOTByGroup = async (orderItems) => {
-    const barItems = orderItems.filter((item) => getItemGroupKey(item) === "bar");
-    const nonBarItems = orderItems.filter((item) => getItemGroupKey(item) !== "bar");
-
-    let foodResult = true;
-    let barResult = true;
-
-    if (nonBarItems.length > 0) {
-      foodResult = await printKOTThermal(buildKotData(nonBarItems), {
-        showSuccessMessage: false,
-        showErrorMessage: false
-      });
-    }
-
-    if (barItems.length > 0) {
-      barResult = await printKOTToCashier(buildKotData(barItems), {
-        showSuccessMessage: false,
-        showErrorMessage: false
-      });
-    }
-
-    return {
-      foodPrinted: nonBarItems.length > 0 ? foodResult : null,
-      barPrinted: barItems.length > 0 ? barResult : null,
-      hasFood: nonBarItems.length > 0,
-      hasBar: barItems.length > 0
-    };
-  };
-
   const printKOT = async (orderItems) => {
     try {
       const kotData = {
@@ -774,6 +748,260 @@ const decreaseItemQuantity = (index) => {
     }
   };
 
+  const windowPrintKOTReprint = (orderItems, tableNumber, orderNumber) => {
+    const totalAmount = (orderItems || []).reduce((sum, item) => {
+      const itemTotal = parseFloat(item.total_amount || item.total_price || 0);
+      const fallback = parseFloat(item.price || 0) * parseFloat(item.quantity || 0);
+      return sum + (Number.isFinite(itemTotal) && itemTotal > 0 ? itemTotal : fallback);
+    }, 0);
+
+    let kotContent = `
+      <div style="font-family: 'Courier New', monospace; max-width: 220px; margin: 0 auto; padding: 12px; font-size: 12px;">
+        <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
+          <h2 style="margin: 0; font-size: 14px;">KITCHEN ORDER TICKET</h2>
+          <h3 style="margin: 2px 0; font-size: 12px;">(KOT)</h3>
+          <div style="margin-top: 4px; font-size: 18px; font-weight: bold;">COPY</div>
+        </div>
+        <div style="margin-bottom: 10px; font-size: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span><strong>Table:</strong> ${tableNumber}</span>
+            <span><strong>Order #:</strong> ${orderNumber}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span><strong>Date:</strong> ${new Date().toLocaleDateString()}</span>
+            <span><strong>Time:</strong> ${new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+        <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 13px;">
+            <span>Item</span>
+            <span>Qty</span>
+          </div>
+    `;
+
+    orderItems.forEach((item) => {
+      const isWeightBased = item.weight_based === 1 || item.weight_based === "1";
+      const qtyDisplay = isWeightBased ? `${(parseFloat(item.quantity || 0) * 1000).toFixed(0)}g` : item.quantity;
+
+      kotContent += `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 13px;">
+          <span style="flex: 1; padding-right: 5px;">${item.item_name}</span>
+          <span style="min-width: 30px; text-align: right;">${qtyDisplay}</span>
+        </div>
+      `;
+    });
+
+    kotContent += `
+        </div>
+        <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
+          <div style="margin-bottom: 5px; font-size: 12px;">
+            <strong>Total: ฿ ${totalAmount.toFixed(2)}</strong>
+          </div>
+          <div style="font-size: 10px; color: #666;">
+            ${new Date().toLocaleString()}
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 8px; font-size: 10px; color: #666;">
+          <p style="margin: 0;">Thank you!</p>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open("", "_blank", "width=280,height=400");
+    if (!printWindow) {
+      toast.error("Unable to open print window. Please check popup blocker settings.");
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>KOT - Table ${tableNumber}</title>
+        <style>
+          @media print {
+            body { margin: 0; }
+            @page { margin: 0.3in; size: 3in 4in; }
+          }
+          body {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.3;
+            color: #000;
+            background: #fff;
+          }
+        </style>
+      </head>
+      <body>
+        ${kotContent}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    setTimeout(() => {
+      if (printWindow && !printWindow.closed) {
+        printWindow.close();
+      }
+    }, 2000);
+  };
+
+  const handleSelectReprintTable = async (tableName) => {
+    setReprintTable(tableName);
+    setReprintOrderNumbers([]);
+    setReprintOrderNumber(null);
+    setReprintOrderField("order_number");
+    setReprintItems([]);
+
+    if (!tableName) return;
+
+    setReprintLoadingOrders(true);
+    try {
+      let tableOrders = await fetchData("order_items", null, "id", {
+        table_number: tableName,
+        status: "1"
+      });
+
+      if (!tableOrders || tableOrders.length === 0) {
+        tableOrders = await fetchData("order_items", null, "id", {
+          table_number: tableName
+        });
+      }
+
+      const orderList = [];
+      (tableOrders || []).forEach((item) => {
+        if (item.order_number !== undefined && item.order_number !== null && item.order_number !== "") {
+          orderList.push({ value: item.order_number, field: "order_number" });
+        } else if (item.order_id !== undefined && item.order_id !== null && item.order_id !== "") {
+          orderList.push({ value: item.order_id, field: "order_id" });
+        } else if (item.invoice_number !== undefined && item.invoice_number !== null && item.invoice_number !== "") {
+          orderList.push({ value: item.invoice_number, field: "invoice_number" });
+        }
+      });
+
+      const seen = new Set();
+      const uniqueOrderList = orderList.filter((order) => {
+        const key = `${order.field}:${order.value}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      const sorted = uniqueOrderList.sort((a, b) => Number(a.value) - Number(b.value));
+
+      setReprintOrderNumbers(sorted);
+      if (sorted.length === 0) {
+        toast.info("No running orders for this table.");
+      }
+    } catch (error) {
+      console.error("Error fetching running orders:", error);
+      toast.error("Failed to fetch running orders.");
+    } finally {
+      setReprintLoadingOrders(false);
+    }
+  };
+
+  const handleSelectReprintOrder = async (orderSelection) => {
+    if (!reprintTable) {
+      toast.error("Please select a table first.");
+      return;
+    }
+
+    const orderValue = orderSelection?.value ?? orderSelection;
+    const orderField = orderSelection?.field || "order_number";
+
+    setReprintOrderNumber(orderValue);
+    setReprintOrderField(orderField);
+    setReprintOrderModalOpen(true);
+    setReprintLoadingItems(true);
+
+    try {
+      let orderItems = await fetchData("order_items", null, "id", {
+        table_number: reprintTable,
+        [orderField]: orderValue,
+        status: "1"
+      });
+
+      if (!orderItems || orderItems.length === 0) {
+        orderItems = await fetchData("order_items", null, "id", {
+          table_number: reprintTable,
+          [orderField]: orderValue
+        });
+      }
+
+      setReprintItems(orderItems || []);
+      if (!orderItems || orderItems.length === 0) {
+        toast.info("No items found for this order.");
+      }
+    } catch (error) {
+      console.error("Error fetching order items:", error);
+      toast.error("Failed to fetch order items.");
+    } finally {
+      setReprintLoadingItems(false);
+    }
+  };
+
+  const handleReprintKOTEscPos = async () => {
+    if (!reprintTable || !reprintOrderNumber) {
+      toast.error("Please select an order first.");
+      return;
+    }
+
+    if (!reprintItems || reprintItems.length === 0) {
+      toast.error("No items to print.");
+      return;
+    }
+
+    const totalAmount = reprintItems.reduce((sum, item) => {
+      const itemTotal = parseFloat(item.total_amount || item.total_price || 0);
+      const fallback = parseFloat(item.price || 0) * parseFloat(item.quantity || 0);
+      return sum + (Number.isFinite(itemTotal) && itemTotal > 0 ? itemTotal : fallback);
+    }, 0);
+
+    const kotData = {
+      table: reprintTable,
+      orderNumber: reprintOrderNumber,
+      timestamp: new Date().toISOString(),
+      watermark: "COPY",
+      items: reprintItems.map((item) => ({
+        item_name: item.item_name,
+        quantity: parseFloat(item.quantity || 0)
+      })),
+      total: totalAmount.toFixed(2)
+    };
+
+    try {
+      const printResult = await printKOTThermal(kotData, {
+        showSuccessMessage: false,
+        showErrorMessage: false
+      });
+
+      if (printResult) {
+        toast.success("KOT sent to thermal printer.");
+      } else {
+        toast.error("KOT print failed. Check printer.");
+      }
+    } catch (error) {
+      console.error("Error reprinting KOT ESC/POS:", error);
+      toast.error("Failed to print KOT.");
+    }
+  };
+
+  const handleReprintKOTHtml = () => {
+    if (!reprintTable || !reprintOrderNumber) {
+      toast.error("Please select an order first.");
+      return;
+    }
+
+    if (!reprintItems || reprintItems.length === 0) {
+      toast.error("No items to print.");
+      return;
+    }
+
+    windowPrintKOTReprint(reprintItems, reprintTable, reprintOrderNumber);
+  };
+
   // Send KOT via ESC/POS thermal printer
   const handleSendKOTESCPOS = async () => {
     if (!selectedTable) {
@@ -797,7 +1025,6 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,
-        item_group: item.item_type || item.item_group || null,
         quantity: parseFloat(item.quantity.toFixed(2)),
         price: parseFloat(item.offerprice),
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
@@ -833,16 +1060,29 @@ const decreaseItemQuantity = (index) => {
         toast.success(response.data.message);
         setOrderNumber((prevOrder) => prevOrder + 1);
 
-        // Print KOT based on item group (Bar -> Cashier only, others -> multi)
-        const printResult = await printKOTByGroup(orderItems);
+        // Prepare KOT data with same format as existing KOT
+        const kotData = {
+          table: selectedTable,
+          orderNumber: maxNumber,
+          timestamp: new Date().toISOString(),
+          items: cart.map(item => ({
+            item_name: item.iname,
+            quantity: parseFloat(item.quantity.toFixed(2))
+          })),
+          total: total.toFixed(2)
+        };
 
-        if (
-          (printResult.hasFood && !printResult.foodPrinted) ||
-          (printResult.hasBar && !printResult.barPrinted)
-        ) {
-          toast.warning('Order saved but KOT print failed for some items.');
+        // Print KOT using thermal printer service
+        const printResult = await printKOTThermal(kotData, {
+          showSuccessMessage: false, // We'll show custom message
+          showErrorMessage: false    // We'll handle errors here
+        });
+
+        if (printResult) {
+          console.log('✅ KOT sent to thermal printer successfully');
+          toast.success('Order saved and KOT sent to thermal printer!');
         } else {
-          toast.success('Order saved and KOT sent to printer(s)!');
+          toast.warning('Order saved but KOT print failed. Check printer.');
         }
         
         // Clear cart after successful operations
@@ -902,7 +1142,6 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,
-        item_group: item.item_type || item.item_group || null,
         quantity: parseFloat(item.quantity.toFixed(2)),
         price: parseFloat(item.offerprice),
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
@@ -928,8 +1167,8 @@ const decreaseItemQuantity = (index) => {
       //   table_cat_id: item.table_cat_id 
       // })));
 
-      // Print KOT based on item group (Bar -> Cashier only, others -> multi)
-      await printKOTByGroup(orderItems);
+      // Print KOT immediately while saving data in background
+      windowPrintKOT(orderItems);
       
       // console.log("=== SAVING TO DATABASE ===");
       // console.log("Orders API call data:", {
@@ -1033,7 +1272,6 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,     // Assuming each item has a name property
-        item_group: item.item_type || item.item_group || null,
         quantity: parseFloat(item.quantity.toFixed(2)),    // Ensure quantity is properly formatted as decimal
         price: parseFloat(item.offerprice),      // Price per unit  
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)), // Total for this item
@@ -1085,7 +1323,7 @@ const decreaseItemQuantity = (index) => {
       //     items: orderItems,
       //     total: total
       // });
-      await printKOTByGroup(orderItems); // Print KOT by group
+      printKOT(orderItems); // Call function to print the KOT
       setCart([]);
       setTotal(0);
       
@@ -1634,6 +1872,13 @@ const decreaseItemQuantity = (index) => {
               💰 Check Bill
             </button>
             <button 
+              className="btn btn-info"
+              onClick={showReprintKOT}
+              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+            >
+              🖨️ Reprint KOT
+            </button>
+            <button 
               className="btn btn-danger"
               onClick={() => navigate('/logout')}
               style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
@@ -1661,6 +1906,26 @@ const decreaseItemQuantity = (index) => {
           // onItemAdded={triggerReload} // Pass the reload function
           onClose={() => settableShowModal(false)} // Close the modal
         />
+      <ReprintKOTModal
+        isOpen={reprintModalOpen}
+        onClose={closeReprintKOT}
+        tables={(TotalTablelist || []).filter((table) => table.status === 1 || table.status === "1")}
+        selectedTable={reprintTable}
+        onSelectTable={handleSelectReprintTable}
+        orderNumbers={reprintOrderNumbers}
+        onSelectOrder={handleSelectReprintOrder}
+        loadingOrders={reprintLoadingOrders}
+      />
+      <ReprintKOTOrderModal
+        isOpen={reprintOrderModalOpen}
+        onClose={() => setReprintOrderModalOpen(false)}
+        tableNumber={reprintTable}
+        orderNumber={reprintOrderNumber}
+        items={reprintItems}
+        loadingItems={reprintLoadingItems}
+        onPrintEscPos={handleReprintKOTEscPos}
+        onPrintHtml={handleReprintKOTHtml}
+      />
     </>
   );
 }

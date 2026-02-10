@@ -387,6 +387,12 @@ export const generateKOTCanvas = (kotData) => {
   ctx.font = 'bold 26px Arial';
   ctx.fillText('(KOT)', centerX, yPos);
   yPos += lineHeight + 5;
+
+  if (kotData.watermark) {
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText(String(kotData.watermark), centerX, yPos);
+    yPos += lineHeight;
+  }
   
   // Separator (full width)
   ctx.textAlign = 'left';
@@ -753,38 +759,6 @@ export const printKOT = async (kotData, options = {}) => {
   }
 };
 
-/**
- * Print KOT to cashier only
- * @param {Object} kotData - KOT data containing table, orderNumber, items, total
- * @param {Object} options - Print options
- * @returns {Promise<boolean>} Success status
- */
-export const printKOTToCashier = async (kotData, options = {}) => {
-  try {
-    console.log('🍳 Printing KOT to Cashier only...');
-    const canvas = generateKOTCanvas(kotData);
-    const escposData = canvasToESCPOS(canvas);
-    // Cashier printer is index 1
-    const result = await sendToThermalPrinter(escposData, {
-      ...options,
-      multiPrinter: false,
-      printerIndex: 1
-    });
-
-    if (result && options.showSuccessMessage !== false) {
-      message.success('KOT sent to cashier printer!');
-    }
-
-    return result;
-  } catch (error) {
-    console.error('❌ Error printing KOT to cashier:', error);
-    if (options.showErrorMessage !== false) {
-      message.error('Failed to print KOT to cashier');
-    }
-    return false;
-  }
-};
-
 const thermalPrinterExports = {
   generateTicketCanvas,
   generateKioskInvoiceCanvas,
@@ -794,8 +768,7 @@ const thermalPrinterExports = {
   printInvoice,
   printKioskInvoice,
   printMultipleTickets,
-  printKOT,
-  printKOTToCashier
+  printKOT
 };
 
 export default thermalPrinterExports;

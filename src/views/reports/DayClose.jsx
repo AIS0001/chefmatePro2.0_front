@@ -3,7 +3,7 @@ import { Card, Row, Col, Table, Modal, Form, Alert, Spinner } from 'react-bootst
 import { Button, CircularProgress } from '@mui/material';
 import { Visibility, Lock, Print, Cancel, LockClock } from '@mui/icons-material';
 import { ToastContainer, toast } from "react-toastify";
-import { FaCalendarAlt, FaMoneyBillWave, FaCreditCard, FaMobile, FaQrcode, FaUniversity, FaGlobe, FaLock, FaUnlock, FaEye } from 'react-icons/fa';
+import { FaCalendarAlt, FaMoneyBillWave, FaCreditCard, FaMobile, FaQrcode, FaUniversity, FaGlobe, FaLock, FaUnlock, FaEye, FaTimesCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { getHeaders } from '../../utility/getHeader';
 import { getUserName } from '../../functions/storageUtils';
@@ -40,6 +40,61 @@ export default function DayClose() {
     if (name.includes('bank') || name.includes('transfer')) return { icon: <FaUniversity />, color: 'secondary', gradient: 'linear-gradient(135deg, #6c757d 0%, #495057 100%)' };
     if (name.includes('online') || name.includes('net')) return { icon: <FaGlobe />, color: 'danger', gradient: 'linear-gradient(135deg, #dc3545 0%, #e83e8c 100%)' };
     return { icon: <FaMoneyBillWave />, color: 'dark', gradient: 'linear-gradient(135deg, #343a40 0%, #6c757d 100%)' };
+  };
+
+  const normalizePaymentKey = (name = '') =>
+    name
+      .toString()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+  const getStandardPaymentKey = (name = '') => {
+    const normalized = normalizePaymentKey(name);
+    if (normalized.includes('cash')) return 'cash_sales';
+    if (normalized.includes('upi')) return 'upi_sales';
+    if (normalized.includes('card') || normalized.includes('credit') || normalized.includes('debit')) return 'card_sales';
+    if (normalized.includes('qr')) return 'qr_sales';
+    if (normalized.includes('bank') || normalized.includes('transfer')) return 'bank_transfer_sales';
+    if (normalized.includes('online') || normalized.includes('net')) return 'online_sales';
+    if (normalized.includes('entertainment')) return 'entertainment_sales';
+    return 'other_sales';
+  };
+
+  const toNumber = (value) => {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const getEntertainmentSalesAmount = () => {
+    if (!dayCloseData) return 0;
+
+    const directKeys = ['entertainment_sales', 'entertainment_amount', 'entertainment'];
+    for (const key of directKeys) {
+      if (dayCloseData[key] !== undefined && dayCloseData[key] !== null) {
+        return toNumber(dayCloseData[key]);
+      }
+    }
+
+    const entertainmentOption = paymentOptions.find(
+      (option) => option?.name && option.name.toLowerCase().includes('entertainment')
+    );
+
+    if (entertainmentOption) {
+      const dynamicKey = `${entertainmentOption.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
+      if (dayCloseData[dynamicKey] !== undefined && dayCloseData[dynamicKey] !== null) {
+        return toNumber(dayCloseData[dynamicKey]);
+      }
+    }
+
+    return 0;
+  };
+
+  const isSuccessResponse = (response) => {
+    const data = response?.data;
+    if (data && typeof data.success === 'boolean') return data.success;
+    if (data && typeof data.status === 'string') return data.status.toLowerCase() === 'success';
+    return response?.status >= 200 && response?.status < 300;
   };
 
   useEffect(() => {
@@ -83,8 +138,28 @@ export default function DayClose() {
 
       if (summaryData && summaryData.length > 0) {
         // Day close record exists
-        setDayCloseData(summaryData[0]);
         setIsDayClosed(true); // If record exists, day is considered closed
+
+        // Recalculate totals from bills to include discounts and total amount
+        const bills = await fetchData("final_bill", null, "id", { setup_date: selectedDate }) || [];
+        const computedSummary = bills.length > 0 ? await buildSummaryFromBills(bills) : {
+          close_date: selectedDate,
+          total_amount: 0,
+          total_discount: 0,
+          total_sales: 0,
+          canceled_orders: 0,
+          canceled_amount: 0,
+          total_orders: 0,
+          total_items_sold: 0,
+          status: 'closed',
+          entertainment_sales: 0
+        };
+
+        setDayCloseData({
+          ...summaryData[0],
+          ...computedSummary,
+          status: summaryData[0].status || 'closed'
+        });
         console.log(`Day ${selectedDate} is already closed with status: ${summaryData[0].status}`);
       } else {
         // No day close record exists, calculate current day data
@@ -106,6 +181,108 @@ export default function DayClose() {
     }
   };
 
+  const buildSummaryFromBills = async (bills) => {
+    const summary = {
+      close_date: selectedDate,
+      total_amount: 0,
+      total_discount: 0,
+      total_sales: 0,
+      canceled_orders: 0,
+      canceled_amount: 0,
+      total_orders: bills.length,
+      total_items_sold: 0,
+      status: 'open',
+      cash_sales: 0,
+      upi_sales: 0,
+      card_sales: 0,
+      qr_sales: 0,
+      bank_transfer_sales: 0,
+      online_sales: 0,
+      entertainment_sales: 0,
+      other_sales: 0
+    };
+
+    // Initialize dynamic payment method fields
+    paymentOptions.forEach(option => {
+      const key = `${option.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
+      summary[key] = 0;
+    });
+
+    // Calculate totals by payment method
+    bills.forEach(bill => {
+      const subtotal = parseFloat(bill.subtotal || bill.sub_total || 0);
+      const discountAmount = parseFloat(bill.discount_amount || bill.discount || 0);
+      const paidAmount = parseFloat(bill.grand_total || bill.paid_amount || 0);
+      const grossAmount = Number.isFinite(subtotal) && subtotal > 0 ? subtotal : paidAmount;
+      const effectiveDiscount = Number.isFinite(discountAmount) ? discountAmount : 0;
+      const netSale = grossAmount - effectiveDiscount;
+      const billStatus = bill.status !== undefined && bill.status !== null ? String(bill.status) : null;
+      const isCancelled = billStatus === '2';
+
+      if (isCancelled) {
+        summary.canceled_orders += 1;
+        summary.canceled_amount += netSale;
+        return;
+      }
+
+      summary.total_amount += grossAmount;
+      summary.total_discount += effectiveDiscount;
+      summary.total_sales += netSale;
+      
+      // Get payment method from bill (use payment_mode field)
+      const paymentMethod = (bill.payment_mode || bill.payment_method || 'Cash').toLowerCase().trim();
+      
+      // Debug: Log payment methods found in bills
+      console.log('Bill payment method:', paymentMethod, 'Amount:', netSale);
+      
+      // Find matching payment option and add to summary
+      const matchingOption = paymentOptions.find(option => 
+        option.name.toLowerCase().replace(/\s+/g, '_') === paymentMethod.replace(/\s+/g, '_') ||
+        option.name.toLowerCase() === paymentMethod ||
+        paymentMethod.includes(option.name.toLowerCase())
+      );
+      
+      if (matchingOption) {
+        const key = `${matchingOption.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
+        summary[key] += netSale;
+        const standardKey = getStandardPaymentKey(matchingOption.name);
+        if (standardKey !== key) {
+          summary[standardKey] += netSale;
+        }
+        console.log('Matched payment method:', matchingOption.name, 'Key:', key, 'Amount added:', netSale);
+      } else {
+        const standardKey = getStandardPaymentKey(paymentMethod);
+        summary[standardKey] += netSale;
+        // Default to cash dynamic key if no match found
+        const cashKey = paymentOptions.find(opt => opt.name.toLowerCase() === 'cash');
+        if (cashKey) {
+          const key = `${cashKey.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
+          if (key !== standardKey) {
+            summary[key] += netSale;
+          }
+          console.log('No match found, defaulted to cash. Amount:', netSale);
+        }
+      }
+    });
+
+    summary.total_orders = Math.max(bills.length - summary.canceled_orders, 0);
+
+    // Fetch total items sold from order_items if available
+    try {
+      const itemsData = await fetchData("order_items", null, "id", { setup_date: selectedDate });
+      
+      if (itemsData && itemsData.length > 0) {
+        summary.total_items_sold = itemsData.reduce((total, item) => {
+          return total + parseFloat(item.quantity || 0);
+        }, 0);
+      }
+    } catch (error) {
+      console.error('Error fetching order items:', error);
+    }
+
+    return summary;
+  };
+
   const calculateCurrentDayData = async () => {
     try {
       // When calculating current day data, the day is not closed yet
@@ -116,67 +293,7 @@ export default function DayClose() {
 
       if (salesData && salesData.length > 0) {
         const bills = salesData;
-        
-        // Initialize payment summary with dynamic payment methods
-        const paymentSummary = {
-          close_date: selectedDate,
-          total_sales: 0,
-          total_orders: bills.length,
-          total_items_sold: 0,
-          status: 'open'
-        };
-
-        // Initialize dynamic payment method fields
-        paymentOptions.forEach(option => {
-          const key = `${option.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
-          paymentSummary[key] = 0;
-        });
-
-        // Calculate totals by payment method
-        bills.forEach(bill => {
-          const amount = parseFloat(bill.grand_total || bill.paid_amount || 0);
-          paymentSummary.total_sales += amount;
-          
-          // Get payment method from bill (use payment_mode field)
-          const paymentMethod = (bill.payment_mode || bill.payment_method || 'Cash').toLowerCase().trim();
-          
-          // Debug: Log payment methods found in bills
-          console.log('Bill payment method:', paymentMethod, 'Amount:', amount);
-          
-          // Find matching payment option and add to summary
-          const matchingOption = paymentOptions.find(option => 
-            option.name.toLowerCase().replace(/\s+/g, '_') === paymentMethod.replace(/\s+/g, '_') ||
-            option.name.toLowerCase() === paymentMethod ||
-            paymentMethod.includes(option.name.toLowerCase())
-          );
-          
-          if (matchingOption) {
-            const key = `${matchingOption.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
-            paymentSummary[key] += amount;
-            console.log('Matched payment method:', matchingOption.name, 'Key:', key, 'Amount added:', amount);
-          } else {
-            // Default to cash if no match found
-            const cashKey = paymentOptions.find(opt => opt.name.toLowerCase() === 'cash');
-            if (cashKey) {
-              const key = `${cashKey.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
-              paymentSummary[key] += amount;
-              console.log('No match found, defaulted to cash. Amount:', amount);
-            }
-          }
-        });
-
-        // Fetch total items sold from order_items if available
-        try {
-          const itemsData = await fetchData("order_items", null, "id", { setup_date: selectedDate });
-          
-          if (itemsData && itemsData.length > 0) {
-            paymentSummary.total_items_sold = itemsData.reduce((total, item) => {
-              return total + parseFloat(item.quantity || 0);
-            }, 0);
-          }
-        } catch (error) {
-          console.error('Error fetching order items:', error);
-        }
+        const paymentSummary = await buildSummaryFromBills(bills);
 
         console.log('Final payment summary:', paymentSummary);
         setDayCloseData(paymentSummary);
@@ -184,10 +301,22 @@ export default function DayClose() {
         // No sales data for selected date - create default structure with dynamic payment methods
         const defaultSummary = {
           close_date: selectedDate,
+          total_amount: 0,
+          total_discount: 0,
           total_sales: 0,
+          canceled_orders: 0,
+          canceled_amount: 0,
           total_orders: 0,
           total_items_sold: 0,
-          status: 'open'
+          status: 'open',
+          cash_sales: 0,
+          upi_sales: 0,
+          card_sales: 0,
+          qr_sales: 0,
+          bank_transfer_sales: 0,
+          online_sales: 0,
+          entertainment_sales: 0,
+          other_sales: 0
         };
         
         // Initialize all payment method fields to 0
@@ -205,10 +334,22 @@ export default function DayClose() {
       // Create default structure with dynamic payment methods
       const errorSummary = {
         close_date: selectedDate,
+        total_amount: 0,
+        total_discount: 0,
         total_sales: 0,
+        canceled_orders: 0,
+        canceled_amount: 0,
         total_orders: 0,
         total_items_sold: 0,
-        status: 'open'
+        status: 'open',
+        cash_sales: 0,
+        upi_sales: 0,
+        card_sales: 0,
+        qr_sales: 0,
+        bank_transfer_sales: 0,
+        online_sales: 0,
+        entertainment_sales: 0,
+        other_sales: 0
       };
       
       // Initialize all payment method fields to 0
@@ -236,6 +377,7 @@ export default function DayClose() {
         qr_sales: 0,
         bank_transfer_sales: 0,
         online_sales: 0,
+        entertainment_sales: 0,
         other_sales: 0,
         total_orders: bills.length,
         total_items_sold: 0,
@@ -331,7 +473,7 @@ export default function DayClose() {
         getHeaders()
       );
 
-      if (response.data.success) {
+      if (isSuccessResponse(response)) {
         toast.success('Day closed successfully!');
         setIsDayClosed(true);
         setShowCloseModal(false);
@@ -493,6 +635,14 @@ export default function DayClose() {
             <div class="section-title">Sales Summary</div>
             <div class="summary-grid">
               <div class="summary-item">
+                <div class="summary-label">Total Amount</div>
+                <div class="summary-value">${formatCurrency(dayCloseData?.total_amount || 0)}</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">Discount Amount</div>
+                <div class="summary-value">${formatCurrency(dayCloseData?.total_discount || 0)}</div>
+              </div>
+              <div class="summary-item">
                 <div class="summary-label">Total Sales</div>
                 <div class="summary-value">${formatCurrency(dayCloseData?.total_sales || 0)}</div>
               </div>
@@ -587,6 +737,78 @@ export default function DayClose() {
     };
   };
 
+  const printThermalSummary = () => {
+    const methods = generatePaymentMethods();
+    const paymentRows = methods
+      .filter(method => (dayCloseData?.[method.key] || 0) > 0)
+      .map(method => `
+        <div class="row">
+          <span>${method.label}</span>
+          <span>${formatCurrency(dayCloseData?.[method.key] || 0)}</span>
+        </div>
+      `).join('');
+    const entertainmentAmount = getEntertainmentSalesAmount();
+
+    const printWindow = window.open('', '_blank');
+    const html = `
+      <html>
+        <head>
+          <title>Day Close Thermal - ${selectedDate}</title>
+          <style>
+            @page { size: 80mm auto; margin: 2mm; }
+            body { font-family: Arial, sans-serif; width: 76mm; margin: 0; padding: 0; }
+            .header { text-align: center; margin-bottom: 8px; }
+            .company { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+            .title { font-size: 16px; font-weight: bold; }
+            .date { font-size: 12px; margin-top: 2px; }
+            .section { border-top: 1px dashed #000; padding-top: 6px; margin-top: 6px; }
+            .row { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; }
+            .row strong { font-weight: 700; }
+            .separator { border-top: 1px dashed #000; margin: 6px 0; }
+            .footer { text-align: center; margin-top: 8px; font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company">Jannaat Launge</div>
+            <div class="separator"></div>
+            <div class="title">Day Close Summary</div>
+            <div class="date">${selectedDate}</div>
+            <div class="date">Generated: ${new Date().toLocaleString()}</div>
+          </div>
+
+          <div class="section">
+            <div class="row"><span>Total Sale</span><span>${formatCurrency(dayCloseData?.total_amount || 0)}</span></div>
+            <div class="row"><span>Discount Amount</span><span>${formatCurrency(dayCloseData?.total_discount || 0)}</span></div>
+            <div class="row"><strong>Net Sale</strong><strong>${formatCurrency(dayCloseData?.total_sales || 0)}</strong></div>
+            <div class="row"><span>Entertainment Amount</span><span>${formatCurrency(entertainmentAmount)}</span></div>
+            <div class="row"><span>Total Orders</span><span>${dayCloseData?.total_orders || 0}</span></div>
+            <div class="row"><span>Items Sold</span><span>${dayCloseData?.total_items_sold || 0}</span></div>
+            <div class="row"><span>Avg Order</span><span>${formatCurrency(dayCloseData?.total_orders > 0 ? dayCloseData.total_sales / dayCloseData.total_orders : 0)}</span></div>
+            <div class="row"><span>Cancelled Bills</span><span>${dayCloseData?.canceled_orders || 0}</span></div>
+            <div class="row"><span>Cancelled Amount</span><span>${formatCurrency(dayCloseData?.canceled_amount || 0)}</span></div>
+          </div>
+
+          <div class="section">
+            <div class="row"><strong>Payment Breakdown</strong><strong></strong></div>
+            ${paymentRows || '<div class="row"><span>No payments</span><span>฿ 0.00</span></div>'}
+          </div>
+
+          <div class="footer">
+            <div>ChefMate POS</div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
+  };
+
   const saveDayClose = async () => {
     if (!dayCloseData) {
       toast.error('No data to save');
@@ -606,6 +828,7 @@ export default function DayClose() {
         qr_sales: dayCloseData.qr_sales || 0,
         bank_transfer_sales: dayCloseData.bank_transfer_sales || 0,
         online_sales: dayCloseData.online_sales || 0,
+        entertainment_sales: dayCloseData.entertainment_sales || 0,
         other_sales: dayCloseData.other_sales || 0,
         total_orders: dayCloseData.total_orders || 0,
         total_items_sold: dayCloseData.total_items_sold || 0,
@@ -623,13 +846,13 @@ export default function DayClose() {
         getHeaders()
       );
 
-      if (response.data.success) {
+      if (isSuccessResponse(response)) {
         setIsDayClosed(true);
         setDayCloseData(prev => ({ ...prev, status: 'closed' }));
         toast.success('Day Close saved successfully!');
         setShowCloseModal(false);
         
-        // Save cash drawer data if provided
+        // Save cash drawer data if provided (do not fail day close if this insert fails)
         if (cashDrawerData.closingCash > 0 || cashDrawerData.openingCash > 0) {
           const cashDrawerPayload = {
             open_date: selectedDate,
@@ -645,11 +868,20 @@ export default function DayClose() {
             notes: cashDrawerData.notes || ''
           };
 
-          await axios.post(
-            '/insertdata/cash_drawer',
-            cashDrawerPayload,
-            getHeaders()
-          );
+          try {
+            const cashDrawerResponse = await axios.post(
+              '/insertdata/cash_drawer',
+              cashDrawerPayload,
+              getHeaders()
+            );
+
+            if (!isSuccessResponse(cashDrawerResponse)) {
+              toast.warning('Day closed, but cash drawer save failed.');
+            }
+          } catch (cashDrawerError) {
+            console.error('Error saving cash drawer:', cashDrawerError);
+            toast.warning('Day closed, but cash drawer save failed.');
+          }
         }
       } else {
         toast.error('Failed to save day close data');
@@ -745,6 +977,21 @@ export default function DayClose() {
             >
               Print
             </Button>
+
+            <Button 
+              variant="outlined"
+              color="secondary"
+              onClick={printThermalSummary}
+              size="small"
+              startIcon={<Print />}
+              sx={{ 
+                textTransform: 'none',
+                borderRadius: 2,
+                px: 2
+              }}
+            >
+              Thermal Print
+            </Button>
           </div>
         </div>
 
@@ -765,8 +1012,44 @@ export default function DayClose() {
                     <div className="summary-icon">
                       <FaMoneyBillWave />
                     </div>
+                    <h3 className="summary-amount">{formatCurrency(dayCloseData?.total_amount)}</h3>
+                    <p className="summary-label">Total Amount</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              <Col lg={3} md={6} className="mb-3">
+                <Card className="summary-card total-sales">
+                  <Card.Body className="text-center">
+                    <div className="summary-icon">
+                      <FaMoneyBillWave />
+                    </div>
                     <h3 className="summary-amount">{formatCurrency(dayCloseData?.total_sales)}</h3>
                     <p className="summary-label">Total Sales</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              <Col lg={3} md={6} className="mb-3">
+                <Card className="summary-card total-sales">
+                  <Card.Body className="text-center">
+                    <div className="summary-icon">
+                      <FaGlobe />
+                    </div>
+                    <h3 className="summary-amount">{formatCurrency(getEntertainmentSalesAmount())}</h3>
+                    <p className="summary-label">Entertainment Amount</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              <Col lg={3} md={6} className="mb-3">
+                <Card className="summary-card total-sales">
+                  <Card.Body className="text-center">
+                    <div className="summary-icon">
+                      <FaTimesCircle />
+                    </div>
+                    <h3 className="summary-amount">{formatCurrency(dayCloseData?.canceled_amount || 0)}</h3>
+                    <p className="summary-label">Cancelled Bills ({dayCloseData?.canceled_orders || 0})</p>
                   </Card.Body>
                 </Card>
               </Col>
@@ -832,7 +1115,13 @@ export default function DayClose() {
                 ) : (
                   <>
                     <Row>
-                      {generatePaymentMethods().map((method) => (
+                      {generatePaymentMethods()
+                        .filter((method) => {
+                          const normalizedLabel = (method.label || '').toLowerCase().replace(/\s+/g, '_');
+                          return !['upi_sales', 'bank_transfer_sales', 'upi', 'bank_transfer'].includes(method.key)
+                            && !['upi', 'bank_transfer'].includes(normalizedLabel);
+                        })
+                        .map((method) => (
                         <Col lg={4} md={6} sm={12} key={method.key} className="mb-4">
                           <div className="payment-method-card-minimal" style={{
                             background: 'white',
