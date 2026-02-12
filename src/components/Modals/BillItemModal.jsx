@@ -1,18 +1,31 @@
 // components/Modals/BillItemModal.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Modal, Table, Tag, Divider, Row, Col, Statistic, Button, Space, Spin } from "antd";
-import { PrinterOutlined } from "@ant-design/icons";
+import { Modal, Table, Tag, Divider, Row, Col, Statistic, Button, Space, Spin, InputNumber, Popconfirm, Select } from "antd";
+import { PrinterOutlined, DeleteOutlined, SaveOutlined } from "@ant-design/icons";
+import axios from "axios";
 import { VATInvoicePrintPreview } from "../Templates/vatemplate";
 import fetchData from "../../functions/fetchData";
+import { getHeaders } from "../../utility/getHeader";
+import { getUserType } from "../../utility/auth";
+import { getUserName } from "../../functions/storageUtils";
 import { printInvoiceToCashier } from "../../services/thermalPrinter";
 
-export default function BillItemModal({ isOpen, onClose, bill }) {
+export default function BillItemModal({ isOpen, onClose, bill, isEditMode = false, onBillUpdated }) {
+  const isCancelled = bill?.status === 2 || bill?.status === "2" || bill?.status === "cancelled";
+  const userType = getUserType();
+  const canEditInModal = ["admin", "account"].includes((userType || "").toLowerCase());
+  const effectiveEditMode = isEditMode && canEditInModal && !isCancelled;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [companyInfo, setCompanyInfo] = useState([]);
+  const [editableItems, setEditableItems] = useState([]);
+  const [deletedItemIds, setDeletedItemIds] = useState([]);
+  const [savingEdits, setSavingEdits] = useState(false);
+  const [editDiscountType, setEditDiscountType] = useState("amount");
+  const [editDiscountValue, setEditDiscountValue] = useState(0);
 
   useEffect(() => {
     if (bill?.id && isOpen) {
@@ -25,6 +38,36 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
       fetchData("companyinfo", setCompanyInfo, "id", {});
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!effectiveEditMode) return;
+    const seededItems = items.map((item) => {
+      const quantity = Number(item.quantity || 0);
+      const rawTotal = Number(item.total_price || item.total_amount || 0);
+      const fallbackUnit = quantity > 0 ? rawTotal / quantity : 0;
+      const unitPrice = Number(item.unit_price || item.price || item.offerprice || fallbackUnit || 0);
+      return {
+        ...item,
+        quantity,
+        unit_price: unitPrice,
+        total_price: Number(rawTotal || unitPrice * quantity || 0)
+      };
+    });
+    const subtotalValue = seededItems.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+    const rawType = (bill?.discount_type || bill?.discountType || "").toLowerCase();
+    const normalizedType = rawType === "percentage" ? "percentage" : "amount";
+    const rawValue = bill?.discount_value ?? bill?.discountValue ?? null;
+    const rawAmount = bill?.discount_amount ?? bill?.discount ?? 0;
+    let nextDiscountValue = Number(rawValue ?? rawAmount ?? 0) || 0;
+    if (normalizedType === "percentage" && !rawValue && subtotalValue > 0) {
+      nextDiscountValue = (Number(rawAmount || 0) / subtotalValue) * 100;
+    }
+
+    setEditableItems(seededItems);
+    setDeletedItemIds([]);
+    setEditDiscountType(normalizedType);
+    setEditDiscountValue(Number(nextDiscountValue.toFixed(2)));
+  }, [items, effectiveEditMode, bill]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -58,6 +101,279 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
     }
   };
 
+  const getDiscountAmount = (subtotalValue, discountType, discountValue) => {
+    let discountAmount = 0;
+    if (discountType === "percentage") {
+      discountAmount = (subtotalValue * discountValue) / 100;
+    } else {
+      discountAmount = discountValue;
+    }
+    return Math.min(Math.max(discountAmount, 0), subtotalValue);
+  };
+
+  const getTaxRate = () => {
+    const base = parseFloat(bill?.subtotal_afterdiscount || 0);
+    const taxValue = parseFloat(bill?.tax || 0);
+    if (!base || !taxValue) return 0;
+    return (taxValue / base) * 100;
+  };
+
+  const computeTotals = (sourceItems, discountType, discountValue) => {
+    const subtotalValue = sourceItems.reduce((sum, item) => sum + Number(item.total_price || 0), 0);
+    const discountAmount = getDiscountAmount(subtotalValue, discountType, discountValue);
+    const subtotalAfterDiscountValue = subtotalValue - discountAmount;
+    const taxRate = getTaxRate();
+    const taxValue = subtotalAfterDiscountValue * (taxRate / 100);
+    const totalAmountValue = subtotalAfterDiscountValue + taxValue;
+    const roundedTotal = Math.round(totalAmountValue);
+    const roundoffValue = roundedTotal - totalAmountValue;
+
+    return {
+      subtotal: subtotalValue,
+      discountAmount,
+      subtotalAfterDiscount: subtotalAfterDiscountValue,
+      taxAmount: taxValue,
+      totalAmount: totalAmountValue,
+      roundOff: roundoffValue,
+      grandTotal: roundedTotal
+    };
+  };
+
+  const editTotals = useMemo(() => {
+    if (!effectiveEditMode) return null;
+    return computeTotals(editableItems, editDiscountType, Number(editDiscountValue || 0));
+  }, [editableItems, effectiveEditMode, editDiscountType, editDiscountValue]);
+
+  const handleQtyChange = (itemId, value) => {
+    const nextValue = Number(value || 0);
+    if (nextValue <= 0) {
+      handleRemoveItem(itemId);
+      return;
+    }
+    setEditableItems((prev) => prev.map((item) => {
+      if (item.id !== itemId) return item;
+      const unitPrice = Number(item.unit_price || 0);
+      return {
+        ...item,
+        quantity: nextValue,
+        total_price: Number((unitPrice * nextValue).toFixed(2))
+      };
+    }));
+  };
+
+  const handleRemoveItem = (itemId) => {
+    setEditableItems((prev) => prev.filter((item) => item.id !== itemId));
+    setDeletedItemIds((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
+  };
+
+  const handleUpdateBill = async () => {
+    if (!bill?.id) {
+      toast.error("Bill ID is missing");
+      return;
+    }
+    if (editableItems.length === 0) {
+      toast.error("Bill must have at least one item.");
+      return;
+    }
+
+    setSavingEdits(true);
+    try {
+      const totals = computeTotals(editableItems, editDiscountType, Number(editDiscountValue || 0));
+      const userName = getUserName() || "unknown";
+      const userTypeValue = (getUserType() || "").toLowerCase();
+      const terminalId = localStorage.getItem("terminal_id") || localStorage.getItem("terminalId") || "";
+      const ipAddress = window.location.hostname || "";
+      const oldItemsById = new Map(items.map((item) => [item.id, item]));
+      const oldDiscountType = (bill?.discount_type || bill?.discountType || "amount").toLowerCase();
+      const oldDiscountValueRaw = bill?.discount_value ?? bill?.discountValue ?? bill?.discount_amount ?? bill?.discount ?? 0;
+      const oldDiscountValue = Number(oldDiscountValueRaw || 0);
+      const oldTotals = {
+        subtotal: Number(bill?.subtotal || 0),
+        subtotalAfterDiscount: Number(bill?.subtotal_afterdiscount || 0),
+        tax: Number(bill?.tax || 0),
+        totalAmount: Number(bill?.total_amount || 0),
+        roundOff: Number(bill?.roundoff ?? bill?.round_off ?? 0),
+        grandTotal: Number(bill?.grand_total || 0)
+      };
+      const newTotals = {
+        subtotal: totals.subtotal,
+        subtotalAfterDiscount: totals.subtotalAfterDiscount,
+        tax: totals.taxAmount,
+        totalAmount: totals.totalAmount,
+        roundOff: totals.roundOff,
+        grandTotal: totals.grandTotal
+      };
+
+      const logs = [];
+
+      editableItems.forEach((item) => {
+        const oldItem = oldItemsById.get(item.id);
+        if (!oldItem) return;
+        const oldQty = Number(oldItem.quantity || 0);
+        const oldTotal = Number(oldItem.total_price || oldItem.total_amount || 0);
+        const newQty = Number(item.quantity || 0);
+        const newTotal = Number(item.total_price || 0);
+
+        if (oldQty !== newQty || Math.abs(oldTotal - newTotal) > 0.009) {
+          logs.push({
+            bill_id: bill.id,
+            order_item_id: item.id,
+            action: "update",
+            old_qty: oldQty,
+            new_qty: newQty,
+            old_total: oldTotal.toFixed(2),
+            new_total: newTotal.toFixed(2),
+            old_subtotal: oldTotals.subtotal.toFixed(2),
+            new_subtotal: newTotals.subtotal.toFixed(2),
+            old_subtotal_afterdiscount: oldTotals.subtotalAfterDiscount.toFixed(2),
+            new_subtotal_afterdiscount: newTotals.subtotalAfterDiscount.toFixed(2),
+            old_tax: oldTotals.tax.toFixed(2),
+            new_tax: newTotals.tax.toFixed(2),
+            old_total_amount: oldTotals.totalAmount.toFixed(2),
+            new_total_amount: newTotals.totalAmount.toFixed(2),
+            old_round_off: oldTotals.roundOff.toFixed(2),
+            new_round_off: newTotals.roundOff.toFixed(2),
+            old_grand_total: oldTotals.grandTotal.toFixed(2),
+            new_grand_total: newTotals.grandTotal.toFixed(2),
+            old_discount_type: oldDiscountType,
+            new_discount_type: editDiscountType,
+            old_discount_value: oldDiscountValue.toFixed(2),
+            new_discount_value: Number(editDiscountValue || 0).toFixed(2),
+            user_type: userTypeValue,
+            user_name: userName,
+            terminal_id: terminalId,
+            ip_address: ipAddress
+          });
+        }
+      });
+
+      deletedItemIds.forEach((itemId) => {
+        const oldItem = oldItemsById.get(itemId);
+        if (!oldItem) return;
+        const oldQty = Number(oldItem.quantity || 0);
+        const oldTotal = Number(oldItem.total_price || oldItem.total_amount || 0);
+        logs.push({
+          bill_id: bill.id,
+          order_item_id: itemId,
+          action: "delete",
+          old_qty: oldQty,
+          new_qty: 0,
+          old_total: oldTotal.toFixed(2),
+          new_total: "0.00",
+          old_subtotal: oldTotals.subtotal.toFixed(2),
+          new_subtotal: newTotals.subtotal.toFixed(2),
+          old_subtotal_afterdiscount: oldTotals.subtotalAfterDiscount.toFixed(2),
+          new_subtotal_afterdiscount: newTotals.subtotalAfterDiscount.toFixed(2),
+          old_tax: oldTotals.tax.toFixed(2),
+          new_tax: newTotals.tax.toFixed(2),
+          old_total_amount: oldTotals.totalAmount.toFixed(2),
+          new_total_amount: newTotals.totalAmount.toFixed(2),
+          old_round_off: oldTotals.roundOff.toFixed(2),
+          new_round_off: newTotals.roundOff.toFixed(2),
+          old_grand_total: oldTotals.grandTotal.toFixed(2),
+          new_grand_total: newTotals.grandTotal.toFixed(2),
+          old_discount_type: oldDiscountType,
+          new_discount_type: editDiscountType,
+          old_discount_value: oldDiscountValue.toFixed(2),
+          new_discount_value: Number(editDiscountValue || 0).toFixed(2),
+          user_type: userTypeValue,
+          user_name: userName,
+          terminal_id: terminalId,
+          ip_address: ipAddress
+        });
+      });
+
+      if (oldDiscountType !== editDiscountType || Math.abs(oldDiscountValue - Number(editDiscountValue || 0)) > 0.009) {
+        logs.push({
+          bill_id: bill.id,
+          order_item_id: null,
+          action: "discount_update",
+          old_qty: null,
+          new_qty: null,
+          old_total: null,
+          new_total: null,
+          old_subtotal: oldTotals.subtotal.toFixed(2),
+          new_subtotal: newTotals.subtotal.toFixed(2),
+          old_subtotal_afterdiscount: oldTotals.subtotalAfterDiscount.toFixed(2),
+          new_subtotal_afterdiscount: newTotals.subtotalAfterDiscount.toFixed(2),
+          old_tax: oldTotals.tax.toFixed(2),
+          new_tax: newTotals.tax.toFixed(2),
+          old_total_amount: oldTotals.totalAmount.toFixed(2),
+          new_total_amount: newTotals.totalAmount.toFixed(2),
+          old_round_off: oldTotals.roundOff.toFixed(2),
+          new_round_off: newTotals.roundOff.toFixed(2),
+          old_grand_total: oldTotals.grandTotal.toFixed(2),
+          new_grand_total: newTotals.grandTotal.toFixed(2),
+          old_discount_type: oldDiscountType,
+          new_discount_type: editDiscountType,
+          old_discount_value: oldDiscountValue.toFixed(2),
+          new_discount_value: Number(editDiscountValue || 0).toFixed(2),
+          user_type: userTypeValue,
+          user_name: userName,
+          terminal_id: terminalId,
+          ip_address: ipAddress
+        });
+      }
+
+      await Promise.all(
+        editableItems.map((item) =>
+          axios.put(
+            `/updatecommondata/order_items/id/${item.id}/`,
+            {
+              quantity: Number(item.quantity || 0),
+              total_price: Number(item.total_price || 0).toFixed(2)
+            },
+            getHeaders()
+          )
+        )
+      );
+
+      if (deletedItemIds.length > 0) {
+        await Promise.all(
+          deletedItemIds.map((itemId) =>
+            axios.delete(`/deletebyid/order_items/id/${itemId}`, getHeaders())
+          )
+        );
+      }
+
+      await axios.put(
+        `/updatecommondata/final_bill/id/${bill.id}/`,
+        {
+          subtotal: totals.subtotal.toFixed(2),
+          discount_type: editDiscountType,
+          discount_value: Number(editDiscountValue || 0).toFixed(2),
+          discount_amount: totals.discountAmount.toFixed(2),
+          subtotal_afterdiscount: totals.subtotalAfterDiscount.toFixed(2),
+          tax: totals.taxAmount.toFixed(2),
+          roundoff: totals.roundOff.toFixed(2),
+          grand_total: totals.grandTotal.toFixed(2)
+        },
+        getHeaders()
+      );
+
+      if (logs.length > 0) {
+        try {
+          await Promise.all(
+            logs.map((log) => axios.post("/insertdata/bill_edit_logs", log, getHeaders()))
+          );
+        } catch (logError) {
+          console.error("Error saving bill edit logs:", logError);
+        }
+      }
+
+      toast.success("Bill updated successfully!");
+      await fetchItems();
+      if (typeof onBillUpdated === "function") {
+        await onBillUpdated();
+      }
+    } catch (error) {
+      console.error("Error updating bill:", error);
+      toast.error("Failed to update bill");
+    } finally {
+      setSavingEdits(false);
+    }
+  };
+
   // Handle thermal print
   const handleThermalPrint = async () => {
     try {
@@ -70,14 +386,17 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
       try {
         toastId = toast.loading("Printing thermal invoice...");
         
+        // Get company information from database
+        const company = companyInfo?.[0] || {};
+
         // Prepare invoice data for thermal printer
         const invoiceData = {
           billId: bill.id || "0",
           queueNumber: bill.table_number || "Walk-in",
-          companyName: "CHEFMATE",
-          companyAddress: "Sol 13, Pattaya-20150",
-          companyPhone: "",
-          companyTaxId: "",
+          companyName: company?.name || "JANNAAT LAUNGE",
+          companyAddress: company?.address || "371/6-8 Moo 10, Muang Pattaya, Bang Lamung District, ChonBuri 20150",
+          companyPhone: company?.phone_number || "+66986643299",
+          companyTaxId: company?.tax_id || "0205569006468",
           timestamp: new Date().toLocaleString(),
           items: items.map(item => ({
             item_name: item.item_name,
@@ -95,7 +414,7 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
           total: parseFloat(bill?.grand_total || 0).toFixed(2),
           paymentMethod: bill?.payment_mode || "CASH",
           operatedBy: "3130",
-          watermark: "COPY"
+          watermark: isCancelled ? "CANCELLED" : "COPY"
         };
 
         const success = await printInvoiceToCashier(invoiceData);
@@ -158,6 +477,35 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
             body {
               font-size: 18px;
               width: 80mm;
+              position: relative;
+            }
+            .cancel-stamp {
+              position: absolute;
+              top: 90px;
+              left: 50%;
+              transform: translateX(-50%) rotate(-12deg);
+              color: #d32f2f;
+              border: 4px solid #d32f2f;
+              padding: 8px 18px;
+              font-size: 28px;
+              font-weight: bold;
+              letter-spacing: 1px;
+              opacity: 0.85;
+              z-index: 5;
+            }
+            .copy-stamp {
+              position: absolute;
+              top: 90px;
+              left: 50%;
+              transform: translateX(-50%) rotate(-12deg);
+              color: #616161;
+              border: 4px solid #616161;
+              padding: 8px 18px;
+              font-size: 28px;
+              font-weight: bold;
+              letter-spacing: 1px;
+              opacity: 0.7;
+              z-index: 5;
             }
             .bill-header {
               display: grid;
@@ -241,6 +589,8 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
           </style>
         </head>
         <body>
+          ${isCancelled ? '<div class="cancel-stamp">CANCELLED</div>' : ''}
+          ${!isCancelled ? '<div class="copy-stamp">COPY</div>' : ''}
           <div class="bill-header">
             <h2>${company?.name || "CHEFMATE"}</h2>
             <div class="company-info">
@@ -368,7 +718,7 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
       invoiceNo: bill?.id || "N/A",
       invoiceDate: bill?.inv_date || new Date().toISOString().split('T')[0],
       invoiceTime: bill?.inv_time || new Date().toTimeString().split(' ')[0],
-      watermark: bill?.status === "cancelled" ? "CANCELLED" : "PAID"
+      watermark: isCancelled ? "CANCELLED" : "COPY"
     };
   };
 
@@ -397,6 +747,59 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
     },
   ];
 
+  const editColumns = [
+    {
+      title: "Item Name",
+      dataIndex: "item_name",
+      key: "item_name",
+      render: (text) => <strong>{text}</strong>,
+    },
+    {
+      title: "Qty",
+      dataIndex: "quantity",
+      key: "quantity",
+      width: 120,
+      align: "center",
+      render: (_, record) => (
+        <InputNumber
+          min={1}
+          value={record.quantity}
+          onChange={(value) => handleQtyChange(record.id, value)}
+        />
+      ),
+    },
+    {
+      title: "Unit Price",
+      dataIndex: "unit_price",
+      key: "unit_price",
+      width: 120,
+      align: "right",
+      render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
+    },
+    {
+      title: "Total",
+      dataIndex: "total_price",
+      key: "total_price",
+      width: 120,
+      align: "right",
+      render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 90,
+      align: "center",
+      render: (_, record) => (
+        <Popconfirm
+          title="Remove this item?"
+          onConfirm={() => handleRemoveItem(record.id)}
+        >
+          <Button danger size="small" icon={<DeleteOutlined />} />
+        </Popconfirm>
+      )
+    }
+  ];
+
   const totalItemAmount = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
 
   return (
@@ -410,24 +813,52 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
           <Button key="close" onClick={onClose}>
             Close
           </Button>,
-          <Button
-            key="print-html"
-            icon={<PrinterOutlined />}
-            onClick={handleThermalHtmlPrint}
-          >
-            Print Thermal (HTML)
-          </Button>,
-          <Button
-            key="print"
-            type="primary"
-            icon={<PrinterOutlined />}
-            onClick={handleThermalPrint}
-          >
-            Print Thermal
-          </Button>,
+          !effectiveEditMode && (
+            <Button
+              key="print-html"
+              icon={<PrinterOutlined />}
+              onClick={handleThermalHtmlPrint}
+            >
+              Print Thermal (HTML)
+            </Button>
+          ),
+          !effectiveEditMode && (
+            <Button
+              key="print"
+              type="primary"
+              icon={<PrinterOutlined />}
+              onClick={handleThermalPrint}
+            >
+              Print ESC/POS
+            </Button>
+          ),
+          effectiveEditMode && (
+            <Button
+              key="update"
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={handleUpdateBill}
+              loading={savingEdits}
+            >
+              Update Bill
+            </Button>
+          ),
         ]}
       >
         <Spin spinning={loading}>
+          {isEditMode && !canEditInModal && (
+            <div style={{
+              backgroundColor: "#fff7e6",
+              border: "1px solid #ffd591",
+              padding: "8px 12px",
+              borderRadius: 6,
+              marginBottom: 12,
+              color: "#ad6800",
+              fontWeight: 600
+            }}>
+              Edit mode is restricted to Admin and Account users.
+            </div>
+          )}
           {/* Bill Header Info */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} sm={12}>
@@ -454,10 +885,10 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
             <Col xs={24} sm={12}>
               <Statistic
                 title="Status"
-                value={bill?.status === "cancelled" ? "Cancelled" : "Active"}
+                value={isCancelled ? "Cancelled" : "Active"}
                 valueStyle={{ 
                   fontSize: 14,
-                  color: bill?.status === "cancelled" ? "#ff4d4f" : "#52c41a"
+                  color: isCancelled ? "#ff4d4f" : "#52c41a"
                 }}
               />
             </Col>
@@ -467,8 +898,8 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
 
           {/* Items Table */}
           <Table
-            columns={columns}
-            dataSource={items.map((item, index) => ({ ...item, key: index }))}
+            columns={effectiveEditMode ? editColumns : columns}
+            dataSource={(effectiveEditMode ? editableItems : items).map((item, index) => ({ ...item, key: index }))}
             pagination={false}
             size="small"
             bordered
@@ -478,25 +909,89 @@ export default function BillItemModal({ isOpen, onClose, bill }) {
 
           {/* Summary */}
           <Row gutter={[16, 16]} justify="end" style={{ maxWidth: 400, marginLeft: "auto" }}>
+            {effectiveEditMode && (
+              <Col span={24}>
+                <Row justify="space-between" align="middle">
+                  <span>Discount Type:</span>
+                  <Select
+                    value={editDiscountType}
+                    style={{ width: 140 }}
+                    onChange={(value) => setEditDiscountType(value)}
+                    options={[
+                      { label: "%", value: "percentage" },
+                      { label: "Amount", value: "amount" }
+                    ]}
+                  />
+                </Row>
+              </Col>
+            )}
+            {effectiveEditMode && (
+              <Col span={24}>
+                <Row justify="space-between" align="middle">
+                  <span>Discount Value:</span>
+                  <InputNumber
+                    min={0}
+                    value={editDiscountValue}
+                    onChange={(value) => setEditDiscountValue(Number(value || 0))}
+                  />
+                </Row>
+              </Col>
+            )}
             <Col span={24}>
               <Row justify="space-between">
                 <span>Subtotal:</span>
-                <strong>฿{parseFloat(bill?.subtotal_afterdiscount || 0).toFixed(2)}</strong>
+                <strong>
+                  ฿{effectiveEditMode
+                    ? Number(editTotals?.subtotal || 0).toFixed(2)
+                    : parseFloat(bill?.subtotal_afterdiscount || 0).toFixed(2)}
+                </strong>
               </Row>
             </Col>
+            {effectiveEditMode && (
+              <Col span={24}>
+                <Row justify="space-between">
+                  <span>Discount:</span>
+                  <strong>฿{Number(editTotals?.discountAmount || 0).toFixed(2)}</strong>
+                </Row>
+              </Col>
+            )}
+            {effectiveEditMode && (
+              <Col span={24}>
+                <Row justify="space-between">
+                  <span>Subtotal after Discount:</span>
+                  <strong>฿{Number(editTotals?.subtotalAfterDiscount || 0).toFixed(2)}</strong>
+                </Row>
+              </Col>
+            )}
             <Col span={24}>
               <Row justify="space-between">
                 <span>Tax (7%):</span>
-                <strong>฿{parseFloat(bill?.tax || 0).toFixed(2)}</strong>
+                <strong>
+                  ฿{effectiveEditMode
+                    ? Number(editTotals?.taxAmount || 0).toFixed(2)
+                    : parseFloat(bill?.tax || 0).toFixed(2)}
+                </strong>
               </Row>
             </Col>
+            {effectiveEditMode && (
+              <Col span={24}>
+                <Row justify="space-between">
+                  <span>Round Off:</span>
+                  <strong>฿{Number(editTotals?.roundOff || 0).toFixed(2)}</strong>
+                </Row>
+              </Col>
+            )}
             <Col span={24}>
               <Divider style={{ margin: "8px 0" }} />
             </Col>
             <Col span={24}>
               <Row justify="space-between" style={{ fontSize: 16 }}>
                 <strong>Grand Total:</strong>
-                <strong style={{ color: "#1890ff" }}>฿{parseFloat(bill?.grand_total || 0).toFixed(2)}</strong>
+                <strong style={{ color: "#1890ff" }}>
+                  ฿{effectiveEditMode
+                    ? Number(editTotals?.grandTotal || 0).toFixed(2)
+                    : parseFloat(bill?.grand_total || 0).toFixed(2)}
+                </strong>
               </Row>
             </Col>
           </Row>

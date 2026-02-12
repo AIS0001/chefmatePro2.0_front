@@ -467,8 +467,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   // ✅ Handle ESC/POS Thermal Printer Invoice Printing
   const handlePrintBillESCPOS = async () => {
     try {
-      if (!isBillSaved) {
-        toast.error("Please save the bill first before printing.");
+      if (!finalData || finalData.length === 0) {
+        toast.error("No items to preview. Please add items first.");
         return;
       }
 
@@ -496,7 +496,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         subtotalAfterDiscount: Number(subtotalAfterDiscount).toFixed(2),
         taxPercent: 7,
         taxAmount: Number(taxAmount).toFixed(2),
-        roundOff: "0.00",
+        roundOff: Number(roundoffAmount).toFixed(2),
         total: Number(grandAmount).toFixed(2),
         paymentMethod: formdata.pmode || "CASH",
         operatedBy: "3130"
@@ -1282,6 +1282,149 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       toast.error("Error occurred while saving and printing bill.");
     }
   };
+  const handlePrintBillSummary = async () => {
+    try {
+      if (!finalData || finalData.length === 0) {
+        toast.error("No items to preview. Please add items first.");
+        return;
+      }
+
+      const newWindow = window.open("", "_blank");
+
+      newWindow.document.write(`
+        <html>
+          <head>
+            <style>
+              html, body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Cambria', monospace;
+              }
+              body {
+                font-size: 18px;
+                width: 80mm;
+              }
+              .bill-header {
+                text-align: center;
+                margin-bottom: 10px;
+              }
+              .bill-header h2 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+              }
+              .bill-header p {
+                margin: 4px 0;
+                font-size: 18px;
+              }
+              .table {
+                width: 100%;
+                margin-top: 1px;
+                border-collapse: collapse;
+              }
+              .table th, .table td {
+                text-align: left;
+                padding: 5px 0;
+                font-size: 18px;
+                line-height: 1.6;
+              }
+              .table th {
+                font-weight: bold;
+                border-bottom:1px solid #000;
+              }
+              .table td {
+                border-bottom: 1px solid #ddd;
+              }
+              .total-row {
+                margin-top: 5px;
+                margin-right: 10px;
+                font-weight: bold;
+                text-align: right;
+                font-size: 18px;
+                line-height: 1.6;
+              }
+              .footer {
+                margin-top: 15px;
+                text-align: center;
+                font-size: 18px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="bill-header">
+              <h2>${companyInfo[0]?.name || ""}</h2>
+              <p>${companyInfo[0]?.address || ""}</p>
+              <p>Tax:${companyInfo[0]?.tax_id || ""}</p>
+              <p><strong>Bill Summary</strong></p>
+            </div>
+            <div class="bill-bill-body">
+              <table class="table">
+                <tr>
+                  <th class="header">Bill ID: ${latestBillId || "-"}</th>
+                  <th class="header">${selectedTable || "-"}</th>
+                </tr>
+                <tr>
+                  <th>Date: ${getCurrentDate()}</th>
+                  <th>Time: ${getCurrentTime()}</th>
+                </tr>
+                <tr>
+                  <th colspan="2">Payment Mode: ${formdata.pmode || 'Cash'}</th>
+                </tr>
+              </table>
+            </div>
+            <div class="bill-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${finalData
+                    .map(
+                      (item) => `
+                        <tr>
+                          <td>${item.item_name}</td>
+                          <td>${item.quantity}</td>
+                          <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
+                          <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
+                        </tr>
+                      `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+              <div class="total-row">
+                <span>Subtotal: ${currencySign} ${subtotal}</span><br>
+                <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span><br>
+                <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount}</span><br>
+                <span>Tax (7%): ${currencySign} ${taxAmount}</span><br>
+                <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
+                <span>Total Amount: ${currencySign} ${grandAmount}</span>
+              </div>
+            </div>
+            <div class="footer">
+              <p>Operated By: ${getUserName() || 'N/A'}</p>
+              <p>Powered by chefmate POS !!</p>
+            </div>
+          </body>
+        </html>
+      `);
+
+      newWindow.document.close();
+
+      newWindow.onload = () => {
+        newWindow.print();
+        newWindow.close();
+      };
+    } catch (error) {
+      console.error("Error in bill summary print:", error);
+      toast.error("Error occurred while printing bill summary.");
+    }
+  };
   useEffect(() => {
     if (finalData.length > 0) {
       setIsBillSaved(false);
@@ -1481,6 +1624,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                       
                       <Col span={12}><span style={{ fontSize: '13px', color: '#666' }}>Tax ({TaxesData[0]?.taxvalue || 0}%)</span></Col>
                       <Col span={12} style={{ textAlign: 'right' }}><span style={{ fontSize: '14px', fontWeight: '600' }}>{currencySign} {taxAmount}</span></Col>
+
+                      <Col span={12}><span style={{ fontSize: '13px', color: '#666' }}>Round Off</span></Col>
+                      <Col span={12} style={{ textAlign: 'right' }}><span style={{ fontSize: '14px', fontWeight: '600' }}>{currencySign} {roundoffAmount}</span></Col>
                       
                       <Divider style={{ margin: '10px 0' }} />
                       
@@ -1647,7 +1793,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                   </div>
                   <Space direction="vertical" style={{ width: '100%' }} size="middle">
                     {!isBillSaved && (
-                      <Row gutter={[10, 10]}>
+                      <>
+                        <Row gutter={[10, 10]}>
                         <Col xs={12}>
                           <Button
                             type={formdata.pmode === 'Cash' ? 'primary' : 'default'}
@@ -1731,29 +1878,55 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                             🧾 Credit
                           </Button>
                         </Col>
-                      </Row>
+                        </Row>
+                        <Button
+                          type="primary"
+                          size="large"
+                          block
+                          onClick={handlePrintBillSummary}
+                          disabled={!finalData || finalData.length === 0}
+                          style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', fontSize: '14px', fontWeight: '700', height: '50px' }}
+                        >
+                          🧾 Bill Summary
+                        </Button>
+                      </>
                     )}
                     {isBillSaved && (
-                      <Space style={{ width: '100%' }} size="small">
-                        <Button
-                          type="primary"
-                          size="large"
-                          flex
-                          onClick={handlePrintBill}
-                          style={{ backgroundColor: '#1890ff', borderColor: '#1890ff', fontSize: '14px', fontWeight: '700', height: '50px' }}
-                        >
-                          🖨️ Print Bill
-                        </Button>
-                        <Button
-                          type="primary"
-                          size="large"
-                          flex
-                          onClick={handlePrintBillESCPOS}
-                          style={{ backgroundColor: '#faad14', borderColor: '#faad14', color: '#fff', fontSize: '14px', fontWeight: '700', height: '50px' }}
-                        >
-                          🖨️ ESC/POS
-                        </Button>
-                      </Space>
+                      <Row gutter={[8, 8]} style={{ width: '100%' }}>
+                        <Col xs={24} md={8}>
+                          <Button
+                            type="primary"
+                            size="large"
+                            block
+                            onClick={handlePrintBill}
+                            style={{ backgroundColor: '#1890ff', borderColor: '#1890ff', fontSize: '14px', fontWeight: '700', height: '50px' }}
+                          >
+                            🖨️ Print Bill
+                          </Button>
+                        </Col>
+                        <Col xs={24} md={8}>
+                          <Button
+                            type="primary"
+                            size="large"
+                            block
+                            onClick={handlePrintBillSummary}
+                            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', fontSize: '14px', fontWeight: '700', height: '50px' }}
+                          >
+                            🧾 Bill Summary
+                          </Button>
+                        </Col>
+                        <Col xs={24} md={8}>
+                          <Button
+                            type="primary"
+                            size="large"
+                            block
+                            onClick={handlePrintBillESCPOS}
+                            style={{ backgroundColor: '#faad14', borderColor: '#faad14', color: '#fff', fontSize: '14px', fontWeight: '700', height: '50px' }}
+                          >
+                            🖨️ ESC/POS
+                          </Button>
+                        </Col>
+                      </Row>
                     )}
                   </Space>
                 </Card>

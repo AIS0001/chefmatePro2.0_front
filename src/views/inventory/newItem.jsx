@@ -25,6 +25,7 @@ import {ComboBox} from "../../components/Buttons/ComboBox";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { sendToThermalPrinter } from '../../services/thermalPrinter';
 
 export default function NewItem() {
   const navigate = useNavigate();
@@ -253,21 +254,22 @@ export default function NewItem() {
       // Prepare table data
       const tableData = filteredData.map(item => [
         item.id,
+        item.item_code || '',
         item.iname || '',
         item.unit || '',
         `${item.tax || '0'}%`,
-        `฿${item.mrp || '0'}`,
-        `฿${item.offerprice || '0'}`,
+        `${item.mrp || '0'}`,
+        `${item.offerprice || '0'}`,
         item.description || ''
       ]);
 
       // Add table
       doc.autoTable({
-        head: [['ID', 'Item Name', 'Unit', 'Tax', 'MRP', 'Offer Price', 'Description']],
+        head: [['ID', 'Item Code', 'Item Name', 'Unit', 'Tax', 'MRP', 'Offer Price', 'Description']],
         body: tableData,
         startY: 40,
         styles: {
-          fontSize: 8,
+          fontSize: 7,
           cellPadding: 2
         },
         headStyles: {
@@ -275,13 +277,14 @@ export default function NewItem() {
           textColor: 255
         },
         columnStyles: {
-          0: { cellWidth: 15 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 20 },
+          0: { cellWidth: 12 },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 30 },
           3: { cellWidth: 15 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 25 },
-          6: { cellWidth: 50 }
+          4: { cellWidth: 12 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 20 },
+          7: { cellWidth: 45 }
         }
       });
 
@@ -298,6 +301,242 @@ export default function NewItem() {
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Failed to export PDF file', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const printThermal = async () => {
+    try {
+      // Create ESC/POS commands for item list
+      const escpos = [];
+      
+      // Initialize printer
+      escpos.push(0x1B, 0x40); // ESC @ - Initialize printer
+      
+      // Center align
+      escpos.push(0x1B, 0x61, 0x01); // ESC a 1 - Center align
+      
+      // Title - Large and bold
+      escpos.push(0x1B, 0x21, 0x30); // ESC ! 48 - Double height and width + bold
+      const titleText = 'ITEM LIST';
+      for (let i = 0; i < titleText.length; i++) {
+        escpos.push(titleText.charCodeAt(i));
+      }
+      escpos.push(0x0A, 0x0A); // Line feeds
+      
+      // Reset to normal
+      escpos.push(0x1B, 0x21, 0x00); // ESC ! 0 - Normal
+      
+      // Date and time
+      const dateStr = `Date: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
+      for (let i = 0; i < dateStr.length; i++) {
+        escpos.push(dateStr.charCodeAt(i));
+      }
+      escpos.push(0x0A); // Line feed
+      
+      // Separator
+      const separator = '--------------------------------';
+      for (let i = 0; i < separator.length; i++) {
+        escpos.push(separator.charCodeAt(i));
+      }
+      escpos.push(0x0A);
+      
+      // Left align for items
+      escpos.push(0x1B, 0x61, 0x00); // ESC a 0 - Left align
+      
+      // Print each item
+      filteredData.forEach((item, index) => {
+        // Item number
+        const itemNum = `${index + 1}. `;
+        for (let i = 0; i < itemNum.length; i++) {
+          escpos.push(itemNum.charCodeAt(i));
+        }
+        
+        // Item Code (bold)
+        escpos.push(0x1B, 0x45, 0x01); // ESC E 1 - Bold on
+        const code = `Code: ${item.item_code || 'N/A'}`;
+        for (let i = 0; i < code.length; i++) {
+          escpos.push(code.charCodeAt(i));
+        }
+        escpos.push(0x1B, 0x45, 0x00); // ESC E 0 - Bold off
+        escpos.push(0x0A); // Line feed
+        
+        // Item Name
+        const name = `   ${item.iname || 'N/A'}`;
+        for (let i = 0; i < name.length; i++) {
+          escpos.push(name.charCodeAt(i));
+        }
+        escpos.push(0x0A); // Line feed
+        
+        // MRP
+        const mrp = `   MRP: ${item.mrp || '0'}`;
+        for (let i = 0; i < mrp.length; i++) {
+          escpos.push(mrp.charCodeAt(i));
+        }
+        escpos.push(0x0A, 0x0A); // Line feeds
+      });
+      
+      // Separator
+      escpos.push(0x1B, 0x61, 0x01); // ESC a 1 - Center align
+      for (let i = 0; i < separator.length; i++) {
+        escpos.push(separator.charCodeAt(i));
+      }
+      escpos.push(0x0A);
+      
+      // Total items
+      const totalText = `Total Items: ${filteredData.length}`;
+      for (let i = 0; i < totalText.length; i++) {
+        escpos.push(totalText.charCodeAt(i));
+      }
+      escpos.push(0x0A, 0x0A, 0x0A); // Line feeds
+      
+      // Cut paper
+      escpos.push(0x1D, 0x56, 0x41, 0x00); // GS V A 0 - Cut paper
+      
+      // Convert to Uint8Array
+      const escposData = new Uint8Array(escpos);
+      
+      // Send to thermal printer
+      const success = await sendToThermalPrinter(escposData, {
+        printerIp: '192.168.1.216',
+        printerPort: 7001
+      });
+      
+      if (success) {
+        toast.success('Item list printed to thermal printer successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error('Failed to print to thermal printer', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Thermal print error:', error);
+      toast.error('Failed to print to thermal printer', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const printThermalHTML = () => {
+    try {
+      // Create a new window for thermal printing
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        toast.error('Unable to open print window. Please allow popups.', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      // Generate HTML for thermal print (80mm width)
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Item List - Thermal Print</title>
+          <style>
+            @media print {
+              @page {
+                size: 80mm auto;
+                margin: 0;
+              }
+            }
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+              width: 80mm;
+              margin: 0;
+              padding: 10px;
+              font-size: 16px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 10px;
+            }
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .date {
+              font-size: 15px;
+              margin-bottom: 10px;
+            }
+            .separator {
+              border-top: 1px dashed #000;
+              margin: 10px 0;
+            }
+            .item {
+              margin-bottom: 15px;
+              page-break-inside: avoid;
+            }
+            .item-number {
+              font-weight: bold;
+            }
+            .item-code {
+              font-weight: bold;
+              margin-left: 10px;
+            }
+            .item-name {
+              margin-left: 10px;
+            }
+            .item-mrp {
+              margin-left: 10px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 10px;
+              font-weight: bold;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">ITEM LIST</div>
+            <div class="date">Date: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+          </div>
+          <div class="separator"></div>
+          
+          ${filteredData.map((item, index) => `
+            <div class="item">
+              <div class="item-number">${index + 1}.</div>
+              <div class="item-code">Code: ${item.item_code || 'N/A'}</div>
+              <div class="item-name">${item.iname || 'N/A'}</div>
+              <div class="item-mrp">MRP: ${item.mrp || '0'}</div>
+            </div>
+          `).join('')}
+          
+          <div class="separator"></div>
+          <div class="footer">Total Items: ${filteredData.length}</div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      };
+
+      toast.success('Opening thermal print preview...', {
+        position: "top-right",
+        autoClose: 2000,
+      });
+    } catch (error) {
+      console.error('Thermal HTML print error:', error);
+      toast.error('Failed to open thermal print window', {
         position: "top-right",
         autoClose: 3000,
       });
@@ -1126,6 +1365,24 @@ export default function NewItem() {
                     disabled={filteredData.length === 0}
                   >
                     <i className="fas fa-print"></i> Print
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-warning btn-sm"
+                    onClick={printThermal}
+                    title="Print to Thermal Printer (Item Code, Name, MRP)"
+                    disabled={filteredData.length === 0}
+                  >
+                    <i className="fas fa-receipt"></i> Print Thermal
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={printThermalHTML}
+                    title="Print Thermal HTML (Item Code, Name, MRP)"
+                    disabled={filteredData.length === 0}
+                  >
+                    <i className="fas fa-file-invoice"></i> Thermal HTML
                   </button>
                 </div>
 

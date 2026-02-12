@@ -747,6 +747,7 @@ export default function DayClose() {
           <span>${formatCurrency(dayCloseData?.[method.key] || 0)}</span>
         </div>
       `).join('');
+    const paymentTotal = methods.reduce((sum, method) => sum + toNumber(dayCloseData?.[method.key]), 0);
     const entertainmentAmount = getEntertainmentSalesAmount();
 
     const printWindow = window.open('', '_blank');
@@ -792,6 +793,7 @@ export default function DayClose() {
           <div class="section">
             <div class="row"><strong>Payment Breakdown</strong><strong></strong></div>
             ${paymentRows || '<div class="row"><span>No payments</span><span>฿ 0.00</span></div>'}
+            <div class="row"><strong>Total Amount</strong><strong>${formatCurrency(paymentTotal)}</strong></div>
           </div>
 
           <div class="footer">

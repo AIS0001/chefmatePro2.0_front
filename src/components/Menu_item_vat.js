@@ -104,6 +104,7 @@ const fullMenu = [
       { name: 'Supplier Ledger', path: '/reports/supplierledger' },
       { name: 'Customer Ledger', path: '/reports/saleledger' },
       { name: 'Day Close', path: '/reports/dayclose' },
+      { name: 'Bill Edit Logs', path: '/reports/billeditlogs' },
 
     ]
   },

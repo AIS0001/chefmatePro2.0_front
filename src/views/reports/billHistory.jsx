@@ -33,6 +33,7 @@ import {
   Tooltip as AntTooltip,
   Tag,
   InputNumber,
+  Checkbox,
 } from "antd";
 import {
   FilterOutlined,
@@ -42,6 +43,7 @@ import {
   ArrowLeftOutlined,
   HomeOutlined,
   EyeOutlined,
+  EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -55,6 +57,7 @@ import updateData from "../../functions/updateData";
 import logo from "../../assets/logo.png";
 import BillItemModal from "../../components/Modals/BillItemModal";
 import { getUserType } from "../../utility/auth";
+import { getNextSetupDate } from "../../utils/setupDateUtils";
 
 const PAYMENT_MODES = [
   { label: "Cash", value: "Cash" },
@@ -62,7 +65,7 @@ const PAYMENT_MODES = [
   { label: "Bank Transfer", value: "Bank Transfer" },
   { label: "Entertainment", value: "Entertainment" },
   { label: "UPI", value: "UPI" },
-  { label: "QR Code", value: "QR Code" },
+  { label: "QR Scan", value: "QR Scan" },
 ];
 
 export default function BillHistory() {
@@ -70,7 +73,11 @@ export default function BillHistory() {
   const [filteredData, setFilteredData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelBillId, setCancelBillId] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -90,6 +97,25 @@ export default function BillHistory() {
   const navigate = useNavigate();
   const userType = getUserType();
   const isCashier = userType?.toLowerCase() === 'cashier';
+  const canEditBill = ["admin", "account"].includes((userType || "").toLowerCase());
+
+  useEffect(() => {
+    const hasSavedStart = Boolean(localStorage.getItem("startDate"));
+    const hasSavedEnd = Boolean(localStorage.getItem("endDate"));
+    if (hasSavedStart || hasSavedEnd) return;
+
+    const setDefaultSetupDate = async () => {
+      const setupDate = await getNextSetupDate();
+      const setupDay = dayjs(setupDate);
+      setFilters(prev => ({
+        ...prev,
+        startDate: setupDay,
+        endDate: setupDay,
+      }));
+    };
+
+    setDefaultSetupDate();
+  }, []);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -127,6 +153,9 @@ export default function BillHistory() {
       applyFilters();
     }
   }, [filters, data, activeTab]);
+
+  const normalizePaymentMode = (value) =>
+    (value || "").toString().trim().toLowerCase().replace(/\s+/g, "");
 
   const applyFilters = () => {
     if (filters.startDate && filters.endDate && filters.startDate.isAfter(filters.endDate)) {
@@ -171,7 +200,16 @@ export default function BillHistory() {
     
     // Filter by payment mode
     if (filters.paymentMode) {
-      filtered = filtered.filter(item => item.payment_mode === filters.paymentMode);
+      const filterMode = normalizePaymentMode(filters.paymentMode);
+      const qrAliases = new Set(["qrcode", "qrscan", "wrscan", "qr"]);
+
+      filtered = filtered.filter(item => {
+        const itemMode = normalizePaymentMode(item.payment_mode);
+        if (qrAliases.has(filterMode)) {
+          return qrAliases.has(itemMode);
+        }
+        return itemMode === filterMode;
+      });
     }
     
     // Filter by invoice number
@@ -299,18 +337,45 @@ export default function BillHistory() {
 
   const handleViewItems = (row) => {
     setSelectedBill(row);
+    setIsEditMode(false);
     setShowModal(true);
   };
 
-  const handleCancelBill = async (billId) => {
-    const confirmed = window.confirm("Are you sure you want to cancel this bill?");
-    if (!confirmed) return;
+  const handleEditBill = (row) => {
+    setSelectedBill(row);
+    setIsEditMode(true);
+    setShowModal(true);
+  };
 
+  const refreshBills = async () => {
     try {
-      await updateData("final_bill", { status: 2 }, { id: billId });
+      await fetchData("final_bill", setData, "id", {});
+    } catch (error) {
+      console.error("Error refreshing bills:", error);
+    }
+  };
+
+  const handleCancelBill = (billId) => {
+    setCancelBillId(billId);
+    setCancelReason("");
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelBill = async () => {
+    if (!cancelBillId) return;
+    
+    try {
+      await updateData("final_bill", { 
+        status: 2, 
+        remark: cancelReason || "Cancelled" 
+      }, { id: cancelBillId });
+      
       toast.success("Bill cancelled successfully!");
       const updatedData = await fetchData("final_bill", null, "id", {});
       setData(updatedData || []);
+      setShowCancelModal(false);
+      setCancelBillId(null);
+      setCancelReason("");
     } catch (error) {
       console.error("Error cancelling bill:", error);
       toast.error("Failed to cancel bill");
@@ -346,6 +411,7 @@ export default function BillHistory() {
     { label: "Time", field: "inv_time" },
     { label: "Table", field: "table_number" },
     { label: "Subtotal", field: "subtotal_afterdiscount" },
+    { label: "Discount", field: "discount_amount" },
     { label: "Tax", field: "tax" },
     { label: "Grand Total", field: "grand_total" },
     { label: "Payment", field: "payment_mode" },
@@ -381,11 +447,179 @@ export default function BillHistory() {
   const totalSubtotal = filteredData.reduce((acc, item) => acc + parseFloat(item.subtotal_afterdiscount || 0), 0);
   const totalTax = filteredData.reduce((acc, item) => acc + parseFloat(item.tax || 0), 0);
 
+  const isCancelledStatus = (status) => status === 2 || status === "2" || status === "cancelled";
+  const summarySource = filteredData.filter(item => !isCancelledStatus(item.status));
+  const summaryTotalSale = summarySource.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
+  const summaryEntertainmentTotal = summarySource.reduce((acc, item) => {
+    const paymentMode = (item.payment_mode || "").toLowerCase();
+    if (paymentMode === "entertainment") {
+      return acc + parseFloat(item.grand_total || 0);
+    }
+    return acc;
+  }, 0);
+  const summaryTotalDiscount = summarySource.reduce((acc, item) => {
+    const discount = parseFloat(item.discount_amount ?? item.discount ?? 0);
+    return acc + discount;
+  }, 0);
+  const summaryNetSaleAfterDiscount = summarySource.reduce((acc, item) => acc + parseFloat(item.subtotal_afterdiscount || 0), 0);
+
   // Check if mobile device
   const isMobile = window.innerWidth <= 768;
 
   // Render content with Ant Design
-  const renderContent = () => (
+  const renderContent = () => {
+    const isCancelledTab = activeTab === "cancelled";
+    const tableColumns = [
+      {
+        title: "Inv. No.",
+        dataIndex: "id",
+        key: "id",
+        width: 100,
+        render: (text, record) => (
+          <Button 
+            type="link" 
+            onClick={() => handleViewItems(record)}
+          >
+            #{text}
+          </Button>
+        ),
+        sorter: (a, b) => a.id - b.id,
+      },
+      {
+        title: "Date",
+        dataIndex: "setup_date",
+        key: "setup_date",
+        render: (text) => format(parseISO(text), "dd/MM/yyyy"),
+        sorter: (a, b) => new Date(a.setup_date) - new Date(b.setup_date),
+      },
+      {
+        title: "Time",
+        dataIndex: "inv_time",
+        key: "inv_time",
+        width: 80,
+      },
+      {
+        title: "Table",
+        dataIndex: "table_number",
+        key: "table_number",
+        render: (text) => <Tag color="cyan">{text}</Tag>,
+      },
+      {
+        title: "Subtotal",
+        dataIndex: "subtotal_afterdiscount",
+        key: "subtotal_afterdiscount",
+        render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
+        align: "right",
+      },
+      {
+        title: "Discount",
+        dataIndex: "discount_amount",
+        key: "discount_amount",
+        render: (_, record) => {
+          const discount = parseFloat(record.discount_amount ?? record.discount ?? 0);
+          return `฿${discount.toFixed(2)}`;
+        },
+        align: "right",
+      },
+      {
+        title: "Tax",
+        dataIndex: "tax",
+        key: "tax",
+        render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
+        align: "right",
+      },
+      {
+        title: "Grand Total",
+        dataIndex: "grand_total",
+        key: "grand_total",
+        render: (text) => <strong>฿{parseFloat(text || 0).toFixed(2)}</strong>,
+        align: "right",
+      },
+      {
+        title: "Payment",
+        dataIndex: "payment_mode",
+        key: "payment_mode",
+        render: (text) => {
+          const normalizedMode = normalizePaymentMode(text);
+          const displayMode = ["qrcode", "qrscan", "wrscan", "qr"].includes(normalizedMode)
+            ? "QR Scan"
+            : text;
+          const colorMap = {
+            "Cash": "green",
+            "Credit": "blue",
+            "Bank Transfer": "purple",
+            "UPI": "orange",
+            "QR Scan": "red",
+            "Entertainment": "cyan",
+          };
+          return <Tag color={colorMap[displayMode] || "default"}>{displayMode}</Tag>;
+        },
+      },
+      ...(isCancelledTab
+        ? [
+            {
+              title: "Cancel Reason",
+              dataIndex: "remark",
+              key: "remark",
+              render: (text) => text || "-",
+            },
+          ]
+        : []),
+      {
+        title: "Action",
+        key: "action",
+        width: 120,
+        render: (_, record) => (
+          <Space>
+            <AntTooltip title="View Items">
+              <Button 
+                type="primary" 
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => handleViewItems(record)}
+              />
+            </AntTooltip>
+            {canEditBill && (
+              <AntTooltip
+                title={
+                  isCancelledStatus(record.status)
+                    ? "Cancelled bills cannot be edited"
+                    : !dayjs(record.setup_date).isSame(dayjs(), "day")
+                      ? "Only same-day bills can be edited"
+                      : "Edit Bill"
+                }
+              >
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEditBill(record)}
+                  disabled={
+                    isCancelledStatus(record.status) ||
+                    !dayjs(record.setup_date).isSame(dayjs(), "day")
+                  }
+                />
+              </AntTooltip>
+            )}
+            {!isCancelledStatus(record.status) && (
+              <AntTooltip title="Cancel Bill">
+                <Button 
+                  type="primary" 
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleCancelBill(record.id)}
+                />
+              </AntTooltip>
+            )}
+            {isCancelledStatus(record.status) && (
+              <Tag color="red">Cancelled</Tag>
+            )}
+          </Space>
+        ),
+      },
+    ];
+
+    return (
     <>
       {/* Cashier Navigation Header */}
       {isCashier && (
@@ -564,6 +798,17 @@ export default function BillHistory() {
               />
             </div>
           </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Quick Filter</label>
+              <Checkbox
+                checked={normalizePaymentMode(filters.paymentMode) === "entertainment"}
+                onChange={(e) => handleFilterChange("paymentMode", e.target.checked ? "Entertainment" : "")}
+              >
+                Entertainment only
+              </Checkbox>
+            </div>
+          </Col>
         </Row>
 
         {/* Action Buttons */}
@@ -620,110 +865,7 @@ export default function BillHistory() {
         ) : (
           <div style={{ overflowX: "auto" }}>
             <Table
-              columns={[
-                {
-                  title: "Inv. No.",
-                  dataIndex: "id",
-                  key: "id",
-                  width: 100,
-                  render: (text, record) => (
-                    <Button 
-                      type="link" 
-                      onClick={() => handleViewItems(record)}
-                    >
-                      #{text}
-                    </Button>
-                  ),
-                  sorter: (a, b) => a.id - b.id,
-                },
-                {
-                  title: "Date",
-                  dataIndex: "setup_date",
-                  key: "setup_date",
-                  render: (text) => format(parseISO(text), "dd/MM/yyyy"),
-                  sorter: (a, b) => new Date(a.setup_date) - new Date(b.setup_date),
-                },
-                {
-                  title: "Time",
-                  dataIndex: "inv_time",
-                  key: "inv_time",
-                  width: 80,
-                },
-                {
-                  title: "Table",
-                  dataIndex: "table_number",
-                  key: "table_number",
-                  render: (text) => <Tag color="cyan">{text}</Tag>,
-                },
-                {
-                  title: "Subtotal",
-                  dataIndex: "subtotal_afterdiscount",
-                  key: "subtotal_afterdiscount",
-                  render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
-                  align: "right",
-                },
-                {
-                  title: "Tax",
-                  dataIndex: "tax",
-                  key: "tax",
-                  render: (text) => `฿${parseFloat(text || 0).toFixed(2)}`,
-                  align: "right",
-                },
-                {
-                  title: "Grand Total",
-                  dataIndex: "grand_total",
-                  key: "grand_total",
-                  render: (text) => <strong>฿{parseFloat(text || 0).toFixed(2)}</strong>,
-                  align: "right",
-                },
-                {
-                  title: "Payment",
-                  dataIndex: "payment_mode",
-                  key: "payment_mode",
-                  render: (text) => {
-                    const colorMap = {
-                      "Cash": "green",
-                      "Credit": "blue",
-                      "Bank Transfer": "purple",
-                      "UPI": "orange",
-                      "QR Code": "red",
-                      "Entertainment": "cyan",
-                    };
-                    return <Tag color={colorMap[text] || "default"}>{text}</Tag>;
-                  },
-                },
-                {
-                  title: "Action",
-                  key: "action",
-                  width: 120,
-                  render: (_, record) => (
-                    <Space>
-                      <AntTooltip title="View Items">
-                        <Button 
-                          type="primary" 
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handleViewItems(record)}
-                        />
-                      </AntTooltip>
-                      {record.status !== "cancelled" && (
-                        <AntTooltip title="Cancel Bill">
-                          <Button 
-                            type="primary" 
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleCancelBill(record.id)}
-                          />
-                        </AntTooltip>
-                      )}
-                      {record.status === "cancelled" && (
-                        <Tag color="red">Cancelled</Tag>
-                      )}
-                    </Space>
-                  ),
-                },
-              ]}
+              columns={tableColumns}
               dataSource={filteredData.map((item, index) => ({ ...item, key: index }))}
               pagination={{
                 pageSize: 10,
@@ -740,38 +882,40 @@ export default function BillHistory() {
       {/* Summary Cards */}
       <Card style={{ marginBottom: 24 }} title="Summary">
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <Statistic
               title="Total Sale"
-              value={totalAmount}
+              value={summaryTotalSale}
               prefix="฿"
               precision={2}
               valueStyle={{ color: "#52c41a" }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <Statistic
-              title="Total Subtotal"
-              value={totalSubtotal}
+              title="Total Entertainment"
+              value={summaryEntertainmentTotal}
+              prefix="฿"
+              precision={2}
+              valueStyle={{ color: "#722ed1" }}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Statistic
+              title="Total Net Sale After Discount"
+              value={summaryNetSaleAfterDiscount}
               prefix="฿"
               precision={2}
               valueStyle={{ color: "#1890ff" }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <Statistic
-              title="Total Tax"
-              value={totalTax}
+              title="Total Discount"
+              value={summaryTotalDiscount}
               prefix="฿"
               precision={2}
-              valueStyle={{ color: "#f5222d" }}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Statistic
-              title="Records Count"
-              value={filteredData.length}
-              valueStyle={{ color: "#722ed1" }}
+              valueStyle={{ color: "#fa8c16" }}
             />
           </Col>
         </Row>
@@ -800,10 +944,37 @@ export default function BillHistory() {
           isOpen={showModal}
           bill={selectedBill}
           onClose={() => setShowModal(false)}
+          isEditMode={isEditMode}
+          onBillUpdated={refreshBills}
         />
       )}
+
+      {/* Cancel Bill Modal */}
+      <Modal
+        title="Cancel Bill"
+        open={showCancelModal}
+        onOk={confirmCancelBill}
+        onCancel={() => {
+          setShowCancelModal(false);
+          setCancelBillId(null);
+          setCancelReason("");
+        }}
+        okText="Cancel Bill"
+        okButtonProps={{ danger: true }}
+        cancelText="Close"
+      >
+        <p>Are you sure you want to cancel this bill?</p>
+        <Input.TextArea
+          placeholder="Enter cancel reason (optional)"
+          rows={3}
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          style={{ marginTop: 10 }}
+        />
+      </Modal>
     </>
-  );
+    );
+  };
 
   // Main return statement with conditional rendering
   return isCashier ? (
