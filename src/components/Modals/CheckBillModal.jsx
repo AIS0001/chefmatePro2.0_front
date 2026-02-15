@@ -88,7 +88,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     pmode: "Cash", // Default to "Cash"
     discAmount: 0,
     discountType: "percentage", // Default to "percentage"
-    phones: ""
+    phones: "",
+    remark: ""
     // other fields
   });
   const [companyInfo, setcompanyInfo] = useState([]);
@@ -97,6 +98,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   const [selectedTables, setSelectedTables] = useState([]); // Multiple table selection for merging
   const [isMergeMode, setIsMergeMode] = useState(false); // Toggle merge mode
+  const [isSplitMode, setIsSplitMode] = useState(false); // Toggle split mode
+  const [selectedSplitItemKeys, setSelectedSplitItemKeys] = useState([]); // Selected items for split group creation
+  const [splitGroups, setSplitGroups] = useState([]); // [{ id, name, itemKeys }]
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
   const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
@@ -117,6 +121,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [phones, setphones] = useState("");
   const printRef = useRef();
   const [latestBillId, setLatestBillId] = useState(null);
+  const [savedSplitInvoices, setSavedSplitInvoices] = useState([]);
 
 
   const [reload, setReload] = useState(false);
@@ -160,10 +165,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       setsubtotalAfterDiscount(0);
       setIsBillSaved(false);
       setLatestBillId(null);
+      setSavedSplitInvoices([]);
       
       // Clear merge states
       setSelectedTables([]);
       setIsMergeMode(false);
+      setIsSplitMode(false);
+      setSelectedSplitItemKeys([]);
+      setSplitGroups([]);
       
       // Clear form data
       setFormData({
@@ -171,7 +180,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         discAmount: 0,
         discountType: "percentage",
         phones: "",
-        paidAmount: ""
+        paidAmount: "",
+        remark: ""
       });
       setChangeMoney("");
       setphones("");
@@ -292,10 +302,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   // Fetch subcategories based on selected category
   const handleTableHistory = async (tableName) => {
     setSelectedTable(tableName);
-    setFormData((prevData) => ({ ...prevData, paidAmount: "", pmode: "Cash" }));
+    setFormData((prevData) => ({ ...prevData, paidAmount: "", pmode: "Cash", remark: "" }));
     setChangeMoney("");
     setDiscAmount("0");
     setIsBillSaved(false); // Reset bill saved status when selecting a new table
+    setSelectedSplitItemKeys([]);
+    setSplitGroups([]);
+    setSavedSplitInvoices([]);
 
     fetchData("order_items", setFinalData, "id", { table_number: tableName, status: "1" });
 
@@ -304,12 +317,102 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
   // Toggle merge mode
   const toggleMergeMode = () => {
-    setIsMergeMode(!isMergeMode);
+    const nextMode = !isMergeMode;
+    setIsMergeMode(nextMode);
+    if (nextMode) {
+      setIsSplitMode(false);
+      setSelectedSplitItemKeys([]);
+      setSplitGroups([]);
+    }
     setSelectedTables([]);
     setSelectedTable(null);
     setFinalData([]);
     setIsBillSaved(false);
+    setSavedSplitInvoices([]);
     toast.info(isMergeMode ? "Merge mode disabled" : "Merge mode enabled - Select multiple tables");
+  };
+
+  const getItemRowKey = (item, index) => {
+    if (item?.id !== undefined && item?.id !== null) return `id-${item.id}`;
+    return `idx-${index}-${item?.item_name || 'item'}`;
+  };
+
+  const billTableData = useMemo(() => {
+    return (finalData || []).map((item, index) => ({
+      ...item,
+      _rowKey: getItemRowKey(item, index),
+      unit_price: (item.total_price / item.quantity).toFixed(2)
+    }));
+  }, [finalData]);
+
+  const assignedSplitKeySet = useMemo(() => {
+    const assigned = new Set();
+    splitGroups.forEach((group) => {
+      (group.itemKeys || []).forEach((key) => assigned.add(key));
+    });
+    return assigned;
+  }, [splitGroups]);
+
+  const splitItemToGroupName = useMemo(() => {
+    const map = new Map();
+    splitGroups.forEach((group) => {
+      (group.itemKeys || []).forEach((key) => {
+        map.set(key, group.name);
+      });
+    });
+    return map;
+  }, [splitGroups]);
+
+  const splitSummaries = useMemo(() => {
+    return splitGroups.map((group) => {
+      const items = billTableData.filter((item) => (group.itemKeys || []).includes(item._rowKey));
+      const subtotalValue = items.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
+      return {
+        ...group,
+        items,
+        subtotal: subtotalValue
+      };
+    });
+  }, [splitGroups, billTableData]);
+
+  const toggleSplitMode = () => {
+    const nextMode = !isSplitMode;
+    setIsSplitMode(nextMode);
+    setSelectedSplitItemKeys([]);
+    setSplitGroups([]);
+    setSavedSplitInvoices([]);
+    if (nextMode) {
+      setIsMergeMode(false);
+      setSelectedTables([]);
+      toast.info("Split mode enabled - Select items and create multiple splits");
+    } else {
+      toast.info("Split mode disabled");
+    }
+  };
+
+  const createSplitFromSelection = () => {
+    if (!isSplitMode) return;
+
+    const availableSelection = selectedSplitItemKeys.filter((key) => !assignedSplitKeySet.has(key));
+    if (availableSelection.length === 0) {
+      toast.error("Please select unassigned items to create a split");
+      return;
+    }
+
+    const splitNumber = splitGroups.length + 1;
+    const newGroup = {
+      id: `split-${Date.now()}-${splitNumber}`,
+      name: `Split ${splitNumber}`,
+      itemKeys: availableSelection
+    };
+
+    setSplitGroups((prev) => [...prev, newGroup]);
+    setSelectedSplitItemKeys([]);
+    toast.success(`${newGroup.name} created`);
+  };
+
+  const removeSplitGroup = (groupId) => {
+    setSplitGroups((prev) => prev.filter((group) => group.id !== groupId));
   };
 
   // Handle table selection in merge mode
@@ -475,14 +578,18 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       // Detect mode: KIOSK if table is "Walk-in" or contains "kiosk", otherwise CheckBill
       const isKioskMode = selectedTable && (selectedTable.toLowerCase() === "walk-in" || selectedTable.toLowerCase().includes("kiosk"));
 
-      // Prepare invoice data for thermal printer
-      const invoiceData = {
+      const companyName = companyInfo && companyInfo[0] ? companyInfo[0].name : "CHEFMATE";
+      const companyAddress = companyInfo && companyInfo[0] ? companyInfo[0].address : "Sol 13, Pattaya-20150";
+      const companyPhone = companyInfo && companyInfo[0] ? companyInfo[0].phone_number : "";
+      const companyTaxId = companyInfo && companyInfo[0] ? companyInfo[0].tax_id : "";
+
+      const defaultInvoiceData = {
         billId: latestBillId || "0",
         queueNumber: selectedTable || "Walk-in",
-        companyName: companyInfo && companyInfo[0] ? companyInfo[0].name : "CHEFMATE",
-        companyAddress: companyInfo && companyInfo[0] ? companyInfo[0].address : "Sol 13, Pattaya-20150",
-        companyPhone: companyInfo && companyInfo[0] ? companyInfo[0].phone_number : "",
-        companyTaxId: companyInfo && companyInfo[0] ? companyInfo[0].tax_id : "",
+        companyName,
+        companyAddress,
+        companyPhone,
+        companyTaxId,
         timestamp: new Date().toLocaleString(),
         items: finalData.map(item => ({
           item_name: item.item_name,
@@ -502,20 +609,41 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         operatedBy: "3130"
       };
 
+      const invoicesToPrint = (savedSplitInvoices && savedSplitInvoices.length > 0)
+        ? savedSplitInvoices
+        : [defaultInvoiceData];
+
       let toastId;
       try {
         toastId = toast.loading("Printing invoice...");
         
-        // Use appropriate print function based on mode
-        const success = isKioskMode 
-          ? await printKioskInvoice(invoiceData)
-          : await printInvoiceToCashier(invoiceData); // Print to Cashier printer (192.168.1.216)
-        
-        if (success) {
+        let allSuccess = true;
+        for (let index = 0; index < invoicesToPrint.length; index++) {
+          const invoiceData = {
+            ...invoicesToPrint[index],
+            companyName,
+            companyAddress,
+            companyPhone,
+            companyTaxId,
+            timestamp: invoicesToPrint[index]?.timestamp || new Date().toLocaleString(),
+            paymentMethod: invoicesToPrint[index]?.paymentMethod || formdata.pmode || "CASH"
+          };
+
+          const success = isKioskMode
+            ? await printKioskInvoice(invoiceData)
+            : await printInvoiceToCashier(invoiceData);
+
+          if (!success) {
+            allSuccess = false;
+            break;
+          }
+        }
+
+        if (allSuccess) {
           if (toastId) {
             toast.dismiss(toastId);
           }
-          toast.success("Invoice printed to Cashier printer successfully!");
+          toast.success(invoicesToPrint.length > 1 ? "Split invoices printed successfully!" : "Invoice printed to Cashier printer successfully!");
         } else {
           if (toastId) {
             toast.dismiss(toastId);
@@ -954,7 +1082,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         grand_total: calculatedGrandTotal.toFixed(2),
         payment_mode: selectedPaymentMode || "Cash", // ✅ Ensure payment mode is not empty
         status: billstatus,
-        setup_date: setupDate // ✅ Add setup_date column
+        setup_date: setupDate, // ✅ Add setup_date column
+        remark: (formdata.remark || "").trim()
       };
 
       // console.log('Payment mode being sent to API:', billData.payment_mode); // ✅ Debug API data
@@ -1009,6 +1138,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
       const { bill_id } = response.data; // Get the inserted bill ID
       setLatestBillId(bill_id);
+      setSavedSplitInvoices([]);
 
       // console.log('Bill saved successfully with ID:', bill_id);
 
@@ -1062,6 +1192,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       // Show success toast message
       toast.success(`Bill saved successfully! Bill ID: ${bill_id}`);
       setIsBillSaved(true);
+      setFormData((prev) => ({ ...prev, remark: "" }));
       
     } catch (err) {
       console.error("Error occurred during bill save:", err);
@@ -1069,9 +1200,173 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     }
   };
 
+  const handleSaveSplitBills = async (overrideMode) => {
+    try {
+      const selectedPaymentMode = (overrideMode || formdata.pmode || "").trim();
+
+      if (!selectedPaymentMode) {
+        toast.error("Please select a payment mode before saving split bills.");
+        return;
+      }
+
+      if (!selectedTable || selectedTables.length > 0 || isMergeMode) {
+        toast.error("Split bill is available for a single selected table only.");
+        return;
+      }
+
+      if (!finalData || finalData.length === 0) {
+        toast.error("No items to split.");
+        return;
+      }
+
+      if (!splitGroups || splitGroups.length < 2) {
+        toast.error("Please create at least 2 splits.");
+        return;
+      }
+
+      if (selectedPaymentMode === "Credit" && (!customerDetails.name || !customerDetails.phone || !customerDetails.email)) {
+        toast.error("Please enter customer details before saving split bills for Credit payment.");
+        setCustomerModalOpen(true);
+        return;
+      }
+
+      const allItemKeys = new Set(billTableData.map((item) => item._rowKey));
+      const assignedKeys = new Set(splitGroups.flatMap((group) => group.itemKeys || []));
+      if (allItemKeys.size !== assignedKeys.size) {
+        toast.error("Please assign all items into split groups before saving.");
+        return;
+      }
+
+      if (!TaxesData || TaxesData.length === 0) {
+        toast.error("Tax information not loaded. Please try again.");
+        return;
+      }
+
+      const setupDate = await getNextSetupDate();
+
+      const totalSubtotal = billTableData.reduce((acc, item) => acc + (Number(item.total_price) || 0), 0);
+      let totalDiscountAmount = parseFloat(discAmount) || 0;
+      if (formdata.discountType === "percentage") {
+        totalDiscountAmount = Math.min((totalSubtotal * totalDiscountAmount) / 100, totalSubtotal);
+      } else {
+        totalDiscountAmount = Math.min(totalDiscountAmount, totalSubtotal);
+      }
+
+      const createdBillIds = [];
+      const splitInvoicesForPrint = [];
+
+      for (let index = 0; index < splitSummaries.length; index++) {
+        const split = splitSummaries[index];
+        const splitSubtotal = split.subtotal;
+
+        const proportionalDiscount = totalSubtotal > 0
+          ? (totalDiscountAmount * splitSubtotal) / totalSubtotal
+          : 0;
+
+        const splitSubtotalAfterDiscount = splitSubtotal - proportionalDiscount;
+
+        let splitTaxAmount = 0;
+        let splitTotalAmount = 0;
+        if (TaxesData[0].included === "true") {
+          splitTaxAmount = (splitSubtotalAfterDiscount * TaxesData[0].taxvalue) / (100 + TaxesData[0].taxvalue);
+          splitTotalAmount = splitSubtotalAfterDiscount;
+        } else {
+          splitTaxAmount = splitSubtotalAfterDiscount * (TaxesData[0].taxvalue / 100);
+          splitTotalAmount = splitSubtotalAfterDiscount + splitTaxAmount;
+        }
+
+        const splitRoundedTotal = Math.round(splitTotalAmount);
+        const splitRoundOff = splitRoundedTotal - splitTotalAmount;
+        const splitGrandTotal = splitRoundedTotal;
+
+        const billData = {
+          customer_id: selectedPaymentMode === "Credit" ? customerDetails.custid || null : null,
+          tablenumber: `${selectedTable} - ${split.name}`,
+          subtotal: splitSubtotal.toFixed(2),
+          discount_type: formdata.discountType || "amount",
+          discount_value: parseFloat(discAmount) || 0,
+          discount_amount: proportionalDiscount.toFixed(2),
+          subtotal_afterdiscount: splitSubtotalAfterDiscount.toFixed(2),
+          tax: splitTaxAmount.toFixed(2),
+          total_amount: splitTotalAmount.toFixed(2),
+          round_off: splitRoundOff.toFixed(2),
+          grand_total: splitGrandTotal.toFixed(2),
+          payment_mode: selectedPaymentMode,
+          status: selectedPaymentMode === "Credit" ? 1 : 0,
+          setup_date: setupDate,
+          remark: `${(formdata.remark || "").trim()} [${split.name}]`.trim()
+        };
+
+        const response = await axios.post("/savebill", billData, getHeaders());
+        const { bill_id } = response.data || {};
+        if (!bill_id) {
+          throw new Error(`Failed to create ${split.name}`);
+        }
+
+        createdBillIds.push(bill_id);
+
+        splitInvoicesForPrint.push({
+          billId: bill_id,
+          queueNumber: `${selectedTable} - ${split.name}`,
+          items: split.items.map((item) => ({
+            item_name: item.item_name,
+            quantity: item.quantity,
+            price: Number(item.total_price / item.quantity).toFixed(2),
+            total: Number(item.total_price).toFixed(2)
+          })),
+          subtotal: Number(splitSubtotal).toFixed(2),
+          discountPercent: formdata.discountType === "percentage" ? discAmount : 0,
+          discountAmount: Number(proportionalDiscount).toFixed(2),
+          subtotalAfterDiscount: Number(splitSubtotalAfterDiscount).toFixed(2),
+          taxPercent: parseFloat(TaxesData[0].taxvalue) || 0,
+          taxAmount: Number(splitTaxAmount).toFixed(2),
+          roundOff: Number(splitRoundOff).toFixed(2),
+          total: Number(splitGrandTotal).toFixed(2),
+          paymentMethod: selectedPaymentMode || "CASH",
+          operatedBy: "3130",
+          timestamp: new Date().toLocaleString()
+        });
+
+        for (const item of split.items) {
+          if (!item?.id) continue;
+          await updateData(
+            "order_items",
+            {
+              status: "0",
+              invoice_number: bill_id,
+              setup_date: setupDate
+            },
+            {
+              id: item.id,
+              status: "1"
+            }
+          );
+        }
+      }
+
+      await updateData("tablelist", { status: "0" }, { name: selectedTable });
+
+      await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
+      refreshTables();
+
+      setLatestBillId(createdBillIds[createdBillIds.length - 1] || null);
+      setSavedSplitInvoices(splitInvoicesForPrint);
+      setIsBillSaved(true);
+      setFormData((prev) => ({ ...prev, remark: "" }));
+      toast.success(`Split bills saved successfully! Bill IDs: ${createdBillIds.join(', ')}`);
+    } catch (err) {
+      console.error("Error occurred during split bill save:", err);
+      toast.error(`Error saving split bills: ${err.message || 'Unknown error'}`);
+    }
+  };
+
   // Quick-pay helper to set payment mode and save in one click
   const handleQuickPayment = async (mode) => {
     setFormData((prev) => ({ ...prev, pmode: mode }));
+    if (isSplitMode && splitGroups.length > 0) {
+      await handleSaveSplitBills(mode);
+      return;
+    }
     await handleSaveBill(mode);
   };
   // useEffect(() => {
@@ -1090,10 +1385,101 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         return;
       }
 
-      // Now show the print preview
-      const printContent = printRef.current.innerHTML;
-
       const newWindow = window.open("", "_blank");
+
+      const companyName = companyInfo[0]?.name || "";
+      const companyAddress = companyInfo[0]?.address || "";
+      const companyTaxId = companyInfo[0]?.tax_id || "";
+
+      const invoicesForPrint = (savedSplitInvoices && savedSplitInvoices.length > 0)
+        ? savedSplitInvoices
+        : [{
+            billId: latestBillId,
+            queueNumber: selectedTable,
+            items: finalData.map((item) => ({
+              item_name: item.item_name,
+              quantity: item.quantity,
+              price: Number(item.total_price / item.quantity).toFixed(2),
+              total: Number(item.total_price).toFixed(2)
+            })),
+            subtotal: subtotal,
+            discountAmount: formdata.discountType === "percentage" ? calculatedDiscountAmount : discAmount,
+            subtotalAfterDiscount: subtotalAfterDiscount,
+            taxPercent: 7,
+            taxAmount: taxAmount,
+            roundOff: roundoffAmount,
+            total: grandAmount,
+            paymentMethod: formdata.pmode || 'Cash'
+          }];
+
+      const billBlocks = invoicesForPrint.map((invoice, idx) => `
+        <div class="bill-page ${idx < invoicesForPrint.length - 1 ? 'page-break' : ''}">
+          <div class="bill-header">
+            <h2>${companyName}</h2>
+            <div class="company-info">
+              <p>${companyAddress}</p>
+              <p>Tax:${companyTaxId}</p>
+            </div>
+          </div>
+          <div class="bill-bill-body">
+            <table class="table">
+              <tr>
+                <th class="header">Bill ID: ${invoice.billId || '-'}</th>
+                <th class="header">${invoice.queueNumber || '-'}</th>
+              </tr>
+              <tr>
+                <th>Date: ${getCurrentDate()}</th>
+                <th>Time: ${getCurrentTime()}</th>
+              </tr>
+              <tr>
+                <th colspan="2">Payment Mode: ${invoice.paymentMethod || formdata.pmode || 'Cash'}</th>
+              </tr>
+              <tbody>
+                <tr></tr>
+                <tr></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="bill-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(invoice.items || [])
+                  .map(
+                    (item) => `
+                      <tr>
+                        <td>${item.item_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${currencySign} ${Number(item.price).toFixed(2)}</td>
+                        <td>${currencySign} ${Number(item.total).toFixed(2)}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            <div class="total-row">
+              <span>Subtotal: ${currencySign} ${Number(invoice.subtotal || 0).toFixed(2)}</span><br>
+              <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${Number(invoice.discountAmount || 0).toFixed(2)}`}</span><br>
+              <span>Subtotal after Discount: ${currencySign} ${Number(invoice.subtotalAfterDiscount || 0).toFixed(2)}</span><br>
+              <span>Tax (${Number(invoice.taxPercent || 0)}%): ${currencySign} ${Number(invoice.taxAmount || 0).toFixed(2)}</span><br>
+              <span>Round Off: ${currencySign} ${Number(invoice.roundOff || 0).toFixed(2)}</span><br>
+              <span>Total Amount: ${currencySign} ${Number(invoice.total || 0).toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Operated By: ${getUserName() || 'N/A'}</p>
+            <p>Powered by chefmate POS !! </p>
+          </div>
+        </div>
+      `);
 
       newWindow.document.write(`
         <html>
@@ -1188,75 +1574,15 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               text-align: center;
               font-size: 18px; /* Larger footer font */
             }
+            .bill-page {
+              width: 100%;
+            }
+            .page-break {
+              page-break-after: always;
+            }
           </style>
         </head>
-        <body>
-          <div class="bill-header">
-            <h2>${companyInfo[0].name}</h2>
-            <div class="company-info">
-              <p>${companyInfo[0].address}</p>
-              <p>Tax:${companyInfo[0].tax_id}</p>
-            </div>
-          </div>
-          <div class="bill-bill-body">
-            <table class="table">
-              <tr>
-                <th class="header">Bill ID: ${latestBillId}</th>
-                <th class="header">${selectedTable}</th>
-              </tr>
-              <tr>
-                <th>Date: ${getCurrentDate()}</th>
-                <th>Time: ${getCurrentTime()}</th>
-              </tr>
-              <tr>
-                <th colspan="2">Payment Mode: ${formdata.pmode || 'Cash'}</th>
-              </tr>
-              <tbody> 
-                <tr></tr>
-                <tr></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="bill-body">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Qty</th>
-                  <th>Rate</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${finalData
-        .map(
-          (item) => `
-                  <tr>
-                    <td>${item.item_name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
-                    <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
-                 
-                  </tr>
-                `
-        )
-        .join("")}
-              </tbody>
-            </table>
-            <div class="total-row">
-              <span>Subtotal: ${currencySign} ${subtotal}</span><br>
-              <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span><br>
-              <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount}</span><br>
-              <span>Tax (7%): ${currencySign} ${taxAmount}</span><br>
-              <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
-              <span>Total Amount: ${currencySign} ${grandAmount}</span>
-            </div>
-          </div>
-          <div class="footer">
-            <p>Operated By: ${getUserName() || 'N/A'}</p>
-            <p>Powered by chefmate POS !! </p>
-          </div>
-        </body>
+        <body>${billBlocks.join('')}</body>
       </html>
     `);
 
@@ -1290,6 +1616,199 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       }
 
       const newWindow = window.open("", "_blank");
+
+      const companyName = companyInfo[0]?.name || "";
+      const companyAddress = companyInfo[0]?.address || "";
+      const companyTaxId = companyInfo[0]?.tax_id || "";
+
+      const splitPreviewInvoices = (isSplitMode && splitSummaries && splitSummaries.length > 0)
+        ? (() => {
+            const totalSubtotal = splitSummaries.reduce((acc, split) => acc + Number(split.subtotal || 0), 0);
+            let totalDiscountAmount = parseFloat(discAmount) || 0;
+            if (formdata.discountType === "percentage") {
+              totalDiscountAmount = Math.min((totalSubtotal * totalDiscountAmount) / 100, totalSubtotal);
+            } else {
+              totalDiscountAmount = Math.min(totalDiscountAmount, totalSubtotal);
+            }
+
+            const taxRate = parseFloat(TaxesData?.[0]?.taxvalue || 0);
+            const taxIncluded = TaxesData?.[0]?.included === "true";
+
+            return splitSummaries.map((split, idx) => {
+              const splitSubtotal = Number(split.subtotal || 0);
+              const splitDiscountAmount = totalSubtotal > 0
+                ? (totalDiscountAmount * splitSubtotal) / totalSubtotal
+                : 0;
+              const splitSubtotalAfterDiscount = splitSubtotal - splitDiscountAmount;
+
+              let splitTaxAmount = 0;
+              let splitTotalAmount = 0;
+              if (taxIncluded) {
+                splitTaxAmount = (splitSubtotalAfterDiscount * taxRate) / (100 + taxRate);
+                splitTotalAmount = splitSubtotalAfterDiscount;
+              } else {
+                splitTaxAmount = splitSubtotalAfterDiscount * (taxRate / 100);
+                splitTotalAmount = splitSubtotalAfterDiscount + splitTaxAmount;
+              }
+
+              const splitRoundedTotal = Math.round(splitTotalAmount);
+              const splitRoundOff = splitRoundedTotal - splitTotalAmount;
+
+              return {
+                billId: "-",
+                queueNumber: `${selectedTable || '-'} - ${split.name || `Split ${idx + 1}`}`,
+                items: (split.items || []).map((item) => ({
+                  item_name: item.item_name,
+                  quantity: item.quantity,
+                  price: Number(item.total_price / item.quantity).toFixed(2),
+                  total: Number(item.total_price).toFixed(2)
+                })),
+                subtotal: splitSubtotal.toFixed(2),
+                discountAmount: splitDiscountAmount.toFixed(2),
+                subtotalAfterDiscount: splitSubtotalAfterDiscount.toFixed(2),
+                taxPercent: taxRate,
+                taxAmount: splitTaxAmount.toFixed(2),
+                roundOff: splitRoundOff.toFixed(2),
+                total: splitRoundedTotal.toFixed(2),
+                paymentMethod: formdata.pmode || 'Cash'
+              };
+            });
+          })()
+        : [];
+
+      const invoicesForSummary = (savedSplitInvoices && savedSplitInvoices.length > 0)
+        ? savedSplitInvoices
+        : splitPreviewInvoices;
+
+      const summaryBlocks = (invoicesForSummary && invoicesForSummary.length > 0)
+        ? invoicesForSummary.map((invoice, idx) => `
+          <div class="summary-page ${idx < invoicesForSummary.length - 1 ? 'page-break' : ''}">
+              <div class="bill-header">
+                <h2>${companyName}</h2>
+                <p>${companyAddress}</p>
+                <p>Tax:${companyTaxId}</p>
+                <p><strong>Bill Summary (${invoice.queueNumber || `Split ${idx + 1}`})</strong></p>
+              </div>
+              <div class="bill-bill-body">
+                <table class="table">
+                  <tr>
+                    <th class="header">Bill ID: ${invoice.billId || '-'}</th>
+                    <th class="header">${invoice.queueNumber || '-'}</th>
+                  </tr>
+                  <tr>
+                    <th>Date: ${getCurrentDate()}</th>
+                    <th>Time: ${getCurrentTime()}</th>
+                  </tr>
+                  <tr>
+                    <th colspan="2">Payment Mode: ${invoice.paymentMethod || formdata.pmode || 'Cash'}</th>
+                  </tr>
+                </table>
+              </div>
+              <div class="bill-body">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Rate</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(invoice.items || [])
+                      .map(
+                        (item) => `
+                          <tr>
+                            <td>${item.item_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${currencySign} ${Number(item.price).toFixed(2)}</td>
+                            <td>${currencySign} ${Number(item.total).toFixed(2)}</td>
+                          </tr>
+                        `
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+                <div class="total-row">
+                  <span>Subtotal: ${currencySign} ${Number(invoice.subtotal || 0).toFixed(2)}</span><br>
+                  <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${Number(invoice.discountAmount || 0).toFixed(2)}`}</span><br>
+                  <span>Subtotal after Discount: ${currencySign} ${Number(invoice.subtotalAfterDiscount || 0).toFixed(2)}</span><br>
+                  <span>Tax (${Number(invoice.taxPercent || 0)}%): ${currencySign} ${Number(invoice.taxAmount || 0).toFixed(2)}</span><br>
+                  <span>Round Off: ${currencySign} ${Number(invoice.roundOff || 0).toFixed(2)}</span><br>
+                  <span>Total Amount: ${currencySign} ${Number(invoice.total || 0).toFixed(2)}</span>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Operated By: ${getUserName() || 'N/A'}</p>
+                <p>Powered by chefmate POS !!</p>
+              </div>
+            </div>
+          `)
+        : [
+            `
+            <div class="summary-page">
+              <div class="bill-header">
+                <h2>${companyName}</h2>
+                <p>${companyAddress}</p>
+                <p>Tax:${companyTaxId}</p>
+                <p><strong>Bill Summary</strong></p>
+              </div>
+              <div class="bill-bill-body">
+                <table class="table">
+                  <tr>
+                    <th class="header">Bill ID: ${latestBillId || "-"}</th>
+                    <th class="header">${selectedTable || "-"}</th>
+                  </tr>
+                  <tr>
+                    <th>Date: ${getCurrentDate()}</th>
+                    <th>Time: ${getCurrentTime()}</th>
+                  </tr>
+                  <tr>
+                    <th colspan="2">Payment Mode: ${formdata.pmode || 'Cash'}</th>
+                  </tr>
+                </table>
+              </div>
+              <div class="bill-body">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Rate</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${finalData
+                      .map(
+                        (item) => `
+                          <tr>
+                            <td>${item.item_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
+                            <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
+                          </tr>
+                        `
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+                <div class="total-row">
+                  <span>Subtotal: ${currencySign} ${subtotal}</span><br>
+                  <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span><br>
+                  <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount}</span><br>
+                  <span>Tax (7%): ${currencySign} ${taxAmount}</span><br>
+                  <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
+                  <span>Total Amount: ${currencySign} ${grandAmount}</span>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Operated By: ${getUserName() || 'N/A'}</p>
+                <p>Powered by chefmate POS !!</p>
+              </div>
+            </div>
+            `
+          ];
 
       newWindow.document.write(`
         <html>
@@ -1348,69 +1867,15 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 text-align: center;
                 font-size: 18px;
               }
+              .summary-page {
+                width: 100%;
+              }
+              .page-break {
+                page-break-after: always;
+              }
             </style>
           </head>
-          <body>
-            <div class="bill-header">
-              <h2>${companyInfo[0]?.name || ""}</h2>
-              <p>${companyInfo[0]?.address || ""}</p>
-              <p>Tax:${companyInfo[0]?.tax_id || ""}</p>
-              <p><strong>Bill Summary</strong></p>
-            </div>
-            <div class="bill-bill-body">
-              <table class="table">
-                <tr>
-                  <th class="header">Bill ID: ${latestBillId || "-"}</th>
-                  <th class="header">${selectedTable || "-"}</th>
-                </tr>
-                <tr>
-                  <th>Date: ${getCurrentDate()}</th>
-                  <th>Time: ${getCurrentTime()}</th>
-                </tr>
-                <tr>
-                  <th colspan="2">Payment Mode: ${formdata.pmode || 'Cash'}</th>
-                </tr>
-              </table>
-            </div>
-            <div class="bill-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>Rate</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${finalData
-                    .map(
-                      (item) => `
-                        <tr>
-                          <td>${item.item_name}</td>
-                          <td>${item.quantity}</td>
-                          <td>${currencySign} ${Number(item.total_price / item.quantity).toFixed(2)}</td>
-                          <td>${currencySign} ${Number(item.total_price).toFixed(2)}</td>
-                        </tr>
-                      `
-                    )
-                    .join("")}
-                </tbody>
-              </table>
-              <div class="total-row">
-                <span>Subtotal: ${currencySign} ${subtotal}</span><br>
-                <span>Discount: ${formdata.discountType === "percentage" ? `${discAmount}%` : `${currencySign} ${discAmount}`}</span><br>
-                <span>Subtotal after Discount: ${currencySign} ${subtotalAfterDiscount}</span><br>
-                <span>Tax (7%): ${currencySign} ${taxAmount}</span><br>
-                <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
-                <span>Total Amount: ${currencySign} ${grandAmount}</span>
-              </div>
-            </div>
-            <div class="footer">
-              <p>Operated By: ${getUserName() || 'N/A'}</p>
-              <p>Powered by chefmate POS !!</p>
-            </div>
-          </body>
+          <body>${summaryBlocks.join("")}</body>
         </html>
       `);
 
@@ -1533,18 +1998,44 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1890ff' }}>🏪 Tables</h4>
-                <Button 
-                  type={isMergeMode ? 'primary' : 'default'} 
-                  size="large"
-                  onClick={toggleMergeMode}
-                  style={{ fontSize: '13px', fontWeight: '600', minWidth: '100px', height: '40px' }}
-                >
-                  {isMergeMode ? '✕ Exit' : '➕ Merge'}
-                </Button>
+                <Space>
+                  <Button 
+                    type={isMergeMode ? 'primary' : 'default'} 
+                    size="large"
+                    onClick={toggleMergeMode}
+                    style={{ fontSize: '13px', fontWeight: '600', minWidth: '100px', height: '40px' }}
+                  >
+                    {isMergeMode ? '✕ Exit' : '➕ Merge'}
+                  </Button>
+                  <Button 
+                    type={isSplitMode ? 'primary' : 'default'} 
+                    size="large"
+                    onClick={toggleSplitMode}
+                    style={{ fontSize: '13px', fontWeight: '600', minWidth: '100px', height: '40px' }}
+                  >
+                    {isSplitMode ? '✕ Exit' : '🔀 Split'}
+                  </Button>
+                </Space>
               </div>
               
               {isMergeMode && selectedTables.length > 0 && (
                 <Tag color="success" style={{ fontSize: '13px', padding: '6px 12px' }}>✓ Selected: {selectedTables.join(', ')}</Tag>
+              )}
+
+              {isSplitMode && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Tag color="blue" style={{ fontSize: '13px', padding: '6px 12px' }}>
+                    Split Groups: {splitGroups.length}
+                  </Tag>
+                  <Button
+                    type="primary"
+                    size="middle"
+                    onClick={createSplitFromSelection}
+                    disabled={selectedSplitItemKeys.length === 0 || !selectedTable || !finalData || finalData.length === 0}
+                  >
+                    Create Split From Selected Items
+                  </Button>
+                </div>
               )}
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
@@ -1593,21 +2084,64 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700', color: '#1890ff' }}>📋 Bill Items</h4>
                 <Table
                   columns={[
-                    { title: 'Item', dataIndex: 'item_name', key: 'item_name', width: '50%', render: (text) => <span style={{ fontSize: '13px', fontWeight: '500' }}>{text}</span> },
+                    {
+                      title: 'Item',
+                      dataIndex: 'item_name',
+                      key: 'item_name',
+                      width: '50%',
+                      render: (text, record) => (
+                        <Space direction="vertical" size={0}>
+                          <span style={{ fontSize: '13px', fontWeight: '500' }}>{text}</span>
+                          {isSplitMode && splitItemToGroupName.get(record._rowKey) && (
+                            <Tag color="purple" style={{ margin: 0, width: 'fit-content' }}>
+                              {splitItemToGroupName.get(record._rowKey)}
+                            </Tag>
+                          )}
+                        </Space>
+                      )
+                    },
                     { title: 'Qty', dataIndex: 'quantity', key: 'quantity', width: '15%', align: 'center', render: (text) => <span style={{ fontSize: '14px', fontWeight: '700' }}>{text}</span> },
                     { title: 'Unit Price', dataIndex: 'unit_price', key: 'unit_price', width: '17%', align: 'right', render: (text) => <span style={{ fontSize: '13px' }}>{currencySign} {text}</span> },
                     { title: 'Total', dataIndex: 'total_price', key: 'total_price', width: '18%', align: 'right', render: (text) => <strong style={{ fontSize: '14px', color: '#1890ff' }}>{currencySign} {Number(text).toFixed(2)}</strong> },
                   ]}
-                  dataSource={finalData?.map((item, index) => ({
-                    ...item,
-                    key: index,
-                    unit_price: (item.total_price / item.quantity).toFixed(2)
-                  })) || []}
+                  dataSource={billTableData || []}
+                  rowKey="_rowKey"
+                  rowSelection={
+                    isSplitMode
+                      ? {
+                          selectedRowKeys: selectedSplitItemKeys,
+                          onChange: (keys) => setSelectedSplitItemKeys(keys),
+                          getCheckboxProps: (record) => ({
+                            disabled: assignedSplitKeySet.has(record._rowKey)
+                          })
+                        }
+                      : undefined
+                  }
                   pagination={false}
                   size="small"
                   locale={{ emptyText: 'No items' }}
                   style={{ marginBottom: '16px' }}
                 />
+
+                {isSplitMode && splitSummaries.length > 0 && (
+                  <Card size="small" style={{ marginBottom: '16px', borderColor: '#b37feb', backgroundColor: '#faf5ff' }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#722ed1' }}>🔀 Split Groups</h4>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {splitSummaries.map((split) => (
+                        <div key={split.id} style={{ border: '1px solid #e8d5ff', borderRadius: 8, padding: '10px 12px', backgroundColor: '#fff' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ color: '#531dab' }}>{split.name}</strong>
+                            <Space>
+                              <Tag color="blue">Items: {split.items.length}</Tag>
+                              <Tag color="green">{currencySign} {split.subtotal.toFixed(2)}</Tag>
+                              <Button size="small" danger onClick={() => removeSplitGroup(split.id)}>Remove</Button>
+                            </Space>
+                          </div>
+                        </div>
+                      ))}
+                    </Space>
+                  </Card>
+                )}
                 
                 {/* Bill Totals - Touchscreen Friendly */}
                 {finalData.length > 0 && (
@@ -1674,6 +2208,14 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                       {currencySign} {changeMoney}
                     </div>
                   </div>
+                  <div style={{ fontSize: '13px', color: '#666', marginBottom: '6px', fontWeight: 600 }}>Remark</div>
+                  <Input.TextArea
+                    rows={2}
+                    placeholder="Add remark"
+                    value={formdata.remark}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, remark: e.target.value }))}
+                    style={{ fontSize: '13px' }}
+                  />
                 </Card>
               </Space>
             </Col>

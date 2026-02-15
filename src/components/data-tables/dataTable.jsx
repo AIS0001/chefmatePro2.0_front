@@ -48,6 +48,12 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
   const CancelBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill", "customers"]; // Tables where print is allowed
   const DeleteBillTables = ["order_items", "order_items_gst", "final_bill", "advance_final_bill"]; // Tables where print is allowed
 
+  const bulkDeleteColumnByTable = {
+    ledger_entries: "transaction_id",
+  };
+  const bulkDeleteColumn = bulkDeleteColumnByTable[tablename] || "id";
+  const getBulkRowId = (item) => item?.[bulkDeleteColumn] ?? item?.id;
+
   // Function to handle modal open and store selected customer data
   const handleCustomerClick = (customer) => {
     setSelectedCustomer(customer);
@@ -56,6 +62,11 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
 
   // Functions for handling row selection
   const handleRowSelect = (itemId) => {
+    if (itemId === undefined || itemId === null) {
+      toast.warning("Unable to select this row: missing record id");
+      return;
+    }
+
     setSelectedRows(prev => {
       if (prev.includes(itemId)) {
         return prev.filter(id => id !== itemId);
@@ -69,7 +80,9 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
     if (selectAll) {
       setSelectedRows([]);
     } else {
-      const currentPageIds = paginatedData.map(item => item.id);
+      const currentPageIds = paginatedData
+        .map((item) => getBulkRowId(item))
+        .filter((id) => id !== undefined && id !== null);
       setSelectedRows(currentPageIds);
     }
     setSelectAll(!selectAll);
@@ -98,7 +111,7 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
       console.log("Starting bulk delete for items:", selectedRows);
       
       // Use the bulk delete API endpoint
-      await deleteBulkRecords(tablename, "id", selectedRows);
+      await deleteBulkRecords(tablename, bulkDeleteColumn, selectedRows);
       
       // Handle related table cleanup for items
       if (tablename === "items") {
@@ -126,7 +139,7 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
       clearTimeout(timeoutId);
 
       // Update the table data to remove deleted items
-      const updatedData = tableData.filter(item => !selectedRows.includes(item.id));
+      const updatedData = tableData.filter((item) => !selectedRows.includes(getBulkRowId(item)));
       setTableData(updatedData);
 
       // Clear selections
@@ -185,11 +198,13 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
   // Update selectAll state based on current page selections
   useEffect(() => {
     if (paginatedData.length > 0) {
-      const currentPageIds = paginatedData.map(item => item.id);
+      const currentPageIds = paginatedData
+        .map((item) => getBulkRowId(item))
+        .filter((id) => id !== undefined && id !== null);
       const allCurrentPageSelected = currentPageIds.every(id => selectedRows.includes(id));
       setSelectAll(allCurrentPageSelected && currentPageIds.length > 0);
     }
-  }, [paginatedData, selectedRows]);
+  }, [paginatedData, selectedRows, bulkDeleteColumn]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -836,7 +851,7 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
                 <tr 
                   key={rowIndex} 
                   style={{
-                    backgroundColor: selectedRows.includes(item.id) ? '#e3f2fd' : 'transparent',
+                    backgroundColor: selectedRows.includes(getBulkRowId(item)) ? '#e3f2fd' : 'transparent',
                     transition: 'background-color 0.2s ease'
                   }}
                 >
@@ -848,8 +863,8 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
                     <td style={{ textAlign: "center", width: "50px", verticalAlign: "middle" }}>
                       <input
                         type="checkbox"
-                        checked={selectedRows.includes(item.id)}
-                        onChange={() => handleRowSelect(item.id)}
+                        checked={selectedRows.includes(getBulkRowId(item))}
+                        onChange={() => handleRowSelect(getBulkRowId(item))}
                         style={{ 
                           cursor: "pointer",
                           transform: "scale(1.2)"

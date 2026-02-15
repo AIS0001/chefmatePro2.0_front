@@ -5,31 +5,81 @@ import { format } from "date-fns";
 import { CSVLink } from "react-csv";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { Card, Row, Col, Input, Select, Button, Checkbox, Table, Space, Typography, Empty } from "antd";
+import { UpOutlined, DownOutlined } from "@ant-design/icons";
 
 import Layout from "../../layout/Layout";
-import Header from "../../components/Header";
-import CardComponent from "../../components/cards/CardComponent";
-import DataTable from "../../components/data-tables/dataTable";
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
 
 import fetchData from "../../functions/fetchData";
 
 export default function SuppliersLedger() {
+  const { Title, Text } = Typography;
   const [data, setData] = useState([]);
   const [allData, setAllData] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [formData, setFormData] = useState({ from: "", to: "", accountid: "", supplier_id: "" });
+  const [formData, setFormData] = useState({
+    from: "",
+    to: "",
+    accountid: "",
+    supplier_id: "",
+    transaction_id: "",
+    account_type: "",
+    description: "",
+    min_debit: "",
+    max_debit: "",
+    min_credit: "",
+    max_credit: "",
+  });
   const [totals, setTotals] = useState({ credit: 0, debit: 0, balance: 0 });
   const [companyInfo, setCompanyInfo] = useState(null);
+  const [showAllClosingBalance, setShowAllClosingBalance] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [isLedgerTableCollapsed, setIsLedgerTableCollapsed] = useState(false);
+  const [isClosingBalanceCollapsed, setIsClosingBalanceCollapsed] = useState(false);
 
   const columns = [
-    { label: "Txn ID", field: "transaction_id" },
-    { label: "Date", field: "date" },
-    { label: "A/C Type", field: "account_type" },
-    { label: "A/C ID", field: "account_id" },
-    { label: "Description", field: "description" },
-    { label: "Debit", field: "debit_amount" },
-    { label: "Credit", field: "credit_amount" },
+    {
+      title: "Txn ID",
+      dataIndex: "transaction_id",
+      key: "transaction_id",
+      width: 100,
+    },
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      render: (value) => formatDate(value),
+    },
+    {
+      title: "A/C Type",
+      dataIndex: "account_type",
+      key: "account_type",
+    },
+    {
+      title: "A/C ID",
+      dataIndex: "account_id",
+      key: "account_id",
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      render: (value) => value || "-",
+    },
+    {
+      title: "Debit",
+      dataIndex: "debit_amount",
+      key: "debit_amount",
+      align: "right",
+      render: (value) => parseFloat(value || 0).toFixed(2),
+    },
+    {
+      title: "Credit",
+      dataIndex: "credit_amount",
+      key: "credit_amount",
+      align: "right",
+      render: (value) => parseFloat(value || 0).toFixed(2),
+    },
   ];
 
   const formatDate = (d) => new Date(d).toISOString().split("T")[0];
@@ -38,26 +88,65 @@ export default function SuppliersLedger() {
     const credit = records.reduce((sum, r) => sum + parseFloat(r.credit_amount || 0), 0);
     const debit = records.reduce((sum, r) => sum + parseFloat(r.debit_amount || 0), 0);
     setData(records);
-    setTotals({ credit, debit, balance: debit-credit });
+    setTotals({ credit, debit, balance: debit - credit });
   };
 
-  const applyFilters = () => {
-    const { from, to, accountid } = formData;
+  const getDateFilteredRecords = () => {
+    const { from, to } = formData;
     const f = from ? formatDate(from) : null;
     const t = to ? formatDate(to) : null;
 
-    const filtered = allData.filter((r) => {
+    return allData.filter((r) => {
       const date = formatDate(r.date);
-      const dateInRange = (!f || date >= f) && (!t || date <= t);
+      return (!f || date >= f) && (!t || date <= t);
+    });
+  };
+
+  const applyFilters = () => {
+    const {
+      accountid,
+      transaction_id,
+      account_type,
+      description,
+      min_debit,
+      max_debit,
+      min_credit,
+      max_credit,
+    } = formData;
+
+    const minDebit = min_debit === "" ? null : parseFloat(min_debit);
+    const maxDebit = max_debit === "" ? null : parseFloat(max_debit);
+    const minCredit = min_credit === "" ? null : parseFloat(min_credit);
+    const maxCredit = max_credit === "" ? null : parseFloat(max_credit);
+
+    const filtered = getDateFilteredRecords().filter((r) => {
+      const debit = parseFloat(r.debit_amount || 0);
+      const credit = parseFloat(r.credit_amount || 0);
       const accountMatch = !accountid || r.account_id?.toString() === accountid?.toString();
-      return dateInRange && accountMatch;
+      const txnMatch = !transaction_id || r.transaction_id?.toString().includes(transaction_id.toString());
+      const accountTypeMatch = !account_type || (r.account_type || "").toLowerCase() === account_type.toLowerCase();
+      const descriptionMatch = !description || (r.description || "").toLowerCase().includes(description.toLowerCase());
+      const minDebitMatch = minDebit === null || debit >= minDebit;
+      const maxDebitMatch = maxDebit === null || debit <= maxDebit;
+      const minCreditMatch = minCredit === null || credit >= minCredit;
+      const maxCreditMatch = maxCredit === null || credit <= maxCredit;
+
+      return (
+        accountMatch &&
+        txnMatch &&
+        accountTypeMatch &&
+        descriptionMatch &&
+        minDebitMatch &&
+        maxDebitMatch &&
+        minCreditMatch &&
+        maxCreditMatch
+      );
     });
 
     calculateTotals(filtered);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const handleInputChange = (name, value) => {
     if (name === "supplier_id") {
       const selected = suppliers.find((s) => s.id.toString() === value);
       setFormData((prev) => ({
@@ -70,9 +159,85 @@ export default function SuppliersLedger() {
     }
   };
 
+  const resetAdvancedFilters = () => {
+    setFormData((prev) => ({
+      ...prev,
+      transaction_id: "",
+      account_type: "",
+      description: "",
+      min_debit: "",
+      max_debit: "",
+      min_credit: "",
+      max_credit: "",
+    }));
+  };
+
+  const allSupplierClosingBalances = () => {
+    const dateFilteredRecords = getDateFilteredRecords();
+    const grouped = dateFilteredRecords.reduce((acc, row) => {
+      const supplierId = row.account_id?.toString();
+      if (!supplierId) return acc;
+
+      if (!acc[supplierId]) {
+        const supplier = suppliers.find((s) => s.id?.toString() === supplierId);
+        acc[supplierId] = {
+          key: supplierId,
+          supplier_id: supplierId,
+          supplier_name: supplier?.company_name || `Supplier ${supplierId}`,
+          debit_total: 0,
+          credit_total: 0,
+          closing_balance: 0,
+        };
+      }
+
+      acc[supplierId].debit_total += parseFloat(row.debit_amount || 0);
+      acc[supplierId].credit_total += parseFloat(row.credit_amount || 0);
+      acc[supplierId].closing_balance = acc[supplierId].debit_total - acc[supplierId].credit_total;
+
+      return acc;
+    }, {});
+
+    return Object.values(grouped).sort((a, b) => a.supplier_name.localeCompare(b.supplier_name));
+  };
+
+  const closingBalanceColumns = [
+    {
+      title: "Supplier",
+      dataIndex: "supplier_name",
+      key: "supplier_name",
+    },
+    {
+      title: "Supplier ID",
+      dataIndex: "supplier_id",
+      key: "supplier_id",
+      width: 120,
+    },
+    {
+      title: "Total Debit",
+      dataIndex: "debit_total",
+      key: "debit_total",
+      align: "right",
+      render: (value) => parseFloat(value || 0).toFixed(2),
+    },
+    {
+      title: "Total Credit",
+      dataIndex: "credit_total",
+      key: "credit_total",
+      align: "right",
+      render: (value) => parseFloat(value || 0).toFixed(2),
+    },
+    {
+      title: "Closing Balance",
+      dataIndex: "closing_balance",
+      key: "closing_balance",
+      align: "right",
+      render: (value) => <Text strong>{parseFloat(value || 0).toFixed(2)}</Text>,
+    },
+  ];
+
   const exportPDF = () => {
     const doc = new jsPDF();
-    const tableColumn = columns.map((c) => c.label);
+    const tableColumn = ["Txn ID", "Date", "A/C Type", "A/C ID", "Description", "Debit", "Credit"];
     const tableRows = data.map((r) => [
       r.transaction_id,
       formatDate(r.date),
@@ -88,6 +253,35 @@ export default function SuppliersLedger() {
     doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
     doc.text(`Balance: ${totals.balance.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 10);
     doc.save("SupplierLedger.pdf");
+  };
+
+  const exportClosingBalancePDF = () => {
+    const closingData = allSupplierClosingBalances();
+    const doc = new jsPDF();
+    const tableColumn = ["Supplier", "Supplier ID", "Total Debit", "Total Credit", "Closing Balance"];
+    const tableRows = closingData.map((r) => [
+      r.supplier_name,
+      r.supplier_id,
+      parseFloat(r.debit_total || 0).toFixed(2),
+      parseFloat(r.credit_total || 0).toFixed(2),
+      parseFloat(r.closing_balance || 0).toFixed(2),
+    ]);
+
+    const totalDebit = closingData.reduce((sum, row) => sum + parseFloat(row.debit_total || 0), 0);
+    const totalCredit = closingData.reduce((sum, row) => sum + parseFloat(row.credit_total || 0), 0);
+    const totalClosing = closingData.reduce((sum, row) => sum + parseFloat(row.closing_balance || 0), 0);
+
+    tableRows.push([
+      "TOTAL",
+      "",
+      totalDebit.toFixed(2),
+      totalCredit.toFixed(2),
+      totalClosing.toFixed(2),
+    ]);
+
+    doc.text("Closing Balance of All Suppliers", 14, 15);
+    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+    doc.save("SupplierClosingBalance.pdf");
   };
 
   const printThermalReport = () => {
@@ -272,78 +466,264 @@ export default function SuppliersLedger() {
 
   useEffect(() => {
     applyFilters();
-  }, [formData.from, formData.to, formData.accountid]);
+  }, [
+    formData.from,
+    formData.to,
+    formData.accountid,
+    formData.transaction_id,
+    formData.account_type,
+    formData.description,
+    formData.min_debit,
+    formData.max_debit,
+    formData.min_credit,
+    formData.max_credit,
+  ]);
+
+  const closingBalanceData = allSupplierClosingBalances();
 
   return (
     <Layout>
-      <Header title="Supplier Expense Ledger" />
       <ToastContainer />
-      <CardComponent title="Filter Supplier Ledger" headerColor="dark" bodyClass="panel-body">
-        <div className="row">
-          <div className="col-md-3">
-            <TextfieldwithLabel id="from" name="from" type="date" lable="From Date" value={formData.from || ""} onChange={handleInputChange} />
-          </div>
-          <div className="col-md-3">
-            <TextfieldwithLabel id="to" name="to" type="date" lable="To Date" value={formData.to || ""} onChange={handleInputChange} />
-          </div>
-          <div className="col-md-3">
-            <TextfieldwithLabel id="accountid" name="accountid" type="text" lable="Supplier ID" value={formData.accountid || ""} onChange={handleInputChange} />
-          </div>
-          <div className="col-md-3">
-            <label>Supplier</label>
-            <select className="form-control" name="supplier_id" value={formData.supplier_id || ""} onChange={handleInputChange}>
-              <option value="">Select Supplier</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>{s.company_name}</option>
-              ))}
-            </select>
-          </div>
-         
-          <div className="row">
-            <div className="col-md-12">
-            <button className="btn btn-primary me-2" onClick={printThermalReport}>
-              Print Thermal
-            </button>
-            <CSVLink
-              data={[
-                ...data,
-                {
-                  transaction_id: "",
-                  date: "",
-                  account_type: "",
-                  account_id: "",
-                  description: "Total",
-                  debit_amount: totals.debit.toFixed(2),
-                  credit_amount: totals.credit.toFixed(2),
-                },
-              ]}
-              filename="SupplierLedger.csv"
-              className="btn btn-success me-2"
-            >
-              Export CSV
-            </CSVLink>
-            <button className="btn btn-danger" onClick={exportPDF}>
-              Export PDF
-            </button>
-          </div>
-          </div>
-        </div>
-      </CardComponent>
+      <Card bordered={false} style={{ marginBottom: 16 }}>
+        <Title level={4} style={{ marginBottom: 16 }}>Supplier Expense Ledger</Title>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12} md={6}>
+            <Text type="secondary">From Date</Text>
+            <Input
+              type="date"
+              value={formData.from || ""}
+              onChange={(e) => handleInputChange("from", e.target.value)}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Text type="secondary">To Date</Text>
+            <Input
+              type="date"
+              value={formData.to || ""}
+              onChange={(e) => handleInputChange("to", e.target.value)}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Text type="secondary">Supplier ID</Text>
+            <Input
+              value={formData.accountid || ""}
+              onChange={(e) => handleInputChange("accountid", e.target.value)}
+              placeholder="Enter Supplier ID"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Text type="secondary">Supplier</Text>
+            <Select
+              value={formData.supplier_id || undefined}
+              onChange={(value) => handleInputChange("supplier_id", value || "")}
+              placeholder="Select Supplier"
+              allowClear
+              style={{ width: "100%" }}
+              options={suppliers.map((s) => ({ value: s.id.toString(), label: s.company_name }))}
+            />
+          </Col>
+        </Row>
 
-      <div className="row mt-4">
-        <div className="col-12" id="tableid">
-          {data.length === 0 ? (
-            <p>No records found</p>
-          ) : (
-            <DataTable columns={columns} data={data} tablename="ledger_entries" />
+        <Row style={{ marginTop: 16 }}>
+          <Col span={24}>
+            <Space size="large" wrap>
+              <Checkbox
+                checked={showAdvancedFilters}
+                onChange={(e) => setShowAdvancedFilters(e.target.checked)}
+              >
+                Show Advanced Filters
+              </Checkbox>
+            <Checkbox
+              checked={showAllClosingBalance}
+              onChange={(e) => setShowAllClosingBalance(e.target.checked)}
+            >
+              Show Closing Balance of All Suppliers
+            </Checkbox>
+            </Space>
+          </Col>
+        </Row>
+
+        {showAdvancedFilters && (
+          <Card size="small" style={{ marginTop: 16, background: "#fafafa" }}>
+            <Title level={5} style={{ marginBottom: 12 }}>Advanced Filters</Title>
+            <Row gutter={[12, 12]}>
+              <Col xs={24} sm={12} md={8}>
+                <Text type="secondary">Transaction ID</Text>
+                <Input
+                  value={formData.transaction_id}
+                  onChange={(e) => handleInputChange("transaction_id", e.target.value)}
+                  placeholder="Contains transaction ID"
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text type="secondary">Account Type</Text>
+                <Select
+                  value={formData.account_type || undefined}
+                  onChange={(value) => handleInputChange("account_type", value || "")}
+                  placeholder="Select account type"
+                  allowClear
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "supplier", label: "Supplier" },
+                    { value: "supplier_payment", label: "Supplier Payment" },
+                    { value: "purchase", label: "Purchase" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text type="secondary">Description</Text>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  placeholder="Contains text"
+                />
+              </Col>
+              <Col xs={24} sm={12} md={6}>
+                <Text type="secondary">Min Debit</Text>
+                <Input
+                  type="number"
+                  value={formData.min_debit}
+                  onChange={(e) => handleInputChange("min_debit", e.target.value)}
+                  placeholder="0"
+                />
+              </Col>
+              <Col xs={24} sm={12} md={6}>
+                <Text type="secondary">Max Debit</Text>
+                <Input
+                  type="number"
+                  value={formData.max_debit}
+                  onChange={(e) => handleInputChange("max_debit", e.target.value)}
+                  placeholder="0"
+                />
+              </Col>
+              <Col xs={24} sm={12} md={6}>
+                <Text type="secondary">Min Credit</Text>
+                <Input
+                  type="number"
+                  value={formData.min_credit}
+                  onChange={(e) => handleInputChange("min_credit", e.target.value)}
+                  placeholder="0"
+                />
+              </Col>
+              <Col xs={24} sm={12} md={6}>
+                <Text type="secondary">Max Credit</Text>
+                <Input
+                  type="number"
+                  value={formData.max_credit}
+                  onChange={(e) => handleInputChange("max_credit", e.target.value)}
+                  placeholder="0"
+                />
+              </Col>
+            </Row>
+            <Space style={{ marginTop: 12 }}>
+              <Button onClick={resetAdvancedFilters}>Reset Advanced Filters</Button>
+            </Space>
+          </Card>
+        )}
+
+        <Space style={{ marginTop: 16 }} wrap>
+          <Button type="primary" onClick={printThermalReport}>Print Thermal</Button>
+          <CSVLink
+            data={[
+              ...data,
+              {
+                transaction_id: "",
+                date: "",
+                account_type: "",
+                account_id: "",
+                description: "Total",
+                debit_amount: totals.debit.toFixed(2),
+                credit_amount: totals.credit.toFixed(2),
+              },
+            ]}
+            filename="SupplierLedger.csv"
+          >
+            <Button type="default">Export CSV</Button>
+          </CSVLink>
+          <Button danger onClick={exportPDF}>Export PDF</Button>
+        </Space>
+      </Card>
+
+      <Card
+        bordered={false}
+        title="Supplier Ledger Table"
+        extra={
+          <Button
+            type="text"
+            onClick={() => setIsLedgerTableCollapsed((prev) => !prev)}
+            icon={isLedgerTableCollapsed ? <DownOutlined /> : <UpOutlined />}
+          >
+            {isLedgerTableCollapsed ? "Expand" : "Collapse"}
+          </Button>
+        }
+      >
+        {!isLedgerTableCollapsed && (
+          <>
+            {data.length === 0 ? (
+              <Empty description="No records found" />
+            ) : (
+              <Table
+                rowKey={(record, index) => `${record.transaction_id || 'txn'}-${index}`}
+                columns={columns}
+                dataSource={data}
+                pagination={{ pageSize: 10 }}
+                scroll={{ x: 900 }}
+              />
+            )}
+
+            <div style={{ marginTop: 12 }}>
+              <Text strong>Total Credit:</Text> {totals.credit.toFixed(2)} |{" "}
+              <Text strong>Total Debit:</Text> {totals.debit.toFixed(2)} |{" "}
+              <Text strong>Balance:</Text> {totals.balance.toFixed(2)}
+            </div>
+          </>
+        )}
+      </Card>
+
+      {showAllClosingBalance && (
+        <Card
+          bordered={false}
+          style={{ marginTop: 16 }}
+          title="Closing Balance of All Suppliers"
+          extra={
+            <Space>
+              <CSVLink
+                data={[
+                  ...closingBalanceData,
+                  {
+                    supplier_name: "TOTAL",
+                    supplier_id: "",
+                    debit_total: closingBalanceData.reduce((sum, row) => sum + parseFloat(row.debit_total || 0), 0).toFixed(2),
+                    credit_total: closingBalanceData.reduce((sum, row) => sum + parseFloat(row.credit_total || 0), 0).toFixed(2),
+                    closing_balance: closingBalanceData.reduce((sum, row) => sum + parseFloat(row.closing_balance || 0), 0).toFixed(2),
+                  },
+                ]}
+                filename="SupplierClosingBalance.csv"
+              >
+                <Button>Export Excel</Button>
+              </CSVLink>
+              <Button danger onClick={exportClosingBalancePDF}>Export PDF</Button>
+              <Button
+                type="text"
+                onClick={() => setIsClosingBalanceCollapsed((prev) => !prev)}
+                icon={isClosingBalanceCollapsed ? <DownOutlined /> : <UpOutlined />}
+              >
+                {isClosingBalanceCollapsed ? "Expand" : "Collapse"}
+              </Button>
+            </Space>
+          }
+        >
+          {!isClosingBalanceCollapsed && (
+            <Table
+              rowKey="key"
+              columns={closingBalanceColumns}
+              dataSource={closingBalanceData}
+              pagination={{ pageSize: 10 }}
+              locale={{ emptyText: "No supplier balance data found" }}
+            />
           )}
-           <div className="mt-3">
-            <strong>Total Credit:</strong> {totals.credit.toFixed(2)} | {" "}
-            <strong>Total Debit:</strong> {totals.debit.toFixed(2)} | {" "}
-            <strong>Balance:</strong> {totals.balance.toFixed(2)}
-          </div>
-        </div>
-      </div>
+        </Card>
+      )}
     </Layout>
   );
 }

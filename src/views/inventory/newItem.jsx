@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,16 +10,13 @@ import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import { format } from "date-fns";
 
-import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
 import { deleteItem, deleteBulkItems } from "../../functions/delateData";
 import { isTokenExpired, logout } from "../../utility/auth";
-import NewItemModal from "../../components/Modals/NewItemModal";
 import NewItemModalAnt from "../../components/Modals/NewItemModalAnt";
 import NewItemPriceModal from "../../components/Modals/NewItemPriceModal";
 import BarcodeModal from "../../components/Modals/BarcodeModal";
 import EditItemModal from "../../components/Modals/EditItemModal";
-import {ComboBox} from "../../components/Buttons/ComboBox";
 
 // Import libraries for export functionality
 import * as XLSX from 'xlsx';
@@ -29,13 +26,9 @@ import { sendToThermalPrinter } from '../../services/thermalPrinter';
 
 export default function NewItem() {
   const navigate = useNavigate();
-  let currentDate = format(new Date(), "yyyy-MM-dd");
   //  const headers = { Authorization: authheader().access_token };
   const [data, setData] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [selectedContract, setSelectedContract] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [showModalItem, setShowModalItem] = useState(false);
   const [showModalItemAnt, setShowModalItemAnt] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -43,7 +36,6 @@ export default function NewItem() {
   const [reload, setReload] = useState(false); // Define reload state
   const [selectedItems, setSelectedItems] = useState([]); // For bulk delete
   const [selectAll, setSelectAll] = useState(false); // For select all checkbox
-  const [loading, setLoading] = useState(true); // Add loading state
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,8 +44,130 @@ export default function NewItem() {
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [filteredData, setFilteredData] = useState([]);
   const [originalData, setOriginalData] = useState([]);
+  const [categoriesMaster, setCategoriesMaster] = useState([]);
+  const [subcategoriesMaster, setSubcategoriesMaster] = useState([]);
+
+  const getCategoryId = useCallback((item) => item?.catid || item?.cat_id || item?.category_id || item?.categoryid || "", []);
+  const getCategoryName = useCallback((item) => item?.category_name || item?.cat_name || item?.category || "", []);
+  const getSubcategoryId = useCallback((item) => item?.subcatid || item?.subcat_id || item?.subcategory_id || item?.subcategoryid || "", []);
+  const getSubcategoryName = useCallback((item) => item?.subcategory_name || item?.subcat_name || item?.sub_category || "", []);
+    const categoryNameById = useMemo(() => {
+      const map = new Map();
+      categoriesMaster.forEach((category) => {
+        const id = category?.id;
+        const name = category?.name || category?.cat_name || "";
+        if (id !== undefined && id !== null && name) {
+          map.set(String(id), name);
+        }
+      });
+      return map;
+    }, [categoriesMaster]);
+
+    const getCategoryDisplayName = useCallback((item) => {
+      const inlineName = getCategoryName(item);
+      if (inlineName) return inlineName;
+
+      const categoryId = getCategoryId(item);
+      if (categoryId !== undefined && categoryId !== null && String(categoryId)) {
+        return categoryNameById.get(String(categoryId)) || "";
+      }
+
+      return "";
+    }, [getCategoryName, getCategoryId, categoryNameById]);
+
+    const subcategoryNameById = useMemo(() => {
+      const map = new Map();
+      subcategoriesMaster.forEach((sub) => {
+        const id = sub?.id;
+        const name = sub?.subcat || sub?.subcategory_name || sub?.name || "";
+        if (id !== undefined && id !== null && name) {
+          map.set(String(id), name);
+        }
+      });
+      return map;
+    }, [subcategoriesMaster]);
+
+    const getSubcategoryDisplayName = useCallback((item) => {
+      const inlineName = getSubcategoryName(item);
+      if (inlineName) return inlineName;
+
+      const subcategoryId = getSubcategoryId(item);
+      if (subcategoryId !== undefined && subcategoryId !== null && String(subcategoryId)) {
+        return subcategoryNameById.get(String(subcategoryId)) || "";
+      }
+
+      return "";
+    }, [getSubcategoryName, getSubcategoryId, subcategoryNameById]);
+
+  const categoryOptions = useMemo(() => {
+    const optionMap = new Map();
+
+    originalData.forEach((item) => {
+      const categoryId = getCategoryId(item);
+      const categoryName = getCategoryDisplayName(item);
+      if (!categoryId && !categoryName) return;
+
+      const key = String(categoryId || categoryName);
+      if (!optionMap.has(key)) {
+        optionMap.set(key, {
+          value: key,
+          label: categoryName || `Category ${key}`,
+        });
+      }
+    });
+
+    return Array.from(optionMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [originalData, getCategoryId, getCategoryDisplayName]);
+
+  const subcategoryOptions = useMemo(() => {
+    // Prefer subcategory master (clean names and category linkage)
+    if (subcategoriesMaster.length > 0) {
+      const options = subcategoriesMaster
+        .filter((sub) => {
+          if (!selectedCategory) return true;
+          const subCatCategoryId = sub?.catid || sub?.cat_id || sub?.category_id;
+          return String(subCatCategoryId || "") === String(selectedCategory);
+        })
+        .map((sub) => ({
+          value: String(sub?.id ?? ""),
+          label: sub?.subcat || sub?.subcategory_name || sub?.name || `Subcategory ${sub?.id}`,
+        }))
+        .filter((sub) => sub.value && sub.label);
+
+      const uniqueByValue = new Map();
+      options.forEach((opt) => {
+        if (!uniqueByValue.has(opt.value)) uniqueByValue.set(opt.value, opt);
+      });
+
+      return Array.from(uniqueByValue.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    // Fallback to deriving from items data
+    const optionMap = new Map();
+
+    originalData.forEach((item) => {
+      const categoryId = String(getCategoryId(item) || getCategoryName(item));
+      if (selectedCategory && categoryId !== String(selectedCategory)) return;
+
+      const subcategoryId = getSubcategoryId(item);
+      const subcategoryName = getSubcategoryDisplayName(item);
+      if (!subcategoryId && !subcategoryName) return;
+
+      const key = String(subcategoryId || subcategoryName);
+      if (!optionMap.has(key)) {
+        optionMap.set(key, {
+          value: key,
+          label: subcategoryName || `Subcategory ${key}`,
+        });
+      }
+    });
+
+    return Array.from(optionMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [originalData, selectedCategory, subcategoriesMaster, getCategoryId, getCategoryName, getSubcategoryId, getSubcategoryDisplayName]);
 
   // Calculate pagination values
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -75,24 +189,6 @@ export default function NewItem() {
     return { startPage, endPage };
   };
 
-  const [formdata, setFormData] = useState({
-    name: "",
-  });
-  const columns = [
-    { label: "ID", field: "id" },
-    { label: "Item Name", field: "iname" },
-    { label: "unit", field: "unit" },
-    { label: "Tax", field: "tax" },
-    { label: "MRP", field: "mrp" },
-    { label: "Offer Price", field: "offerprice" },
-    { label: "Details", field: "description" },
-    { label: "Actions", field: "actions" },
-  ];
-  const AddNewItemButton = (contract) => {
-    // setSelectedContract(contract);
-    setShowModalItem(true);
-  };
-
   const AddNewItemAntButton = () => {
     setShowModalItemAnt(true);
   };
@@ -111,7 +207,7 @@ export default function NewItem() {
   };
 
   // Check if token is expired using the auth utility
-  const checkTokenExpiration = () => {
+  const checkTokenExpiration = useCallback(() => {
     if (isTokenExpired()) {
       console.log('🔐 Token expired, redirecting to login');
       toast.error('Your session has expired. Please log in again.', {
@@ -127,7 +223,7 @@ export default function NewItem() {
     
     console.log('✅ Token is valid');
     return true;
-  };
+  }, [navigate]);
 
   // Handle individual checkbox selection
   const handleItemSelect = (itemId, isChecked) => {
@@ -786,22 +882,18 @@ export default function NewItem() {
     const fetchAndSetData = async () => {
       // Check token expiration before fetching data
       if (!checkTokenExpiration()) {
-        setLoading(false);
         return;
       }
       
       try {
-        setLoading(true); // Start loading
         const items = await fetchData("items", setData, "id", {});
         // console.log("Fetched data:", items);
         setData(items); // Ensure the data state is set with fetched items
         setOriginalData(items); // Store original data for filtering
         setFilteredData(items); // Initialize filtered data
         setTotalItems(items.length); // Set total count for pagination
-        setLoading(false); // Stop loading
       } catch (error) {
         console.error("Error in useEffect:", error);
-        setLoading(false); // Stop loading on error
         
         // Check if it's an authentication error
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
@@ -823,7 +915,37 @@ export default function NewItem() {
     };
 
     fetchAndSetData();
-  }, [reload]);
+  }, [reload, checkTokenExpiration, navigate]);
+
+  useEffect(() => {
+    const fetchCategoriesMaster = async () => {
+      try {
+        const categories = await fetchData("categories", null, "id", {});
+        if (Array.isArray(categories)) {
+          setCategoriesMaster(categories);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories master:", error);
+      }
+    };
+
+    fetchCategoriesMaster();
+  }, []);
+
+  useEffect(() => {
+    const fetchSubcategoriesMaster = async () => {
+      try {
+        const subcategories = await fetchData("subcategory", null, "id", {});
+        if (Array.isArray(subcategories)) {
+          setSubcategoriesMaster(subcategories);
+        }
+      } catch (error) {
+        console.error("Failed to fetch subcategories master:", error);
+      }
+    };
+
+    fetchSubcategoriesMaster();
+  }, []);
   
   // Debug token information on component mount
   useEffect(() => {
@@ -865,18 +987,44 @@ export default function NewItem() {
       );
     }
 
+    if (selectedCategory) {
+      filtered = filtered.filter((item) => {
+        const categoryKey = String(getCategoryId(item) || getCategoryName(item));
+        return categoryKey === String(selectedCategory);
+      });
+    }
+
+    if (selectedSubcategory) {
+      filtered = filtered.filter((item) => {
+        const subcategoryKey = String(getSubcategoryId(item) || getSubcategoryName(item));
+        return subcategoryKey === String(selectedSubcategory);
+      });
+    }
+
     setFilteredData(filtered);
     setTotalItems(filtered.length);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, originalData]);
+  }, [searchTerm, selectedCategory, selectedSubcategory, originalData, getCategoryId, getCategoryName, getSubcategoryId, getSubcategoryName]);
 
   // Filter handlers - memoized
   const handleSearchChange = useCallback((e) => {
     setSearchTerm(e.target.value);
   }, []);
 
+  const handleCategoryChange = useCallback((e) => {
+    const value = e.target.value;
+    setSelectedCategory(value);
+    setSelectedSubcategory("");
+  }, []);
+
+  const handleSubcategoryChange = useCallback((e) => {
+    setSelectedSubcategory(e.target.value);
+  }, []);
+
   const clearFilters = useCallback(() => {
     setSearchTerm("");
+    setSelectedCategory("");
+    setSelectedSubcategory("");
     setFilteredData(originalData);
     setTotalItems(originalData.length);
     setCurrentPage(1);
@@ -885,7 +1033,7 @@ export default function NewItem() {
   // Apply filters whenever search term changes
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, originalData]);
+  }, [searchTerm, selectedCategory, selectedSubcategory, originalData, applyFilters]);
   return (
     <>
       <style jsx>{`
@@ -1309,7 +1457,7 @@ export default function NewItem() {
               </div>
 
               {/* Center Section: Search */}
-              <div className="d-flex align-items-center flex-grow-1 mx-3">
+              <div className="d-flex align-items-center flex-grow-1 mx-3 gap-2 flex-wrap">
                 <label className="form-label me-2 mb-0 text-nowrap">Search:</label>
                 <input
                   type="text"
@@ -1319,19 +1467,42 @@ export default function NewItem() {
                   onChange={handleSearchChange}
                   style={{ maxWidth: '300px' }}
                 />
-                {searchTerm && (
+                <select
+                  className="form-select form-select-sm"
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
+                  style={{ maxWidth: '220px' }}
+                >
+                  <option value="">All Categories</option>
+                  {categoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <select
+                  className="form-select form-select-sm"
+                  value={selectedSubcategory}
+                  onChange={handleSubcategoryChange}
+                  style={{ maxWidth: '220px' }}
+                  disabled={subcategoryOptions.length === 0}
+                >
+                  <option value="">All Subcategories</option>
+                  {subcategoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                {(searchTerm || selectedCategory || selectedSubcategory) && (
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm ms-2"
                     onClick={clearFilters}
-                    title="Clear search"
+                    title="Clear filters"
                   >
                     <i className="fas fa-times"></i>
                   </button>
                 )}
                 <small className="text-muted ms-3 text-nowrap">
                   {filteredData.length} of {originalData.length} items
-                  {searchTerm && <i className="fas fa-search ms-1"></i>}
+                  {(searchTerm || selectedCategory || selectedSubcategory) && <i className="fas fa-search ms-1"></i>}
                 </small>
               </div>
 
@@ -1654,7 +1825,7 @@ export default function NewItem() {
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12" >
             <NewItemPriceModal
               isOpen={showModal}
-              customer={selectedContract}
+              customer={null}
               onItemAdded={triggerReload} // Pass the reload function
               onClose={() => setShowModal(false)} // Close the modal
             />

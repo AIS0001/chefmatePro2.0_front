@@ -112,10 +112,19 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
   };
 
   const getTaxRate = () => {
-    const base = parseFloat(bill?.subtotal_afterdiscount || 0);
-    const taxValue = parseFloat(bill?.tax || 0);
-    if (!base || !taxValue) return 0;
-    return (taxValue / base) * 100;
+    const explicitRate = Number(
+      bill?.tax_percentage
+      ?? bill?.tax_percent
+      ?? bill?.vat_rate
+      ?? bill?.gst_rate
+      ?? bill?.tax_rate
+      ?? 0
+    );
+
+    if (explicitRate > 0) return explicitRate;
+
+    // This screen shows tax as 7% by design; use 7 as stable fallback
+    return 7;
   };
 
   const computeTotals = (sourceItems, discountType, discountValue) => {
@@ -123,8 +132,11 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
     const discountAmount = getDiscountAmount(subtotalValue, discountType, discountValue);
     const subtotalAfterDiscountValue = subtotalValue - discountAmount;
     const taxRate = getTaxRate();
-    const taxValue = subtotalAfterDiscountValue * (taxRate / 100);
-    const totalAmountValue = subtotalAfterDiscountValue + taxValue;
+    // Subtotal after discount already includes tax; extract tax from it instead of adding again
+    const taxValue = taxRate > 0
+      ? subtotalAfterDiscountValue * (taxRate / (100 + taxRate))
+      : 0;
+    const totalAmountValue = subtotalAfterDiscountValue;
     const roundedTotal = Math.round(totalAmountValue);
     const roundoffValue = roundedTotal - totalAmountValue;
 

@@ -98,20 +98,27 @@ const deleteRecord = async (tablename, colname, colval) => {
 // New bulk delete function
 const deleteBulkRecords = async (tablename, colname, colvals) => {
     try {
+        if (!tablename || !colname || !Array.isArray(colvals) || colvals.length === 0) {
+            console.error("❌ Invalid bulk delete parameters:", { tablename, colname, colvals });
+            throw new Error('Missing required parameters: tablename, colname, and non-empty colvals array');
+        }
+
         console.log(`🗑️ Attempting bulk delete from ${tablename} where ${colname} in [${colvals.join(', ')}]`);
-        
-        // Log the headers to ensure auth is working
+
         const headers = getHeaders();
         console.log("🔑 Headers:", headers);
-        
-        // Convert array of values to comma-separated string
-        const valsString = colvals.join(',');
-        
-        // Log the full URL being called
-        const url = `/deletbulkdatabyid/${tablename}/${colname}/${valsString}`;
+
+        const encodedTablename = encodeURIComponent(tablename);
+        const url = `/deletebulk/${encodedTablename}`;
+        const requestBody = {
+            ids: colvals,
+            columnName: colname,
+        };
+
         console.log("🌐 BULK DELETE URL:", url);
-        
-        const res = await axios.delete(url, { headers });
+        console.log("📦 BULK DELETE BODY:", requestBody);
+
+        const res = await axios.post(url, requestBody, headers);
         
         console.log("✅ Bulk delete response status:", res.status);
         console.log("✅ Bulk delete response data:", res.data);
@@ -131,7 +138,36 @@ const deleteBulkRecords = async (tablename, colname, colvals) => {
             console.error("❌ Error message:", err.message);
         }
         
-        throw err; // Re-throw the error so calling code can handle it
+        if (err.response) {
+            let errorMessage = 'Bulk delete operation failed';
+            switch (err.response.status) {
+                case 400:
+                    errorMessage = err.response.data?.message || 'Bad request - check table name or IDs';
+                    break;
+                case 401:
+                    errorMessage = 'Unauthorized - please check your authentication';
+                    break;
+                case 403:
+                    errorMessage = 'Forbidden - insufficient permissions';
+                    break;
+                case 404:
+                    errorMessage = err.response.data?.message || 'No records found to delete';
+                    break;
+                case 500:
+                    errorMessage = err.response.data?.message || 'Server error occurred';
+                    break;
+                default:
+                    errorMessage = err.response.data?.message || `HTTP ${err.response.status} error`;
+            }
+
+            const enhancedError = new Error(errorMessage);
+            enhancedError.status = err.response.status;
+            enhancedError.originalError = err;
+            enhancedError.responseData = err.response.data;
+            throw enhancedError;
+        }
+
+        throw err;
     }
 };
 

@@ -1,13 +1,11 @@
 /* eslint-disable no-undef */
 
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { CSVLink } from "react-csv";
-import { parseISO, format } from "date-fns";
+import { format } from "date-fns";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -16,18 +14,15 @@ import { fetchComboData } from "../../services/api";
 import CardComponent from "../../components/cards/CardComponent";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import DataTable from "../../components/data-tables/dataTableGst";
 import fetchData from "../../functions/fetchData";
-import { Table, Button, DatePicker, Input, Select, Space, Card, Row, Col, Statistic, Divider } from "antd";
-import { PrinterOutlined, FilePdfOutlined, FileExcelOutlined, FilterOutlined, ClearOutlined } from "@ant-design/icons";
+import { getUserName } from "../../functions/storageUtils";
+import { Table, Button, DatePicker, Input, Select, Space, Card, Row, Col, Statistic, Divider, Checkbox } from "antd";
+import { PrinterOutlined, FilePdfOutlined, FileExcelOutlined, FilterOutlined, ClearOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 export default function ItemWiseSummaryVat() {
-    let currentDate = format(new Date(), "yyyy-MM-dd");
-    
     const [data, setData] = useState([]);
     const [originalData, setOriginalData] = useState([]); // Store original ungrouped data
     const [categories, setCategories] = useState([]);
@@ -36,14 +31,24 @@ export default function ItemWiseSummaryVat() {
     const [selectedCatId, setSelectedCatId] = useState("");
     const [selectedSubCatId, setSelectedSubCatId] = useState("");
     const [selectedTableCatId, setSelectedTableCatId] = useState("");
+    const [billFilter, setBillFilter] = useState("all");
+    const [showCancelledItems, setShowCancelledItems] = useState(false);
     const [filteredData, setFilteredData] = useState([]);
-    const [taxType, setTaxType] = useState("VAT");
+    const [finalBillById, setFinalBillById] = useState({});
 
     const [formdata, setFormData] = useState({
         name: "",
     });
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [quickStartDate, setQuickStartDate] = useState("");
+    const [quickEndDate, setQuickEndDate] = useState("");
+    const [quickCategoryId, setQuickCategoryId] = useState("");
+    const [quickItemGroup, setQuickItemGroup] = useState("");
+    const [useOrderItemsOnlyMode, setUseOrderItemsOnlyMode] = useState(false);
+    const [oldFilterCollapsed, setOldFilterCollapsed] = useState(false);
+    const [tablePageSize, setTablePageSize] = useState(10);
+    const [tableCurrentPage, setTableCurrentPage] = useState(1);
 
     // Summary states
     const [showCategorySummary, setShowCategorySummary] = useState(false);
@@ -53,17 +58,28 @@ export default function ItemWiseSummaryVat() {
     const [subcategorySummaryData, setSubcategorySummaryData] = useState([]);
     const [tableCategorySummaryData, setTableCategorySummaryData] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
+    const [currentUser, setCurrentUser] = useState({ id: "-", name: "-", uname: "-" });
+
+    const invoiceColumns = [
+        { label: "Inv. No.", field: "invoice_number", fallback: ["invoice_no", "bill_no"] },
+        { label: "Date", field: "setup_date", fallback: ["created_at", "date", "order_date"] },
+        { label: "Time", field: "created_at", fallback: ["inv_time", "time"] }
+    ];
 
     // Column definitions for VAT-specific display
     const columns = [
-        // Invoice and Date columns hidden since grouped data aggregates multiple orders
-        // { label: "Inv. No.", field: "invoice_number", fallback: ["invoice_no", "bill_no"] },
-        // { label: "Date", field: "setup_date", fallback: ["created_at", "date", "order_date"] },
         { label: "Category", field: "category_name", fallback: ["cat_name"] },
         { label: "Subcategory", field: "subcategory_name", fallback: ["subcat_name", "sub_category"] },
+        { label: "Item Group", field: "item_group", fallback: ["itemGroup", "group_name"] },
         { label: "Item Name", field: "item_name", fallback: ["name", "product_name"] },
         { label: "Quantity", field: "quantity", fallback: ["qty"] },
         { label: "Total", field: "total_price", fallback: ["total", "total_amount"] },
+    ];
+
+    const billFilterColumns = [
+        ...invoiceColumns,
+        ...columns,
+        { label: "Remark", field: "remark", fallback: ["remarks"] }
     ];
 
     const categorySummaryColumns = [
@@ -86,33 +102,163 @@ export default function ItemWiseSummaryVat() {
     ];
 
     // Summary generation functions
+    const matchesBillFilter = (item) => {
+        if (billFilter === "all") return true;
+
+        const invoiceId = Number(item.invoice_number || item.invoice_no || item.bill_no || item.order_id);
+        if (Number.isNaN(invoiceId)) return false;
+
+        const bill = finalBillById[invoiceId];
+        if (!bill) return false;
+
+        if (billFilter === "entertainment") return bill.payment_mode === "Entertainment";
+        if (billFilter === "cancelled") return Number(bill.status) === 2;
+        if (billFilter === "sale") {
+            return Number(bill.status) === 0 && bill.payment_mode !== "Entertainment";
+        }
+
+        return true;
+    };
+
+    const matchesFilters = (item) => {
+        if (!matchesBillFilter(item)) return false;
+
+        const searchTerm = (formdata.name || "").toString().trim().toLowerCase();
+        if (searchTerm) {
+            const itemName = (item.item_name || item.name || item.product_name || "").toString().toLowerCase();
+            const invoiceNo = (item.invoice_number || item.invoice_no || item.bill_no || item.order_id || "").toString().toLowerCase();
+            if (!itemName.includes(searchTerm) && !invoiceNo.includes(searchTerm)) return false;
+        }
+
+        const categoryId = item.catid || item.category_id || item.cat_id;
+        if (selectedCatId) {
+            const selectedCategory = categories.find(
+                (cat) => cat.id?.toString() === selectedCatId.toString()
+            );
+            const selectedCategoryName = (selectedCategory?.name || "").toString().trim().toLowerCase();
+            const itemCategoryName = (item.category_name || item.cat_name || "").toString().trim().toLowerCase();
+            const hasCategoryMetadata =
+                (categoryId !== undefined && categoryId !== null && String(categoryId).trim() !== "")
+                || !!itemCategoryName;
+
+            const matchesById = categoryId?.toString() === selectedCatId.toString();
+            const matchesByName = selectedCategoryName && itemCategoryName && selectedCategoryName === itemCategoryName;
+
+            if (hasCategoryMetadata && !matchesById && !matchesByName) return false;
+        }
+
+        const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
+        if (selectedSubCatId) {
+            const selectedSubcategory = subcategories.find(
+                (sub) => sub.id?.toString() === selectedSubCatId.toString()
+            );
+            const selectedSubcategoryName = (selectedSubcategory?.subcat || "").toString().trim().toLowerCase();
+            const itemSubcategoryName = (item.subcategory_name || item.subcat_name || item.sub_category || "").toString().trim().toLowerCase();
+
+            const matchesById = subcategoryId?.toString() === selectedSubCatId.toString();
+            const matchesByName = selectedSubcategoryName && itemSubcategoryName && selectedSubcategoryName === itemSubcategoryName;
+
+            if (!matchesById && !matchesByName) return false;
+        }
+
+        const tableCategoryId = item.table_cat_id || item.table_category_id;
+        if (selectedTableCatId) {
+            const selectedTableCategory = tableCategories.find(
+                (cat) => cat.id?.toString() === selectedTableCatId.toString()
+            );
+            const selectedTableCategoryName = (selectedTableCategory?.cat_name || "").toString().trim().toLowerCase();
+            const itemTableCategoryName = (item.table_category_name || item.table_cat_name || "").toString().trim().toLowerCase();
+
+            const matchesById = tableCategoryId?.toString() === selectedTableCatId.toString();
+            const matchesByName = selectedTableCategoryName && itemTableCategoryName && selectedTableCategoryName === itemTableCategoryName;
+
+            if (!matchesById && !matchesByName) return false;
+        }
+
+        if (startDate || endDate) {
+            const dateField = item.setup_date || item.created_at || item.date || item.order_date;
+            if (!dateField) return false;
+            const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
+            const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+            const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+            if ((start && itemDate < start) || (end && itemDate > end)) return false;
+        }
+
+        return true;
+    };
+
+    const toNumber = (value) => {
+        if (value === null || value === undefined || value === "") return 0;
+        if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+
+        const cleaned = String(value).replace(/,/g, "").replace(/[^0-9.-]/g, "");
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const isCancelledOrderItem = (item = {}) => {
+        const normalized = String(item?.status ?? "").trim().toLowerCase();
+        return Number(item?.status) === 2 || normalized === "2" || normalized === "cancelled";
+    };
+
+    const normalizeItemGroup = (value = "") => String(value || "").trim().toLowerCase();
+
+    const applyCancelledItemsToggle = (items = []) => {
+        if (showCancelledItems) return items;
+        return items.filter((item) => !isCancelledOrderItem(item));
+    };
+
+    const isSummaryViewActive = () => showCategorySummary || showSubcategorySummary || showTableCategorySummary;
+
+    const getVisibleTableData = () => {
+        if (showCategorySummary) return categorySummaryData;
+        if (showSubcategorySummary) return subcategorySummaryData;
+        if (showTableCategorySummary) return tableCategorySummaryData;
+        if (useOrderItemsOnlyMode) return filteredData;
+        return billFilter !== "all" ? originalData.filter(matchesFilters) : filteredData;
+    };
+
+    const getLogoAsJpegDataUrl = (imageSrc) => {
+        return new Promise((resolve, reject) => {
+            if (!imageSrc) {
+                reject(new Error("Logo source is empty"));
+                return;
+            }
+
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) {
+                        reject(new Error("Could not get canvas context"));
+                        return;
+                    }
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+
+                    const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+                    resolve(jpegDataUrl);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+
+            img.onerror = () => reject(new Error("Failed to load logo image"));
+            img.src = imageSrc;
+        });
+    };
+
     const generateCategorySummary = () => {
         // Use originalData (ungrouped) to get category IDs, apply filters first
-        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
-            // Re-apply current filters to original data for summary
-            const itemName = item.item_name || item.name || item.product_name || "";
-            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
-            
-            const categoryId = item.catid || item.category_id || item.cat_id;
-            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
-            
-            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
-            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
-            
-            const tableCategoryId = item.table_cat_id || item.table_category_id;
-            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
-            
-            if (startDate || endDate) {
-                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
-                if (!dateField) return false;
-                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
-                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-                if ((start && itemDate < start) || (end && itemDate > end)) return false;
-            }
-            
-            return true;
-        }) : originalData;
+        const dataToSummarize = originalData.filter(matchesFilters);
         const summaryMap = {};
 
         console.log("=== CATEGORY SUMMARY DEBUG ===");
@@ -135,9 +281,9 @@ export default function ItemWiseSummaryVat() {
             }
 
             // Handle different field names for amounts
-            const quantity = parseFloat(item.quantity || item.qty || 0);
-            const vatAmount = parseFloat(item.vat_amount || item.tax_amount || 0);
-            const totalAmount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+            const quantity = toNumber(item.quantity || item.qty || 0);
+            const vatAmount = toNumber(item.vat_amount || item.tax_amount || 0);
+            const totalAmount = toNumber(item.total_price || item.total || item.total_amount || 0);
 
             summaryMap[categoryId].total_quantity += quantity;
             summaryMap[categoryId].total_vat += vatAmount;
@@ -154,30 +300,7 @@ export default function ItemWiseSummaryVat() {
 
     const generateSubcategorySummary = () => {
         // Use originalData (ungrouped) to get subcategory IDs, apply filters first
-        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
-            const itemName = item.item_name || item.name || item.product_name || "";
-            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
-            
-            const categoryId = item.catid || item.category_id || item.cat_id;
-            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
-            
-            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
-            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
-            
-            const tableCategoryId = item.table_cat_id || item.table_category_id;
-            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
-            
-            if (startDate || endDate) {
-                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
-                if (!dateField) return false;
-                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
-                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-                if ((start && itemDate < start) || (end && itemDate > end)) return false;
-            }
-            
-            return true;
-        }) : originalData;
+        const dataToSummarize = originalData.filter(matchesFilters);
         const summaryMap = {};
 
         console.log("=== SUBCATEGORY SUMMARY DEBUG ===");
@@ -211,9 +334,9 @@ export default function ItemWiseSummaryVat() {
             }
 
             // Handle different field names for amounts
-            const quantity = parseFloat(item.quantity || item.qty || 0);
-            const vatAmount = parseFloat(item.vat_amount || item.tax_amount || 0);
-            const totalAmount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+            const quantity = toNumber(item.quantity || item.qty || 0);
+            const vatAmount = toNumber(item.vat_amount || item.tax_amount || 0);
+            const totalAmount = toNumber(item.total_price || item.total || item.total_amount || 0);
 
             summaryMap[subcategoryId].total_quantity += quantity;
             summaryMap[subcategoryId].total_vat += vatAmount;
@@ -230,30 +353,7 @@ export default function ItemWiseSummaryVat() {
 
     const generateTableCategorySummary = () => {
         // Use originalData (ungrouped) to get table category IDs, apply filters first
-        const dataToSummarize = filteredData.length > 0 ? originalData.filter(item => {
-            const itemName = item.item_name || item.name || item.product_name || "";
-            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) return false;
-            
-            const categoryId = item.catid || item.category_id || item.cat_id;
-            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) return false;
-            
-            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
-            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) return false;
-            
-            const tableCategoryId = item.table_cat_id || item.table_category_id;
-            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) return false;
-            
-            if (startDate || endDate) {
-                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
-                if (!dateField) return false;
-                const itemDate = new Date(dateField.split('T')[0] + 'T00:00:00');
-                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-                if ((start && itemDate < start) || (end && itemDate > end)) return false;
-            }
-            
-            return true;
-        }) : originalData;
+        const dataToSummarize = originalData.filter(matchesFilters);
         const summaryMap = {};
 
         console.log("=== TABLE CATEGORY SUMMARY DEBUG ===");
@@ -282,9 +382,9 @@ export default function ItemWiseSummaryVat() {
             }
 
             // Handle different field names for amounts
-            const quantity = parseFloat(item.quantity || item.qty || 0);
-            const vatAmount = parseFloat(item.vat_amount || item.tax_amount || 0);
-            const totalAmount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+            const quantity = toNumber(item.quantity || item.qty || 0);
+            const vatAmount = toNumber(item.vat_amount || item.tax_amount || 0);
+            const totalAmount = toNumber(item.total_price || item.total || item.total_amount || 0);
 
             summaryMap[tableCategoryId].total_quantity += quantity;
             summaryMap[tableCategoryId].total_vat += vatAmount;
@@ -297,6 +397,16 @@ export default function ItemWiseSummaryVat() {
         setShowTableCategorySummary(true);
         setShowCategorySummary(false);
         setShowSubcategorySummary(false);
+    };
+
+    const handleGroupByItemName = () => {
+        const dataToGroup = originalData.filter(matchesFilters);
+        const groupedData = groupByItemName(dataToGroup);
+        setFilteredData(groupedData);
+        setShowCategorySummary(false);
+        setShowSubcategorySummary(false);
+        setShowTableCategorySummary(false);
+        toast.success(`Grouped ${groupedData.length} items by name`);
     };
 
     // Group data by item name
@@ -325,12 +435,46 @@ export default function ItemWiseSummaryVat() {
                 };
             }
             
-            grouped[itemName].quantity += parseFloat(item.quantity || item.qty || 0);
-            grouped[itemName].total_price += parseFloat(item.total_price || item.total || item.total_amount || 0);
-            grouped[itemName].vat_amount += parseFloat(item.vat_amount || item.tax_amount || 0);
+            grouped[itemName].quantity += toNumber(item.quantity || item.qty || 0);
+            grouped[itemName].total_price += toNumber(item.total_price || item.total || item.total_amount || 0);
+            grouped[itemName].vat_amount += toNumber(item.vat_amount || item.tax_amount || 0);
         });
         
         return Object.values(grouped);
+    };
+
+    const getOrderItemUniqueKey = (item = {}) => {
+        const explicitId = item.order_item_id
+            || item.order_items_id
+            || item.orderitems_id
+            || item.oi_id
+            || item.id;
+
+        if (explicitId !== undefined && explicitId !== null && String(explicitId).trim() !== "") {
+            return `id:${String(explicitId)}`;
+        }
+
+        const invoice = item.invoice_number || item.invoice_no || item.bill_no || item.order_id || "";
+        const itemId = item.item_id || item.product_id || item.menu_item_id || "";
+        const itemName = item.item_name || item.name || item.product_name || "";
+        const quantity = item.quantity ?? item.qty ?? "";
+        const total = item.total_price ?? item.total ?? item.total_amount ?? "";
+        const createdAt = item.created_at || item.setup_date || "";
+
+        return `sig:${invoice}|${itemId}|${itemName}|${quantity}|${total}|${createdAt}`;
+    };
+
+    const deduplicateOrderItems = (items = []) => {
+        const uniqueMap = new Map();
+
+        items.forEach((item) => {
+            const key = getOrderItemUniqueKey(item);
+            if (!uniqueMap.has(key)) {
+                uniqueMap.set(key, item);
+            }
+        });
+
+        return Array.from(uniqueMap.values());
     };
 
     // Helper function to get filtered data by date range
@@ -374,6 +518,8 @@ export default function ItemWiseSummaryVat() {
     // Filtering function
     const applyFilter = () => {
         if (originalData.length === 0) return;
+
+        setUseOrderItemsOnlyMode(false);
         
         // Validate date range
         if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
@@ -393,67 +539,7 @@ export default function ItemWiseSummaryVat() {
             selectedTableCatId
         });
         
-        const filtered = originalData.filter(item => {
-            // Date filter
-            if (startDate || endDate) {
-                const dateField = item.setup_date || item.created_at || item.date || item.order_date;
-                if (!dateField) return false;
-
-                let itemDate;
-                try {
-                    let dateString = dateField;
-                    
-                    if (dateString.includes('T')) {
-                        dateString = dateString.split('T')[0];
-                    }
-                    
-                    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        itemDate = new Date(dateString + 'T00:00:00');
-                    } else {
-                        itemDate = new Date(dateString);
-                    }
-                    
-                    if (isNaN(itemDate.getTime())) {
-                        return false;
-                    }
-                } catch (e) {
-                    return false;
-                }
-                
-                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-
-                if ((start && itemDate < start) || (end && itemDate > end)) {
-                    return false;
-                }
-            }
-
-            // Item name filter
-            const itemName = item.item_name || item.name || item.product_name || "";
-            if (formdata.name && !itemName.toLowerCase().includes(formdata.name.toLowerCase())) {
-                return false;
-            }
-
-            // Category filter
-            const categoryId = item.catid || item.category_id || item.cat_id;
-            if (selectedCatId && categoryId?.toString() !== selectedCatId.toString()) {
-                return false;
-            }
-
-            // Subcategory filter
-            const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id;
-            if (selectedSubCatId && subcategoryId?.toString() !== selectedSubCatId.toString()) {
-                return false;
-            }
-
-            // Table category filter
-            const tableCategoryId = item.table_cat_id || item.table_category_id;
-            if (selectedTableCatId && tableCategoryId?.toString() !== selectedTableCatId.toString()) {
-                return false;
-            }
-
-            return true;
-        });
+        const filtered = originalData.filter(matchesFilters);
 
         console.log("=== FILTER RESULTS ===");
         console.log(`Filtered ${filtered.length} items from ${originalData.length} total`);
@@ -461,9 +547,113 @@ export default function ItemWiseSummaryVat() {
         // Group the filtered data by item name
         const groupedFiltered = groupByItemName(filtered);
         console.log(`Grouped into ${groupedFiltered.length} unique items`);
+
+        // Force detail grouped-by-item mode when category-style filters are active
+        if (selectedCatId || selectedSubCatId || selectedTableCatId) {
+            setShowCategorySummary(false);
+            setShowSubcategorySummary(false);
+            setShowTableCategorySummary(false);
+        }
         
         setFilteredData(groupedFiltered);
+        setTableCurrentPage(1);
         toast.success(`Found ${groupedFiltered.length} items matching your filters`);
+    };
+
+    const applyOrderItemsItemWiseFilter = async () => {
+        try {
+            if (quickStartDate && quickEndDate && new Date(quickStartDate) > new Date(quickEndDate)) {
+                toast.error("Invalid date range: Start date must be before end date");
+                return;
+            }
+
+            const orderItems = await fetchData("order_items", null, "id", {});
+            const rows = Array.isArray(orderItems) ? orderItems : [];
+            const sourceRows = applyCancelledItemsToggle(rows);
+
+            const filteredRows = sourceRows.filter((item) => {
+                const categoryId = item.catid || item.category_id || item.cat_id;
+
+                if (quickCategoryId && String(categoryId) !== String(quickCategoryId)) {
+                    return false;
+                }
+
+                if (quickItemGroup) {
+                    const itemGroup = normalizeItemGroup(item.item_group || item.itemGroup || item.group_name);
+                    if (itemGroup !== normalizeItemGroup(quickItemGroup)) {
+                        return false;
+                    }
+                }
+
+                if (quickStartDate || quickEndDate) {
+                    const rawDate = item.setup_date || item.created_at || item.date;
+                    if (!rawDate) return false;
+                    const dateText = String(rawDate).split("T")[0];
+                    if (quickStartDate && dateText < quickStartDate) return false;
+                    if (quickEndDate && dateText > quickEndDate) return false;
+                }
+
+                return true;
+            });
+
+            const groupedMap = {};
+
+            filteredRows.forEach((item) => {
+                const itemName = item.item_name || item.name || item.product_name;
+                if (!itemName) return;
+
+                const categoryId = item.catid || item.category_id || item.cat_id || null;
+                const subcategoryId = item.subcatid || item.subcategory_id || item.subcat_id || null;
+                const itemGroup = item.item_group || item.itemGroup || item.group_name || "";
+                const groupKey = `${itemName}__${categoryId || ""}__${subcategoryId || ""}__${normalizeItemGroup(itemGroup)}`;
+
+                if (!groupedMap[groupKey]) {
+                    const category = categories.find((cat) => String(cat.id) === String(categoryId));
+                    groupedMap[groupKey] = {
+                        item_name: itemName,
+                        item_group: itemGroup,
+                        category_name: category?.name || "",
+                        subcategory_name: "",
+                        quantity: 0,
+                        total_price: 0,
+                        vat_amount: 0,
+                        catid: categoryId,
+                        subcatid: subcategoryId,
+                    };
+                }
+
+                groupedMap[groupKey].quantity += toNumber(item.quantity || item.qty || 0);
+                groupedMap[groupKey].total_price += toNumber(item.total_price || item.total || item.total_amount || 0);
+                groupedMap[groupKey].vat_amount += toNumber(item.vat_amount || item.tax_amount || 0);
+            });
+
+            const groupedData = Object.values(groupedMap);
+            setFilteredData(groupedData);
+            setData(groupedData);
+            setUseOrderItemsOnlyMode(true);
+            setShowCategorySummary(false);
+            setShowSubcategorySummary(false);
+            setShowTableCategorySummary(false);
+            setTableCurrentPage(1);
+
+            toast.success(`Loaded ${groupedData.length} item-wise records from order_items`);
+        } catch (error) {
+            console.error("Error loading order_items item-wise records:", error);
+            toast.error("Failed to load order_items records");
+        }
+    };
+
+    const clearOrderItemsItemWiseFilter = () => {
+        setQuickStartDate("");
+        setQuickEndDate("");
+        setQuickCategoryId("");
+        setQuickItemGroup("");
+        setUseOrderItemsOnlyMode(false);
+
+        const groupedData = groupByItemName(originalData);
+        setData(groupedData);
+        setFilteredData(groupedData);
+        setTableCurrentPage(1);
     };
 
     // Clear filters
@@ -474,6 +664,9 @@ export default function ItemWiseSummaryVat() {
         setSelectedCatId("");
         setSelectedSubCatId("");
         setSelectedTableCatId("");
+        setBillFilter("all");
+        setShowCancelledItems(false);
+        setUseOrderItemsOnlyMode(false);
         const groupedData = groupByItemName(originalData);
         setFilteredData(groupedData);
         setShowCategorySummary(false);
@@ -482,57 +675,141 @@ export default function ItemWiseSummaryVat() {
         setCategorySummaryData([]);
         setSubcategorySummaryData([]);
         setTableCategorySummaryData([]);
+        setTableCurrentPage(1);
+    };
+
+    const getColumnDisplayValue = (field, record) => {
+        if (field === 'invoice_number') {
+            return record.invoice_number || record.invoice_no || record.bill_no || record.order_id || '-';
+        }
+
+        if (field === 'setup_date') {
+            const dateValue = record.setup_date || record.created_at || record.date || record.order_date;
+            if (!dateValue) return '-';
+            try {
+                return String(dateValue).split('T')[0] || dateValue;
+            } catch (e) {
+                return dateValue || '-';
+            }
+        }
+
+        if (field === 'created_at') {
+            const timeValue = record.created_at || record.inv_time || record.time;
+            if (!timeValue) return '-';
+            try {
+                const dateObj = new Date(timeValue);
+                if (!isNaN(dateObj.getTime())) {
+                    return format(dateObj, 'HH:mm:ss');
+                }
+                const timePart = String(timeValue).split('T')[1];
+                return timePart ? timePart.split('.')[0] : String(timeValue);
+            } catch (e) {
+                return timeValue || '-';
+            }
+        }
+
+        if (field === 'remark') {
+            const invoiceId = Number(record.invoice_number || record.invoice_no || record.bill_no || record.order_id);
+            if (Number.isNaN(invoiceId)) return '-';
+            const bill = finalBillById[invoiceId];
+            return bill?.remark || '-';
+        }
+
+        return record[field] ?? '-';
+    };
+
+    const getCurrentTableColumns = () => {
+        if (showCategorySummary) return categorySummaryColumns;
+        if (showSubcategorySummary) return subcategorySummaryColumns;
+        if (showTableCategorySummary) return tableCategorySummaryColumns;
+        if (shouldUseGroupedItemView) return columns;
+        if (billFilter !== "all") return billFilterColumns;
+        return columns;
+    };
+
+    const getCurrentTableData = () => {
+        if (showCategorySummary) return categorySummaryData;
+        if (showSubcategorySummary) return subcategorySummaryData;
+        if (showTableCategorySummary) return tableCategorySummaryData;
+        return detailData;
     };
 
     // Export to PDF
-    const exportPDF = () => {
+    const exportPDF = async () => {
         const doc = new jsPDF();
-        const exportData = filteredData.length > 0 ? filteredData : data;
+        const exportData = getCurrentTableData();
+        const activeColumns = getCurrentTableColumns();
+        const summaryView = isSummaryViewActive();
 
-        // Add logo
-        doc.addImage(logo, "PNG", 150, 10, 40, 15);
+        const generatedAt = new Date();
+        const generatedDay = format(generatedAt, "EEEE");
+        const generatedDate = format(generatedAt, "yyyy-MM-dd");
+        const generatedTime = format(generatedAt, "HH:mm:ss");
+        const userName = currentUser.name || currentUser.uname || getUserName() || "-";
+        const userId = currentUser.id || currentUser.uname || getUserName() || "-";
 
-        doc.setFontSize(16);
-        doc.text("Item Wise VAT Summary", 14, 20);
+        // Add logo using canvas->JPEG conversion to avoid PNG parsing issues in jsPDF
+        try {
+            const logoJpegDataUrl = await getLogoAsJpegDataUrl(logo);
+            doc.addImage(logoJpegDataUrl, "JPEG", 150, 5, 40, 15);
+        } catch (logoErr) {
+            console.warn("Logo conversion failed, trying direct PNG add...", logoErr);
+            try {
+                doc.addImage(logo, "PNG", 150, 5, 40, 15);
+            } catch (pngErr) {
+                console.error("Failed to add logo to PDF:", pngErr);
+                toast.error("Unable to render logo in PDF");
+            }
+        }
 
-        const tableColumn = [
-            "Invoice No", "Date", "Item", "Qty", "UOM", "Rate",
-            "VAT %", "VAT Amount", "Total"
-        ];
+        const filterLabel = billFilter === "cancelled"
+            ? "Cancel Report"
+            : billFilter === "entertainment"
+            ? "Entertainment Item Report"
+            : billFilter === "sale"
+            ? "Sale Items Report"
+            : "Item Wise VAT Summary";
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text(filterLabel, 14, 18);
+
+        doc.setLineWidth(0.3);
+        doc.line(14, 22, 196, 22);
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("Generated Day:", 14, 28);
+        doc.text("Generated Date:", 14, 33);
+        doc.text("Generated Time:", 14, 38);
+        doc.text("User ID:", 110, 28);
+        doc.text("Username:", 110, 33);
+
+        doc.setFont("helvetica", "normal");
+        doc.text(generatedDay, 48, 28);
+        doc.text(generatedDate, 48, 33);
+        doc.text(generatedTime, 48, 38);
+        doc.text(String(userId), 130, 28);
+        doc.text(String(userName), 130, 33);
+
+        const tableColumn = activeColumns.map((col) => col.label);
 
         const tableRows = [];
-        let vatTotal = 0;
         let grandTotal = 0;
 
         exportData.forEach((item) => {
-            // Handle different field names
-            const invoiceNo = item.invoice_number || item.invoice_no || item.bill_no;
-            const date = item.setup_date;
-            const itemName = item.item_name || item.name || item.product_name;
-            const quantity = item.quantity || item.qty;
-            const rate = item.rate || item.price || item.unit_price;
-            const vatRate = item.vat_rate || item.cgst || item.tax_rate;
-            const vatAmount = item.vat_amount || item.tax_amount;
-            const totalPrice = item.total_price || item.total || item.total_amount;
+            const row = activeColumns.map((col) => getColumnDisplayValue(col.field, item));
+            tableRows.push(row);
 
-            tableRows.push([
-                invoiceNo,
-                date ? format(new Date(date), "yyyy-MM-dd") : "",
-                itemName,
-                quantity,
-                item.uom || item.unit,
-                rate,
-                vatRate,
-                vatAmount,
-                totalPrice,
-            ]);
-
-            vatTotal += parseFloat(vatAmount || 0);
-            grandTotal += parseFloat(totalPrice || 0);
+            if (summaryView) {
+                grandTotal += toNumber(item.total_amount || 0);
+            } else {
+                grandTotal += toNumber(item.total_price || item.total || item.total_amount || 0);
+            }
         });
 
         doc.autoTable({
-            startY: 30,
+            startY: 46,
             head: [tableColumn],
             body: tableRows,
         });
@@ -541,65 +818,52 @@ export default function ItemWiseSummaryVat() {
 
         doc.setFontSize(12);
         doc.text("Summary", 14, finalY);
-        doc.text(`Total VAT: ${vatTotal.toFixed(2)}`, 14, finalY + 8);
-        doc.text(`Total Amount: ${grandTotal.toFixed(2)}`, 14, finalY + 16);
+        doc.text(`Total Amount: ${grandTotal.toFixed(2)}`, 14, finalY + 8);
 
         doc.save("itemwise_vat_summary.pdf");
     };
 
     // Export to Excel
     const exportExcel = () => {
-        const exportData = filteredData.length > 0 ? filteredData : data;
+        const exportData = getCurrentTableData();
+        const activeColumns = getCurrentTableColumns();
+        const summaryView = isSummaryViewActive();
         
-        const worksheetData = exportData.map(item => {
-            // Handle different field names
-            const invoiceNo = item.invoice_number || item.invoice_no || item.bill_no;
-            const date = item.setup_date;
-            const itemName = item.item_name || item.name || item.product_name;
-            const categoryName = item.category_name || item.cat_name;
-            const subcategoryName = item.subcategory_name || item.subcat_name || item.sub_category;
-            const tableCategoryName = item.table_category_name || item.table_cat_name;
-            const quantity = item.quantity || item.qty;
-            const rate = item.rate || item.price || item.unit_price;
-            const vatRate = item.vat_rate || item.cgst || item.tax_rate;
-            const vatAmount = item.vat_amount || item.tax_amount;
-            const totalPrice = item.total_price || item.total || item.total_amount;
+        const generatedAt = new Date();
+        const generatedDay = format(generatedAt, "EEEE");
+        const generatedDate = format(generatedAt, "yyyy-MM-dd");
+        const generatedTime = format(generatedAt, "HH:mm:ss");
+        const userName = currentUser.name || currentUser.uname || getUserName() || "-";
+        const userId = currentUser.id || currentUser.uname || getUserName() || "-";
 
-            return {
-                "Invoice No": invoiceNo,
-                "Date": date ? format(new Date(date), "yyyy-MM-dd") : "",
-                "Category": categoryName,
-                "Subcategory": subcategoryName,
-                "Table Category": tableCategoryName,
-                "Item Name": itemName,
-                "Quantity": quantity,
-                "UOM": item.uom || item.unit,
-                "Rate": rate,
-                "VAT %": vatRate,
-                "VAT Amount": vatAmount,
-                "Total": totalPrice
-            };
-        });
+        const headerRow = activeColumns.map((col) => col.label);
+        const dataRows = exportData.map((item) => activeColumns.map((col) => getColumnDisplayValue(col.field, item)));
+
+        const worksheetData = [
+            ["Logo", "See PDF export for embedded logo"],
+            ["Generated Day", generatedDay],
+            ["Generated Date", generatedDate],
+            ["Generated Time", generatedTime],
+            ["User ID", userId],
+            ["Username", userName],
+            [],
+            headerRow,
+            ...dataRows,
+        ];
 
         // Add summary row
-        const vatTotal = exportData.reduce((acc, item) => {
-            const vatAmount = item.vat_amount || item.tax_amount;
-            return acc + parseFloat(vatAmount || 0);
-        }, 0);
-        
         const grandTotal = exportData.reduce((acc, item) => {
-            const totalPrice = item.total_price || item.total || item.total_amount;
-            return acc + parseFloat(totalPrice || 0);
+            const totalPrice = summaryView
+                ? item.total_amount
+                : (item.total_price || item.total || item.total_amount);
+            return acc + toNumber(totalPrice || 0);
         }, 0);
         
-        worksheetData.push({});
-        worksheetData.push({
-            "Invoice No": "TOTALS",
-            "VAT Amount": vatTotal.toFixed(2),
-            "Total": grandTotal.toFixed(2)
-        });
+        const totalLabelRow = ["TOTALS", grandTotal.toFixed(2)];
+        worksheetData.push([]);
+        worksheetData.push(totalLabelRow);
 
-        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "VAT Summary");
 
@@ -640,8 +904,8 @@ export default function ItemWiseSummaryVat() {
 
             printData.forEach((item, index) => {
                 const name = item.category_name || item.subcategory_name || item.table_category_name || '';
-                const qty = parseFloat(item.total_quantity || 0);
-                const amount = parseFloat(item.total_amount || 0);
+                const qty = toNumber(item.total_quantity || 0);
+                const amount = toNumber(item.total_amount || 0);
                 totalQty += qty;
                 totalAmount += amount;
 
@@ -666,8 +930,8 @@ export default function ItemWiseSummaryVat() {
 
             printData.forEach((item, index) => {
                 const itemName = item.item_name || item.name || item.product_name || '';
-                const qty = parseFloat(item.quantity || item.qty || 0);
-                const amount = parseFloat(item.total_price || item.total || item.total_amount || 0);
+                const qty = toNumber(item.quantity || item.qty || 0);
+                const amount = toNumber(item.total_price || item.total || item.total_amount || 0);
                 totalQty += qty;
                 totalAmount += amount;
 
@@ -802,6 +1066,37 @@ export default function ItemWiseSummaryVat() {
                     setCompanyInfo(companyData[0]);
                 }
 
+                const storedUname = getUserName();
+                const usersData = await fetchData("users", null, "id", {});
+                if (Array.isArray(usersData) && usersData.length > 0) {
+                    const matchedUser = usersData.find(user => {
+                        if (storedUname && user.uname === storedUname) return true;
+                        if (storedUname && user.name === storedUname) return true;
+                        if (storedUname && String(user.id) === String(storedUname)) return true;
+                        return false;
+                    });
+                    const resolvedUser = matchedUser || {};
+                    setCurrentUser({
+                        id: resolvedUser.id || "-",
+                        name: resolvedUser.name || resolvedUser.uname || storedUname || "-",
+                        uname: resolvedUser.uname || storedUname || "-"
+                    });
+                } else {
+                    setCurrentUser({ id: "-", name: storedUname || "-", uname: storedUname || "-" });
+                }
+
+                const finalBillData = await fetchData("final_bill", null, "id", {});
+                if (Array.isArray(finalBillData)) {
+                    const billMap = {};
+                    finalBillData.forEach(bill => {
+                        const billId = Number(bill.id);
+                        if (!Number.isNaN(billId)) {
+                            billMap[billId] = bill;
+                        }
+                    });
+                    setFinalBillById(billMap);
+                }
+
                 // Try the VAT-specific endpoint first, fallback to GST endpoint
                 let resData;
                 try {
@@ -811,9 +1106,13 @@ export default function ItemWiseSummaryVat() {
                     resData = await axios.get("/order_items_gst_joined", getHeaders());
                 }
                 
-                console.log("Fetched data sample:", resData.data[0]); // Debug log
-                setOriginalData(resData.data); // Store original ungrouped data
-                const groupedData = groupByItemName(resData.data);
+                const rawItems = Array.isArray(resData.data) ? resData.data : [];
+                const sourceItems = applyCancelledItemsToggle(rawItems);
+                const uniqueItems = deduplicateOrderItems(sourceItems);
+                console.log("Fetched data sample:", uniqueItems[0]); // Debug log
+                console.log(`Order item rows: ${rawItems.length}, rows after cancelled toggle: ${sourceItems.length}, unique rows: ${uniqueItems.length}`);
+                setOriginalData(uniqueItems); // Store original ungrouped data
+                const groupedData = groupByItemName(uniqueItems);
                 setData(groupedData);
                 setFilteredData(groupedData);
             } catch (error) {
@@ -822,7 +1121,7 @@ export default function ItemWiseSummaryVat() {
             }
         };
         fetchDataAndCategories();
-    }, []);
+    }, [showCancelledItems]);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -867,13 +1166,21 @@ export default function ItemWiseSummaryVat() {
 
     // Auto-filter when dependencies change
     useEffect(() => {
+        if (useOrderItemsOnlyMode) {
+            return;
+        }
+
         if (data.length > 0) {
             applyFilter();
         }
-    }, [data, startDate, endDate, formdata.name, selectedCatId, selectedSubCatId, selectedTableCatId]);
+    }, [data, startDate, endDate, formdata.name, selectedCatId, selectedSubCatId, selectedTableCatId, billFilter, finalBillById, useOrderItemsOnlyMode]);
 
     // Update summaries when filtered data changes
     useEffect(() => {
+        if (selectedCatId || selectedSubCatId || selectedTableCatId) {
+            return;
+        }
+
         if (filteredData.length > 0) {
             // Regenerate current summary if any is active
             if (showCategorySummary) {
@@ -884,7 +1191,19 @@ export default function ItemWiseSummaryVat() {
                 generateTableCategorySummary();
             }
         }
-    }, [filteredData, showCategorySummary, showSubcategorySummary, showTableCategorySummary]);
+    }, [filteredData, showCategorySummary, showSubcategorySummary, showTableCategorySummary, selectedCatId, selectedSubCatId, selectedTableCatId]);
+
+    const shouldUseGroupedItemView = !!(useOrderItemsOnlyMode || selectedCatId || selectedSubCatId || selectedTableCatId);
+
+    const detailData = shouldUseGroupedItemView
+        ? filteredData
+        : billFilter !== "all"
+        ? originalData.filter(matchesFilters)
+        : filteredData;
+
+    const activeColumns = getCurrentTableColumns();
+    const activeTableData = getCurrentTableData();
+    const showLegacyFiltersCard = false;
 
     return (
         <>
@@ -893,7 +1212,125 @@ export default function ItemWiseSummaryVat() {
                 <ToastContainer />
                 <div className="row">
                     <div className="col-12">
+                        <Card style={{ marginBottom: 16 }}>
+                            <Row gutter={[16, 16]} style={{ marginBottom: 12 }}>
+                                <Col xs={24}>
+                                    <strong>Order Items Item-wise Filter</strong>
+                                </Col>
+                            </Row>
+
+                            <Row gutter={[16, 16]} align="bottom">
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>From Date</label>
+                                    <DatePicker
+                                        style={{width: '100%'}}
+                                        value={quickStartDate ? dayjs(quickStartDate) : null}
+                                        onChange={(date, dateString) => setQuickStartDate(dateString)}
+                                        format="YYYY-MM-DD"
+                                    />
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>To Date</label>
+                                    <DatePicker
+                                        style={{width: '100%'}}
+                                        value={quickEndDate ? dayjs(quickEndDate) : null}
+                                        onChange={(date, dateString) => setQuickEndDate(dateString)}
+                                        format="YYYY-MM-DD"
+                                    />
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Category</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        placeholder="All Categories"
+                                        value={quickCategoryId || undefined}
+                                        onChange={(value) => setQuickCategoryId(value || "")}
+                                        allowClear
+                                    >
+                                        {categories.map(cat => (
+                                            <Option key={cat.id} value={cat.id}>{`${cat.name} (${cat.id})`}</Option>
+                                        ))}
+                                    </Select>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Item Group</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        placeholder="All Item Groups"
+                                        value={quickItemGroup || undefined}
+                                        onChange={(value) => setQuickItemGroup(value || "")}
+                                        allowClear
+                                    >
+                                        <Option value="Bar">Bar</Option>
+                                        <Option value="Food">Food</Option>
+                                        <Option value="Shisha">Shisha</Option>
+                                    </Select>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Cancelled Items</label>
+                                    <Checkbox
+                                        checked={showCancelledItems}
+                                        onChange={(e) => setShowCancelledItems(e.target.checked)}
+                                    >
+                                        Show Cancelled Items (status = 2)
+                                    </Checkbox>
+                                </Col>
+                            </Row>
+
+                            <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
+                                <Col xs={24}>
+                                    <Space wrap>
+                                        <Button type="primary" icon={<FilterOutlined />} onClick={applyOrderItemsItemWiseFilter}>
+                                            Apply Item-wise
+                                        </Button>
+                                        <Button icon={<ClearOutlined />} onClick={clearOrderItemsItemWiseFilter}>
+                                            Clear
+                                        </Button>
+                                        <Button danger icon={<FilePdfOutlined />} onClick={exportPDF}>
+                                            Export PDF
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                                            icon={<FileExcelOutlined />}
+                                            onClick={exportExcel}
+                                        >
+                                            Export Excel
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            icon={<PrinterOutlined />}
+                                            onClick={printThermalReport}
+                                            style={{ background: '#722ed1', borderColor: '#722ed1' }}
+                                        >
+                                            Print Thermal
+                                        </Button>
+                                        <Button
+                                            onClick={handleGroupByItemName}
+                                            style={{ background: 'linear-gradient(45deg, #34d399 0%, #10b981 100%)', border: 'none', color: 'white' }}
+                                        >
+                                            🧾 Group by Item Name
+                                        </Button>
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </Card>
+
+                        {showLegacyFiltersCard && (
                         <CardComponent>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+                                <strong>Legacy Filters</strong>
+                                <Button
+                                    type="text"
+                                    onClick={() => setOldFilterCollapsed((prev) => !prev)}
+                                    icon={oldFilterCollapsed ? <DownOutlined /> : <UpOutlined />}
+                                >
+                                    {oldFilterCollapsed ? 'Expand' : 'Collapse'}
+                                </Button>
+                            </div>
+
+                            {!oldFilterCollapsed && (
+                                <>
                             {/* Filter Section */}
                             <Row gutter={[16, 16]} style={{marginBottom: 20}}>
                                 <Col xs={24} sm={12} md={6}>
@@ -915,9 +1352,9 @@ export default function ItemWiseSummaryVat() {
                                     />
                                 </Col>
                                 <Col xs={24} sm={12} md={6}>
-                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Item Name</label>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Search</label>
                                     <Input
-                                        placeholder="Enter item name"
+                                        placeholder="Search by item name / invoice no"
                                         value={formdata.name}
                                         onChange={(e) => setFormData({ ...formdata, name: e.target.value })}
                                     />
@@ -928,11 +1365,16 @@ export default function ItemWiseSummaryVat() {
                                         style={{width: '100%'}}
                                         placeholder="All Categories"
                                         value={selectedCatId || undefined}
-                                        onChange={(value) => setSelectedCatId(value || "")}
+                                        onChange={(value) => {
+                                            setSelectedCatId(value || "");
+                                            setShowCategorySummary(false);
+                                            setShowSubcategorySummary(false);
+                                            setShowTableCategorySummary(false);
+                                        }}
                                         allowClear
                                     >
                                         {categories.map(cat => (
-                                            <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                                            <Option key={cat.id} value={cat.id}>{`${cat.name} (${cat.id})`}</Option>
                                         ))}
                                     </Select>
                                 </Col>
@@ -942,7 +1384,12 @@ export default function ItemWiseSummaryVat() {
                                         style={{width: '100%'}}
                                         placeholder="All Subcategories"
                                         value={selectedSubCatId || undefined}
-                                        onChange={(value) => setSelectedSubCatId(value || "")}
+                                        onChange={(value) => {
+                                            setSelectedSubCatId(value || "");
+                                            setShowCategorySummary(false);
+                                            setShowSubcategorySummary(false);
+                                            setShowTableCategorySummary(false);
+                                        }}
                                         allowClear
                                     >
                                         {subcategories.map(sub => (
@@ -956,13 +1403,40 @@ export default function ItemWiseSummaryVat() {
                                         style={{width: '100%'}}
                                         placeholder="All Table Categories"
                                         value={selectedTableCatId || undefined}
-                                        onChange={(value) => setSelectedTableCatId(value || "")}
+                                        onChange={(value) => {
+                                            setSelectedTableCatId(value || "");
+                                            setShowCategorySummary(false);
+                                            setShowSubcategorySummary(false);
+                                            setShowTableCategorySummary(false);
+                                        }}
                                         allowClear
                                     >
                                         {tableCategories.map(cat => (
                                             <Option key={cat.id} value={cat.id}>{cat.cat_name}</Option>
                                         ))}
                                     </Select>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Bill Filter</label>
+                                    <Select
+                                        style={{width: '100%'}}
+                                        value={billFilter}
+                                        onChange={(value) => setBillFilter(value)}
+                                    >
+                                        <Option value="all">All Bills</Option>
+                                        <Option value="entertainment">Entertainment Only</Option>
+                                        <Option value="sale">Sale Only (Status 0)</Option>
+                                        <Option value="cancelled">Cancelled Only (Status 2)</Option>
+                                    </Select>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Cancelled Items</label>
+                                    <Checkbox
+                                        checked={showCancelledItems}
+                                        onChange={(e) => setShowCancelledItems(e.target.checked)}
+                                    >
+                                        Show Cancelled Items (status = 2)
+                                    </Checkbox>
                                 </Col>
                             </Row>
 
@@ -1013,7 +1487,10 @@ export default function ItemWiseSummaryVat() {
                                     </Button>
                                 </div>
                             )}
+                                </>
+                            )}
                         </CardComponent>
+                        )}
                     </div>
 
                     {/* Data Table Section */}
@@ -1023,51 +1500,76 @@ export default function ItemWiseSummaryVat() {
                                 <p>No data available</p>
                             ) : (
                                 <Table
-                                    columns={
-                                        (showCategorySummary
-                                            ? categorySummaryColumns
-                                            : showSubcategorySummary
-                                            ? subcategorySummaryColumns
-                                            : showTableCategorySummary
-                                            ? tableCategorySummaryColumns
-                                            : columns
-                                        ).map(col => ({
-                                            title: col.label,
-                                            dataIndex: col.field,
-                                            key: col.field,
-                                            sorter: (a, b) => {
-                                                const aVal = a[col.field];
-                                                const bVal = b[col.field];
-                                                if (typeof aVal === 'number') return aVal - bVal;
-                                                return String(aVal || '').localeCompare(String(bVal || ''));
-                                            },
-                                            render: (text, record) => {
-                                                // Format date field
-                                                if (col.field === 'setup_date' && text) {
-                                                    try {
-                                                        const dateStr = text.split('T')[0];
-                                                        return dateStr || text;
-                                                    } catch (e) {
-                                                        return text || '-';
+                                        columns={
+                                            activeColumns.map(col => ({
+                                                title: col.label,
+                                                dataIndex: col.field,
+                                                key: col.field,
+                                                sorter: (a, b) => {
+                                                    const aVal = a[col.field];
+                                                    const bVal = b[col.field];
+                                                    if (typeof aVal === 'number') return aVal - bVal;
+                                                    return String(aVal || '').localeCompare(String(bVal || ''));
+                                                },
+                                                render: (text, record) => {
+                                                    if (col.field === 'invoice_number') {
+                                                        return text || record.invoice_no || record.bill_no || record.order_id || '-';
                                                     }
+
+                                                    if (col.field === 'setup_date') {
+                                                        const dateValue = text || record.created_at || record.date || record.order_date;
+                                                        if (!dateValue) return '-';
+                                                        try {
+                                                            const dateStr = dateValue.split('T')[0];
+                                                            return dateStr || dateValue;
+                                                        } catch (e) {
+                                                            return dateValue || '-';
+                                                        }
+                                                    }
+
+                                                    if (col.field === 'created_at') {
+                                                        const timeValue = text || record.inv_time || record.time;
+                                                        if (!timeValue) return '-';
+                                                        try {
+                                                            const dateObj = new Date(timeValue);
+                                                            if (!isNaN(dateObj.getTime())) {
+                                                                return format(dateObj, 'HH:mm:ss');
+                                                            }
+                                                            const timePart = timeValue.split('T')[1];
+                                                            return timePart ? timePart.split('.')[0] : timeValue;
+                                                        } catch (e) {
+                                                            return timeValue || '-';
+                                                        }
+                                                    }
+
+                                                    if (col.field === 'remark') {
+                                                        if (text) return text;
+                                                        const invoiceId = Number(record.invoice_number || record.invoice_no || record.bill_no || record.order_id);
+                                                        if (Number.isNaN(invoiceId)) return '-';
+                                                        const bill = finalBillById[invoiceId];
+                                                        return bill?.remark || '-';
+                                                    }
+
+                                                    return text || '-';
                                                 }
-                                                return text || '-';
-                                            }
-                                        }))
-                                    }
-                                    dataSource={(
-                                        showCategorySummary
-                                            ? categorySummaryData
-                                            : showSubcategorySummary
-                                            ? subcategorySummaryData
-                                            : showTableCategorySummary
-                                            ? tableCategorySummaryData
-                                            : filteredData
-                                    )}
+                                            }))
+                                        }
+                                    dataSource={activeTableData}
                                     rowKey={(record, index) => index}
                                     pagination={{
-                                        pageSize: 50,
+                                        current: tableCurrentPage,
+                                        pageSize: tablePageSize,
                                         showSizeChanger: true,
+                                        onChange: (page, pageSize) => {
+                                            setTableCurrentPage(page);
+                                            if (pageSize !== tablePageSize) {
+                                                setTablePageSize(pageSize);
+                                            }
+                                        },
+                                        onShowSizeChange: (_current, size) => {
+                                            setTablePageSize(size);
+                                            setTableCurrentPage(1);
+                                        },
                                         showTotal: (total) => `Total ${total} items`,
                                         pageSizeOptions: ['10', '20', '50', '100']
                                     }}
@@ -1082,7 +1584,7 @@ export default function ItemWiseSummaryVat() {
                                 <Col xs={24} sm={8}>
                                     <Statistic 
                                         title="Total Items" 
-                                        value={filteredData.length}
+                                        value={detailData.length}
                                         prefix="📦"
                                     />
                                 </Col>
@@ -1090,9 +1592,9 @@ export default function ItemWiseSummaryVat() {
                                     <Statistic 
                                         title="Total Quantity"
                                         value={
-                                            filteredData.reduce((acc, item) => {
+                                            detailData.reduce((acc, item) => {
                                                 const qty = item.quantity || item.qty || item.total_quantity || 0;
-                                                return acc + parseFloat(qty);
+                                                return acc + toNumber(qty);
                                             }, 0)
                                         }
                                         precision={2}
@@ -1102,9 +1604,9 @@ export default function ItemWiseSummaryVat() {
                                     <Statistic 
                                         title="Total VAT"
                                         value={
-                                            filteredData.reduce((acc, item) => {
+                                            detailData.reduce((acc, item) => {
                                                 const vatAmount = item.vat_amount || item.tax_amount || item.total_vat || 0;
-                                                return acc + parseFloat(vatAmount);
+                                                return acc + toNumber(vatAmount);
                                             }, 0)
                                         }
                                         precision={2}
@@ -1116,9 +1618,9 @@ export default function ItemWiseSummaryVat() {
                                     <Statistic 
                                         title="Grand Total"
                                         value={
-                                            filteredData.reduce((acc, item) => {
+                                            detailData.reduce((acc, item) => {
                                                 const totalPrice = item.total_price || item.total || item.total_amount || 0;
-                                                return acc + parseFloat(totalPrice);
+                                                return acc + toNumber(totalPrice);
                                             }, 0)
                                         }
                                         precision={2}

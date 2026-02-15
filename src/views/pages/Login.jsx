@@ -85,6 +85,12 @@ export default function Login() {
     });
     };
     useEffect(() => {
+        const sessionExpiredNotice = sessionStorage.getItem('session_expired_notice');
+        if (sessionExpiredNotice) {
+            toast.error(sessionExpiredNotice);
+            sessionStorage.removeItem('session_expired_notice');
+        }
+
         const token = getAuthToken();
         const userType = getUserType();
 

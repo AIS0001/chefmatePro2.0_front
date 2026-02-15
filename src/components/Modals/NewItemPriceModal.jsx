@@ -32,6 +32,7 @@ const customStyles = {
 
 const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
   const [formdata, setFormData] = useState({
+    item_type: "Food",
     unit: "",
     quantity_type: "",
     tax: "",
@@ -81,6 +82,7 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       // Step 1: Create the item
       const requestBody = {
         iname: formdata.iname,
+        item_type: formdata.item_type || "Food",
         unit: formdata.unit,
         weight: formdata.quantity_type,
         tax: formdata.tax,
@@ -381,6 +383,35 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
                 name="item_code"
                 lable="Item Code"
               />
+            </div>
+            <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+              <div className="form-group">
+                <label
+                  className="control-label mb-10"
+                  style={{ marginLeft: "15px" }}
+                >
+                  Item Type
+                </label>
+
+                <select
+                  id="item_type"
+                  name="item_type"
+                  className="form-select custom-select"
+                  style={{
+                    borderRadius: "4px",
+                    border: "2px solid #17a2b8",
+                    height: "45px",
+                    width: "95%",
+                    marginLeft: "15px",
+                  }}
+                  onChange={handleComboChange}
+                  value={formdata.item_type}
+                >
+                  <option value="Food">Food</option>
+                  <option value="Bar">Bar</option>
+                  <option value="Shisha">Shisha</option>
+                </select>
+              </div>
             </div>
             <div className="col-lg-4 col-md-4 col-sm-6 col-xs-12">
               <div className="form-group">

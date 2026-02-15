@@ -6,6 +6,7 @@ import axios from "axios";
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { startOfDay } from 'date-fns';
+import { isTokenExpired, logout } from './utility/auth';
 
 // export const baseURL = "https://sharmachefapi.cloudnetsoftwares.com";  // Use export
 // axios.defaults.baseURL = "https://sharmachefapi.cloudnetsoftwares.com/api/";
@@ -21,6 +22,54 @@ import { startOfDay } from 'date-fns';
 
 // export const baseURL = "http://localhost:4402";  // Use export
 // axios.defaults.baseURL = "http://localhost:4402/api";
+
+let isRedirectingToLogin = false;
+
+const redirectToLogin = () => {
+  if (isRedirectingToLogin) return;
+  isRedirectingToLogin = true;
+  sessionStorage.setItem('session_expired_notice', 'Your session has expired. Please log in again.');
+  logout();
+  window.location.replace('/login');
+};
+
+axios.interceptors.request.use(
+  (config) => {
+    const requestUrl = (config?.url || '').toString().toLowerCase();
+    const isLoginRequest = requestUrl.includes('/login');
+    const hasToken = !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
+
+    if (!isLoginRequest && hasToken && isTokenExpired()) {
+      redirectToLogin();
+      return Promise.reject(new axios.Cancel('Session expired'));
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const message = (error?.response?.data?.message || '').toString().toLowerCase();
+    const requestUrl = (error?.config?.url || '').toString().toLowerCase();
+    const isLoginRequest = requestUrl.includes('/login');
+    const hasToken = !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
+    const isExpiredMessage =
+      message.includes('jwt expired') ||
+      message.includes('token expired') ||
+      message.includes('invalid or expired token') ||
+      message.includes('session expired');
+
+    if (!isLoginRequest && hasToken && (status === 401 || status === 403 || isExpiredMessage)) {
+      redirectToLogin();
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

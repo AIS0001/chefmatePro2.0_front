@@ -64,6 +64,7 @@ import SupplierLedger from './views/reports/suppliersLedger';
 import LowStockItems from './views/reports/lowStockItems';
 import DayClose from './views/reports/DayClose';
 import BillEditLogs from './views/reports/BillEditLogs';
+import DayWiseReports from './views/reports/DayWiseReports';
 
 
 //Users
@@ -299,6 +300,11 @@ function AppRoutes() {
           <Route path="/reports/dayclose" element={
             <FeatureProtectedRoute route="/reports/dayclose">
               <PrivateRoute><DayClose /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/reports/daywise" element={
+            <FeatureProtectedRoute route="/reports/daywise">
+              <PrivateRoute><DayWiseReports /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
           <Route path="/reports/lowstockitems" element={

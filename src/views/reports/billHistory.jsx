@@ -1,5 +1,6 @@
 // Updated BillHistory.jsx with Ant Design
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { CSVLink } from "react-csv";
@@ -45,6 +46,7 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
+  CreditCardOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -57,6 +59,7 @@ import updateData from "../../functions/updateData";
 import logo from "../../assets/logo.png";
 import BillItemModal from "../../components/Modals/BillItemModal";
 import { getUserType } from "../../utility/auth";
+import { getHeaders } from "../../utility/getHeader";
 import { getNextSetupDate } from "../../utils/setupDateUtils";
 
 const PAYMENT_MODES = [
@@ -71,6 +74,7 @@ const PAYMENT_MODES = [
 export default function BillHistory() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
+  const [activeSetupDate, setActiveSetupDate] = useState(dayjs());
   const [showModal, setShowModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -78,6 +82,11 @@ export default function BillHistory() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelBillId, setCancelBillId] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [selectedCreditBill, setSelectedCreditBill] = useState(null);
+  const [selectedCreditCustomer, setSelectedCreditCustomer] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const [movingToCredit, setMovingToCredit] = useState(false);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -98,6 +107,24 @@ export default function BillHistory() {
   const userType = getUserType();
   const isCashier = userType?.toLowerCase() === 'cashier';
   const canEditBill = ["admin", "account"].includes((userType || "").toLowerCase());
+
+  useEffect(() => {
+    let mounted = true;
+
+    const syncActiveSetupDate = async () => {
+      const setupDate = await getNextSetupDate();
+      const setupDay = dayjs(setupDate);
+      if (mounted) {
+        setActiveSetupDate(setupDay.isValid() ? setupDay : dayjs());
+      }
+    };
+
+    syncActiveSetupDate();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const hasSavedStart = Boolean(localStorage.getItem("startDate"));
@@ -157,6 +184,8 @@ export default function BillHistory() {
   const normalizePaymentMode = (value) =>
     (value || "").toString().trim().toLowerCase().replace(/\s+/g, "");
 
+  const SALE_ONLY_FILTER_VALUE = "__sale_only__";
+
   const applyFilters = () => {
     if (filters.startDate && filters.endDate && filters.startDate.isAfter(filters.endDate)) {
       toast.error("Invalid date range: Start Date is after End Date");
@@ -205,6 +234,9 @@ export default function BillHistory() {
 
       filtered = filtered.filter(item => {
         const itemMode = normalizePaymentMode(item.payment_mode);
+        if (filterMode === SALE_ONLY_FILTER_VALUE) {
+          return itemMode !== "entertainment";
+        }
         if (qrAliases.has(filterMode)) {
           return qrAliases.has(itemMode);
         }
@@ -365,10 +397,27 @@ export default function BillHistory() {
     if (!cancelBillId) return;
     
     try {
-      await updateData("final_bill", { 
-        status: 2, 
-        remark: cancelReason || "Cancelled" 
-      }, { id: cancelBillId });
+      const billToCancel = data.find((item) => String(item.id) === String(cancelBillId));
+      const isCreditBill = normalizePaymentMode(billToCancel?.payment_mode) === "credit";
+
+      await Promise.all([
+        updateData("final_bill", {
+          status: 2,
+          remark: cancelReason || "Cancelled"
+        }, { id: cancelBillId }),
+        updateData("order_items", {
+          status: 2
+        }, { invoice_number: String(cancelBillId) })
+      ]);
+
+      if (isCreditBill) {
+        try {
+          await axios.delete(`/deletebyid/ledger_entries/transaction_id/${cancelBillId}`, getHeaders());
+        } catch (ledgerError) {
+          console.error("Error deleting ledger entries for cancelled credit bill:", ledgerError);
+          toast.warning("Bill cancelled, but failed to remove ledger entries.");
+        }
+      }
       
       toast.success("Bill cancelled successfully!");
       const updatedData = await fetchData("final_bill", null, "id", {});
@@ -384,6 +433,81 @@ export default function BillHistory() {
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const customerRows = await fetchData("customers", null, "id", {});
+      setCustomers(Array.isArray(customerRows) ? customerRows : []);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      setCustomers([]);
+      toast.error("Unable to load customers.");
+    }
+  };
+
+  const handleMoveBillToCredit = (record) => {
+    if (!record?.id) {
+      toast.error("Invalid bill selected.");
+      return;
+    }
+
+    if (isCancelledStatus(record.status)) {
+      toast.error("Cancelled bill cannot be moved to credit.");
+      return;
+    }
+
+    if (normalizePaymentMode(record.payment_mode) === "credit") {
+      toast.info("Bill is already in credit mode.");
+      return;
+    }
+
+    setSelectedCreditBill(record);
+    setSelectedCreditCustomer(record.customer_id || null);
+    setShowCreditModal(true);
+
+    if (customers.length === 0) {
+      loadCustomers();
+    }
+  };
+
+  const confirmMoveBillToCredit = async () => {
+    if (!selectedCreditBill?.id) {
+      toast.error("Invalid bill selected.");
+      return;
+    }
+
+    if (!selectedCreditCustomer) {
+      toast.error("Please select customer.");
+      return;
+    }
+
+    try {
+      setMovingToCredit(true);
+      const response = await axios.post(
+        "/movebilltocredit",
+        {
+          bill_id: selectedCreditBill.id,
+          customer_id: selectedCreditCustomer,
+        },
+        getHeaders()
+      );
+
+      if (response?.data?.success) {
+        toast.success(response?.data?.message || "Bill moved to credit successfully.");
+        setShowCreditModal(false);
+        setSelectedCreditBill(null);
+        setSelectedCreditCustomer(null);
+        await refreshBills();
+      } else {
+        toast.error(response?.data?.message || "Unable to move bill to credit.");
+      }
+    } catch (error) {
+      console.error("Error moving bill to credit:", error);
+      toast.error(error?.response?.data?.message || "Failed to move bill to credit.");
+    } finally {
+      setMovingToCredit(false);
+    }
   };
 
   const monthlyData = (() => {
@@ -584,7 +708,7 @@ export default function BillHistory() {
                 title={
                   isCancelledStatus(record.status)
                     ? "Cancelled bills cannot be edited"
-                    : !dayjs(record.setup_date).isSame(dayjs(), "day")
+                    : !dayjs(record.setup_date).isSame(activeSetupDate, "day")
                       ? "Only same-day bills can be edited"
                       : "Edit Bill"
                 }
@@ -595,7 +719,7 @@ export default function BillHistory() {
                   onClick={() => handleEditBill(record)}
                   disabled={
                     isCancelledStatus(record.status) ||
-                    !dayjs(record.setup_date).isSame(dayjs(), "day")
+                    !dayjs(record.setup_date).isSame(activeSetupDate, "day")
                   }
                 />
               </AntTooltip>
@@ -608,6 +732,25 @@ export default function BillHistory() {
                   size="small"
                   icon={<DeleteOutlined />}
                   onClick={() => handleCancelBill(record.id)}
+                />
+              </AntTooltip>
+            )}
+            {!isCancelledStatus(record.status) && (
+              <AntTooltip
+                title={
+                  normalizePaymentMode(record.payment_mode) === "credit"
+                    ? "Already in credit mode"
+                    : "Move to Credit"
+                }
+              >
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<CreditCardOutlined />}
+                  onClick={() => handleMoveBillToCredit(record)}
+                  disabled={
+                    normalizePaymentMode(record.payment_mode) === "credit"
+                  }
                 />
               </AntTooltip>
             )}
@@ -801,12 +944,20 @@ export default function BillHistory() {
           <Col xs={24} sm={12} md={6}>
             <div>
               <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Quick Filter</label>
-              <Checkbox
-                checked={normalizePaymentMode(filters.paymentMode) === "entertainment"}
-                onChange={(e) => handleFilterChange("paymentMode", e.target.checked ? "Entertainment" : "")}
-              >
-                Entertainment only
-              </Checkbox>
+              <Space direction="vertical" size={4}>
+                <Checkbox
+                  checked={normalizePaymentMode(filters.paymentMode) === "entertainment"}
+                  onChange={(e) => handleFilterChange("paymentMode", e.target.checked ? "Entertainment" : "")}
+                >
+                  Entertainment only
+                </Checkbox>
+                <Checkbox
+                  checked={normalizePaymentMode(filters.paymentMode) === SALE_ONLY_FILTER_VALUE}
+                  onChange={(e) => handleFilterChange("paymentMode", e.target.checked ? SALE_ONLY_FILTER_VALUE : "")}
+                >
+                  Sale only
+                </Checkbox>
+              </Space>
             </div>
           </Col>
         </Row>
@@ -970,6 +1121,41 @@ export default function BillHistory() {
           value={cancelReason}
           onChange={(e) => setCancelReason(e.target.value)}
           style={{ marginTop: 10 }}
+        />
+      </Modal>
+
+      {/* Move To Credit Modal */}
+      <Modal
+        title={`Move Bill #${selectedCreditBill?.id || ""} to Credit`}
+        open={showCreditModal}
+        onOk={confirmMoveBillToCredit}
+        confirmLoading={movingToCredit}
+        onCancel={() => {
+          setShowCreditModal(false);
+          setSelectedCreditBill(null);
+          setSelectedCreditCustomer(null);
+        }}
+        okText="Move to Credit"
+        cancelText="Cancel"
+      >
+        <p style={{ marginBottom: 8 }}>Select customer for this credit bill.</p>
+        <Select
+          showSearch
+          placeholder="Select customer"
+          value={selectedCreditCustomer || undefined}
+          onChange={(value) => setSelectedCreditCustomer(value || null)}
+          filterOption={(input, option) =>
+            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+          }
+          options={customers.map((customer) => {
+            const customerName = customer.name || customer.customer_name || "Customer";
+            const customerPhone = customer.phone ? ` - ${customer.phone}` : "";
+            return {
+              label: `${customer.id} - ${customerName}${customerPhone}`,
+              value: customer.id,
+            };
+          })}
+          style={{ width: "100%" }}
         />
       </Modal>
     </>

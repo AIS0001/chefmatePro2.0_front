@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Table, Modal, Form, Alert, Spinner } from 'react-bootstrap';
+import { Card as AntCard, Row as AntRow, Col as AntCol, Spin, Divider } from 'antd';
 import { Button, CircularProgress } from '@mui/material';
 import { Visibility, Lock, Print, Cancel, LockClock } from '@mui/icons-material';
 import { ToastContainer, toast } from "react-toastify";
@@ -53,7 +54,9 @@ export default function DayClose() {
     const normalized = normalizePaymentKey(name);
     if (normalized.includes('cash')) return 'cash_sales';
     if (normalized.includes('upi')) return 'upi_sales';
-    if (normalized.includes('card') || normalized.includes('credit') || normalized.includes('debit')) return 'card_sales';
+    if (normalized.includes('credit')) return 'credit_sales';
+    if (normalized.includes('debit')) return 'debit_sales';
+    if (normalized.includes('card')) return 'card_sales';
     if (normalized.includes('qr')) return 'qr_sales';
     if (normalized.includes('bank') || normalized.includes('transfer')) return 'bank_transfer_sales';
     if (normalized.includes('online') || normalized.includes('net')) return 'online_sales';
@@ -195,6 +198,8 @@ export default function DayClose() {
       cash_sales: 0,
       upi_sales: 0,
       card_sales: 0,
+      credit_sales: 0,
+      debit_sales: 0,
       qr_sales: 0,
       bank_transfer_sales: 0,
       online_sales: 0,
@@ -229,39 +234,34 @@ export default function DayClose() {
       summary.total_discount += effectiveDiscount;
       summary.total_sales += netSale;
       
-      // Get payment method from bill (use payment_mode field)
       const paymentMethod = (bill.payment_mode || bill.payment_method || 'Cash').toLowerCase().trim();
+      const normalizedPaymentMethod = normalizePaymentKey(paymentMethod);
       
       // Debug: Log payment methods found in bills
       console.log('Bill payment method:', paymentMethod, 'Amount:', netSale);
       
       // Find matching payment option and add to summary
-      const matchingOption = paymentOptions.find(option => 
-        option.name.toLowerCase().replace(/\s+/g, '_') === paymentMethod.replace(/\s+/g, '_') ||
-        option.name.toLowerCase() === paymentMethod ||
-        paymentMethod.includes(option.name.toLowerCase())
+      const matchingOption = paymentOptions.find(option =>
+        normalizePaymentKey(option.name) === normalizedPaymentMethod
       );
       
       if (matchingOption) {
-        const key = `${matchingOption.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
+        const key = `${normalizePaymentKey(matchingOption.name)}_sales`;
         summary[key] += netSale;
+
         const standardKey = getStandardPaymentKey(matchingOption.name);
-        if (standardKey !== key) {
+        const hasStandardOption = paymentOptions.some(
+          (option) => `${normalizePaymentKey(option.name)}_sales` === standardKey
+        );
+
+        if (standardKey !== key && !hasStandardOption) {
           summary[standardKey] += netSale;
         }
         console.log('Matched payment method:', matchingOption.name, 'Key:', key, 'Amount added:', netSale);
       } else {
-        const standardKey = getStandardPaymentKey(paymentMethod);
+        const standardKey = getStandardPaymentKey(normalizedPaymentMethod);
         summary[standardKey] += netSale;
-        // Default to cash dynamic key if no match found
-        const cashKey = paymentOptions.find(opt => opt.name.toLowerCase() === 'cash');
-        if (cashKey) {
-          const key = `${cashKey.name.toLowerCase().replace(/\s+/g, '_')}_sales`;
-          if (key !== standardKey) {
-            summary[key] += netSale;
-          }
-          console.log('No match found, defaulted to cash. Amount:', netSale);
-        }
+        console.log('No exact payment option match, added to standard key:', standardKey, 'Amount:', netSale);
       }
     });
 
@@ -312,6 +312,8 @@ export default function DayClose() {
           cash_sales: 0,
           upi_sales: 0,
           card_sales: 0,
+          credit_sales: 0,
+          debit_sales: 0,
           qr_sales: 0,
           bank_transfer_sales: 0,
           online_sales: 0,
@@ -345,6 +347,8 @@ export default function DayClose() {
         cash_sales: 0,
         upi_sales: 0,
         card_sales: 0,
+        credit_sales: 0,
+        debit_sales: 0,
         qr_sales: 0,
         bank_transfer_sales: 0,
         online_sales: 0,
@@ -374,6 +378,8 @@ export default function DayClose() {
         cash_sales: 0,
         upi_sales: 0,
         card_sales: 0,
+        credit_sales: 0,
+        debit_sales: 0,
         qr_sales: 0,
         bank_transfer_sales: 0,
         online_sales: 0,
@@ -399,6 +405,12 @@ export default function DayClose() {
             break;
           case 'card':
             summary.card_sales += amount;
+            break;
+          case 'credit':
+            summary.credit_sales += amount;
+            break;
+          case 'debit':
+            summary.debit_sales += amount;
             break;
           case 'qr':
             summary.qr_sales += amount;
@@ -636,15 +648,15 @@ export default function DayClose() {
             <div class="summary-grid">
               <div class="summary-item">
                 <div class="summary-label">Total Amount</div>
-                <div class="summary-value">${formatCurrency(dayCloseData?.total_amount || 0)}</div>
+                <div class="summary-value">${formatCurrency(totalAmountExcludingEntertainment)}</div>
               </div>
               <div class="summary-item">
                 <div class="summary-label">Discount Amount</div>
                 <div class="summary-value">${formatCurrency(dayCloseData?.total_discount || 0)}</div>
               </div>
               <div class="summary-item">
-                <div class="summary-label">Total Sales</div>
-                <div class="summary-value">${formatCurrency(dayCloseData?.total_sales || 0)}</div>
+                <div class="summary-label">Net Sales</div>
+                <div class="summary-value">${formatCurrency(netSalesExcludingEntertainment)}</div>
               </div>
               <div class="summary-item">
                 <div class="summary-label">Total Orders</div>
@@ -658,7 +670,7 @@ export default function DayClose() {
                 <div class="summary-label">Average Order Value</div>
                 <div class="summary-value">${formatCurrency(
                   dayCloseData?.total_orders > 0 
-                    ? dayCloseData.total_sales / dayCloseData.total_orders 
+                    ? netSalesExcludingEntertainment / dayCloseData.total_orders 
                     : 0
                 )}</div>
               </div>
@@ -720,7 +732,7 @@ export default function DayClose() {
 
           <div class="footer">
             <p>Generated on: ${new Date().toLocaleString()}</p>
-            <p>Report generated by ChefMate POS System</p>
+            <p>Report generated by ChefMate Pro POS System</p>
           </div>
         </body>
       </html>
@@ -740,7 +752,12 @@ export default function DayClose() {
   const printThermalSummary = () => {
     const methods = generatePaymentMethods();
     const paymentRows = methods
-      .filter(method => (dayCloseData?.[method.key] || 0) > 0)
+      .filter(method => {
+        const amount = dayCloseData?.[method.key] || 0;
+        const isEntertainmentMethod = (method.key || '').toLowerCase().includes('entertainment')
+          || (method.label || '').toLowerCase().includes('entertainment');
+        return amount > 0 && !isEntertainmentMethod;
+      })
       .map(method => `
         <div class="row">
           <span>${method.label}</span>
@@ -749,6 +766,17 @@ export default function DayClose() {
       `).join('');
     const paymentTotal = methods.reduce((sum, method) => sum + toNumber(dayCloseData?.[method.key]), 0);
     const entertainmentAmount = getEntertainmentSalesAmount();
+    const paymentTotalExcludingEntertainment = Math.max(0, paymentTotal - entertainmentAmount);
+    const paymentTotalIncludingEntertainment = paymentTotal;
+    const totalAmountExcludingEntertainment = Math.max(
+      0,
+      toNumber(dayCloseData?.total_amount) - entertainmentAmount
+    );
+    const totalAmountIncludingEntertainment = toNumber(dayCloseData?.total_amount);
+    const netSalesExcludingEntertainment = Math.max(
+      0,
+      toNumber(dayCloseData?.total_sales) - entertainmentAmount
+    );
 
     const printWindow = window.open('', '_blank');
     const html = `
@@ -779,13 +807,15 @@ export default function DayClose() {
           </div>
 
           <div class="section">
-            <div class="row"><span>Total Sale</span><span>${formatCurrency(dayCloseData?.total_amount || 0)}</span></div>
+            <div class="row"><span>Total Sale</span><span>${formatCurrency(totalAmountExcludingEntertainment)}</span></div>
             <div class="row"><span>Discount Amount</span><span>${formatCurrency(dayCloseData?.total_discount || 0)}</span></div>
-            <div class="row"><strong>Net Sale</strong><strong>${formatCurrency(dayCloseData?.total_sales || 0)}</strong></div>
+            <div class="row"><strong>Net Sale</strong><strong>${formatCurrency(netSalesExcludingEntertainment)}</strong></div>
             <div class="row"><span>Entertainment Amount</span><span>${formatCurrency(entertainmentAmount)}</span></div>
+            <div class="separator"></div>
+            <div class="row"><strong>Total Amount (Incl Entertainment)</strong><strong>${formatCurrency(totalAmountIncludingEntertainment)}</strong></div>
             <div class="row"><span>Total Orders</span><span>${dayCloseData?.total_orders || 0}</span></div>
             <div class="row"><span>Items Sold</span><span>${dayCloseData?.total_items_sold || 0}</span></div>
-            <div class="row"><span>Avg Order</span><span>${formatCurrency(dayCloseData?.total_orders > 0 ? dayCloseData.total_sales / dayCloseData.total_orders : 0)}</span></div>
+            <div class="row"><span>Avg Order</span><span>${formatCurrency(dayCloseData?.total_orders > 0 ? netSalesExcludingEntertainment / dayCloseData.total_orders : 0)}</span></div>
             <div class="row"><span>Cancelled Bills</span><span>${dayCloseData?.canceled_orders || 0}</span></div>
             <div class="row"><span>Cancelled Amount</span><span>${formatCurrency(dayCloseData?.canceled_amount || 0)}</span></div>
           </div>
@@ -793,7 +823,10 @@ export default function DayClose() {
           <div class="section">
             <div class="row"><strong>Payment Breakdown</strong><strong></strong></div>
             ${paymentRows || '<div class="row"><span>No payments</span><span>฿ 0.00</span></div>'}
-            <div class="row"><strong>Total Amount</strong><strong>${formatCurrency(paymentTotal)}</strong></div>
+            <div class="row"><strong>Total Amount (Excl Entertainment)</strong><strong>${formatCurrency(paymentTotalExcludingEntertainment)}</strong></div>
+            <div class="row"><span>Entertainment Amount</span><span>${formatCurrency(entertainmentAmount)}</span></div>
+            <div class="separator"></div>
+            <div class="row"><strong>Total Sale (Incl Entertainment)</strong><strong>${formatCurrency(paymentTotalIncludingEntertainment)}</strong></div>
           </div>
 
           <div class="footer">
@@ -855,13 +888,18 @@ export default function DayClose() {
         setShowCloseModal(false);
         
         // Save cash drawer data if provided (do not fail day close if this insert fails)
-        if (cashDrawerData.closingCash > 0 || cashDrawerData.openingCash > 0) {
+        if (
+          toNumber(cashDrawerData.closingCash) > 0 ||
+          toNumber(cashDrawerData.openingCash) > 0 ||
+          toNumber(cashDrawerData.cashIn) > 0 ||
+          toNumber(cashDrawerData.cashOut) > 0
+        ) {
           const cashDrawerPayload = {
             open_date: selectedDate,
             opening_cash: cashDrawerData.openingCash || 0,
             closing_cash: cashDrawerData.closingCash || 0,
-            expected_cash: dayCloseData.cash_sales || 0,
-            cash_difference: (cashDrawerData.closingCash || 0) - (dayCloseData.cash_sales || 0),
+            expected_cash: baseExpectedCash,
+            cash_difference: cashDifference,
             cash_in: cashDrawerData.cashIn || 0,
             cash_out: cashDrawerData.cashOut || 0,
             closed_by: getUserName(),
@@ -911,6 +949,84 @@ export default function DayClose() {
       };
     });
   };
+
+  const entertainmentAmount = getEntertainmentSalesAmount();
+  const totalAmountExcludingEntertainment = Math.max(
+    0,
+    toNumber(dayCloseData?.total_amount) - entertainmentAmount
+  );
+  const netSalesExcludingEntertainment = Math.max(
+    0,
+    toNumber(dayCloseData?.total_sales) - entertainmentAmount
+  );
+  const baseExpectedCash = toNumber(dayCloseData?.cash_sales);
+  const cashInAmount = toNumber(cashDrawerData.cashIn);
+  const cashOutAmount = toNumber(cashDrawerData.cashOut);
+  const actualClosingCash = toNumber(cashDrawerData.closingCash)  + cashOutAmount;
+  const cashDifference = actualClosingCash - baseExpectedCash;
+
+  const summaryCards = [
+    {
+      key: 'total_amount',
+      icon: <FaMoneyBillWave />,
+      value: formatCurrency(totalAmountExcludingEntertainment),
+      label: 'Total Amount',
+      className: 'summary-card total-sales'
+    },
+    {
+      key: 'total_discount',
+      icon: <FaMoneyBillWave />,
+      value: formatCurrency(dayCloseData?.total_discount || 0),
+      label: 'Total Discount Amount',
+      className: 'summary-card total-sales'
+    },
+    {
+      key: 'total_sales',
+      icon: <FaMoneyBillWave />,
+      value: formatCurrency(netSalesExcludingEntertainment),
+      label: 'Net Sales',
+      className: 'summary-card total-sales'
+    },
+    {
+      key: 'entertainment_amount',
+      icon: <FaGlobe />,
+      value: formatCurrency(getEntertainmentSalesAmount()),
+      label: 'Entertainment Amount',
+      className: 'summary-card total-sales'
+    },
+    {
+      key: 'cancelled_bills',
+      icon: <FaTimesCircle />,
+      value: formatCurrency(dayCloseData?.canceled_amount || 0),
+      label: `Cancelled Bills (${dayCloseData?.canceled_orders || 0})`,
+      className: 'summary-card total-sales'
+    },
+    {
+      key: 'total_orders',
+      icon: <FaCalendarAlt />,
+      value: dayCloseData?.total_orders || 0,
+      label: 'Total Orders',
+      className: 'summary-card total-orders'
+    },
+    {
+      key: 'items_sold',
+      icon: <FaQrcode />,
+      value: dayCloseData?.total_items_sold || 0,
+      label: 'Items Sold',
+      className: 'summary-card total-items'
+    },
+    {
+      key: 'avg_order',
+      icon: <FaCreditCard />,
+      value: formatCurrency(
+        dayCloseData?.total_orders > 0
+          ? netSalesExcludingEntertainment / dayCloseData.total_orders
+          : 0
+      ),
+      label: 'Avg Order Value',
+      className: 'summary-card avg-order'
+    }
+  ];
 
   return (
     <Layout>
@@ -1008,115 +1124,41 @@ export default function DayClose() {
 
             {/* Summary Cards */}
             <Row className="mb-4">
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card total-sales">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaMoneyBillWave />
+              {summaryCards.map((item) => (
+                <Col lg={3} md={6} className="mb-3" key={item.key}>
+                  <AntCard className={`dayclose-ant-stat-card ${item.className} dayclose-card-${item.key}`} bodyStyle={{ padding: '14px 16px' }}>
+                    <div className="dayclose-ant-stat-content">
+                      <div className="dayclose-ant-stat-icon">
+                        {item.icon}
+                      </div>
+                      <div>
+                        <div className="dayclose-ant-stat-value">{item.value}</div>
+                        <div className="dayclose-ant-stat-label">{item.label}</div>
+                      </div>
                     </div>
-                    <h3 className="summary-amount">{formatCurrency(dayCloseData?.total_amount)}</h3>
-                    <p className="summary-label">Total Amount</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card total-sales">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaMoneyBillWave />
-                    </div>
-                    <h3 className="summary-amount">{formatCurrency(dayCloseData?.total_sales)}</h3>
-                    <p className="summary-label">Total Sales</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card total-sales">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaGlobe />
-                    </div>
-                    <h3 className="summary-amount">{formatCurrency(getEntertainmentSalesAmount())}</h3>
-                    <p className="summary-label">Entertainment Amount</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card total-sales">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaTimesCircle />
-                    </div>
-                    <h3 className="summary-amount">{formatCurrency(dayCloseData?.canceled_amount || 0)}</h3>
-                    <p className="summary-label">Cancelled Bills ({dayCloseData?.canceled_orders || 0})</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-              
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card total-orders">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaCalendarAlt />
-                    </div>
-                    <h3 className="summary-amount">{dayCloseData?.total_orders || 0}</h3>
-                    <p className="summary-label">Total Orders</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-              
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card total-items">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaQrcode />
-                    </div>
-                    <h3 className="summary-amount">{dayCloseData?.total_items_sold || 0}</h3>
-                    <p className="summary-label">Items Sold</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-              
-              <Col lg={3} md={6} className="mb-3">
-                <Card className="summary-card avg-order">
-                  <Card.Body className="text-center">
-                    <div className="summary-icon">
-                      <FaCreditCard />
-                    </div>
-                    <h3 className="summary-amount">
-                      {formatCurrency(
-                        dayCloseData?.total_orders > 0 
-                          ? dayCloseData.total_sales / dayCloseData.total_orders 
-                          : 0
-                      )}
-                    </h3>
-                    <p className="summary-label">Avg Order Value</p>
-                  </Card.Body>
-                </Card>
-              </Col>
+                  </AntCard>
+                </Col>
+              ))}
             </Row>
 
             {/* Payment Methods Breakdown */}
-            <Card className="mb-4 shadow-lg border-0">
-              <Card.Header className="bg-gradient text-white" >
-                <h5 className="mb-0 d-flex align-items-center">
+            <AntCard className="mb-4 shadow-lg border-0" bodyStyle={{ padding: '16px' }}>
+              <div className="bg-gradient text-white rounded p-3 mb-3">
+                <h6 className="mb-1 d-flex align-items-center" style={{ fontSize: '0.95rem' }}>
                   <FaCreditCard className="me-2" />
                   Payment Methods Breakdown
-                </h5>
-                <small className="opacity-75">Daily payment collection by method</small>
-              </Card.Header>
-              <Card.Body className="p-4">
+                </h6>
+                <small className="opacity-75" style={{ fontSize: '0.75rem' }}>Daily payment collection by method</small>
+              </div>
+              <div className="p-2">
                 {paymentOptions.length === 0 ? (
                   <div className="text-center py-5">
-                    <Spinner animation="border" variant="primary" className="mb-3" />
-                    <p className="text-muted">Loading payment methods...</p>
+                    <Spin size="large" className="mb-3" />
+                    <span className="text-muted" style={{ display: 'block' }}>Loading payment methods...</span>
                   </div>
                 ) : (
                   <>
-                    <Row>
+                    <AntRow gutter={[16, 16]}>
                       {generatePaymentMethods()
                         .filter((method) => {
                           const normalizedLabel = (method.label || '').toLowerCase().replace(/\s+/g, '_');
@@ -1124,163 +1166,63 @@ export default function DayClose() {
                             && !['upi', 'bank_transfer'].includes(normalizedLabel);
                         })
                         .map((method) => (
-                        <Col lg={4} md={6} sm={12} key={method.key} className="mb-4">
-                          <div className="payment-method-card-minimal" style={{
-                            background: 'white',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                            border: '1px solid #f0f0f0',
-                            transition: 'all 0.3s ease',
-                            position: 'relative',
-                            overflow: 'hidden'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-4px)';
-                            e.currentTarget.style.boxShadow = '0 8px 40px rgba(0, 0, 0, 0.12)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
-                          }}>
-                            {/* Minimal gradient accent */}
-                            <div style={{
-                              position: 'absolute',
-                              top: '0',
-                              left: '0',
-                              right: '0',
-                              height: '4px',
-                              background: method.gradient,
-                              borderRadius: '12px 12px 0 0'
-                            }}></div>
-                            
-                            {/* Content */}
-                            <div className="pt-2">
-                              <div className="d-flex justify-content-between align-items-start mb-3">
-                                <div className="payment-icon-minimal" style={{
-                                  fontSize: '2rem',
-                                  color: '#6c757d'
-                                }}>
-                                  {method.icon}
-                                </div>
-                                <div className="text-end">
-                                  <small className="text-muted text-uppercase" style={{ 
-                                    fontSize: '0.75rem',
-                                    fontWeight: '500',
-                                    letterSpacing: '0.5px'
-                                  }}>
-                                    Payment
-                                  </small>
-                                </div>
+                        <AntCol lg={8} md={12} xs={24} key={method.key} className="dayclose-payment-col">
+                          <AntCard hoverable className="dayclose-ant-stat-card dayclose-ant-payment-card" bodyStyle={{ padding: '14px 16px' }}>
+                            <div className="dayclose-ant-stat-content">
+                              <div className="dayclose-ant-stat-icon">
+                                {method.icon}
                               </div>
-                              
                               <div>
-                                <h3 className="mb-1 text-dark" style={{ 
-                                  fontWeight: '600',
-                                  fontSize: '1.6rem'
-                                }}>
+                                <div className="dayclose-ant-stat-value">
                                   {formatCurrency(dayCloseData?.[method.key] || 0)}
-                                </h3>
-                                <h6 className="mb-3 text-secondary" style={{ 
-                                  fontWeight: '500',
-                                  fontSize: '1rem'
-                                }}>
-                                  {method.label}
-                                </h6>
-                                
-                                <div className="d-flex justify-content-between align-items-center">
-                                  <small className="text-muted">
-                                    Today's Collection
-                                  </small>
-                                  <div className="status-badge" style={{
-                                    padding: '3px 8px',
-                                    background: dayCloseData?.[method.key] > 0 ? '#e8f5e8' : '#f8f9fa',
-                                    color: dayCloseData?.[method.key] > 0 ? '#28a745' : '#6c757d',
-                                    borderRadius: '8px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: '500'
-                                  }}>
-                                    {dayCloseData?.[method.key] > 0 ? '● Active' : '○ No transactions'}
-                                  </div>
+                                </div>
+                                <div className="dayclose-ant-stat-label">{method.label}</div>
+                                <div className={`dayclose-ant-status ${dayCloseData?.[method.key] > 0 ? 'active' : 'inactive'}`}>
+                                  {dayCloseData?.[method.key] > 0 ? 'Active' : 'No transactions'}
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </Col>
+                          </AntCard>
+                        </AntCol>
                       ))}
-                    </Row>
+                    </AntRow>
                     
                     {/* Summary Footer */}
-                    <div className="mt-4 pt-4 border-top" style={{ borderColor: '#e9ecef !important' }}>
-                      <Row className="justify-content-center">
-                        <Col md={5} lg={4} className="mb-3 mb-md-0">
-                          <div className="d-flex align-items-center justify-content-center p-3" style={{
-                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                            borderRadius: '12px',
-                            border: '1px solid #dee2e6',
-                            height: '100%',
-                            minHeight: '80px'
-                          }}>
-                            <div className="summary-icon me-3" style={{
-                              width: '48px',
-                              height: '48px',
-                              background: 'white',
-                              borderRadius: '12px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#28a745',
-                              fontSize: '1.5rem',
-                              boxShadow: '0 2px 8px rgba(40, 167, 69, 0.2)',
-                              flexShrink: 0
-                            }}>
-                              <FaMoneyBillWave />
+                    <div className="mt-4 pt-2">
+                      <Divider style={{ margin: '0 0 16px 0' }} />
+                      <AntRow justify="start" gutter={[16, 16]}>
+                        <AntCol md={10} lg={8} xs={24}>
+                          <AntCard className="dayclose-ant-stat-card" bodyStyle={{ padding: '14px 16px' }}>
+                            <div className="dayclose-ant-stat-content">
+                              <div className="dayclose-ant-stat-icon">
+                                <FaMoneyBillWave />
+                              </div>
+                              <div>
+                                <div className="dayclose-ant-stat-value">{formatCurrency(netSalesExcludingEntertainment)}</div>
+                                <div className="dayclose-ant-stat-label">Total Collections</div>
+                              </div>
                             </div>
-                            <div className="text-center text-md-start">
-                              <h5 className="mb-0 text-success" style={{ fontWeight: '600' }}>
-                                {formatCurrency(dayCloseData?.total_sales || 0)}
-                              </h5>
-                              <small className="text-muted">Total Collections</small>
+                          </AntCard>
+                        </AntCol>
+                        <AntCol md={10} lg={8} xs={24}>
+                          <AntCard className="dayclose-ant-stat-card" bodyStyle={{ padding: '14px 16px' }}>
+                            <div className="dayclose-ant-stat-content">
+                              <div className="dayclose-ant-stat-icon">
+                                <FaCalendarAlt />
+                              </div>
+                              <div>
+                                <div className="dayclose-ant-stat-value">{dayCloseData?.total_orders || 0}</div>
+                                <div className="dayclose-ant-stat-label">Total Orders</div>
+                              </div>
                             </div>
-                          </div>
-                        </Col>
-                        <Col md={5} lg={4}>
-                          <div className="d-flex align-items-center justify-content-center p-3" style={{
-                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                            borderRadius: '12px',
-                            border: '1px solid #dee2e6',
-                            height: '100%',
-                            minHeight: '80px'
-                          }}>
-                            <div className="summary-icon me-3" style={{
-                              width: '48px',
-                              height: '48px',
-                              background: 'white',
-                              borderRadius: '12px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#007bff',
-                              fontSize: '1.5rem',
-                              boxShadow: '0 2px 8px rgba(0, 123, 255, 0.2)',
-                              flexShrink: 0
-                            }}>
-                              📊
-                            </div>
-                            <div className="text-center text-md-start">
-                              <h5 className="mb-0 text-primary" style={{ fontWeight: '600' }}>
-                                {dayCloseData?.total_orders || 0}
-                              </h5>
-                              <small className="text-muted">Total Orders</small>
-                            </div>
-                          </div>
-                        </Col>
-                      </Row>
+                          </AntCard>
+                        </AntCol>
+                      </AntRow>
                     </div>
                   </>
                 )}
-              </Card.Body>
-            </Card>
+              </div>
+            </AntCard>
 
             {/* Detailed View */}
             {detailedView && (
@@ -1416,20 +1358,20 @@ export default function DayClose() {
                 <h6>Cash Summary</h6>
                 <div className="d-flex justify-content-between">
                   <span>Expected Cash:</span>
-                  <span>{formatCurrency(dayCloseData?.cash_sales || 0)}</span>
+                  <span>{formatCurrency(baseExpectedCash)}</span>
                 </div>
                 <div className="d-flex justify-content-between">
                   <span>Actual Cash:</span>
-                  <span>{formatCurrency(cashDrawerData.closingCash)}</span>
+                  <span>{formatCurrency(actualClosingCash)}</span>
                 </div>
                 <div className="d-flex justify-content-between border-top pt-2">
                   <strong>Difference:</strong>
                   <strong className={
-                    (cashDrawerData.closingCash - (dayCloseData?.cash_sales || 0)) >= 0 
+                    cashDifference >= 0 
                       ? 'text-success' 
                       : 'text-danger'
                   }>
-                    {formatCurrency(cashDrawerData.closingCash - (dayCloseData?.cash_sales || 0))}
+                    {formatCurrency(cashDifference)}
                   </strong>
                 </div>
               </div>

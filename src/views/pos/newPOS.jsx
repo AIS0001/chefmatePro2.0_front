@@ -257,6 +257,29 @@ export default function NewPOS() {
     }
   };
 
+  const resolveItemGroup = (item) => {
+    return item?.item_type || item?.item_group || item?.itemgroup || item?.itemGroup || item?.group_name || null;
+  };
+
+  const resolveCategoryId = (item) => {
+    return item?.catid || item?.category_id || item?.cat_id || null;
+  };
+
+  const resolveSubcategoryId = (item) => {
+    return item?.subcatid || item?.subcategory_id || item?.subcat_id || null;
+  };
+
+  const resolveCategoryName = (item) => {
+    const directName = item?.category_name || item?.cat_name || null;
+    if (directName) return directName;
+
+    const categoryId = resolveCategoryId(item);
+    if (!categoryId) return null;
+
+    const matched = categories.find((cat) => String(cat.id) === String(categoryId));
+    return matched?.name || null;
+  };
+
 
 
   // Fetch items when a subcategory is clicked
@@ -346,9 +369,10 @@ const addItemToOrder = (index, item) => {
       tax: item.tax || 0,  //right now no need for local shop
       tax_amount: ( ((item.tax || 0)) * item.offerprice / 100 ).toFixed(2),  //calculate tax value included
       // Add category information to cart item
-      category_id: selectedCategory,
-      category_name: categories.find(cat => cat.id === selectedCategory)?.name || null,
-      subcategory_id: item.subcatid || null,
+      category_id: resolveCategoryId(item),
+      category_name: resolveCategoryName(item),
+      subcategory_id: resolveSubcategoryId(item),
+      item_group: resolveItemGroup(item),
     });
   }
 
@@ -437,9 +461,10 @@ const addItemToOrder = (index, item) => {
         subtotal: item.offerprice,
         tax: item.tax || 0,
         tax_amount: (((item.tax || 0) * item.offerprice) / 100).toFixed(2),
-        category_id: selectedCategory,
-        category_name: categories.find(cat => cat.id === selectedCategory)?.name || null,
-        subcategory_id: item.subcatid || null,
+        category_id: resolveCategoryId(item),
+        category_name: resolveCategoryName(item),
+        subcategory_id: resolveSubcategoryId(item),
+        item_group: resolveItemGroup(item),
       });
     }
 
@@ -601,7 +626,7 @@ const decreaseItemQuantity = (index) => {
 
   
   // Window print KOT function - Optimized for speed
-  const windowPrintKOT = (orderItems) => {
+  const windowPrintKOT = (orderItems, kotHeader = 'KOT') => {
     // Show immediate feedback
     toast.success("Preparing KOT...");
     
@@ -609,8 +634,7 @@ const decreaseItemQuantity = (index) => {
     let kotContent = `
       <div style="font-family: 'Courier New', monospace; max-width: 220px; margin: 0 auto; padding: 12px;">
         <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
-          <h2 style="margin: 0; font-size: 12px;">KITCHEN ORDER TICKET</h2>
-          <h3 style="margin: 2px 0; font-size: 10px;">(KOT)</h3>
+          <h2 style="margin: 0; font-size: 12px;">${kotHeader}</h2>
         </div>
         
         <div style="margin-bottom: 10px; font-size: 11px;">
@@ -671,7 +695,7 @@ const decreaseItemQuantity = (index) => {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>KOT - Table ${selectedTable}</title>
+          <title>${kotHeader} - Table ${selectedTable}</title>
           <style>
             @media print {
               body { margin: 0; }
@@ -746,6 +770,44 @@ const decreaseItemQuantity = (index) => {
     } else {
       toast.error("Unable to open print window. Please check popup blocker settings.");
     }
+  };
+
+  const windowPrintKOTByGroup = (orderItems) => {
+    const normalizeGroup = (value) => {
+      const text = String(value || '').trim().toLowerCase();
+      if (text.includes('bar')) return 'BAR';
+      if (text.includes('shisha')) return 'SHISHA';
+      if (text.includes('food')) return 'FOOD';
+      return 'FOOD';
+    };
+
+    const buckets = {
+      FOOD: [],
+      BAR: [],
+      SHISHA: []
+    };
+
+    (orderItems || []).forEach((item) => {
+      const group = normalizeGroup(item?.item_group || item?.itemGroup || item?.itemgroup || item?.group_name || item?.item_type);
+      buckets[group].push(item);
+    });
+
+    const jobs = [
+      { group: 'FOOD', header: 'KOT Food' },
+      { group: 'BAR', header: 'KOT Bar' },
+      { group: 'SHISHA', header: 'KOT Shisha' }
+    ].filter((job) => buckets[job.group].length > 0);
+
+    if (jobs.length === 0) {
+      windowPrintKOT(orderItems, 'KOT');
+      return;
+    }
+
+    jobs.forEach((job, index) => {
+      setTimeout(() => {
+        windowPrintKOT(buckets[job.group], job.header);
+      }, index * 350);
+    });
   };
 
   const windowPrintKOTReprint = (orderItems, tableNumber, orderNumber) => {
@@ -966,7 +1028,8 @@ const decreaseItemQuantity = (index) => {
       watermark: "COPY",
       items: reprintItems.map((item) => ({
         item_name: item.item_name,
-        quantity: parseFloat(item.quantity || 0)
+        quantity: parseFloat(item.quantity || 0),
+        item_group: resolveItemGroup(item)
       })),
       total: totalAmount.toFixed(2)
     };
@@ -1025,6 +1088,7 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,
+        item_group: resolveItemGroup(item),
         quantity: parseFloat(item.quantity.toFixed(2)),
         price: parseFloat(item.offerprice),
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
@@ -1033,9 +1097,9 @@ const decreaseItemQuantity = (index) => {
         weight_based: item.weight === "weight" ? 1 : 0,
         setup_date: setupDate,
         // Add category information for reporting
-        category_id: item.category_id || null,
-        category_name: item.category_name || null,
-        subcategory_id: item.subcategory_id || null,
+        category_id: resolveCategoryId(item),
+        category_name: resolveCategoryName(item),
+        subcategory_id: resolveSubcategoryId(item),
         // Add table category for filtering
         table_cat_id: selectedTableCategory || null,
       }));
@@ -1067,7 +1131,8 @@ const decreaseItemQuantity = (index) => {
           timestamp: new Date().toISOString(),
           items: cart.map(item => ({
             item_name: item.iname,
-            quantity: parseFloat(item.quantity.toFixed(2))
+            quantity: parseFloat(item.quantity.toFixed(2)),
+            item_group: resolveItemGroup(item)
           })),
           total: total.toFixed(2)
         };
@@ -1092,7 +1157,8 @@ const decreaseItemQuantity = (index) => {
         // Update table status and refresh data in background
         Promise.all([
           updateData("tablelist", { status: '1' }, { name: selectedTable }),
-          fetchData("tablelist", setTotaltablelist, "id", {}),
+          loadTablesForSelection(),
+          getRunningTable("orders", settableList),
           getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
         ]).then(() => {
           setRefreshTrigger(prev => prev + 1);
@@ -1142,6 +1208,7 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,
+        item_group: resolveItemGroup(item),
         quantity: parseFloat(item.quantity.toFixed(2)),
         price: parseFloat(item.offerprice),
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
@@ -1150,9 +1217,9 @@ const decreaseItemQuantity = (index) => {
         weight_based: item.weight === "weight" ? 1 : 0,
         setup_date: setupDate,
         // Add category information for reporting
-        category_id: item.category_id || null,
-        category_name: item.category_name || null,
-        subcategory_id: item.subcategory_id || null,
+        category_id: resolveCategoryId(item),
+        category_name: resolveCategoryName(item),
+        subcategory_id: resolveSubcategoryId(item),
         // Add table category for filtering
         table_cat_id: selectedTableCategory || null,
       }));
@@ -1168,7 +1235,7 @@ const decreaseItemQuantity = (index) => {
       // })));
 
       // Print KOT immediately while saving data in background
-      windowPrintKOT(orderItems);
+      windowPrintKOTByGroup(orderItems);
       
       // console.log("=== SAVING TO DATABASE ===");
       // console.log("Orders API call data:", {
@@ -1223,7 +1290,8 @@ const decreaseItemQuantity = (index) => {
         // Update table status and refresh data in background
         Promise.all([
           updateData("tablelist", { status: '1' }, { name: selectedTable }),
-          fetchData("tablelist", setTotaltablelist, "id", {}),
+          loadTablesForSelection(),
+          getRunningTable("orders", settableList),
           getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
         ]).then(() => {
           setRefreshTrigger(prev => prev + 1);
@@ -1272,6 +1340,7 @@ const decreaseItemQuantity = (index) => {
         order_number: maxNumber,
         table_number: selectedTable,
         item_name: item.iname,     // Assuming each item has a name property
+        item_group: resolveItemGroup(item),
         quantity: parseFloat(item.quantity.toFixed(2)),    // Ensure quantity is properly formatted as decimal
         price: parseFloat(item.offerprice),      // Price per unit  
         total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)), // Total for this item
@@ -1280,9 +1349,9 @@ const decreaseItemQuantity = (index) => {
         weight_based: item.weight === "weight" ? 1 : 0, // Flag for weight-based items
         setup_date: setupDate, // ✅ Add setup_date column
         // Add category information for reporting
-        category_id: item.category_id || null,
-        category_name: item.category_name || null,
-        subcategory_id: item.subcategory_id || null,
+        category_id: resolveCategoryId(item),
+        category_name: resolveCategoryName(item),
+        subcategory_id: resolveSubcategoryId(item),
         // Add table category for filtering
         table_cat_id: selectedTableCategory || null,
       }));
@@ -1310,7 +1379,8 @@ const decreaseItemQuantity = (index) => {
         { status: '1' },
         { name: selectedTable } // Additional WHERE conditions
       );
-      await fetchData("tablelist", setTotaltablelist, "id", {});
+      await loadTablesForSelection();
+      await getRunningTable("orders", settableList);
       await getMax("orders", setmaxNumber, "userid", getUserName(), "order_number");
 
         // Step 3: Print KOT after successful save
@@ -1340,8 +1410,69 @@ const decreaseItemQuantity = (index) => {
       toast.error('Error saving order!');
     }
   };
-  const refreshTables = (event) => {
-    fetchData("tablelist", setTotaltablelist, "id", {});
+  const normalizeTableRows = (rows = []) => {
+    if (!Array.isArray(rows)) return [];
+
+    const isOccupied = (value) => {
+      const normalized = String(value ?? "").trim().toLowerCase();
+      return value === 1 || value === "1" || value === true || normalized === "true" || normalized === "occupied" || normalized === "running" || normalized === "busy";
+    };
+
+    return rows.map((row) => ({
+      ...row,
+      status: isOccupied(row?.status) ? 1 : 0,
+    }));
+  };
+
+  const loadTablesForSelection = async () => {
+    const basicTables = await fetchData("tablelist", null, "id", {}) || [];
+    let finalTables = Array.isArray(basicTables) ? [...basicTables] : [];
+
+    try {
+      const joinedTables = await fetchDataFromTwoTables(
+        "tablelist",
+        "table_category",
+        "table_cat_id",
+        "id",
+        null,
+        "t1.id",
+        {}
+      );
+
+      if (Array.isArray(joinedTables) && joinedTables.length > 0 && finalTables.length > 0) {
+        const joinedByKey = new Map(
+          joinedTables.map((table) => [String(table?.id ?? table?.name ?? ""), table])
+        );
+
+        finalTables = finalTables.map((table) => {
+          const byId = joinedByKey.get(String(table?.id ?? ""));
+          const byName = joinedByKey.get(String(table?.name ?? ""));
+          const joined = byId || byName;
+
+          if (!joined) return table;
+
+          return {
+            ...table,
+            table_cat_id: joined.table_cat_id ?? table.table_cat_id ?? null,
+            category: joined.category ?? joined.category_name ?? table.category ?? null,
+            category_name: joined.category_name ?? joined.category ?? table.category_name ?? null,
+          };
+        });
+      }
+    } catch (error) {
+      // Fallback to basic table list when join fetch fails
+    }
+
+    setTotaltablelist(normalizeTableRows(finalTables));
+  };
+
+  const refreshTables = async (event) => {
+    if (event?.preventDefault) event.preventDefault();
+    await Promise.all([
+      loadTablesForSelection(),
+      getRunningTable("orders", settableList),
+    ]);
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -1360,26 +1491,8 @@ const decreaseItemQuantity = (index) => {
         await getRunningTable("orders", settableList);
        // console.log("Running tables fetched successfully");
         
-        await fetchData("tablelist", setTotaltablelist, "id", {})
+        await loadTablesForSelection();
         //console.log("Table list fetched successfully");
-        
-        // Try to fetch table data with category information joined
-        try {
-         // console.log("Attempting to fetch tables with category info...");
-          const tablesWithCategories = await fetchDataFromTwoTables(
-            "tablelist", 
-            "table_category", 
-            "table_cat_id", 
-            "id", 
-            setTotaltablelist, 
-            "t1.id", 
-            {}
-          );
-          // console.log("Tables with categories fetched:", tablesWithCategories);
-        } catch (error) {
-          // console.log("Failed to fetch tables with categories, using basic table list:", error);
-          // Keep the basic table list if joined fetch fails
-        }
         
         // ✅ Fetch company info for customer display
         const companyData = await fetchData("companyinfo", null, "id", {});

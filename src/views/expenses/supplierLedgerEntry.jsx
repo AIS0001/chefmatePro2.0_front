@@ -11,9 +11,11 @@ import 'jspdf-autotable';
 import Layout from "../../layout/Layout";
 import Header from "../../components/Header";
 import { getHeaders } from "../../utility/getHeader";
-import { Card, Input, Button, Select, DatePicker, Table, Space, Row, Col, Divider, Statistic } from 'antd';
-import { SaveOutlined, FilterOutlined, ClearOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined } from '@ant-design/icons';
+import { Card, Input, Button, Select, DatePicker, Table, Space, Row, Col, Divider, Statistic, Popconfirm, Tooltip, Modal } from 'antd';
+import { SaveOutlined, FilterOutlined, ClearOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import deleteRecord from "../../functions/delateData";
+import updateData from "../../functions/updateData";
 
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
@@ -24,8 +26,22 @@ export default function SupplierLedgerEntry() {
   const [originalData, setOriginalData] = useState([]);
   const [companyInfo, setCompanyInfo] = useState({});
   const [loading, setLoading] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [deletingEntryId, setDeletingEntryId] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
+    transaction_id: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    account_type: "Purchase",
+    account_id: "",
+    description: "",
+    debit_amount: "",
+    credit_amount: "",
+    reference_id: "",
+  });
+
+  const [editFormData, setEditFormData] = useState({
     transaction_id: "",
     date: format(new Date(), "yyyy-MM-dd"),
     account_type: "Purchase",
@@ -42,6 +58,9 @@ export default function SupplierLedgerEntry() {
   const [selectedSupplier, setSelectedSupplier] = useState("");
 
   const [suppliers, setSuppliers] = useState([]);
+
+  const userType = (localStorage.getItem("usertype") || sessionStorage.getItem("usertype") || "").toLowerCase();
+  const canManageLedger = userType === "admin" || userType === "account";
 
   // Fetch company info for thermal printing
   useEffect(() => {
@@ -102,6 +121,75 @@ export default function SupplierLedgerEntry() {
     }
   };
 
+  const handleEditEntry = (record) => {
+    setEditFormData({
+      transaction_id: record.transaction_id || "",
+      date: record.date ? format(new Date(record.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+      account_type: record.account_type || "Purchase",
+      account_id: record.account_id || "",
+      description: record.description || "",
+      debit_amount: record.debit_amount || "",
+      credit_amount: record.credit_amount || "",
+      reference_id: record.reference_id || "",
+    });
+    setEditingEntryId(record.id);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditModalInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateEntry = async () => {
+    if (!editingEntryId) return;
+
+    try {
+      await updateData("ledger_entries", editFormData, { id: editingEntryId });
+      toast.success("Supplier ledger entry updated!");
+      setIsEditModalOpen(false);
+      setEditingEntryId(null);
+      fetchLedgerData();
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update entry.");
+    }
+  };
+
+  const handleDeleteEntry = async (record) => {
+    if (!record?.id) {
+      toast.error("Invalid entry id");
+      return;
+    }
+
+    try {
+      setDeletingEntryId(record.id);
+      await deleteRecord("ledger_entries", "id", record.id);
+      toast.success("Entry deleted successfully");
+      fetchLedgerData();
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error(error?.message || "Failed to delete entry");
+    } finally {
+      setDeletingEntryId(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
+    setEditingEntryId(null);
+    setEditFormData({
+      transaction_id: "",
+      date: format(new Date(), "yyyy-MM-dd"),
+      account_type: "Purchase",
+      account_id: "",
+      description: "",
+      debit_amount: "",
+      credit_amount: "",
+      reference_id: "",
+    });
+  };
+
   const fetchLedgerData = async () => {
     try {
       setLoading(true);
@@ -125,14 +213,22 @@ export default function SupplierLedgerEntry() {
   // Apply filters
   const applyFilter = () => {
     let filtered = originalData;
+    const normalizeDateKey = (value) => {
+      const parsed = dayjs(value);
+      return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
+    };
 
     // Date range filter
-    if (startDate && endDate) {
-      filtered = filtered.filter(item => {
-        const itemDate = new Date(item.date);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        return itemDate >= start && itemDate <= end;
+    if (startDate || endDate) {
+      const startKey = startDate ? normalizeDateKey(startDate) : null;
+      const endKey = endDate ? normalizeDateKey(endDate) : null;
+
+      filtered = filtered.filter((item) => {
+        const itemDateKey = normalizeDateKey(item.date);
+        if (!itemDateKey) return false;
+        if (startKey && itemDateKey < startKey) return false;
+        if (endKey && itemDateKey > endKey) return false;
+        return true;
       });
     }
 
@@ -239,7 +335,6 @@ export default function SupplierLedgerEntry() {
           <td style="padding: 3px; text-align: left;">${index + 1}</td>
           <td style="padding: 3px; text-align: left;">${item.transaction_id || ''}</td>
           <td style="padding: 3px; text-align: left;">${item.date || ''}</td>
-          <td style="padding: 3px; text-align: left;">${getSupplierName(item.account_id)}</td>
           <td style="padding: 3px; text-align: right;">฿${debit.toFixed(2)}</td>
           <td style="padding: 3px; text-align: right;">฿${credit.toFixed(2)}</td>
         </tr>
@@ -316,7 +411,6 @@ export default function SupplierLedgerEntry() {
               <th>No.</th>
               <th>Txn ID</th>
               <th>Date</th>
-              <th>Supplier</th>
               <th style="text-align: right;">Debit</th>
               <th style="text-align: right;">Credit</th>
             </tr>
@@ -402,6 +496,54 @@ export default function SupplierLedgerEntry() {
       dataIndex: 'reference_id',
       key: 'reference_id',
       render: (text) => text || '-',
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      align: 'center',
+      width: 100,
+      render: (_, record) => {
+        if (canManageLedger) {
+          return (
+            <Space>
+              <Tooltip title="Edit entry">
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEditEntry(record)}
+                />
+              </Tooltip>
+              <Popconfirm
+                title="Delete ledger entry"
+                description={`Delete entry ${record.transaction_id || record.id}?`}
+                onConfirm={() => handleDeleteEntry(record)}
+                okText="Delete"
+                cancelText="Cancel"
+              >
+                <Tooltip title="Delete entry">
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={deletingEntryId === record.id}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </Space>
+          );
+        }
+
+        return (
+          <Space>
+            <Tooltip title="No permission">
+              <Button type="text" icon={<EditOutlined />} disabled />
+            </Tooltip>
+            <Tooltip title="No permission">
+              <Button type="text" danger icon={<DeleteOutlined />} disabled />
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -630,6 +772,99 @@ export default function SupplierLedgerEntry() {
           size="small"
         />
       </Card>
+
+      <Modal
+        title="Edit Supplier Ledger Entry"
+        open={isEditModalOpen}
+        onCancel={handleCancelEdit}
+        onOk={handleUpdateEntry}
+        okText="Update"
+        cancelText="Cancel"
+        width={800}
+      >
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Transaction ID</label>
+            <Input
+              name="transaction_id"
+              value={editFormData.transaction_id}
+              onChange={handleEditModalInputChange}
+              placeholder="Transaction ID"
+            />
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date</label>
+            <Input
+              type="date"
+              name="date"
+              value={editFormData.date}
+              onChange={handleEditModalInputChange}
+            />
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Supplier Name</label>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Select Supplier"
+              value={editFormData.account_id || undefined}
+              onChange={(value) => setEditFormData((prev) => ({ ...prev, account_id: value }))}
+            >
+              {suppliers.map((supplier) => (
+                <Select.Option key={supplier.id} value={supplier.id}>
+                  {supplier.company_name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Reference ID</label>
+            <Input
+              name="reference_id"
+              value={editFormData.reference_id}
+              onChange={handleEditModalInputChange}
+              placeholder="Reference ID"
+            />
+          </Col>
+
+          <Col span={24}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Description</label>
+            <TextArea
+              name="description"
+              value={editFormData.description}
+              onChange={handleEditModalInputChange}
+              placeholder="Description"
+              rows={2}
+            />
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Debit Amount</label>
+            <Input
+              type="number"
+              name="debit_amount"
+              value={editFormData.debit_amount}
+              onChange={handleEditModalInputChange}
+              placeholder="0.00"
+              prefix="฿"
+            />
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Credit Amount</label>
+            <Input
+              type="number"
+              name="credit_amount"
+              value={editFormData.credit_amount}
+              onChange={handleEditModalInputChange}
+              placeholder="0.00"
+              prefix="฿"
+            />
+          </Col>
+        </Row>
+      </Modal>
     </Layout>
   );
 }

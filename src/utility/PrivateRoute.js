@@ -25,6 +25,7 @@ const roleBasedAccess = {
     "/reports/itemwisesummaryvat",
     "/reports/lowstockitems",
     "/reports/dayclose",
+    "/reports/daywise",
     "/reports/saleledger",
     "/reports/supplierledger",
     "/inventory/stockreports",

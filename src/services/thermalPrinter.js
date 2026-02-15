@@ -379,13 +379,11 @@ export const generateKOTCanvas = (kotData) => {
   let yPos = 15;
   const lineHeight = 30;
   
+  const headerText = (kotData.kotHeader || '').trim() || 'KOT';
+
   // KOT Header
-  ctx.font = 'bold 28px Arial';
-  ctx.fillText('KITCHEN ORDER TICKET', centerX, yPos);
-  yPos += lineHeight;
-  
-  ctx.font = 'bold 26px Arial';
-  ctx.fillText('(KOT)', centerX, yPos);
+  ctx.font = 'bold 32px Arial';
+  ctx.fillText(headerText, centerX, yPos);
   yPos += lineHeight + 5;
 
   if (kotData.watermark) {
@@ -740,16 +738,67 @@ export const printMultipleTickets = async (ticketsArray, options = {}) => {
 export const printKOT = async (kotData, options = {}) => {
   try {
     console.log('🍳 Printing KOT...');
-    const canvas = generateKOTCanvas(kotData);
-    const escposData = canvasToESCPOS(canvas);
-    // KOT always prints to multiple printers (kitchen + cashier)
-    const result = await sendToThermalPrinter(escposData, { ...options, multiPrinter: true });
-    
-    if (result && options.showSuccessMessage !== false) {
-      message.success('KOT sent to kitchen printer!');
+    const normalizeGroup = (value) => {
+      const text = String(value || '').trim().toLowerCase();
+      if (text.includes('bar')) return 'BAR';
+      if (text.includes('shisha')) return 'SHISHA';
+      if (text.includes('food')) return 'FOOD';
+      return 'FOOD';
+    };
+
+    const groupBuckets = {
+      FOOD: [],
+      BAR: [],
+      SHISHA: []
+    };
+
+    const sourceItems = Array.isArray(kotData?.items) ? kotData.items : [];
+    sourceItems.forEach((item) => {
+      const group = normalizeGroup(
+        item?.item_group || item?.itemGroup || item?.itemgroup || item?.group_name || item?.item_type
+      );
+      groupBuckets[group].push(item);
+    });
+
+    const printJobs = [
+      { group: 'FOOD', header: 'KOT Food', multiPrinter: true },
+      { group: 'BAR', header: 'KOT Bar', multiPrinter: false },
+      { group: 'SHISHA', header: 'KOT Shisha', multiPrinter: false }
+    ].filter((job) => groupBuckets[job.group].length > 0);
+
+    if (printJobs.length === 0) {
+      const canvas = generateKOTCanvas({ ...kotData, kotHeader: 'KOT' });
+      const escposData = canvasToESCPOS(canvas);
+      return await sendToThermalPrinter(escposData, { ...options, multiPrinter: true });
     }
-    
-    return result;
+
+    let allPrinted = true;
+    for (const job of printJobs) {
+      const groupedKOTData = {
+        ...kotData,
+        kotHeader: job.header,
+        items: groupBuckets[job.group]
+      };
+
+      const canvas = generateKOTCanvas(groupedKOTData);
+      const escposData = canvasToESCPOS(canvas);
+      const result = await sendToThermalPrinter(escposData, {
+        ...options,
+        multiPrinter: job.multiPrinter,
+        printerIndex: job.multiPrinter ? options.printerIndex : 1,
+        showSuccessMessage: false
+      });
+
+      if (!result) {
+        allPrinted = false;
+      }
+    }
+
+    if (allPrinted && options.showSuccessMessage !== false) {
+      message.success('KOT sent to thermal printer!');
+    }
+
+    return allPrinted;
   } catch (error) {
     console.error('❌ Error printing KOT:', error);
     if (options.showErrorMessage !== false) {

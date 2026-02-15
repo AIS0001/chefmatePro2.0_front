@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Modal as AntModal, Form, Input, Button, Tabs, Space, Typography } from "antd";
+import { Modal as AntModal, Form, Input, Button, Tabs, Space, Typography, Select } from "antd";
 import {
-  SearchOutlined,
   UserOutlined,
   PhoneOutlined,
   MailOutlined,
@@ -19,6 +18,7 @@ import "react-toastify/dist/ReactToastify.css";
 const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
   const [customer, setCustomer] = useState({ custid: "", name: "", phone: "", email: "" });
   const [newCustomer, setNewCustomer] = useState({ name: "", contact: "", email: "", taxid: "", address: "" });
+  const [customers, setCustomers] = useState([]);
   const [activeTab, setActiveTab] = useState("existing");
   const [form] = Form.useForm();
   const [newForm] = Form.useForm();
@@ -30,31 +30,35 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
     form.resetFields();
     newForm.resetFields();
     setActiveTab("existing");
+
+    const loadCustomers = async () => {
+      try {
+        const fetched = await fetchData("customers", null, "id", {});
+        setCustomers(Array.isArray(fetched) ? fetched : []);
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+        toast.error("Failed to load customers");
+        setCustomers([]);
+      }
+    };
+
+    loadCustomers();
   }, [isOpen, form, newForm]);
 
-  const handlePhoneSearch = async () => {
-    if (typeof customer.phone !== "string" || !customer.phone.trim()) {
-      toast.error("Please enter a phone number to search");
+  const handleCustomerSelect = (selectedId) => {
+    const selectedCustomer = customers.find((item) => String(item.id) === String(selectedId));
+
+    if (!selectedCustomer) {
+      setCustomer({ custid: "", name: "", phone: "", email: "" });
       return;
     }
-    try {
-      const response = await fetchData("customers", (data) => {
-        if (data.length > 0) {
-          setCustomer({
-            custid: data[0].id,
-            name: data[0].name,
-            phone: data[0].contact,
-            email: data[0].email,
-          });
-        } else {
-          toast.error("Record not found");
-          setCustomer({ name: "", phone: customer.phone, email: "" });
-        }
-      }, "id", { contact: customer.phone.trim() });
-    } catch (error) {
-      console.error("Error searching customer:", error);
-      toast.error("Error searching customer data");
-    }
+
+    setCustomer({
+      custid: selectedCustomer.id || "",
+      name: selectedCustomer.name || "",
+      phone: selectedCustomer.contact || "",
+      email: selectedCustomer.email || "",
+    });
   };
 
 
@@ -128,19 +132,18 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
               children: (
                 <Form layout="vertical" form={form}>
                   <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-                    <Form.Item label="Customer Phone" required>
-                      <Input
-                        prefix={<PhoneOutlined />}
-                        placeholder="Enter phone number"
-                        value={customer.phone}
-                        onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                        addonAfter={
-                          <Button
-                            type="text"
-                            icon={<SearchOutlined />}
-                            onClick={handlePhoneSearch}
-                          />
-                        }
+                    <Form.Item label="Select Customer" required>
+                      <Select
+                        showSearch
+                        allowClear
+                        placeholder="Select customer name"
+                        value={customer.custid || undefined}
+                        onChange={handleCustomerSelect}
+                        optionFilterProp="label"
+                        options={customers.map((item) => ({
+                          value: item.id,
+                          label: `${item.name || "-"}${item.contact ? ` (${item.contact})` : ""}`,
+                        }))}
                       />
                     </Form.Item>
                     <Form.Item label="Customer ID">
@@ -155,16 +158,24 @@ const CustomerDetailsModal = ({ isOpen, onClose, onSaveCustomerDetails }) => {
                       <Input
                         prefix={<UserOutlined />}
                         value={customer.name}
-                        onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                         placeholder="Customer name"
+                        readOnly
+                      />
+                    </Form.Item>
+                    <Form.Item label="Customer Phone" required>
+                      <Input
+                        prefix={<PhoneOutlined />}
+                        value={customer.phone}
+                        placeholder="Phone number"
+                        readOnly
                       />
                     </Form.Item>
                     <Form.Item label="Email" required>
                       <Input
                         prefix={<MailOutlined />}
                         value={customer.email}
-                        onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
                         placeholder="Email"
+                        readOnly
                       />
                     </Form.Item>
                     <Space style={{ width: "100%", justifyContent: "flex-end" }}>

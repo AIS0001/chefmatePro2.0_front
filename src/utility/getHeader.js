@@ -21,6 +21,10 @@ const getAuthToken = () => {
 const getHeaders = () => {
   let token = getAuthToken();
 
+  if (!token) {
+    return { headers: {} };
+  }
+
   // Ensure 'Bearer' is not added twice
   if (!token.startsWith('Bearer ')) {
     token = `Bearer ${token}`;

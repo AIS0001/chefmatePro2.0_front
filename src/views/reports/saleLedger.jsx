@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { parseISO, isValid, format as fmt } from "date-fns";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { CSVLink } from "react-csv";
 import logo from "../../assets/logo.png";
 
-import { Button, Card, Col, DatePicker, Row, Select, Space } from "antd";
-import { FilterOutlined, FilePdfOutlined, FileExcelOutlined } from "@ant-design/icons";
+import { Button, Card, Col, DatePicker, Popconfirm, Row, Select, Space, Table, Tooltip } from "antd";
+import { DeleteOutlined, FileExcelOutlined, FilePdfOutlined, FilterOutlined, ReloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
-import { fetchComboData } from "../../services/api";
+import deleteRecord from "../../functions/delateData";
 export default function BillHistory() {
+  const csvLinkRef = useRef(null);
   const [data, setData] = useState([]);
   const [Alldata, setAllData] = useState([]);
   const [customerdata, setCustomerdata] = useState([]);
   const [companyInfo, setCompanyInfo] = useState({});
   const [Totals, setTotals] = useState({ credit: 0, debit: 0, balance: 0 });
+  const [deletingTxnId, setDeletingTxnId] = useState(null);
   const [formdata, setFormData] = useState({
     from: "",
     to: "",
@@ -102,7 +103,7 @@ setTotals({ credit, debit, balance: debit - credit });
 
     const headerX = 38;
     doc.setFontSize(12);
-    doc.text(companyInfo.name || "Company Name", headerX, 16);
+    doc.text(companyInfo.name || "JANNAAT LAUNGE", headerX, 16);
     doc.setFontSize(9);
     if (companyInfo.address) doc.text(companyInfo.address, headerX, 21);
     const contactLine = [companyInfo.phone_number, companyInfo.email].filter(Boolean).join(" | ");
@@ -184,6 +185,117 @@ const resetFilters = () => {
   });
   setData(Alldata);
 };
+
+  const handleExportCSV = () => {
+    if (csvLinkRef.current?.link) {
+      csvLinkRef.current.link.click();
+    }
+  };
+
+  const userType = (localStorage.getItem("usertype") || sessionStorage.getItem("usertype") || "").toLowerCase();
+  const canDeleteLedger = userType === "admin" || userType === "account";
+
+  const handleDeleteByTransactionId = async (transactionId) => {
+    if (!transactionId) {
+      toast.error("Transaction ID is required");
+      return;
+    }
+
+    try {
+      setDeletingTxnId(transactionId);
+      const response = await deleteRecord("ledger_entries", "transaction_id", transactionId);
+
+      setAllData((prev) =>
+        prev.filter((row) => String(row.transaction_id) !== String(transactionId))
+      );
+
+      toast.success(response?.message || `Entries for transaction ${transactionId} deleted`);
+    } catch (error) {
+      console.error("Error deleting transaction entries:", error);
+      toast.error(error?.message || "Failed to delete transaction entries");
+    } finally {
+      setDeletingTxnId(null);
+    }
+  };
+
+  const antColumns = [
+    {
+      title: "Txn ID",
+      dataIndex: "transaction_id",
+      key: "transaction_id",
+      sorter: (a, b) => String(a.transaction_id).localeCompare(String(b.transaction_id)),
+    },
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      render: (value) => formatDateSafe(value),
+      sorter: (a, b) => new Date(a.date || 0) - new Date(b.date || 0),
+    },
+    {
+      title: "A/C Type",
+      dataIndex: "account_type",
+      key: "account_type",
+    },
+    {
+      title: "A/C ID",
+      dataIndex: "account_id",
+      key: "account_id",
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+    },
+    {
+      title: "Debit",
+      dataIndex: "debit_amount",
+      key: "debit_amount",
+      align: "right",
+      render: (value) => Number(value || 0).toFixed(2),
+    },
+    {
+      title: "Credit",
+      dataIndex: "credit_amount",
+      key: "credit_amount",
+      align: "right",
+      render: (value) => Number(value || 0).toFixed(2),
+    },
+    {
+      title: "Action",
+      key: "action",
+      align: "center",
+      width: 100,
+      render: (_, record) => {
+        if (canDeleteLedger) {
+          return (
+            <Popconfirm
+              title="Delete ledger entries"
+              description={`Delete all entries for transaction ${record.transaction_id}?`}
+              onConfirm={() => handleDeleteByTransactionId(record.transaction_id)}
+              okText="Delete"
+              cancelText="Cancel"
+            >
+              <Tooltip title="Delete by transaction id">
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  loading={deletingTxnId === record.transaction_id}
+                />
+              </Tooltip>
+            </Popconfirm>
+          );
+        }
+
+        return (
+          <Tooltip title="No delete permission. Only admin/account can delete.">
+            <Button type="text" danger icon={<DeleteOutlined />} disabled />
+          </Tooltip>
+        );
+      },
+    },
+  ];
 
   useEffect(() => {
     const loadData = async () => {
@@ -284,20 +396,28 @@ const resetFilters = () => {
 
       <div className="row mt-3">
         <div className="col-12">
-          <button className="btn btn-danger me-2" onClick={exportToPDF}>
-            Export to PDF
-          </button>
+          <Space wrap>
+            <Button danger icon={<FilePdfOutlined />} onClick={exportToPDF}>
+              Export to PDF
+            </Button>
 
-          <CSVLink
-            data={exportCSVData}
-            filename="ledger_report.csv"
-            className="btn btn-success"
-          >
-            Export to CSV
-          </CSVLink>
-            <button className="btn btn-info" onClick={resetFilters}>
-      Reset Filters
-    </button>
+            <Button type="primary" icon={<FileExcelOutlined />} onClick={handleExportCSV}>
+              Export to CSV
+            </Button>
+
+            <Button icon={<ReloadOutlined />} onClick={resetFilters}>
+              Reset Filters
+            </Button>
+          </Space>
+          <div style={{ display: "none" }}>
+            <CSVLink
+              ref={csvLinkRef}
+              data={exportCSVData}
+              filename="ledger_report.csv"
+            >
+              Download CSV
+            </CSVLink>
+          </div>
         </div>
       </div>
 
@@ -306,10 +426,12 @@ const resetFilters = () => {
           {data.length === 0 ? (
             <p>No data available</p>
           ) : (
-            <DataTable
-              columns={columns}
-              data={data}
-              tablename="ledger_entries"
+            <Table
+              columns={antColumns}
+              dataSource={data}
+              rowKey="id"
+              pagination={{ pageSize: 50, showSizeChanger: true }}
+              scroll={{ x: 1100 }}
             />
           )}
           <div className="mt-3">

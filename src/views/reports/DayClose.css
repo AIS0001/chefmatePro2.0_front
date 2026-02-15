@@ -24,6 +24,176 @@
   max-width: 200px;
 }
 
+.dayclose-ant-stat-card {
+  border-radius: 16px !important;
+  border: 1px solid #eef2f7 !important;
+  box-shadow: 0 3px 12px rgba(31, 65, 114, 0.08) !important;
+  background: #ffffff !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 6px 4px;
+}
+
+.dayclose-ant-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(31, 65, 114, 0.14) !important;
+}
+
+.dayclose-ant-stat-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dayclose-ant-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #1e9be9;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.dayclose-ant-stat-value {
+  color: #1f2937;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.dayclose-ant-stat-label {
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.dayclose-ant-payment-card .dayclose-ant-stat-value {
+  font-size: 1.2rem;
+}
+
+.dayclose-ant-payment-card .dayclose-ant-stat-label {
+  font-size: 0.86rem;
+}
+
+.dayclose-ant-status {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dayclose-ant-status.active {
+  color: #16a34a;
+}
+
+.dayclose-ant-status.inactive {
+  color: #9ca3af;
+}
+
+.dayclose-card-total_amount {
+  background: #f0f9ff !important;
+  border-color: #dbeafe !important;
+}
+
+.dayclose-card-total_discount {
+  background: #fff7ed !important;
+  border-color: #ffedd5 !important;
+}
+
+.dayclose-card-total_sales {
+  background: #f0fdf4 !important;
+  border-color: #dcfce7 !important;
+}
+
+.dayclose-card-entertainment_amount {
+  background: #faf5ff !important;
+  border-color: #f3e8ff !important;
+}
+
+.dayclose-card-cancelled_bills {
+  background: #fef2f2 !important;
+  border-color: #fee2e2 !important;
+}
+
+.dayclose-card-total_orders {
+  background: #eef6ff !important;
+  border-color: #dbeafe !important;
+}
+
+.dayclose-card-items_sold {
+  background: #fffbeb !important;
+  border-color: #fef3c7 !important;
+}
+
+.dayclose-card-avg_order {
+  background: #ecfeff !important;
+  border-color: #cffafe !important;
+}
+
+.dayclose-card-total_amount .dayclose-ant-stat-icon,
+.dayclose-card-total_sales .dayclose-ant-stat-icon {
+  background: #22c55e;
+}
+
+.dayclose-card-total_discount .dayclose-ant-stat-icon,
+.dayclose-card-items_sold .dayclose-ant-stat-icon {
+  background: #f59e0b;
+}
+
+.dayclose-card-total_orders .dayclose-ant-stat-icon,
+.dayclose-card-avg_order .dayclose-ant-stat-icon {
+  background: #3b82f6;
+}
+
+.dayclose-card-entertainment_amount .dayclose-ant-stat-icon {
+  background: #a855f7;
+}
+
+.dayclose-card-cancelled_bills .dayclose-ant-stat-icon {
+  background: #ef4444;
+}
+
+.dayclose-payment-col:nth-child(6n + 1) .dayclose-ant-payment-card {
+  background: #f0f9ff !important;
+  border-color: #dbeafe !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 2) .dayclose-ant-payment-card {
+  background: #f0fdf4 !important;
+  border-color: #dcfce7 !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 3) .dayclose-ant-payment-card {
+  background: #fffbeb !important;
+  border-color: #fef3c7 !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 4) .dayclose-ant-payment-card {
+  background: #faf5ff !important;
+  border-color: #f3e8ff !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 5) .dayclose-ant-payment-card {
+  background: #ecfeff !important;
+  border-color: #cffafe !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 6) .dayclose-ant-payment-card {
+  background: #fef2f2 !important;
+  border-color: #fee2e2 !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 1) .dayclose-ant-stat-icon { background: #0ea5e9; }
+.dayclose-payment-col:nth-child(6n + 2) .dayclose-ant-stat-icon { background: #22c55e; }
+.dayclose-payment-col:nth-child(6n + 3) .dayclose-ant-stat-icon { background: #f59e0b; }
+.dayclose-payment-col:nth-child(6n + 4) .dayclose-ant-stat-icon { background: #a855f7; }
+.dayclose-payment-col:nth-child(6n + 5) .dayclose-ant-stat-icon { background: #06b6d4; }
+.dayclose-payment-col:nth-child(6n + 6) .dayclose-ant-stat-icon { background: #ef4444; }
+
 /* Enhanced Payment Method Cards */
 .payment-method-card-enhanced {
   cursor: pointer;
@@ -311,6 +481,10 @@
   .payment-method-card {
     padding: 15px;
   }
+
+  .dayclose-ant-stat-value {
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -332,6 +506,19 @@
   
   .modal-body {
     padding: 20px;
+  }
+
+  .dayclose-ant-stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dayclose-ant-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .dayclose-ant-payment-card .dayclose-ant-stat-value {
+    font-size: 1.05rem;
   }
 }
 
