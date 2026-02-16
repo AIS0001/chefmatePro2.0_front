@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
 import { ToastContainer, toast } from "react-toastify";
@@ -45,6 +45,8 @@ export default function ItemWiseSummaryVat() {
     const [quickEndDate, setQuickEndDate] = useState("");
     const [quickCategoryId, setQuickCategoryId] = useState("");
     const [quickItemGroup, setQuickItemGroup] = useState("");
+    const [quickSaleOnly, setQuickSaleOnly] = useState(false);
+    const [quickEntertainmentOnly, setQuickEntertainmentOnly] = useState(false);
     const [useOrderItemsOnlyMode, setUseOrderItemsOnlyMode] = useState(false);
     const [oldFilterCollapsed, setOldFilterCollapsed] = useState(false);
     const [tablePageSize, setTablePageSize] = useState(10);
@@ -59,6 +61,8 @@ export default function ItemWiseSummaryVat() {
     const [tableCategorySummaryData, setTableCategorySummaryData] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
     const [currentUser, setCurrentUser] = useState({ id: "-", name: "-", uname: "-" });
+    const quickFilterAutoApplyInitializedRef = useRef(false);
+    const suppressQuickAutoApplyRef = useRef(false);
 
     const invoiceColumns = [
         { label: "Inv. No.", field: "invoice_number", fallback: ["invoice_no", "bill_no"] },
@@ -203,9 +207,64 @@ export default function ItemWiseSummaryVat() {
 
     const normalizeItemGroup = (value = "") => String(value || "").trim().toLowerCase();
 
+    const isEntertainmentPaymentMode = (paymentMode = "") =>
+        String(paymentMode || "").trim().toLowerCase().includes("entertainment");
+
+    const getOrderItemBill = (item = {}) => {
+        const invoiceCandidates = [
+            item.final_bill_id,
+            item.finalbill_id,
+            item.bill_id,
+            item.invoice_number,
+            item.invoice_no,
+            item.bill_no,
+            item.order_id,
+        ];
+
+        for (const candidate of invoiceCandidates) {
+            const invoiceId = Number(candidate);
+            if (Number.isNaN(invoiceId)) continue;
+
+            const bill = finalBillById[invoiceId];
+            if (bill) return bill;
+        }
+
+        return null;
+    };
+
+    const isCancelledBill = (bill = {}) => {
+        const normalized = String(bill?.status ?? "").trim().toLowerCase();
+        return Number(bill?.status) === 2 || normalized === "2" || normalized === "cancelled";
+    };
+
+    const getRecordDateText = (item = {}, bill = null) => {
+        const rawDate =
+            item.setup_date ||
+            item.created_at ||
+            item.date ||
+            bill?.setup_date ||
+            bill?.created_at ||
+            bill?.date;
+
+        if (!rawDate) return "";
+        return String(rawDate).split("T")[0];
+    };
+
+    const isCancelledRecord = (item = {}) => {
+        const bill = getOrderItemBill(item);
+        if (bill) {
+            return isCancelledBill(bill);
+        }
+
+        return isCancelledOrderItem(item);
+    };
+
     const applyCancelledItemsToggle = (items = []) => {
-        if (showCancelledItems) return items;
-        return items.filter((item) => !isCancelledOrderItem(item));
+        if (showCancelledItems) {
+            return items.filter((item) => isCancelledRecord(item));
+        }
+
+        return items.filter((item) => !isCancelledRecord(item));
     };
 
     const isSummaryViewActive = () => showCategorySummary || showSubcategorySummary || showTableCategorySummary;
@@ -560,10 +619,12 @@ export default function ItemWiseSummaryVat() {
         toast.success(`Found ${groupedFiltered.length} items matching your filters`);
     };
 
-    const applyOrderItemsItemWiseFilter = async () => {
+    const applyOrderItemsItemWiseFilter = async (showToast = true) => {
         try {
             if (quickStartDate && quickEndDate && new Date(quickStartDate) > new Date(quickEndDate)) {
-                toast.error("Invalid date range: Start date must be before end date");
+                if (showToast) {
+                    toast.error("Invalid date range: Start date must be before end date");
+                }
                 return;
             }
 
@@ -572,6 +633,30 @@ export default function ItemWiseSummaryVat() {
             const sourceRows = applyCancelledItemsToggle(rows);
 
             const filteredRows = sourceRows.filter((item) => {
+                const bill = getOrderItemBill(item);
+
+                if (quickSaleOnly || quickEntertainmentOnly) {
+                    if (!bill) {
+                        return false;
+                    }
+
+                    const billStatus = Number(bill.status);
+                    const isEntertainmentBill = isEntertainmentPaymentMode(
+                        bill.payment_mode || bill.payment_method || ""
+                    );
+                    const isSaleBill = billStatus === 0 && !isEntertainmentBill;
+
+                    if (quickSaleOnly && quickEntertainmentOnly) {
+                        if (!isSaleBill && !isEntertainmentBill) {
+                            return false;
+                        }
+                    } else if (quickSaleOnly && !isSaleBill) {
+                        return false;
+                    } else if (quickEntertainmentOnly && !isEntertainmentBill) {
+                        return false;
+                    }
+                }
+
                 const categoryId = item.catid || item.category_id || item.cat_id;
 
                 if (quickCategoryId && String(categoryId) !== String(quickCategoryId)) {
@@ -586,9 +671,8 @@ export default function ItemWiseSummaryVat() {
                 }
 
                 if (quickStartDate || quickEndDate) {
-                    const rawDate = item.setup_date || item.created_at || item.date;
-                    if (!rawDate) return false;
-                    const dateText = String(rawDate).split("T")[0];
+                    const dateText = getRecordDateText(item, bill);
+                    if (!dateText) return false;
                     if (quickStartDate && dateText < quickStartDate) return false;
                     if (quickEndDate && dateText > quickEndDate) return false;
                 }
@@ -636,18 +720,25 @@ export default function ItemWiseSummaryVat() {
             setShowTableCategorySummary(false);
             setTableCurrentPage(1);
 
-            toast.success(`Loaded ${groupedData.length} item-wise records from order_items`);
+            if (showToast) {
+                toast.success(`Loaded ${groupedData.length} item-wise records from order_items`);
+            }
         } catch (error) {
             console.error("Error loading order_items item-wise records:", error);
-            toast.error("Failed to load order_items records");
+            if (showToast) {
+                toast.error("Failed to load order_items records");
+            }
         }
     };
 
     const clearOrderItemsItemWiseFilter = () => {
+        suppressQuickAutoApplyRef.current = true;
         setQuickStartDate("");
         setQuickEndDate("");
         setQuickCategoryId("");
         setQuickItemGroup("");
+        setQuickSaleOnly(false);
+        setQuickEntertainmentOnly(false);
         setUseOrderItemsOnlyMode(false);
 
         const groupedData = groupByItemName(originalData);
@@ -655,6 +746,28 @@ export default function ItemWiseSummaryVat() {
         setFilteredData(groupedData);
         setTableCurrentPage(1);
     };
+
+    useEffect(() => {
+        if (!quickFilterAutoApplyInitializedRef.current) {
+            quickFilterAutoApplyInitializedRef.current = true;
+            return;
+        }
+
+        if (suppressQuickAutoApplyRef.current) {
+            suppressQuickAutoApplyRef.current = false;
+            return;
+        }
+
+        applyOrderItemsItemWiseFilter(false);
+    }, [
+        quickStartDate,
+        quickEndDate,
+        quickCategoryId,
+        quickItemGroup,
+        quickSaleOnly,
+        quickEntertainmentOnly,
+        showCancelledItems,
+    ]);
 
     // Clear filters
     const clearFilters = () => {
@@ -1272,7 +1385,25 @@ export default function ItemWiseSummaryVat() {
                                         checked={showCancelledItems}
                                         onChange={(e) => setShowCancelledItems(e.target.checked)}
                                     >
-                                        Show Cancelled Items (status = 2)
+                                        Show Cancelled Items 
+                                    </Checkbox>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Sale Filter</label>
+                                    <Checkbox
+                                        checked={quickSaleOnly}
+                                        onChange={(e) => setQuickSaleOnly(e.target.checked)}
+                                    >
+                                        Sale Only
+                                    </Checkbox>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Entertainment Filter</label>
+                                    <Checkbox
+                                        checked={quickEntertainmentOnly}
+                                        onChange={(e) => setQuickEntertainmentOnly(e.target.checked)}
+                                    >
+                                        Entertainment Only
                                     </Checkbox>
                                 </Col>
                             </Row>

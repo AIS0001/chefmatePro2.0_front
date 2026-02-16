@@ -104,6 +104,7 @@ const fullMenu = [
       { name: 'Supplier Ledger', path: '/reports/supplierledger' },
       { name: 'Customer Ledger', path: '/reports/saleledger' },
       { name: 'Day Close', path: '/reports/dayclose' },
+      { name: 'Cash Drawer', path: '/reports/cashdrawer' },
       { name: 'Day Wise Reports', path: '/reports/daywise' },
       { name: 'Bill Edit Logs', path: '/reports/billeditlogs' },
 
@@ -161,6 +162,7 @@ const accountVatReports = [
   { name: 'Supplier Ledger', path: '/reports/supplierledger' },
   { name: 'Customer Ledger', path: '/reports/saleledger' },
   { name: 'Day Close', path: '/reports/dayclose' },
+  { name: 'Cash Drawer', path: '/reports/cashdrawer' },
   { name: 'Day Wise Reports', path: '/reports/daywise' },
 ];
 

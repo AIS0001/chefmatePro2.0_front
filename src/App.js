@@ -65,6 +65,7 @@ import LowStockItems from './views/reports/lowStockItems';
 import DayClose from './views/reports/DayClose';
 import BillEditLogs from './views/reports/BillEditLogs';
 import DayWiseReports from './views/reports/DayWiseReports';
+import CashDrawer from './views/reports/CashDrawer';
 
 
 //Users
@@ -300,6 +301,11 @@ function AppRoutes() {
           <Route path="/reports/dayclose" element={
             <FeatureProtectedRoute route="/reports/dayclose">
               <PrivateRoute><DayClose /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/reports/cashdrawer" element={
+            <FeatureProtectedRoute route="/reports/cashdrawer">
+              <PrivateRoute><CashDrawer /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
           <Route path="/reports/daywise" element={

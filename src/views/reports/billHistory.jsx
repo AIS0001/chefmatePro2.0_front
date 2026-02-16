@@ -21,6 +21,7 @@ import {
   Table,
   Card,
   Button,
+  Dropdown,
   DatePicker,
   Select,
   Input,
@@ -47,6 +48,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   CreditCardOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -87,6 +89,10 @@ export default function BillHistory() {
   const [selectedCreditCustomer, setSelectedCreditCustomer] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [movingToCredit, setMovingToCredit] = useState(false);
+  const [showPaymentModeModal, setShowPaymentModeModal] = useState(false);
+  const [selectedPaymentModeBill, setSelectedPaymentModeBill] = useState(null);
+  const [targetPaymentMode, setTargetPaymentMode] = useState(null);
+  const [updatingPaymentMode, setUpdatingPaymentMode] = useState(false);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -183,6 +189,19 @@ export default function BillHistory() {
 
   const normalizePaymentMode = (value) =>
     (value || "").toString().trim().toLowerCase().replace(/\s+/g, "");
+
+  const isCancelledStatus = (status) => status === 2 || status === "2" || status === "cancelled";
+
+  const isBillFromClosedDate = (setupDate) => {
+    if (!setupDate) return true;
+    const billDate = dayjs(setupDate);
+    if (!billDate.isValid()) return true;
+    return !billDate.isSame(activeSetupDate, "day");
+  };
+
+  const NON_CREDIT_PAYMENT_MODES = PAYMENT_MODES.filter(
+    (mode) => normalizePaymentMode(mode.value) !== "credit"
+  );
 
   const SALE_ONLY_FILTER_VALUE = "__sale_only__";
 
@@ -374,6 +393,11 @@ export default function BillHistory() {
   };
 
   const handleEditBill = (row) => {
+    if (isBillFromClosedDate(row?.setup_date)) {
+      toast.error("Bills from closed dates cannot be edited.");
+      return;
+    }
+
     setSelectedBill(row);
     setIsEditMode(true);
     setShowModal(true);
@@ -387,7 +411,22 @@ export default function BillHistory() {
     }
   };
 
-  const handleCancelBill = (billId) => {
+  const handleCancelBill = (billInput) => {
+    const billRecord = typeof billInput === "object"
+      ? billInput
+      : data.find((item) => String(item.id) === String(billInput));
+    const billId = typeof billInput === "object" ? billInput?.id : billInput;
+
+    if (!billId) {
+      toast.error("Invalid bill selected.");
+      return;
+    }
+
+    if (isBillFromClosedDate(billRecord?.setup_date)) {
+      toast.error("Bills from closed dates cannot be cancelled.");
+      return;
+    }
+
     setCancelBillId(billId);
     setCancelReason("");
     setShowCancelModal(true);
@@ -457,6 +496,11 @@ export default function BillHistory() {
       return;
     }
 
+    if (isBillFromClosedDate(record.setup_date)) {
+      toast.error("Bills from closed dates cannot be moved to credit.");
+      return;
+    }
+
     if (normalizePaymentMode(record.payment_mode) === "credit") {
       toast.info("Bill is already in credit mode.");
       return;
@@ -510,6 +554,90 @@ export default function BillHistory() {
     }
   };
 
+  const getAvailableTargetPaymentModes = (currentMode) => {
+    const normalizedCurrentMode = normalizePaymentMode(currentMode);
+    return NON_CREDIT_PAYMENT_MODES.filter(
+      (mode) => normalizePaymentMode(mode.value) !== normalizedCurrentMode
+    );
+  };
+
+  const handleOpenPaymentModeModal = (record) => {
+    if (!record?.id) {
+      toast.error("Invalid bill selected.");
+      return;
+    }
+
+    if (isCancelledStatus(record.status)) {
+      toast.error("Cancelled bill payment mode cannot be changed.");
+      return;
+    }
+
+    if (isBillFromClosedDate(record.setup_date)) {
+      toast.error("Bills from closed dates cannot change payment mode.");
+      return;
+    }
+
+    if (normalizePaymentMode(record.payment_mode) === "credit") {
+      toast.info("Credit payment mode is handled separately.");
+      return;
+    }
+
+    const targetModes = getAvailableTargetPaymentModes(record.payment_mode);
+    if (targetModes.length === 0) {
+      toast.warning("No alternate payment modes available.");
+      return;
+    }
+
+    setSelectedPaymentModeBill(record);
+    setTargetPaymentMode(targetModes[0].value);
+    setShowPaymentModeModal(true);
+  };
+
+  const confirmChangePaymentMode = async () => {
+    if (!selectedPaymentModeBill?.id) {
+      toast.error("Invalid bill selected.");
+      return;
+    }
+
+    if (!targetPaymentMode) {
+      toast.error("Please select payment mode.");
+      return;
+    }
+
+    const currentMode = normalizePaymentMode(selectedPaymentModeBill.payment_mode);
+    const nextMode = normalizePaymentMode(targetPaymentMode);
+
+    if (nextMode === "credit") {
+      toast.error("Credit mode change is not allowed here.");
+      return;
+    }
+
+    if (currentMode === nextMode) {
+      toast.info("Bill is already in selected payment mode.");
+      return;
+    }
+
+    try {
+      setUpdatingPaymentMode(true);
+      await updateData(
+        "final_bill",
+        { payment_mode: targetPaymentMode },
+        { id: selectedPaymentModeBill.id }
+      );
+
+      toast.success(`Payment mode changed to ${targetPaymentMode}.`);
+      setShowPaymentModeModal(false);
+      setSelectedPaymentModeBill(null);
+      setTargetPaymentMode(null);
+      await refreshBills();
+    } catch (error) {
+      console.error("Error changing payment mode:", error);
+      toast.error("Failed to change payment mode.");
+    } finally {
+      setUpdatingPaymentMode(false);
+    }
+  };
+
   const monthlyData = (() => {
     const summary = {};
     (filteredData.length > 0 ? filteredData : data).forEach((item) => {
@@ -548,7 +676,11 @@ export default function BillHistory() {
             View Items
           </button>
           {(row.status !== 2 && row.status !== "2") && (
-            <button className="btn btn-sm btn-danger" onClick={() => handleCancelBill(row.id)}>
+            <button
+              className="btn btn-sm btn-danger"
+              onClick={() => handleCancelBill(row)}
+              disabled={isBillFromClosedDate(row.setup_date)}
+            >
               Cancel
             </button>
           )}
@@ -571,7 +703,6 @@ export default function BillHistory() {
   const totalSubtotal = filteredData.reduce((acc, item) => acc + parseFloat(item.subtotal_afterdiscount || 0), 0);
   const totalTax = filteredData.reduce((acc, item) => acc + parseFloat(item.tax || 0), 0);
 
-  const isCancelledStatus = (status) => status === 2 || status === "2" || status === "cancelled";
   const summarySource = filteredData.filter(item => !isCancelledStatus(item.status));
   const summaryTotalSale = summarySource.reduce((acc, item) => acc + parseFloat(item.grand_total || 0), 0);
   const summaryEntertainmentTotal = summarySource.reduce((acc, item) => {
@@ -693,7 +824,10 @@ export default function BillHistory() {
         title: "Action",
         key: "action",
         width: 120,
-        render: (_, record) => (
+        render: (_, record) => {
+          const isClosedDate = isBillFromClosedDate(record.setup_date);
+
+          return (
           <Space>
             <AntTooltip title="View Items">
               <Button 
@@ -708,8 +842,8 @@ export default function BillHistory() {
                 title={
                   isCancelledStatus(record.status)
                     ? "Cancelled bills cannot be edited"
-                    : !dayjs(record.setup_date).isSame(activeSetupDate, "day")
-                      ? "Only same-day bills can be edited"
+                    : isClosedDate
+                      ? "Bills from closed dates cannot be edited"
                       : "Edit Bill"
                 }
               >
@@ -719,26 +853,29 @@ export default function BillHistory() {
                   onClick={() => handleEditBill(record)}
                   disabled={
                     isCancelledStatus(record.status) ||
-                    !dayjs(record.setup_date).isSame(activeSetupDate, "day")
+                    isClosedDate
                   }
                 />
               </AntTooltip>
             )}
             {!isCancelledStatus(record.status) && (
-              <AntTooltip title="Cancel Bill">
+              <AntTooltip title={isClosedDate ? "Bills from closed dates cannot be cancelled" : "Cancel Bill"}>
                 <Button 
                   type="primary" 
                   danger
                   size="small"
                   icon={<DeleteOutlined />}
-                  onClick={() => handleCancelBill(record.id)}
+                  onClick={() => handleCancelBill(record)}
+                  disabled={isClosedDate}
                 />
               </AntTooltip>
             )}
             {!isCancelledStatus(record.status) && (
               <AntTooltip
                 title={
-                  normalizePaymentMode(record.payment_mode) === "credit"
+                  isClosedDate
+                    ? "Bills from closed dates cannot be moved to credit"
+                    : normalizePaymentMode(record.payment_mode) === "credit"
                     ? "Already in credit mode"
                     : "Move to Credit"
                 }
@@ -749,16 +886,49 @@ export default function BillHistory() {
                   icon={<CreditCardOutlined />}
                   onClick={() => handleMoveBillToCredit(record)}
                   disabled={
+                    isClosedDate ||
                     normalizePaymentMode(record.payment_mode) === "credit"
                   }
                 />
               </AntTooltip>
             )}
+            {!isCancelledStatus(record.status) && (
+              <Dropdown
+                trigger={["click"]}
+                menu={{
+                  items: getAvailableTargetPaymentModes(record.payment_mode).map((mode) => ({
+                    key: mode.value,
+                    label: `Move to ${mode.label}`,
+                  })),
+                  onClick: ({ key }) => {
+                    if (isClosedDate) {
+                      toast.error("Bills from closed dates cannot change payment mode.");
+                      return;
+                    }
+                    setSelectedPaymentModeBill(record);
+                    setTargetPaymentMode(key);
+                    setShowPaymentModeModal(true);
+                  },
+                }}
+                disabled={
+                  isClosedDate ||
+                  normalizePaymentMode(record.payment_mode) === "credit" ||
+                  getAvailableTargetPaymentModes(record.payment_mode).length === 0
+                }
+              >
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<SwapOutlined />}
+                />
+              </Dropdown>
+            )}
             {isCancelledStatus(record.status) && (
               <Tag color="red">Cancelled</Tag>
             )}
           </Space>
-        ),
+        );
+        },
       },
     ];
 
@@ -1155,6 +1325,34 @@ export default function BillHistory() {
               value: customer.id,
             };
           })}
+          style={{ width: "100%" }}
+        />
+      </Modal>
+
+      <Modal
+        title={`Change Payment Mode - Bill #${selectedPaymentModeBill?.id || ""}`}
+        open={showPaymentModeModal}
+        onOk={confirmChangePaymentMode}
+        confirmLoading={updatingPaymentMode}
+        onCancel={() => {
+          setShowPaymentModeModal(false);
+          setSelectedPaymentModeBill(null);
+          setTargetPaymentMode(null);
+        }}
+        okText="Update Payment Mode"
+        cancelText="Cancel"
+      >
+        <p style={{ marginBottom: 8 }}>
+          Current Mode: <strong>{selectedPaymentModeBill?.payment_mode || "-"}</strong>
+        </p>
+        <Select
+          placeholder="Select target payment mode"
+          value={targetPaymentMode || undefined}
+          onChange={(value) => setTargetPaymentMode(value || null)}
+          options={getAvailableTargetPaymentModes(selectedPaymentModeBill?.payment_mode).map((mode) => ({
+            label: mode.label,
+            value: mode.value,
+          }))}
           style={{ width: "100%" }}
         />
       </Modal>
