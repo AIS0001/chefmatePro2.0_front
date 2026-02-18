@@ -7,11 +7,14 @@ const SubscriptionContext = createContext();
 export const useSubscription = () => {
   // 🚨 SUBSCRIPTION SYSTEM DISABLED 🚨
   // Return unlimited access to all features
+  const checkLimit = () => ({ withinLimit: true, limit: -1 });
+
   return {
     currentPlan: 'enterprise',
     hasFeature: () => true,
     getFeatureValue: () => 'unlimited',
     canAccessRoute: () => true,
+    checkLimit,
     updateSubscription: () => Promise.resolve(),
     getFeatureUsage: () => ({ current: 0, limit: 'unlimited' }),
     updateFeatureUsage: () => Promise.resolve(),

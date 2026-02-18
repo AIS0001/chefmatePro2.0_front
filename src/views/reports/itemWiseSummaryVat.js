@@ -35,6 +35,7 @@ export default function ItemWiseSummaryVat() {
     const [showCancelledItems, setShowCancelledItems] = useState(false);
     const [filteredData, setFilteredData] = useState([]);
     const [finalBillById, setFinalBillById] = useState({});
+    const [orderItemsSourceRows, setOrderItemsSourceRows] = useState([]);
 
     const [formdata, setFormData] = useState({
         name: "",
@@ -72,12 +73,15 @@ export default function ItemWiseSummaryVat() {
 
     // Column definitions for VAT-specific display
     const columns = [
+        { label: "Date", field: "setup_date", fallback: ["created_at", "date", "order_date"] },
+        { label: "Time", field: "created_at", fallback: ["inv_time", "time"] },
         { label: "Category", field: "category_name", fallback: ["cat_name"] },
         { label: "Subcategory", field: "subcategory_name", fallback: ["subcat_name", "sub_category"] },
         { label: "Item Group", field: "item_group", fallback: ["itemGroup", "group_name"] },
         { label: "Item Name", field: "item_name", fallback: ["name", "product_name"] },
         { label: "Quantity", field: "quantity", fallback: ["qty"] },
         { label: "Total", field: "total_price", fallback: ["total", "total_amount"] },
+        { label: "Remark", field: "remark", fallback: ["remarks"] },
     ];
 
     const billFilterColumns = [
@@ -118,7 +122,11 @@ export default function ItemWiseSummaryVat() {
         if (billFilter === "entertainment") return bill.payment_mode === "Entertainment";
         if (billFilter === "cancelled") return Number(bill.status) === 2;
         if (billFilter === "sale") {
-            return Number(bill.status) === 0 && bill.payment_mode !== "Entertainment";
+            const billStatus = Number(bill.status);
+            const isEntertainmentBill = isEntertainmentPaymentMode(
+                bill.payment_mode || bill.payment_method || ""
+            );
+            return billStatus !== 2 && !isEntertainmentBill;
         }
 
         return true;
@@ -201,62 +209,83 @@ export default function ItemWiseSummaryVat() {
     };
 
     const isCancelledOrderItem = (item = {}) => {
-        const normalized = String(item?.status ?? "").trim().toLowerCase();
-        return Number(item?.status) === 2 || normalized === "2" || normalized === "cancelled";
+        return Number(item?.status) === 2;
     };
 
     const normalizeItemGroup = (value = "") => String(value || "").trim().toLowerCase();
+    const ALL_ITEM_GROUP_VALUE = "ALL";
 
     const isEntertainmentPaymentMode = (paymentMode = "") =>
         String(paymentMode || "").trim().toLowerCase().includes("entertainment");
 
-    const getOrderItemBill = (item = {}) => {
+    const getFinalBillIdFromItem = (item = {}) => {
         const invoiceCandidates = [
             item.final_bill_id,
             item.finalbill_id,
-            item.bill_id,
             item.invoice_number,
             item.invoice_no,
             item.bill_no,
+            item.bill_id,
             item.order_id,
         ];
 
+        let firstNumericId = null;
         for (const candidate of invoiceCandidates) {
             const invoiceId = Number(candidate);
             if (Number.isNaN(invoiceId)) continue;
 
-            const bill = finalBillById[invoiceId];
-            if (bill) return bill;
+            if (firstNumericId === null) {
+                firstNumericId = invoiceId;
+            }
+
+            if (finalBillById[invoiceId]) {
+                return invoiceId;
+            }
         }
 
-        return null;
+        return firstNumericId;
+    };
+
+    const getOrderItemBill = (item = {}) => {
+        const invoiceId = getFinalBillIdFromItem(item);
+        if (!invoiceId) return null;
+        return finalBillById[invoiceId] || null;
     };
 
     const isCancelledBill = (bill = {}) => {
-        const normalized = String(bill?.status ?? "").trim().toLowerCase();
-        return Number(bill?.status) === 2 || normalized === "2" || normalized === "cancelled";
+        return Number(bill?.status) === 2;
     };
 
     const getRecordDateText = (item = {}, bill = null) => {
         const rawDate =
-            item.setup_date ||
-            item.created_at ||
-            item.date ||
             bill?.setup_date ||
             bill?.created_at ||
-            bill?.date;
+            bill?.date ||
+            item.setup_date ||
+            item.created_at ||
+            item.date;
 
         if (!rawDate) return "";
-        return String(rawDate).split("T")[0];
+
+        const dateText = String(rawDate).trim();
+        if (!dateText) return "";
+
+        if (dateText.includes("T")) {
+            return dateText.split("T")[0];
+        }
+
+        if (dateText.includes(" ")) {
+            return dateText.split(" ")[0];
+        }
+
+        return dateText.slice(0, 10);
     };
 
     const isCancelledRecord = (item = {}) => {
         const bill = getOrderItemBill(item);
-        if (bill) {
-            return isCancelledBill(bill);
-        }
-
-        return isCancelledOrderItem(item);
+        const billCancelled = bill ? isCancelledBill(bill) : false;
+        const itemCancelled = isCancelledOrderItem(item);
+        return billCancelled || itemCancelled;
     };
 
     const applyCancelledItemsToggle = (items = []) => {
@@ -458,16 +487,6 @@ export default function ItemWiseSummaryVat() {
         setShowSubcategorySummary(false);
     };
 
-    const handleGroupByItemName = () => {
-        const dataToGroup = originalData.filter(matchesFilters);
-        const groupedData = groupByItemName(dataToGroup);
-        setFilteredData(groupedData);
-        setShowCategorySummary(false);
-        setShowSubcategorySummary(false);
-        setShowTableCategorySummary(false);
-        toast.success(`Grouped ${groupedData.length} items by name`);
-    };
-
     // Group data by item name
     const groupByItemName = (dataToGroup) => {
         const grouped = {};
@@ -479,9 +498,12 @@ export default function ItemWiseSummaryVat() {
             if (!grouped[itemName]) {
                 grouped[itemName] = {
                     item_name: itemName,
+                    setup_date: item.setup_date || item.date || item.order_date || '',
+                    created_at: item.created_at || item.inv_time || item.time || '',
                     category_name: item.category_name || item.cat_name || '',
                     subcategory_name: item.subcategory_name || item.subcat_name || '',
                     table_category_name: item.table_category_name || item.table_cat_name || '',
+                    remark: '',
                     quantity: 0,
                     total_price: 0,
                     vat_amount: 0,
@@ -493,6 +515,15 @@ export default function ItemWiseSummaryVat() {
                     table_cat_id: item.table_cat_id || item.table_category_id
                 };
             }
+
+            const directRemark = item.remark || item.remarks || '';
+            const billRemark = getOrderItemBill(item)?.remark || '';
+            const currentRemark = grouped[itemName].remark || '';
+            const mergedRemarks = [currentRemark, directRemark, billRemark]
+                .map((value) => String(value || '').trim())
+                .filter((value) => value);
+
+            grouped[itemName].remark = Array.from(new Set(mergedRemarks)).join(' | ');
             
             grouped[itemName].quantity += toNumber(item.quantity || item.qty || 0);
             grouped[itemName].total_price += toNumber(item.total_price || item.total || item.total_amount || 0);
@@ -628,14 +659,53 @@ export default function ItemWiseSummaryVat() {
                 return;
             }
 
-            const orderItems = await fetchData("order_items", null, "id", {});
-            const rows = Array.isArray(orderItems) ? orderItems : [];
-            const sourceRows = applyCancelledItemsToggle(rows);
+            let rows = orderItemsSourceRows;
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const orderItems = await fetchData("order_items", null, "id", {});
+                rows = Array.isArray(orderItems) ? orderItems : [];
+                setOrderItemsSourceRows(rows);
+            }
+
+            const isAllItemGroupMode = normalizeItemGroup(quickItemGroup) === normalizeItemGroup(ALL_ITEM_GROUP_VALUE);
+            const sourceRows = rows;
 
             const filteredRows = sourceRows.filter((item) => {
                 const bill = getOrderItemBill(item);
+                const cancelledRecord = isCancelledRecord(item);
 
-                if (quickSaleOnly || quickEntertainmentOnly) {
+                if (showCancelledItems) {
+                    if (!cancelledRecord) {
+                        return false;
+                    }
+                } else if (cancelledRecord) {
+                    return false;
+                }
+
+                if (isAllItemGroupMode) {
+                    if (!showCancelledItems) {
+                        if (!bill) {
+                            return false;
+                        }
+
+                        const billStatus = Number(bill.status);
+                        const isEntertainmentBill = isEntertainmentPaymentMode(
+                            bill.payment_mode || bill.payment_method || ""
+                        );
+                        const isSaleBill = billStatus !== 2 && !isEntertainmentBill;
+
+                        if (!isSaleBill) {
+                            return false;
+                        }
+                    }
+
+                    const itemGroup = normalizeItemGroup(item.item_group || item.itemGroup || item.group_name);
+                    const allowedGroups = new Set(["bar", "food", "shisha"]);
+                    if (!allowedGroups.has(itemGroup)) {
+                        return false;
+                    }
+                }
+
+                if (!showCancelledItems && (quickSaleOnly || quickEntertainmentOnly)) {
                     if (!bill) {
                         return false;
                     }
@@ -644,7 +714,7 @@ export default function ItemWiseSummaryVat() {
                     const isEntertainmentBill = isEntertainmentPaymentMode(
                         bill.payment_mode || bill.payment_method || ""
                     );
-                    const isSaleBill = billStatus === 0 && !isEntertainmentBill;
+                    const isSaleBill = billStatus !== 2 && !isEntertainmentBill;
 
                     if (quickSaleOnly && quickEntertainmentOnly) {
                         if (!isSaleBill && !isEntertainmentBill) {
@@ -663,7 +733,7 @@ export default function ItemWiseSummaryVat() {
                     return false;
                 }
 
-                if (quickItemGroup) {
+                if (quickItemGroup && !isAllItemGroupMode) {
                     const itemGroup = normalizeItemGroup(item.item_group || item.itemGroup || item.group_name);
                     if (itemGroup !== normalizeItemGroup(quickItemGroup)) {
                         return false;
@@ -673,8 +743,19 @@ export default function ItemWiseSummaryVat() {
                 if (quickStartDate || quickEndDate) {
                     const dateText = getRecordDateText(item, bill);
                     if (!dateText) return false;
-                    if (quickStartDate && dateText < quickStartDate) return false;
-                    if (quickEndDate && dateText > quickEndDate) return false;
+
+                    const recordDate = dayjs(dateText, "YYYY-MM-DD", true);
+                    if (!recordDate.isValid()) return false;
+
+                    if (quickStartDate) {
+                        const startDate = dayjs(quickStartDate, "YYYY-MM-DD", true);
+                        if (startDate.isValid() && recordDate.isBefore(startDate, "day")) return false;
+                    }
+
+                    if (quickEndDate) {
+                        const endDate = dayjs(quickEndDate, "YYYY-MM-DD", true);
+                        if (endDate.isValid() && recordDate.isAfter(endDate, "day")) return false;
+                    }
                 }
 
                 return true;
@@ -695,9 +776,12 @@ export default function ItemWiseSummaryVat() {
                     const category = categories.find((cat) => String(cat.id) === String(categoryId));
                     groupedMap[groupKey] = {
                         item_name: itemName,
+                        setup_date: item.setup_date || item.date || item.order_date || "",
+                        created_at: item.created_at || item.inv_time || item.time || "",
                         item_group: itemGroup,
                         category_name: category?.name || "",
                         subcategory_name: "",
+                        remark: "",
                         quantity: 0,
                         total_price: 0,
                         vat_amount: 0,
@@ -705,6 +789,14 @@ export default function ItemWiseSummaryVat() {
                         subcatid: subcategoryId,
                     };
                 }
+
+                const billRemark = getOrderItemBill(item)?.remark || "";
+                const directRemark = item.remark || item.remarks || "";
+                const existingRemark = groupedMap[groupKey].remark || "";
+                const mergedRemarks = [existingRemark, directRemark, billRemark]
+                    .map((value) => String(value || "").trim())
+                    .filter((value) => value);
+                groupedMap[groupKey].remark = Array.from(new Set(mergedRemarks)).join(' | ');
 
                 groupedMap[groupKey].quantity += toNumber(item.quantity || item.qty || 0);
                 groupedMap[groupKey].total_price += toNumber(item.total_price || item.total || item.total_amount || 0);
@@ -822,9 +914,10 @@ export default function ItemWiseSummaryVat() {
         }
 
         if (field === 'remark') {
-            const invoiceId = Number(record.invoice_number || record.invoice_no || record.bill_no || record.order_id);
-            if (Number.isNaN(invoiceId)) return '-';
-            const bill = finalBillById[invoiceId];
+            if (record.remark || record.remarks) {
+                return record.remark || record.remarks;
+            }
+            const bill = getOrderItemBill(record);
             return bill?.remark || '-';
         }
 
@@ -1199,13 +1292,23 @@ export default function ItemWiseSummaryVat() {
                 }
 
                 const finalBillData = await fetchData("final_bill", null, "id", {});
+                let billMap = {};
                 if (Array.isArray(finalBillData)) {
-                    const billMap = {};
                     finalBillData.forEach(bill => {
-                        const billId = Number(bill.id);
-                        if (!Number.isNaN(billId)) {
-                            billMap[billId] = bill;
-                        }
+                        const candidateKeys = [
+                            bill.id,
+                            bill.invoice_number,
+                            bill.invoice_no,
+                            bill.bill_no,
+                            bill.order_id,
+                        ];
+
+                        candidateKeys.forEach((candidate) => {
+                            const key = Number(candidate);
+                            if (!Number.isNaN(key)) {
+                                billMap[key] = bill;
+                            }
+                        });
                     });
                     setFinalBillById(billMap);
                 }
@@ -1220,11 +1323,25 @@ export default function ItemWiseSummaryVat() {
                 }
                 
                 const rawItems = Array.isArray(resData.data) ? resData.data : [];
-                const sourceItems = applyCancelledItemsToggle(rawItems);
-                const uniqueItems = deduplicateOrderItems(sourceItems);
+                const enrichedItems = rawItems.map((item) => {
+                    if (item.remark || item.remarks) {
+                        return item;
+                    }
+
+                    const billId = getFinalBillIdFromItem(item);
+                    const bill = billId ? billMap[billId] : null;
+                    if (bill?.remark) {
+                        return { ...item, remark: bill.remark };
+                    }
+
+                    return item;
+                });
+
+                const uniqueItems = deduplicateOrderItems(enrichedItems);
                 console.log("Fetched data sample:", uniqueItems[0]); // Debug log
-                console.log(`Order item rows: ${rawItems.length}, rows after cancelled toggle: ${sourceItems.length}, unique rows: ${uniqueItems.length}`);
+                console.log(`Order item rows: ${enrichedItems.length}, unique rows: ${uniqueItems.length}`);
                 setOriginalData(uniqueItems); // Store original ungrouped data
+                setOrderItemsSourceRows(uniqueItems);
                 const groupedData = groupByItemName(uniqueItems);
                 setData(groupedData);
                 setFilteredData(groupedData);
@@ -1234,7 +1351,7 @@ export default function ItemWiseSummaryVat() {
             }
         };
         fetchDataAndCategories();
-    }, [showCancelledItems]);
+    }, []);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -1374,6 +1491,7 @@ export default function ItemWiseSummaryVat() {
                                         onChange={(value) => setQuickItemGroup(value || "")}
                                         allowClear
                                     >
+                                        <Option value={ALL_ITEM_GROUP_VALUE}>All</Option>
                                         <Option value="Bar">Bar</Option>
                                         <Option value="Food">Food</Option>
                                         <Option value="Shisha">Shisha</Option>
@@ -1435,12 +1553,6 @@ export default function ItemWiseSummaryVat() {
                                             style={{ background: '#722ed1', borderColor: '#722ed1' }}
                                         >
                                             Print Thermal
-                                        </Button>
-                                        <Button
-                                            onClick={handleGroupByItemName}
-                                            style={{ background: 'linear-gradient(45deg, #34d399 0%, #10b981 100%)', border: 'none', color: 'white' }}
-                                        >
-                                            🧾 Group by Item Name
                                         </Button>
                                     </Space>
                                 </Col>
@@ -1674,11 +1786,7 @@ export default function ItemWiseSummaryVat() {
                                                     }
 
                                                     if (col.field === 'remark') {
-                                                        if (text) return text;
-                                                        const invoiceId = Number(record.invoice_number || record.invoice_no || record.bill_no || record.order_id);
-                                                        if (Number.isNaN(invoiceId)) return '-';
-                                                        const bill = finalBillById[invoiceId];
-                                                        return bill?.remark || '-';
+                                                        return getColumnDisplayValue('remark', record);
                                                     }
 
                                                     return text || '-';

@@ -24,6 +24,9 @@ const normalizeRows = (response) => {
   return [];
 };
 
+const getRemarkValue = (item = {}) =>
+  item.remark || item.remarks || item.note || item.notes || '-';
+
 export default function CashDrawer() {
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState([]);
@@ -101,10 +104,10 @@ export default function CashDrawer() {
       'Cash Difference': toNumber(item.cash_difference).toFixed(2),
       'Cash In': toNumber(item.cash_in).toFixed(2),
       'Cash Out': toNumber(item.cash_out).toFixed(2),
+      Remark: getRemarkValue(item),
       Status: item.status || '-',
       'Opened By': item.opened_by || '-',
       'Closed By': item.closed_by || '-',
-      Notes: item.notes || '-',
     }));
 
     excelRows.push({
@@ -119,7 +122,7 @@ export default function CashDrawer() {
       Status: '',
       'Opened By': '',
       'Closed By': '',
-      Notes: '',
+      Remark: '',
     });
 
     const worksheet = XLSX.utils.json_to_sheet(excelRows);
@@ -149,6 +152,7 @@ export default function CashDrawer() {
       toNumber(item.cash_difference).toFixed(2),
       toNumber(item.cash_in).toFixed(2),
       toNumber(item.cash_out).toFixed(2),
+      getRemarkValue(item),
       item.status || '-',
       item.closed_by || '-',
     ]);
@@ -164,6 +168,7 @@ export default function CashDrawer() {
       totals.cashOut.toFixed(2),
       '',
       '',
+      '',
     ]);
 
     doc.autoTable({
@@ -176,6 +181,7 @@ export default function CashDrawer() {
         'Cash Difference',
         'Cash In',
         'Cash Out',
+        'Remark',
         'Status',
         'Closed By',
       ]],
@@ -242,6 +248,13 @@ export default function CashDrawer() {
       key: 'cash_out',
       align: 'right',
       render: (value) => formatCurrency(value),
+    },
+    {
+      title: 'Remark',
+      dataIndex: 'remark',
+      key: 'remark',
+      width: 220,
+      render: (_, record) => getRemarkValue(record),
     },
     {
       title: 'Status',
@@ -319,6 +332,7 @@ export default function CashDrawer() {
                   <Table.Summary.Cell index={7} align="right"><strong>{formatCurrency(totals.cashOut)}</strong></Table.Summary.Cell>
                   <Table.Summary.Cell index={8} />
                   <Table.Summary.Cell index={9} />
+                  <Table.Summary.Cell index={10} />
                 </Table.Summary.Row>
               )}
             />

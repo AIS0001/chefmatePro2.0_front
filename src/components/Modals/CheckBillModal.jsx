@@ -987,10 +987,16 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const handleSaveBill = async (overrideMode) => {
     try {
       const selectedPaymentMode = (overrideMode || formdata.pmode || "").trim();
+      const normalizedRemark = (formdata.remark || "").trim();
 
       // Validate payment mode is selected
       if (!selectedPaymentMode) {
         toast.error("Please select a payment mode before saving the bill.");
+        return;
+      }
+
+      if (selectedPaymentMode === "Entertainment" && !normalizedRemark) {
+        toast.error("Please enter a remark before saving an Entertainment bill.");
         return;
       }
 
@@ -1203,9 +1209,15 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const handleSaveSplitBills = async (overrideMode) => {
     try {
       const selectedPaymentMode = (overrideMode || formdata.pmode || "").trim();
+      const normalizedRemark = (formdata.remark || "").trim();
 
       if (!selectedPaymentMode) {
         toast.error("Please select a payment mode before saving split bills.");
+        return;
+      }
+
+      if (selectedPaymentMode === "Entertainment" && !normalizedRemark) {
+        toast.error("Please enter a remark before saving split bills with Entertainment payment mode.");
         return;
       }
 

@@ -20,13 +20,15 @@ export default function BillHistory() {
   const [Alldata, setAllData] = useState([]);
   const [customerdata, setCustomerdata] = useState([]);
   const [companyInfo, setCompanyInfo] = useState({});
-  const [Totals, setTotals] = useState({ credit: 0, debit: 0, balance: 0 });
+  const [Totals, setTotals] = useState({ credit: 0, debit: 0, discount: 0, balance: 0 });
   const [deletingTxnId, setDeletingTxnId] = useState(null);
   const [formdata, setFormData] = useState({
     from: "",
     to: "",
     accounttype: "",
     account_id: "",
+    showAllClosingBalance: false,
+    showCustomerFinalBalance: false,
   });
 
   const columns = [
@@ -36,6 +38,7 @@ export default function BillHistory() {
     { label: "A/C Type", field: "account_type" },
     { label: "A/C ID", field: "account_id" },
     { label: "Description", field: "description" },
+    { label: "Discount", field: "discount_amount" },
     { label: "Debit", field: "debit_amount" },
     { label: "Credit", field: "credit_amount" },
   ];
@@ -44,6 +47,51 @@ export default function BillHistory() {
     const date = parseISO(dateStr);
     return isValid(date) ? fmt(date, "yyyy-MM-dd") : "";
   };
+
+  const getCustomerNameByAccountId = (accountId) => {
+    const customer = customerdata.find((cust) => String(cust.id) === String(accountId));
+    return customer?.name || "";
+  };
+
+  const getAccountDisplay = (row) => {
+    const accountId = row?.account_id ?? "";
+    const customerName = getCustomerNameByAccountId(accountId);
+    return customerName ? `${accountId} - ${customerName}` : String(accountId);
+  };
+
+  const finalAccountReceivableClosingBalance = Alldata
+    .filter((row) => row.account_type === "Account Recievable")
+    .reduce((sum, row) => sum + (Number(row.debit_amount) || 0) - (Number(row.credit_amount) || 0), 0);
+
+  const customerFinalBalanceRows = Object.values(
+    Alldata
+      .filter((row) => row.account_type === "Account Recievable")
+      .reduce((acc, row) => {
+        const accountId = String(row.account_id);
+        if (!acc[accountId]) {
+          acc[accountId] = {
+            id: `final-${accountId}`,
+            transaction_id: "",
+            date: row.date,
+            account_type: "Account Recievable",
+            account_id: row.account_id,
+            description: "Customer Final Balance",
+            discount_amount: 0,
+            debit_amount: 0,
+            credit_amount: 0,
+          };
+        }
+
+        acc[accountId].debit_amount += Number(row.debit_amount) || 0;
+        acc[accountId].credit_amount += Number(row.credit_amount) || 0;
+
+        if (new Date(row.date || 0) > new Date(acc[accountId].date || 0)) {
+          acc[accountId].date = row.date;
+        }
+
+        return acc;
+      }, {})
+  );
 
   const loadImageAsDataUrl = (src) => new Promise((resolve, reject) => {
     const img = new Image();
@@ -61,7 +109,7 @@ export default function BillHistory() {
   });
 
   const filterData = () => {
-    const { from, to, accounttype, account_id } = formdata;
+    const { from, to, accounttype, account_id, showAllClosingBalance } = formdata;
     let filtered = [...Alldata];
 
     const safeFrom = formatDateSafe(from);
@@ -82,9 +130,11 @@ export default function BillHistory() {
       filtered = filtered.filter((r) => r.account_id == account_id);
     }
 
- const credit = filtered.reduce((sum, r) => sum + (Number(r.credit_amount) || 0), 0);
-const debit = filtered.reduce((sum, r) => sum + (Number(r.debit_amount) || 0), 0);
-setTotals({ credit, debit, balance: debit - credit });
+const totalsSource = showAllClosingBalance ? Alldata : filtered;
+ const credit = totalsSource.reduce((sum, r) => sum + (Number(r.credit_amount) || 0), 0);
+const debit = totalsSource.reduce((sum, r) => sum + (Number(r.debit_amount) || 0), 0);
+const discount = totalsSource.reduce((sum, r) => sum + (Number(r.discount_amount) || 0), 0);
+setTotals({ credit, debit, discount, balance: debit - credit - discount });
 
     setData(filtered);
   };
@@ -96,7 +146,7 @@ setTotals({ credit, debit, balance: debit - credit });
 
     try {
       const logoDataUrl = await loadImageAsDataUrl(logo);
-      doc.addImage(logoDataUrl, "PNG", 8, 10, 18, 18);
+      doc.addImage(logoDataUrl, "PNG", 8, 10, 28, 18);
     } catch (err) {
       console.warn("Failed to load logo for PDF:", err);
     }
@@ -117,8 +167,9 @@ setTotals({ credit, debit, balance: debit - credit });
         row.transaction_id,
         formatDateSafe(row.date),
         row.account_type,
-        row.account_id,
+        getAccountDisplay(row),
         row.description,
+        row.discount_amount,
         row.debit_amount,
         row.credit_amount,
       ]);
@@ -130,6 +181,7 @@ setTotals({ credit, debit, balance: debit - credit });
       "",
       "",
       "Balance: " + Totals.balance,
+      (Totals.discount).toFixed(2),
       (Totals.debit).toFixed(2),
       (Totals.credit).toFixed(2),
     ]);
@@ -148,10 +200,11 @@ setTotals({ credit, debit, balance: debit - credit });
     ...data.map((row) => ({
       transaction_id: row.transaction_id,
       date: formatDateSafe(row.date),
-      customer_name: row.customer_name,
+      customer_name: getCustomerNameByAccountId(row.account_id),
       account_type: row.account_type,
-      account_id: row.account_id,
+      account_id: getAccountDisplay(row),
       description: row.description,
+      discount_amount: row.discount_amount,
       debit_amount: row.debit_amount,
       credit_amount: row.credit_amount,
     })),
@@ -162,6 +215,7 @@ setTotals({ credit, debit, balance: debit - credit });
       account_type: "",
       account_id: "",
       description: "Total",
+      discount_amount: (Totals.discount).toFixed(2) || 0,
       debit_amount: (Totals.debit).toFixed(2) || 0,
       credit_amount: (Totals.credit).toFixed(2) || 0,
     },
@@ -172,6 +226,7 @@ setTotals({ credit, debit, balance: debit - credit });
       account_type: "",
       account_id: "",
       description: "Balance",
+      discount_amount: "",
       debit_amount: "",
       credit_amount: Totals.balance.toFixed(2),
     },
@@ -182,6 +237,8 @@ const resetFilters = () => {
     to: "",
     accounttype: "",
     account_id: "",
+    showAllClosingBalance: false,
+    showCustomerFinalBalance: false,
   });
   setData(Alldata);
 };
@@ -241,11 +298,19 @@ const resetFilters = () => {
       title: "A/C ID",
       dataIndex: "account_id",
       key: "account_id",
+      render: (_, record) => getAccountDisplay(record),
     },
     {
       title: "Description",
       dataIndex: "description",
       key: "description",
+    },
+    {
+      title: "Discount",
+      dataIndex: "discount_amount",
+      key: "discount_amount",
+      align: "right",
+      render: (value) => Number(value || 0).toFixed(2),
     },
     {
       title: "Debit",
@@ -423,21 +488,40 @@ const resetFilters = () => {
 
       <div className="row mt-3">
         <div className="col-12">
-          {data.length === 0 ? (
-            <p>No data available</p>
-          ) : (
-            <Table
-              columns={antColumns}
-              dataSource={data}
-              rowKey="id"
-              pagination={{ pageSize: 50, showSizeChanger: true }}
-              scroll={{ x: 1100 }}
-            />
-          )}
+          <Table
+            columns={antColumns}
+            dataSource={formdata.showCustomerFinalBalance ? customerFinalBalanceRows : data}
+            rowKey="id"
+            pagination={{ pageSize: 50, showSizeChanger: true }}
+            scroll={{ x: 1100 }}
+            summary={() => (
+              <Table.Summary.Row>
+                <Table.Summary.Cell index={0} colSpan={5}>
+                  <strong>
+                    Closing Balance {formdata.showAllClosingBalance ? "(All Ledger)" : "(Filtered)"}: {(Totals.balance).toFixed(2)}
+                    {" | "}
+                    Final A/C Recievable Closing: {finalAccountReceivableClosingBalance.toFixed(2)}
+                  </strong>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={5} align="right">
+                  <strong>{(Totals.discount).toFixed(2)}</strong>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={6} align="right">
+                  <strong>{(Totals.debit).toFixed(2)}</strong>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={7} align="right">
+                  <strong>{(Totals.credit).toFixed(2)}</strong>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={8} />
+              </Table.Summary.Row>
+            )}
+          />
           <div className="mt-3">
             <strong>Total Credit:</strong> {(Totals.credit).toFixed(2)} |{" "}
+            <strong>Total Discount:</strong> {(Totals.discount).toFixed(2)} |{" "}
             <strong>Total Debit:</strong> {(Totals.debit).toFixed(2)} |{" "}
-            <strong>Balance:</strong> {(Totals.balance).toFixed(2)}
+            <strong>Balance:</strong> {(Totals.balance).toFixed(2)} |{" "}
+            <strong>Final A/C Recievable Closing:</strong> {finalAccountReceivableClosingBalance.toFixed(2)}
           </div>
         </div>
       </div>
