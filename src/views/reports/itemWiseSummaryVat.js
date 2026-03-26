@@ -57,9 +57,11 @@ export default function ItemWiseSummaryVat() {
     const [showCategorySummary, setShowCategorySummary] = useState(false);
     const [showSubcategorySummary, setShowSubcategorySummary] = useState(false);
     const [showTableCategorySummary, setShowTableCategorySummary] = useState(false);
+    const [showDayWiseSummary, setShowDayWiseSummary] = useState(false);
     const [categorySummaryData, setCategorySummaryData] = useState([]);
     const [subcategorySummaryData, setSubcategorySummaryData] = useState([]);
     const [tableCategorySummaryData, setTableCategorySummaryData] = useState([]);
+    const [dayWiseSummaryData, setDayWiseSummaryData] = useState([]);
     const [companyInfo, setCompanyInfo] = useState({});
     const [currentUser, setCurrentUser] = useState({ id: "-", name: "-", uname: "-" });
     const quickFilterAutoApplyInitializedRef = useRef(false);
@@ -104,6 +106,14 @@ export default function ItemWiseSummaryVat() {
 
     const tableCategorySummaryColumns = [
         { label: "Table Category Name", field: "table_category_name" },
+        { label: "Total Quantity", field: "total_quantity" },
+        { label: "Total VAT", field: "total_vat" },
+        { label: "Total Amount", field: "total_amount" },
+    ];
+
+    const dayWiseSummaryColumns = [
+        { label: "Date", field: "setup_date" },
+        { label: "Item Group", field: "item_group" },
         { label: "Total Quantity", field: "total_quantity" },
         { label: "Total VAT", field: "total_vat" },
         { label: "Total Amount", field: "total_amount" },
@@ -296,12 +306,13 @@ export default function ItemWiseSummaryVat() {
         return items.filter((item) => !isCancelledRecord(item));
     };
 
-    const isSummaryViewActive = () => showCategorySummary || showSubcategorySummary || showTableCategorySummary;
+    const isSummaryViewActive = () => showCategorySummary || showSubcategorySummary || showTableCategorySummary || showDayWiseSummary;
 
     const getVisibleTableData = () => {
         if (showCategorySummary) return categorySummaryData;
         if (showSubcategorySummary) return subcategorySummaryData;
         if (showTableCategorySummary) return tableCategorySummaryData;
+        if (showDayWiseSummary) return dayWiseSummaryData;
         if (useOrderItemsOnlyMode) return filteredData;
         return billFilter !== "all" ? originalData.filter(matchesFilters) : filteredData;
     };
@@ -384,6 +395,7 @@ export default function ItemWiseSummaryVat() {
         setShowCategorySummary(true);
         setShowSubcategorySummary(false);
         setShowTableCategorySummary(false);
+        setShowDayWiseSummary(false);
     };
 
     const generateSubcategorySummary = () => {
@@ -437,6 +449,7 @@ export default function ItemWiseSummaryVat() {
         setShowSubcategorySummary(true);
         setShowCategorySummary(false);
         setShowTableCategorySummary(false);
+        setShowDayWiseSummary(false);
     };
 
     const generateTableCategorySummary = () => {
@@ -485,6 +498,7 @@ export default function ItemWiseSummaryVat() {
         setShowTableCategorySummary(true);
         setShowCategorySummary(false);
         setShowSubcategorySummary(false);
+        setShowDayWiseSummary(false);
     };
 
     // Group data by item name
@@ -810,6 +824,7 @@ export default function ItemWiseSummaryVat() {
             setShowCategorySummary(false);
             setShowSubcategorySummary(false);
             setShowTableCategorySummary(false);
+            setShowDayWiseSummary(false);
             setTableCurrentPage(1);
 
             if (showToast) {
@@ -823,6 +838,152 @@ export default function ItemWiseSummaryVat() {
         }
     };
 
+    const generateDayWiseSaleByItemGroup = async () => {
+        try {
+            const normalizedSelectedGroup = normalizeItemGroup(quickItemGroup);
+            const isAllItemGroupMode = normalizedSelectedGroup === normalizeItemGroup(ALL_ITEM_GROUP_VALUE);
+            const isSaleOnlyMode = quickSaleOnly && !quickEntertainmentOnly;
+            const isEntertainmentOnlyMode = quickEntertainmentOnly && !quickSaleOnly;
+            const hasValidSelectedGroup = !!normalizedSelectedGroup && !isAllItemGroupMode;
+            const normalizedEffectiveGroup = hasValidSelectedGroup
+                ? normalizedSelectedGroup
+                : isSaleOnlyMode
+                ? "shisha"
+                : "";
+            const effectiveGroupLabel = hasValidSelectedGroup
+                ? quickItemGroup
+                : isEntertainmentOnlyMode
+                ? "Entertainment"
+                : "Shisha";
+
+            if (!isEntertainmentOnlyMode && !normalizedEffectiveGroup) {
+                toast.error("Please select item group first");
+                return;
+            }
+
+            if (quickStartDate && quickEndDate && new Date(quickStartDate) > new Date(quickEndDate)) {
+                toast.error("Invalid date range: Start date must be before end date");
+                return;
+            }
+
+            let rows = orderItemsSourceRows;
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const orderItems = await fetchData("order_items", null, "id", {});
+                rows = Array.isArray(orderItems) ? orderItems : [];
+                setOrderItemsSourceRows(rows);
+            }
+
+            const filteredRows = rows.filter((item) => {
+                const bill = getOrderItemBill(item);
+                const cancelledRecord = isCancelledRecord(item);
+
+                if (showCancelledItems) {
+                    if (!cancelledRecord) return false;
+                } else if (cancelledRecord) {
+                    return false;
+                }
+
+                if (!showCancelledItems && (quickSaleOnly || quickEntertainmentOnly)) {
+                    if (!bill) return false;
+
+                    const billStatus = Number(bill.status);
+                    const isEntertainmentBill = isEntertainmentPaymentMode(
+                        bill.payment_mode || bill.payment_method || ""
+                    );
+                    const isSaleBill = billStatus !== 2 && !isEntertainmentBill;
+
+                    if (quickSaleOnly && quickEntertainmentOnly) {
+                        if (!isSaleBill && !isEntertainmentBill) return false;
+                    } else if (quickSaleOnly && !isSaleBill) {
+                        return false;
+                    } else if (quickEntertainmentOnly && !isEntertainmentBill) {
+                        return false;
+                    }
+                }
+
+                const categoryId = item.catid || item.category_id || item.cat_id;
+                if (quickCategoryId && String(categoryId) !== String(quickCategoryId)) {
+                    return false;
+                }
+
+                if (isEntertainmentOnlyMode) {
+                    if (!bill) return false;
+                    const isEntertainmentBill = isEntertainmentPaymentMode(
+                        bill.payment_mode || bill.payment_method || ""
+                    );
+                    if (!isEntertainmentBill) return false;
+                }
+
+                const itemGroup = normalizeItemGroup(item.item_group || item.itemGroup || item.group_name);
+                if (normalizedEffectiveGroup && itemGroup !== normalizedEffectiveGroup) {
+                    return false;
+                }
+
+                if (quickStartDate || quickEndDate) {
+                    const dateText = getRecordDateText(item, bill);
+                    if (!dateText) return false;
+
+                    const recordDate = dayjs(dateText, "YYYY-MM-DD", true);
+                    if (!recordDate.isValid()) return false;
+
+                    if (quickStartDate) {
+                        const startDateValue = dayjs(quickStartDate, "YYYY-MM-DD", true);
+                        if (startDateValue.isValid() && recordDate.isBefore(startDateValue, "day")) return false;
+                    }
+
+                    if (quickEndDate) {
+                        const endDateValue = dayjs(quickEndDate, "YYYY-MM-DD", true);
+                        if (endDateValue.isValid() && recordDate.isAfter(endDateValue, "day")) return false;
+                    }
+                }
+
+                return true;
+            });
+
+            const dayWiseMap = {};
+            filteredRows.forEach((item) => {
+                const bill = getOrderItemBill(item);
+                const dateText = getRecordDateText(item, bill);
+                if (!dateText) return;
+
+                const dateKey = dayjs(dateText, "YYYY-MM-DD", true).isValid()
+                    ? dayjs(dateText).format("YYYY-MM-DD")
+                    : String(dateText).slice(0, 10);
+
+                if (!dayWiseMap[dateKey]) {
+                    dayWiseMap[dateKey] = {
+                        setup_date: dateKey,
+                        item_group: effectiveGroupLabel,
+                        total_quantity: 0,
+                        total_vat: 0,
+                        total_amount: 0,
+                    };
+                }
+
+                dayWiseMap[dateKey].total_quantity += toNumber(item.quantity || item.qty || 0);
+                dayWiseMap[dateKey].total_vat += toNumber(item.vat_amount || item.tax_amount || 0);
+                dayWiseMap[dateKey].total_amount += toNumber(item.total_price || item.total || item.total_amount || 0);
+            });
+
+            const summaryRows = Object.values(dayWiseMap).sort((a, b) => String(a.setup_date).localeCompare(String(b.setup_date)));
+
+            setDayWiseSummaryData(summaryRows);
+            setFilteredData(summaryRows);
+            setData(summaryRows);
+            setUseOrderItemsOnlyMode(true);
+            setShowCategorySummary(false);
+            setShowSubcategorySummary(false);
+            setShowTableCategorySummary(false);
+            setShowDayWiseSummary(true);
+            setTableCurrentPage(1);
+
+            toast.success(`Loaded ${summaryRows.length} day-wise records for ${effectiveGroupLabel}`);
+        } catch (error) {
+            console.error("Error generating day-wise sale summary:", error);
+            toast.error("Failed to generate day-wise sale summary");
+        }
+    };
+
     const clearOrderItemsItemWiseFilter = () => {
         suppressQuickAutoApplyRef.current = true;
         setQuickStartDate("");
@@ -832,6 +993,8 @@ export default function ItemWiseSummaryVat() {
         setQuickSaleOnly(false);
         setQuickEntertainmentOnly(false);
         setUseOrderItemsOnlyMode(false);
+        setShowDayWiseSummary(false);
+        setDayWiseSummaryData([]);
 
         const groupedData = groupByItemName(originalData);
         setData(groupedData);
@@ -877,9 +1040,11 @@ export default function ItemWiseSummaryVat() {
         setShowCategorySummary(false);
         setShowSubcategorySummary(false);
         setShowTableCategorySummary(false);
+        setShowDayWiseSummary(false);
         setCategorySummaryData([]);
         setSubcategorySummaryData([]);
         setTableCategorySummaryData([]);
+        setDayWiseSummaryData([]);
         setTableCurrentPage(1);
     };
 
@@ -928,6 +1093,7 @@ export default function ItemWiseSummaryVat() {
         if (showCategorySummary) return categorySummaryColumns;
         if (showSubcategorySummary) return subcategorySummaryColumns;
         if (showTableCategorySummary) return tableCategorySummaryColumns;
+        if (showDayWiseSummary) return dayWiseSummaryColumns;
         if (shouldUseGroupedItemView) return columns;
         if (billFilter !== "all") return billFilterColumns;
         return columns;
@@ -937,12 +1103,13 @@ export default function ItemWiseSummaryVat() {
         if (showCategorySummary) return categorySummaryData;
         if (showSubcategorySummary) return subcategorySummaryData;
         if (showTableCategorySummary) return tableCategorySummaryData;
+        if (showDayWiseSummary) return dayWiseSummaryData;
         return detailData;
     };
 
     // Export to PDF
     const exportPDF = async () => {
-        const doc = new jsPDF();
+        const doc = new jsPDF({ orientation: "landscape" });
         const exportData = getCurrentTableData();
         const activeColumns = getCurrentTableColumns();
         const summaryView = isSummaryViewActive();
@@ -1001,11 +1168,18 @@ export default function ItemWiseSummaryVat() {
         const tableColumn = activeColumns.map((col) => col.label);
 
         const tableRows = [];
+        let totalQuantity = 0;
         let grandTotal = 0;
 
         exportData.forEach((item) => {
             const row = activeColumns.map((col) => getColumnDisplayValue(col.field, item));
             tableRows.push(row);
+
+            if (summaryView) {
+                totalQuantity += toNumber(item.total_quantity || item.quantity || item.qty || 0);
+            } else {
+                totalQuantity += toNumber(item.quantity || item.qty || item.total_quantity || 0);
+            }
 
             if (summaryView) {
                 grandTotal += toNumber(item.total_amount || 0);
@@ -1024,7 +1198,8 @@ export default function ItemWiseSummaryVat() {
 
         doc.setFontSize(12);
         doc.text("Summary", 14, finalY);
-        doc.text(`Total Amount: ${grandTotal.toFixed(2)}`, 14, finalY + 8);
+        doc.text(`Total Quantity: ${totalQuantity.toFixed(2)}`, 14, finalY + 8);
+        doc.text(`Total Amount: ${grandTotal.toFixed(2)}`, 14, finalY + 14);
 
         doc.save("itemwise_vat_summary.pdf");
     };
@@ -1084,6 +1259,8 @@ export default function ItemWiseSummaryVat() {
             ? subcategorySummaryData
             : showTableCategorySummary
             ? tableCategorySummaryData
+            : showDayWiseSummary
+            ? dayWiseSummaryData
             : (filteredData.length > 0 ? filteredData : data);
 
         const newWindow = window.open("", "_blank");
@@ -1094,10 +1271,11 @@ export default function ItemWiseSummaryVat() {
         let totalQty = 0;
         let totalAmount = 0;
 
-        if (showCategorySummary || showSubcategorySummary || showTableCategorySummary) {
+        if (showCategorySummary || showSubcategorySummary || showTableCategorySummary || showDayWiseSummary) {
             reportTitle = showCategorySummary ? "Category VAT Summary" 
                         : showSubcategorySummary ? "Subcategory VAT Summary" 
-                        : "Table Category VAT Summary";
+                        : showTableCategorySummary ? "Table Category VAT Summary"
+                        : `Day Wise Sale (${quickItemGroup})`;
             
             tableHeaders = `
                 <tr>
@@ -1109,7 +1287,7 @@ export default function ItemWiseSummaryVat() {
             `;
 
             printData.forEach((item, index) => {
-                const name = item.category_name || item.subcategory_name || item.table_category_name || '';
+                const name = item.category_name || item.subcategory_name || item.table_category_name || item.setup_date || '';
                 const qty = toNumber(item.total_quantity || 0);
                 const amount = toNumber(item.total_amount || 0);
                 totalQty += qty;
@@ -1433,6 +1611,20 @@ export default function ItemWiseSummaryVat() {
 
     const activeColumns = getCurrentTableColumns();
     const activeTableData = getCurrentTableData();
+    const activeTotalQuantity = activeTableData.reduce((acc, item) => {
+        const qty = item.quantity || item.qty || item.total_quantity || 0;
+        return acc + toNumber(qty);
+    }, 0);
+    const activeTotalAmount = activeTableData.reduce((acc, item) => {
+        const amount = item.total_price || item.total || item.total_amount || 0;
+        return acc + toNumber(amount);
+    }, 0);
+    const quantityColumnIndex = activeColumns.findIndex((col) =>
+        ["quantity", "qty", "total_quantity"].includes(col.field)
+    );
+    const amountColumnIndex = activeColumns.findIndex((col) =>
+        ["total_price", "total", "total_amount"].includes(col.field)
+    );
     const showLegacyFiltersCard = false;
 
     return (
@@ -1532,6 +1724,12 @@ export default function ItemWiseSummaryVat() {
                                         <Button type="primary" icon={<FilterOutlined />} onClick={applyOrderItemsItemWiseFilter}>
                                             Apply Item-wise
                                         </Button>
+                                        <Button
+                                            onClick={generateDayWiseSaleByItemGroup}
+                                            style={{background: 'linear-gradient(45deg, #13c2c2 0%, #08979c 100%)', border: 'none', color: 'white'}}
+                                        >
+                                            Day wise Sale
+                                        </Button>
                                         <Button icon={<ClearOutlined />} onClick={clearOrderItemsItemWiseFilter}>
                                             Clear
                                         </Button>
@@ -1613,6 +1811,7 @@ export default function ItemWiseSummaryVat() {
                                             setShowCategorySummary(false);
                                             setShowSubcategorySummary(false);
                                             setShowTableCategorySummary(false);
+                                            setShowDayWiseSummary(false);
                                         }}
                                         allowClear
                                     >
@@ -1632,6 +1831,7 @@ export default function ItemWiseSummaryVat() {
                                             setShowCategorySummary(false);
                                             setShowSubcategorySummary(false);
                                             setShowTableCategorySummary(false);
+                                            setShowDayWiseSummary(false);
                                         }}
                                         allowClear
                                     >
@@ -1651,6 +1851,7 @@ export default function ItemWiseSummaryVat() {
                                             setShowCategorySummary(false);
                                             setShowSubcategorySummary(false);
                                             setShowTableCategorySummary(false);
+                                            setShowDayWiseSummary(false);
                                         }}
                                         allowClear
                                     >
@@ -1717,13 +1918,14 @@ export default function ItemWiseSummaryVat() {
                             </Space>
 
                             {/* Back to Details Button */}
-                            {(showCategorySummary || showSubcategorySummary || showTableCategorySummary) && (
+                            {(showCategorySummary || showSubcategorySummary || showTableCategorySummary || showDayWiseSummary) && (
                                 <div style={{marginTop: 16}}>
                                     <Button
                                         onClick={() => {
                                             setShowCategorySummary(false);
                                             setShowSubcategorySummary(false);
                                             setShowTableCategorySummary(false);
+                                            setShowDayWiseSummary(false);
                                         }}
                                     >
                                         ← Back to Item Details
@@ -1812,6 +2014,43 @@ export default function ItemWiseSummaryVat() {
                                         showTotal: (total) => `Total ${total} items`,
                                         pageSizeOptions: ['10', '20', '50', '100']
                                     }}
+                                    summary={() => (
+                                        <Table.Summary fixed>
+                                            <Table.Summary.Row>
+                                                {activeColumns.map((col, index) => {
+                                                    if (index === 0) {
+                                                        return (
+                                                            <Table.Summary.Cell key={`sum-label-${col.field}-${index}`} index={index}>
+                                                                <strong>Total</strong>
+                                                            </Table.Summary.Cell>
+                                                        );
+                                                    }
+
+                                                    if (index === quantityColumnIndex) {
+                                                        return (
+                                                            <Table.Summary.Cell key={`sum-qty-${col.field}-${index}`} index={index}>
+                                                                <strong>{activeTotalQuantity.toFixed(2)}</strong>
+                                                            </Table.Summary.Cell>
+                                                        );
+                                                    }
+
+                                                    if (index === amountColumnIndex) {
+                                                        return (
+                                                            <Table.Summary.Cell key={`sum-amount-${col.field}-${index}`} index={index}>
+                                                                <strong>฿{activeTotalAmount.toFixed(2)}</strong>
+                                                            </Table.Summary.Cell>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <Table.Summary.Cell key={`sum-empty-${col.field}-${index}`} index={index}>
+                                                            {""}
+                                                        </Table.Summary.Cell>
+                                                    );
+                                                })}
+                                            </Table.Summary.Row>
+                                        </Table.Summary>
+                                    )}
                                     scroll={{ x: true }}
                                     size="small"
                                 />

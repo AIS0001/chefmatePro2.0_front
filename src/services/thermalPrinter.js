@@ -68,9 +68,11 @@ export const generateTicketCanvas = (invoiceData) => {
   
   // Date and Time on same line
   ctx.font = '24px Arial';
-  const currentDate = new Date(invoiceData.timestamp);
-  const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
-  const formattedTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const billDateSource = invoiceData.billDate || invoiceData.invoiceDate || '';
+  const billTimeSource = invoiceData.billTime || invoiceData.invoiceTime || '';
+  const fallbackBillDate = new Date(invoiceData.timestamp || Date.now());
+  const formattedDate = billDateSource || fallbackBillDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  const formattedTime = billTimeSource || fallbackBillDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   ctx.textAlign = 'left';
   ctx.fillText(`Date: ${formattedDate}`, leftMargin, yPos);
   ctx.textAlign = 'right';
@@ -112,7 +114,7 @@ export const generateTicketCanvas = (invoiceData) => {
       ctx.fillText(itemName, leftMargin, yPos);
       
       ctx.textAlign = 'center';
-      ctx.fillText(`${item.quantity}`, centerX - 50, yPos);
+      ctx.fillText(`${item.quantity || 0}`, centerX - 50, yPos);
       ctx.fillText(`฿${parseFloat(item.price || 0).toFixed(2)}`, centerX + 10, yPos);
       
       ctx.textAlign = 'right';
@@ -188,6 +190,15 @@ export const generateTicketCanvas = (invoiceData) => {
     ctx.fillText(`Operated By: ${invoiceData.operatedBy}`, centerX, yPos);
     yPos += lineHeight - 5;
   }
+
+  // Actual print timestamp at footer end
+  const printedAtSource = new Date(invoiceData.printedAt || Date.now());
+  const printedDate = printedAtSource.toISOString().split('T')[0];
+  const printedTime = printedAtSource.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  ctx.font = '24px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Printed: ${printedDate} ${printedTime}`, centerX, yPos);
+  yPos += lineHeight - 5;
   
   // Footer message
   ctx.font = '28px Arial';
@@ -303,7 +314,7 @@ export const generateKioskInvoiceCanvas = (invoiceData) => {
       ctx.fillText(itemName, leftMargin, yPos);
       
       ctx.textAlign = 'center';
-      ctx.fillText(`x${item.quantity}`, centerX - 40, yPos);
+      ctx.fillText(`x${item.quantity || 0}`, centerX - 40, yPos);
       
       ctx.textAlign = 'right';
       const itemTotal = parseFloat(item.total || 0);
@@ -359,7 +370,8 @@ export const generateKOTCanvas = (kotData) => {
   const paperWidth = 80 * dotsPerMM; // 80mm width = 640 pixels
   
   // Calculate dynamic height based on content
-  const baseHeight = 420; // Optimized for minimal blank space with short tickets
+  const hasTimingInfo = !!kotData?.timingInfo;
+  const baseHeight = hasTimingInfo ? 560 : 420; // Extra space for shisha timing slip details
   const itemHeight = 40; // Height per item (matches lineHeight used during rendering)
   const totalHeight = baseHeight + (kotData.items.length * itemHeight);
   
@@ -418,6 +430,29 @@ export const generateKOTCanvas = (kotData) => {
   ctx.textAlign = 'right';
   ctx.fillText(`Time: ${formattedTime}`, canvas.width - rightMargin, yPos);
   yPos += lineHeight + 15;
+
+  if (hasTimingInfo) {
+    const timing = kotData.timingInfo || {};
+
+    ctx.textAlign = 'left';
+    ctx.font = '22px Arial';
+    if (timing.slipLabel) {
+      ctx.fillText(`${timing.slipLabel}`, leftMargin, yPos);
+      yPos += lineHeight;
+    }
+
+    ctx.fillText(`Shisha: ${timing.itemName || '-'}`, leftMargin, yPos);
+    yPos += lineHeight;
+    ctx.fillText(`Start Time: ${timing.startTime || '-'}`, leftMargin, yPos);
+    yPos += lineHeight;
+    ctx.fillText(`End Time: ${timing.endTime || '-'}`, leftMargin, yPos);
+    yPos += lineHeight;
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('Remark: Valid for 60 minute only', centerX, yPos);
+    yPos += lineHeight + 5;
+  }
   
   // Separator
   ctx.textAlign = 'left';
@@ -437,7 +472,8 @@ export const generateKOTCanvas = (kotData) => {
   if (kotData.items && kotData.items.length > 0) {
     kotData.items.forEach(item => {
       const itemName = (item.item_name || item.iname || 'Item');
-      const quantity = item.quantity || 1;
+      const qtyValue = item.quantity !== undefined ? item.quantity : (item.qty !== undefined ? item.qty : 1);
+      const quantity = parseFloat(qtyValue) || 1;
       
       ctx.textAlign = 'left';
       ctx.fillText(itemName, leftMargin, yPos);
@@ -738,6 +774,17 @@ export const printMultipleTickets = async (ticketsArray, options = {}) => {
 export const printKOT = async (kotData, options = {}) => {
   try {
     console.log('🍳 Printing KOT...');
+    const parseDateLike = (value) => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const formatTimeOnly = (dateObj) => {
+      if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return '-';
+      return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     const normalizeGroup = (value) => {
       const text = String(value || '').trim().toLowerCase();
       if (text.includes('bar')) return 'BAR';
@@ -760,10 +807,26 @@ export const printKOT = async (kotData, options = {}) => {
       groupBuckets[group].push(item);
     });
 
+    const shishaTimingJobs = groupBuckets.SHISHA.flatMap((item) => {
+      const qty = Number(item?.quantity || 1);
+      const slipCount = Number.isFinite(qty) && qty > 1 ? Math.floor(qty) : 1;
+
+      return Array.from({ length: slipCount }, (_, copyIndex) => ({
+        group: 'SHISHA',
+        header: 'Shisha Timing',
+        multiPrinter: false,
+        isTimingSlip: true,
+        timingItem: item,
+        copyIndex,
+        copyTotal: slipCount
+      }));
+    });
+
     const printJobs = [
       { group: 'FOOD', header: 'KOT Food', multiPrinter: true },
       { group: 'BAR', header: 'KOT Bar', multiPrinter: false },
-      { group: 'SHISHA', header: 'KOT Shisha', multiPrinter: false }
+      { group: 'SHISHA', header: 'KOT Shisha', multiPrinter: false },
+      ...shishaTimingJobs
     ].filter((job) => groupBuckets[job.group].length > 0);
 
     if (printJobs.length === 0) {
@@ -774,10 +837,32 @@ export const printKOT = async (kotData, options = {}) => {
 
     let allPrinted = true;
     for (const job of printJobs) {
+      const jobItems = job.isTimingSlip ? [job.timingItem] : groupBuckets[job.group];
+      let timingInfo;
+
+      if (job.isTimingSlip) {
+        const timingStartDate = parseDateLike(job?.timingItem?.kot_print_time)
+          || parseDateLike(job?.timingItem?.print_time)
+          || parseDateLike(job?.timingItem?.created_at)
+          || parseDateLike(job?.timingItem?.updated_at)
+          || parseDateLike(job?.timingItem?.timestamp)
+          || parseDateLike(kotData?.timestamp)
+          || new Date();
+        const timingEndDate = new Date(timingStartDate.getTime() + (60 * 60 * 1000));
+
+        timingInfo = {
+          itemName: job?.timingItem?.item_name || '-',
+          startTime: formatTimeOnly(timingStartDate),
+          endTime: formatTimeOnly(timingEndDate),
+          slipLabel: job?.copyTotal > 1 ? `Slip ${Number(job.copyIndex) + 1}/${job.copyTotal}` : ''
+        };
+      }
+
       const groupedKOTData = {
         ...kotData,
         kotHeader: job.header,
-        items: groupBuckets[job.group]
+        items: jobItems,
+        timingInfo
       };
 
       const canvas = generateKOTCanvas(groupedKOTData);

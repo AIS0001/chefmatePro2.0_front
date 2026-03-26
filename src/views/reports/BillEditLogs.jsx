@@ -17,8 +17,8 @@ const { RangePicker } = DatePicker;
 
 export default function BillEditLogs() {
   const navigate = useNavigate();
-  const userType = getUserType();
-  const isAdmin = (userType || "").toLowerCase() === "admin";
+  const userType = (getUserType() || "").toLowerCase();
+  const canViewBillEditLogs = userType === "admin" || userType === "account";
 
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
@@ -365,8 +365,8 @@ export default function BillEditLogs() {
     "IP Address": log.ip_address || "-"
   }));
 
-  // Admin-only access check
-  if (!isAdmin) {
+  // Access check (admin/account)
+  if (!canViewBillEditLogs) {
     return (
       <Layout>
         <Header title="Bill Edit Logs" />
@@ -374,7 +374,7 @@ export default function BillEditLogs() {
           <Result
             status="403"
             title="Access Denied"
-            subTitle="Sorry, only administrators can access this page."
+            subTitle="Sorry, only administrators and account users can access this page."
             extra={
               <Button type="primary" onClick={() => navigate("/dashboard")}>
                 Back to Dashboard

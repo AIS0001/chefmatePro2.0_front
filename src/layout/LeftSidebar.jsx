@@ -108,7 +108,6 @@ export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
               background: 'transparent',
               border: 'none',
             }}
-            itemLabelStyle={{ color: '#ffffff', fontWeight: 500 }}
             inlineIndent={effectiveOpen ? 16 : 0}
           />
         </div>

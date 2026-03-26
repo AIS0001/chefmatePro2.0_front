@@ -76,6 +76,10 @@ const PAYMENT_MODES = [
 export default function BillHistory() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
+  const [tablePagination, setTablePagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
   const [activeSetupDate, setActiveSetupDate] = useState(dayjs());
   const [showModal, setShowModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
@@ -167,6 +171,10 @@ export default function BillHistory() {
       applyFilters();
     }
   }, [data]);
+
+  useEffect(() => {
+    setTablePagination((prev) => ({ ...prev, current: 1 }));
+  }, [filteredData.length]);
 
   // Filter change effect
   useEffect(() => {
@@ -1189,9 +1197,17 @@ export default function BillHistory() {
               columns={tableColumns}
               dataSource={filteredData.map((item, index) => ({ ...item, key: index }))}
               pagination={{
-                pageSize: 10,
+                current: tablePagination.current,
+                pageSize: tablePagination.pageSize,
                 showSizeChanger: true,
+                pageSizeOptions: ["10", "20", "50", "100"],
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+                onChange: (page, pageSize) => {
+                  setTablePagination({ current: page, pageSize });
+                },
+                onShowSizeChange: (current, size) => {
+                  setTablePagination({ current: 1, pageSize: size });
+                },
               }}
               size="small"
               scroll={{ x: 1200 }}

@@ -10,7 +10,6 @@ import fetchData from "../../functions/fetchData";
 import { getHeaders } from "../../utility/getHeader";
 import { getUserType } from "../../utility/auth";
 import { getUserName } from "../../functions/storageUtils";
-import { printInvoiceToCashier } from "../../services/thermalPrinter";
 
 export default function BillItemModal({ isOpen, onClose, bill, isEditMode = false, onBillUpdated }) {
   const isCancelled = bill?.status === 2 || bill?.status === "2" || bill?.status === "cancelled";
@@ -82,12 +81,6 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
       const byInvoice = await fetchData("order_items", null, "id", { invoice_number: invoiceId });
       if (byInvoice && byInvoice.length > 0) {
         setItems(byInvoice);
-        return;
-      }
-
-      const byOrderId = await fetchData("order_items", null, "id", { order_id: invoiceId });
-      if (byOrderId && byOrderId.length > 0) {
-        setItems(byOrderId);
       } else {
         toast.info("No items found for this bill");
         setItems([]);
@@ -386,72 +379,73 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
     }
   };
 
+  const showPrinterErrorModal = (message) => {
+    Modal.error({
+      title: "Printer Configuration Error",
+      content: message,
+      okText: "OK"
+    });
+  };
+
   // Handle thermal print
   const handleThermalPrint = async () => {
+    let toastId;
     try {
       if (!bill?.id) {
         toast.error("Bill ID is missing");
         return;
       }
 
-      let toastId;
-      try {
-        toastId = toast.loading("Printing thermal invoice...");
-        
-        // Get company information from database
-        const company = companyInfo?.[0] || {};
+      const machineUuid = localStorage.getItem("user_uuid");
+      if (!machineUuid) {
+        showPrinterErrorModal("User UUID not found. Please login again.");
+        return;
+      }
 
-        // Prepare invoice data for thermal printer
-        const invoiceData = {
-          billId: bill.id || "0",
-          queueNumber: bill.table_number || "Walk-in",
-          companyName: company?.name || "JANNAAT LAUNGE",
-          companyAddress: company?.address || "371/6-8 Moo 10, Muang Pattaya, Bang Lamung District, ChonBuri 20150",
-          companyPhone: company?.phone_number || "+66986643299",
-          companyTaxId: company?.tax_id || "0205569006468",
-          timestamp: new Date().toLocaleString(),
-          items: items.map(item => ({
-            item_name: item.item_name,
-            quantity: item.quantity,
-            price: (parseFloat(item.total_price) / parseFloat(item.quantity)).toFixed(2),
-            total: parseFloat(item.total_price).toFixed(2)
-          })),
-          subtotal: parseFloat(bill?.subtotal_afterdiscount || 0).toFixed(2),
-          discountPercent: 0,
-          discountAmount: parseFloat(bill?.discount || 0).toFixed(2),
-          subtotalAfterDiscount: parseFloat(bill?.subtotal_afterdiscount || 0).toFixed(2),
-          taxPercent: 7,
-          taxAmount: parseFloat(bill?.tax || 0).toFixed(2),
-          roundOff: "0.00",
-          total: parseFloat(bill?.grand_total || 0).toFixed(2),
-          paymentMethod: bill?.payment_mode || "CASH",
-          operatedBy: "3130",
-          watermark: isCancelled ? "CANCELLED" : "COPY"
-        };
+      const billId = bill.id;
 
-        const success = await printInvoiceToCashier(invoiceData);
-        
-        if (success) {
-          if (toastId) {
-            toast.dismiss(toastId);
-          }
-          toast.success("Invoice printed to Cashier printer successfully!");
-        } else {
-          if (toastId) {
-            toast.dismiss(toastId);
-          }
-          toast.error("Failed to print invoice. Make sure printer server is running on port 7001.");
-        }
-      } catch (error) {
-        if (toastId) {
-          toast.dismiss(toastId);
-        }
-        console.error("❌ Error printing invoice:", error);
-        toast.error("Error printing invoice: " + error.message);
+      toastId = toast.loading("Sending invoice to cashier printer...");
+
+      const response = await axios.post(
+        `/cloud-agent/print-invoice/${billId}`,
+        {
+          machine_uuid: machineUuid,
+          location: "cashier",
+          mode: "single"
+        },
+        getHeaders()
+      );
+
+      toast.dismiss(toastId);
+
+      if (response?.data?.success) {
+        toast.success("Invoice printed successfully!");
+      } else {
+        const backendMessage = response?.data?.message || "Failed to print invoice.";
+        showPrinterErrorModal(backendMessage);
       }
     } catch (error) {
-      console.error("❌ Error in handleThermalPrint:", error);
-      toast.error("Error preparing invoice: " + error.message);
+      if (toastId) toast.dismiss(toastId);
+      console.error("❌ ESC/POS print API error:", error);
+
+      const status = error?.response?.status;
+      const backendMessage = error?.response?.data?.message || error?.response?.data?.error;
+
+      if (status === 404) {
+        showPrinterErrorModal(
+          backendMessage || "No cashier printer configured for this UUID. Please configure printer IP in printer configuration."
+        );
+        return;
+      }
+
+      if (status === 500 || status === 502) {
+        showPrinterErrorModal(
+          backendMessage || "Printer IP is wrong or printer is unreachable. Please check cashier printer IP and status."
+        );
+        return;
+      }
+
+      showPrinterErrorModal(backendMessage || "ESC/POS print failed.");
     }
   };
 

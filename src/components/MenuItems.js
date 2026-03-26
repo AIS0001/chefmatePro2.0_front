@@ -105,6 +105,7 @@ const fullMenu = [
       { name: 'Customer Ledger', path: '/reports/saleledger' },
       { name: 'Day Close', path: '/reports/dayclose' },
       { name: 'Day Wise Reports', path: '/reports/daywise' },
+      { name: 'Login Attempts', path: '/reports/loginattempts' },
 
     ]
   },
@@ -131,6 +132,10 @@ const fullMenu = [
       { name: 'Taxes', path: '/setting/taxes' },
       { name: 'Units', path: '/setting/units' },
       { name: 'Menu Permissions', path: '/setting/menupermissions' },
+      { name: 'Print Setting', path: '/setting/printsetting' },
+      { name: 'Printer Configuration', path: '/setting/printerconfiguration' },
+      { name: 'Device Management', path: '/setting/devicemanagement' },
+      { name: 'Device Auth Settings', path: '/setting/deviceauthsettings' },
 
     ]
   },

@@ -795,3 +795,22 @@ Printer is valid and available
 Print job submitted successfully (Job ID: 44)
 [2026-01-14T15:37:42.468Z] ✅ Print job submitted via Windows Spooler
 [2026-01-14T15:37:42.470Z] ✅ Print completed in 28857ms
+[2026-02-27T14:27:55.709Z] 🚀 Service starting...
+[2026-02-27T14:27:55.712Z] Working directory: D:\Projects\chefmate\chefmate_front\ThermalAgent
+[2026-02-27T14:27:55.712Z] Node version: v20.19.6
+[2026-02-27T14:27:55.714Z] ✅ Printer manager initialized
+[2026-02-27T14:27:55.715Z] 📋 Configured printers: 2
+[2026-02-27T14:27:55.715Z]    1. 192.168.1.216:9100
+[2026-02-27T14:27:55.715Z]    2. 192.168.1.217:9100
+[2026-02-27T14:27:55.726Z] ERROR: ❌ Uncaught Exception: Error: listen EADDRINUSE: address already in use :::7001
+[2026-02-27T14:27:55.738Z] ERROR: Stack: Error: listen EADDRINUSE: address already in use :::7001
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (D:\Projects\chefmate\chefmate_front\ThermalAgent\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (D:\Projects\chefmate\chefmate_front\ThermalAgent\server.js:353:5)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)

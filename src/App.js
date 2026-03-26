@@ -66,6 +66,7 @@ import DayClose from './views/reports/DayClose';
 import BillEditLogs from './views/reports/BillEditLogs';
 import DayWiseReports from './views/reports/DayWiseReports';
 import CashDrawer from './views/reports/CashDrawer';
+import LoginAttempts from './views/reports/loginAttempts';
 
 
 //Users
@@ -88,6 +89,10 @@ import CompanyInfo from './views/settings/companyInfo';
 import CoreSetting from './views/settings/coreSetting';
 import MenuPermissions from './views/settings/menuPermissions';
 import PrintSetting from './views/settings/printSetting';
+import PrinterConfiguration from './views/settings/printerConfiguration';
+import DeviceManagement from './views/settings/deviceManagement';
+import DeviceAuthSettings from './views/settings/deviceAuthSettings';
+import DeviceUuidManagement from './views/settings/deviceUuidManagement';
 import Taxes from './views/master/taxes';
 import Units from './views/master/units';
 
@@ -394,6 +399,31 @@ function AppRoutes() {
           <Route path="/setting/printsetting" element={
             <FeatureProtectedRoute route="/setting/printsetting">
               <PrintSetting />
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/setting/printerconfiguration" element={
+            <FeatureProtectedRoute route="/setting/printerconfiguration">
+              <PrinterConfiguration />
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/setting/devicemanagement" element={
+            <FeatureProtectedRoute route="/setting/devicemanagement">
+              <DeviceManagement />
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/setting/deviceauthsettings" element={
+            <FeatureProtectedRoute route="/setting/deviceauthsettings">
+              <DeviceAuthSettings />
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/setting/deviceuuidmanagement" element={
+            <FeatureProtectedRoute route="/setting/deviceuuidmanagement">
+              <PrivateRoute><DeviceUuidManagement /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/reports/loginattempts" element={
+            <FeatureProtectedRoute route="/reports/loginattempts">
+              <PrivateRoute><LoginAttempts /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
         </Routes>

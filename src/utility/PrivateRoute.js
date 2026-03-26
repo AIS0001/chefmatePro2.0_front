@@ -21,6 +21,7 @@ const roleBasedAccess = {
     "/dashboard/analytics",
     "/dashboard/account",
     "/reports/billhistory",
+    "/reports/billeditlogs",
     "/reports/advanceorderreport",
     "/reports/itemwisesummaryvat",
     "/reports/lowstockitems",

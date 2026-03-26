@@ -78,6 +78,10 @@
   background: #e67e22;
 }
 
+.pending-invoice::before {
+  background: #c0392b;
+}
+
 .metric-header {
   text-align: center;
   width: 100%;

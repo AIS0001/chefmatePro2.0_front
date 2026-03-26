@@ -23,7 +23,6 @@ import QRPaymentModal from "../QRPaymentModal";
 import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
-import { printInvoice, printInvoiceToCashier, printKioskInvoice } from "../../services/thermalPrinter";
 import { generateQRForCheckBill } from "../../services/qrPaymentService";
 import "./CheckBillModal.css";
 
@@ -567,99 +566,63 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     navigate(`/reports/billhistory`);
   };
 
-  // ✅ Handle ESC/POS Thermal Printer Invoice Printing
-  const handlePrintBillESCPOS = async () => {
+  // ✅ Handle RSC POS single-mode Invoice printing via cashier printer config
+  const handlePrintBillRSCPOS = async () => {
+    let toastId;
     try {
-      if (!finalData || finalData.length === 0) {
-        toast.error("No items to preview. Please add items first.");
+      const machineUuid = localStorage.getItem("user_uuid");
+      if (!machineUuid) {
+        toast.error("User UUID not found. Please login again.");
         return;
       }
 
-      // Detect mode: KIOSK if table is "Walk-in" or contains "kiosk", otherwise CheckBill
-      const isKioskMode = selectedTable && (selectedTable.toLowerCase() === "walk-in" || selectedTable.toLowerCase().includes("kiosk"));
-
-      const companyName = companyInfo && companyInfo[0] ? companyInfo[0].name : "CHEFMATE";
-      const companyAddress = companyInfo && companyInfo[0] ? companyInfo[0].address : "Sol 13, Pattaya-20150";
-      const companyPhone = companyInfo && companyInfo[0] ? companyInfo[0].phone_number : "";
-      const companyTaxId = companyInfo && companyInfo[0] ? companyInfo[0].tax_id : "";
-
-      const defaultInvoiceData = {
-        billId: latestBillId || "0",
-        queueNumber: selectedTable || "Walk-in",
-        companyName,
-        companyAddress,
-        companyPhone,
-        companyTaxId,
-        timestamp: new Date().toLocaleString(),
-        items: finalData.map(item => ({
-          item_name: item.item_name,
-          quantity: item.quantity,
-          price: (item.total_price / item.quantity).toFixed(2),
-          total: Number(item.total_price).toFixed(2)
-        })),
-        subtotal: Number(subtotal).toFixed(2),
-        discountPercent: formdata.discountType === "percentage" ? discAmount : 0,
-        discountAmount: Number(calculatedDiscountAmount).toFixed(2),
-        subtotalAfterDiscount: Number(subtotalAfterDiscount).toFixed(2),
-        taxPercent: 7,
-        taxAmount: Number(taxAmount).toFixed(2),
-        roundOff: Number(roundoffAmount).toFixed(2),
-        total: Number(grandAmount).toFixed(2),
-        paymentMethod: formdata.pmode || "CASH",
-        operatedBy: "3130"
-      };
-
-      const invoicesToPrint = (savedSplitInvoices && savedSplitInvoices.length > 0)
+      // Get bill IDs from saved split invoices or latest bill
+      const invoiceIds = (savedSplitInvoices && savedSplitInvoices.length > 0)
         ? savedSplitInvoices
-        : [defaultInvoiceData];
+            .map((inv) => inv?.billId)
+            .filter((id) => id !== undefined && id !== null && id !== "")
+        : (latestBillId ? [latestBillId] : []);
 
-      let toastId;
-      try {
-        toastId = toast.loading("Printing invoice...");
-        
-        let allSuccess = true;
-        for (let index = 0; index < invoicesToPrint.length; index++) {
-          const invoiceData = {
-            ...invoicesToPrint[index],
-            companyName,
-            companyAddress,
-            companyPhone,
-            companyTaxId,
-            timestamp: invoicesToPrint[index]?.timestamp || new Date().toLocaleString(),
-            paymentMethod: invoicesToPrint[index]?.paymentMethod || formdata.pmode || "CASH"
-          };
+      if (invoiceIds.length === 0) {
+        toast.error("No invoice number found. Please save bill first.");
+        return;
+      }
 
-          const success = isKioskMode
-            ? await printKioskInvoice(invoiceData)
-            : await printInvoiceToCashier(invoiceData);
+      toastId = toast.loading("Sending invoice to RSC POS cashier printer...");
 
-          if (!success) {
-            allSuccess = false;
-            break;
-          }
+      let allSuccess = true;
+      for (const billId of invoiceIds) {
+        const response = await axios.post(
+          `/cloud-agent/print-invoice/${billId}`,
+          {
+            machine_uuid: machineUuid,
+            location: "cashier",
+            mode: "single"
+          },
+          getHeaders()
+        );
+
+        if (!response?.data?.success) {
+          allSuccess = false;
+          break;
         }
+      }
 
-        if (allSuccess) {
-          if (toastId) {
-            toast.dismiss(toastId);
-          }
-          toast.success(invoicesToPrint.length > 1 ? "Split invoices printed successfully!" : "Invoice printed to Cashier printer successfully!");
-        } else {
-          if (toastId) {
-            toast.dismiss(toastId);
-          }
-          toast.error("Failed to print invoice. Make sure printer server is running on port 7001.");
-        }
-      } catch (error) {
-        if (toastId) {
-          toast.dismiss(toastId);
-        }
-        console.error("❌ Error printing invoice:", error);
-        toast.error("Error printing invoice: " + error.message);
+      toast.dismiss(toastId);
+
+      if (allSuccess) {
+        toast.success(
+          invoiceIds.length > 1
+            ? "Split invoices printed on RSC POS cashier printer!"
+            : "Invoice printed on RSC POS cashier printer!"
+        );
+      } else {
+        toast.error("Failed to print one or more invoices.");
       }
     } catch (error) {
-      console.error("❌ Error in handlePrintBillESCPOS:", error);
-      toast.error("Error preparing invoice: " + error.message);
+      if (toastId) toast.dismiss(toastId);
+      console.error("❌ RSC POS print API error:", error);
+      toast.error(error?.response?.data?.message || "RSC POS print failed.");
     }
   };
 
@@ -1199,6 +1162,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       toast.success(`Bill saved successfully! Bill ID: ${bill_id}`);
       setIsBillSaved(true);
       setFormData((prev) => ({ ...prev, remark: "" }));
+
+
       
     } catch (err) {
       console.error("Error occurred during bill save:", err);
@@ -1488,7 +1453,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
           </div>
           <div class="footer">
             <p>Operated By: ${getUserName() || 'N/A'}</p>
-            <p>Powered by chefmate POS !! </p>
+            <p>Powered by chefmatePro 2.0 POS !! </p>
           </div>
         </div>
       `);
@@ -1563,6 +1528,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             }
             .table td {
               border-bottom: 1px solid #ddd;
+            }
+            .bill-body .table th,
+            .bill-body .table td {
+              font-size: 14px;
+              line-height: 1.35;
             }
             .table td.total {
               font-weight: bold;
@@ -1752,7 +1722,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               </div>
               <div class="footer">
                 <p>Operated By: ${getUserName() || 'N/A'}</p>
-                <p>Powered by chefmate POS !!</p>
+                <p>Powered by chefmatePro 2.0 POS !!</p>
               </div>
             </div>
           `)
@@ -1816,7 +1786,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               </div>
               <div class="footer">
                 <p>Operated By: ${getUserName() || 'N/A'}</p>
-                <p>Powered by chefmate POS !!</p>
+                <p>Powered by chefmatePro 2.0 POS !!</p>
               </div>
             </div>
             `
@@ -2474,10 +2444,10 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                             type="primary"
                             size="large"
                             block
-                            onClick={handlePrintBillESCPOS}
+                            onClick={handlePrintBillRSCPOS}
                             style={{ backgroundColor: '#faad14', borderColor: '#faad14', color: '#fff', fontSize: '14px', fontWeight: '700', height: '50px' }}
                           >
-                            🖨️ ESC/POS
+                            🖨️ ESC POS
                           </Button>
                         </Col>
                       </Row>

@@ -29,60 +29,93 @@ export default function Login() {
     const { Content } = Layout;
     const screens = Grid.useBreakpoint();
 
-    const handleSubmit = () => {
-        const empdata = { uname, pass };
+    const handleSubmit = async () => {
+        // Prepare basic login data
+        let empdata = { 
+          uname, 
+          pass
+        };
 
-  axios.post("/login", empdata)
-    .then((res) => {
-      if (res.status === 200) {
-        const data = res.data;
-        if (data.token) {
-          const token = data.token;
-          const usertype = data.data.type.toLowerCase(); // Normalize to lowercase
-          const expirationTime = Date.now() + 3 * 60 * 60 * 1000; // 3 hours
-
-          if (keepLoggedIn) {
-            localStorage.setItem("token", token);
-            localStorage.setItem("expirationTime", expirationTime);
-            localStorage.setItem("uname", data.data.uname);
-            localStorage.setItem("usertype", usertype); // Store normalized usertype
-          } else {
-            sessionStorage.setItem("token", token);
-            sessionStorage.setItem("expirationTime", expirationTime);
-            sessionStorage.setItem("uname", data.data.uname);
-            sessionStorage.setItem("usertype", usertype); // Store normalized usertype
+        // ✅ Try to get device MAC (optional, not required)
+        try {
+          const deviceMacResponse = await axios.get("/device/machine-mac", { timeout: 3000 });
+          const macAddress = deviceMacResponse.data?.data?.mac;
+          if (macAddress) {
+            empdata.mac_address = macAddress;
+            empdata.device_name = `${navigator.userAgent.split(' ').slice(-2).join(' ')}`;
+            console.log('✅ Device MAC obtained:', macAddress);
           }
-
-          toast.success("Logged in Successfully");
-
-          // Add delay before redirect
-          setTimeout(() => {
-            console.log("Redirecting user with type:", usertype); // Debug log
-            if (usertype === "admin") {
-              navigate("/dashboard/analytics", { replace: true });
-            } else if (usertype === "account") {
-              navigate("/dashboard/account", { replace: true });
-            } else if (usertype === "cashier") {
-              navigate("/dashboard/cashier", { replace: true }); // Use existing cashier dashboard
-            } else if (usertype === "manager") {
-              navigate("/dashboard/analytics", { replace: true }); // Redirect managers to analytics dashboard
-            } else {
-              console.warn("Unknown user type:", usertype);
-              navigate("/dashboard/analytics", { replace: true }); // Default fallback to admin dashboard
-            }
-          }, 1000); // Increased delay
-
-        } else {
-          toast.error("Wrong username/Password");
+        } catch (macError) {
+          console.warn('⚠️ Could not get device MAC (this is OK):', macError.message);
+          // Continue without MAC address - backend will handle it
         }
-      } else if (res.status === 401) {
-        toast.error("Wrong username/Password");
-      }
-    })
-    .catch((err) => {
-      toast.error("Wrong username/Password");
-      console.log(err.message);
-    });
+
+        axios.post("/login", empdata)
+          .then((res) => {
+            if (res.status === 200) {
+              const data = res.data;
+              if (data.token) {
+                const token = data.token;
+                const usertype = data.data.type.toLowerCase(); // Normalize to lowercase
+                const expirationTime = Date.now() + 3 * 60 * 60 * 1000; // 3 hours
+                const userUuid = data.data.user_uuid; // Get UUID from response
+
+                if (keepLoggedIn) {
+                  localStorage.setItem("token", token);
+                  localStorage.setItem("expirationTime", expirationTime);
+                  localStorage.setItem("uname", data.data.uname);
+                  localStorage.setItem("usertype", usertype); // Store normalized usertype
+                } else {
+                  sessionStorage.setItem("token", token);
+                  sessionStorage.setItem("expirationTime", expirationTime);
+                  sessionStorage.setItem("uname", data.data.uname);
+                  sessionStorage.setItem("usertype", usertype); // Store normalized usertype
+                }
+
+                // ✅ Store UUID in localStorage (persists for device identification)
+                if (userUuid) {
+                  const existingUuid = localStorage.getItem("user_uuid");
+                  if (!existingUuid || existingUuid !== userUuid) {
+                    localStorage.setItem("user_uuid", userUuid);
+                    console.log(`✅ UUID stored in localStorage: ${userUuid}`);
+                  }
+                }
+
+                toast.success("Logged in Successfully");
+
+                // Add delay before redirect
+                setTimeout(() => {
+                  if (usertype === "admin") {
+                    navigate("/dashboard/analytics", { replace: true });
+                  } else if (usertype === "account") {
+                    navigate("/dashboard/account", { replace: true });
+                  } else if (usertype === "cashier") {
+                    navigate("/dashboard/cashier", { replace: true });
+                  } else if (usertype === "manager") {
+                    navigate("/dashboard/analytics", { replace: true });
+                  } else {
+                    navigate("/dashboard/analytics", { replace: true });
+                  }
+                }, 1000);
+
+              } else {
+                toast.error("Wrong username/Password");
+              }
+            } else if (res.status === 401) {
+              toast.error("Wrong username/Password");
+            }
+          })
+          .catch((err) => {
+            // 🔐 Check for device mismatch error
+            if (err.response?.status === 403 && err.response?.data?.code === "DEVICE_MISMATCH") {
+              toast.error(err.response.data.error);
+            } else if (err.response?.status === 401) {
+              toast.error("Invalid Username or Password");
+            } else {
+              toast.error(err.response?.data?.error || "Wrong username/Password");
+            }
+            console.log(err.message);
+          });
     };
     useEffect(() => {
         const sessionExpiredNotice = sessionStorage.getItem('session_expired_notice');

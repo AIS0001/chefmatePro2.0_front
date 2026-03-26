@@ -18,11 +18,12 @@ import updateData from "../../functions/updateData";
 import CheckBillModal from "../../components/Modals/CheckBillModal";
 import TableSelectionModal from "../../components/Modals/TableSelectionModal";
 import ReprintKOTModal from "../../components/Modals/ReprintKOTModal";
+import { baseURL } from "../../index"; // Import baseURL from index.js
 import ReprintKOTOrderModal from "../../components/Modals/ReprintKOTOrderModal";
 import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // ✅ Added icons
+import ESCPosAutoDetectButton from "../../components/ESCPosAutoDetectButton"; // ✅ Import ESC/POS auto-detect printer button
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
-import { printKOT as printKOTThermal } from "../../services/thermalPrinter"; // ✅ Import thermal KOT printer (renamed to avoid conflict)
 import "./newPOS.css"; // ✅ Import POS styles
 
 
@@ -30,9 +31,7 @@ import "./newPOS.css"; // ✅ Import POS styles
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
   
-  // const baseURL = 'http://localhost:4402';
-  
-   const baseURL = 'https://www.jlaungeapi.livecloudnet.com';
+  const LOCAL_PRINT_AGENT_URL = 'http://127.0.0.1:5010'; // Local printing agent endpoint
   //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
    
@@ -610,7 +609,7 @@ const decreaseItemQuantity = (index) => {
     kotContent += `--------------------------------\n`;
   
     orderItems.forEach((item) => {
-      kotContent += `${item.item_name} x ${item.quantity}\n`;
+      kotContent += `${item.item_name} x ${item.quantity || 0}\n`;
     });
   
     kotContent += `--------------------------------\n`;
@@ -624,32 +623,257 @@ const decreaseItemQuantity = (index) => {
     newWindow.close();
   };
 
+  const sendEscPosKotCommand = async (kotData = {}) => {
+    try {
+      // Get user UUID for printer lookup
+      const userUuid = localStorage.getItem('user_uuid');
+      
+      if (!userUuid) {
+        toast.error('User UUID not found. Please login again.');
+        return false;
+      }
+
+      // Normalize items for KOT
+      const normalizedItems = (Array.isArray(kotData?.items) ? kotData.items : []).map((item, idx) => {
+        const normalized = {
+          item_name: item?.item_name || item?.iname || item?.name || "Item",
+          quantity: parseFloat(item?.quantity || item?.qty || 0) || 0,
+          price: parseFloat(item?.price || item?.offerprice || 0) || 0,
+          item_group: resolveItemGroup(item),
+          item_type: item?.item_type || item?.itemType || resolveItemGroup(item),
+          special_instructions: item?.special_instructions || item?.notes || ''
+        };
+        return normalized;
+      });
+
+      // 🔍 GET PRINTER CONFIG FOR THIS USER UUID
+      try {
+        const printerConfigResponse = await axios.get(
+          `/printer/config/uuid/${userUuid}`,
+          getHeaders()
+        );
+
+        if (!printerConfigResponse.data.success || !printerConfigResponse.data.data) {
+          toast.error('No printer configuration found for your device. Please contact admin.');
+          return false;
+        }
+
+        const printerConfig = printerConfigResponse.data.data;
+        console.log(`✅ Found printer for UUID ${userUuid}:`, printerConfig);
+
+      } catch (configError) {
+        if (configError.response?.status === 404) {
+          toast.error('❌ No printer assigned to your device UUID. Please contact administrator.');
+        } else {
+          toast.error('Failed to fetch printer configuration.');
+        }
+        console.error('Printer config error:', configError);
+        return false;
+      }
+
+      // Prepare KOT payload for cloud agent with auto-detection
+      const kotPayload = {
+        jobId: `kot-${kotData?.order_number || maxNumber}-${Date.now()}`,
+        location: 'kitchen',
+        table: kotData?.table || kotData?.table_number,
+        items: normalizedItems,
+        heading: 'KITCHEN KOT',
+        total: parseFloat(kotData?.total || 0) || 0,
+        timestamp: kotData?.timestamp || new Date().toLocaleString(),
+        machine_uuid: userUuid  // 🔐 Include UUID for printer routing
+      };
+
+      // Send to cloud agent which handles printer detection and local agent communication
+      const printResponse = await axios.post(
+        '/cloud-agent/print-with-detection',
+        kotPayload,
+        { ...getHeaders(), timeout: 15000 }
+      );
+
+      if (printResponse.data.success) {
+        return true;
+      } else {
+        throw new Error(printResponse.data.message || 'Print job failed');
+      }
+
+    } catch (error) {
+      let errorMessage = 'Failed to print KOT';
+      if (error.response?.status === 404) {
+        errorMessage = 'No kitchen printer configured for your device.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error during KOT printing.';
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMessage = 'Cannot connect to printing service.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+      return false;
+    }
+  };
+
+  // Complete ESC/POS order workflow: Save -> Print -> Clear
+  const handleESCPosOrderFlow = async (kotData = {}) => {
+    if (!selectedTable) {
+      toast.error('Please select a table!');
+      return false;
+    }
+
+    if (cart.length === 0) {
+      toast.error('Cart is empty!');
+      return false;
+    }
+
+    try {
+      toast.info('Processing order...');
+
+      // Get the next setup date
+      const setupDate = await getNextSetupDate();
+
+      // Prepare order items for database
+      const orderItems = cart.map(item => ({
+        order_number: maxNumber,
+        table_number: selectedTable,
+        item_name: item.iname,
+        item_group: resolveItemGroup(item),
+        quantity: parseFloat(item.quantity.toFixed(2)),
+        price: parseFloat(item.offerprice),
+        total_amount: parseFloat((item.offerprice * item.quantity).toFixed(2)),
+        status: "1",
+        uom: item.uom || "",
+        weight_based: item.weight === "weight" ? 1 : 0,
+        setup_date: setupDate,
+        category_id: resolveCategoryId(item),
+        category_name: resolveCategoryName(item),
+        subcategory_id: resolveSubcategoryId(item),
+        table_cat_id: selectedTableCategory || null,
+      }));
+
+      // Step 1: Save order data to database
+      const [response, response1] = await Promise.all([
+        axios.post(`/insertdata/orders`, {
+          userid: getUserName(),
+          order_number: maxNumber,
+          table_number: selectedTable,
+          total_amount: total,
+          status: "1",
+        }, getHeaders()),
+        
+        axios.post(`/insertdatabulk/order_items`, {
+          items: orderItems
+        }, getHeaders())
+      ]);
+
+      if (response1.data.success) {
+        console.log("✅ ORDER SAVED SUCCESSFULLY");
+        toast.success(response.data.message);
+
+        // Step 2: Send KOT print command
+        const printResult = await sendEscPosKotCommand(kotData);
+
+        if (printResult) {
+          console.log('✅ KOT ESC/POS command sent successfully');
+          toast.success('Order saved and KOT sent to printer!');
+        } else {
+          toast.warning('Order saved but KOT command failed.');
+        }
+
+        // Step 3: Clear cart
+        setCart([]);
+        setTotal(0);
+
+        // Step 4: Update table status and refresh data
+        Promise.all([
+          updateData("tablelist", { status: '1' }, { name: selectedTable }),
+          loadTablesForSelection(),
+          getRunningTable("orders", settableList),
+          getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
+        ]).then(() => {
+          setRefreshTrigger(prev => prev + 1);
+          console.log("Order processed and data refreshed...");
+        });
+
+        return printResult;
+      } else {
+        toast.error("Failed to save the order!");
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error in handleESCPosOrderFlow:', error);
+      if (handleAuthError(error)) return false;
+      
+      if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
+        toast.error('⚠️ Connection error! Check your network.', {
+          autoClose: 5000
+        });
+      } else {
+        toast.error('Error: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+      }
+      return false;
+    }
+  };
+
   
   // Window print KOT function - Optimized for speed
-  const windowPrintKOT = (orderItems, kotHeader = 'KOT') => {
+  const windowPrintKOT = (orderItems, kotHeader = 'KOT', options = {}) => {
+    const tableNumber = options?.tableNumber ?? selectedTable;
+    const orderNumber = options?.orderNumber ?? maxNumber;
+    const timingInfo = options?.timingInfo || null;
+
+    const computedTotal = (orderItems || []).reduce((sum, item) => {
+      const itemTotal = parseFloat(item.total_amount || item.total_price || 0);
+      const fallback = parseFloat(item.price || 0) * parseFloat(item.quantity || 0);
+      return sum + (Number.isFinite(itemTotal) && itemTotal > 0 ? itemTotal : fallback);
+    }, 0);
+    const totalAmount = Number.isFinite(parseFloat(options?.totalAmount))
+      ? parseFloat(options.totalAmount)
+      : computedTotal;
+
     // Show immediate feedback
     toast.success("Preparing KOT...");
     
     // Create KOT content
     let kotContent = `
-      <div style="font-family: 'Courier New', monospace; max-width: 220px; margin: 0 auto; padding: 12px;">
+      <div style="font-family: 'Courier New', monospace; max-width: 320px; margin: 0 auto; padding: 16px;">
         <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
-          <h2 style="margin: 0; font-size: 12px;">${kotHeader}</h2>
+          <h2 style="margin: 0; font-size: 18px;">${kotHeader}</h2>
         </div>
         
-        <div style="margin-bottom: 10px; font-size: 11px;">
+        <div style="margin-bottom: 10px; font-size: 14px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span><strong>Table:</strong> ${selectedTable}</span>
-            <span><strong>Order #:</strong> ${maxNumber}</span>
+            <span><strong>Table:</strong> ${tableNumber}</span>
+            <span><strong>Order #:</strong> ${orderNumber}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span><strong>Date:</strong> ${new Date().toLocaleDateString()}</span>
             <span><strong>Time:</strong> ${new Date().toLocaleTimeString()}</span>
           </div>
+          ${timingInfo ? `
+          <div style="margin-top: 4px; border-top: 1px dashed #000; padding-top: 4px;">
+            ${timingInfo.slipLabel ? `
+            <div style="text-align: center; font-weight: bold; margin-bottom: 4px;">
+              ${timingInfo.slipLabel}
+            </div>
+            ` : ''}
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span><strong>Shisha:</strong></span>
+              <span>${timingInfo.itemName || '-'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span><strong>Start Time:</strong></span>
+              <span>${timingInfo.startTime || '-'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span><strong>End Time:</strong></span>
+              <span>${timingInfo.endTime || '-'}</span>
+            </div>
+          </div>
+          ` : ''}
         </div>
         
         <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 12px;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 15px;">
             <span>Item</span>
             <span>Qty</span>
           </div>
@@ -658,10 +882,10 @@ const decreaseItemQuantity = (index) => {
     // Add items to KOT
     orderItems.forEach((item) => {
       const isWeightBased = item.weight_based === 1;
-      const qtyDisplay = isWeightBased ? `${(item.quantity * 1000).toFixed(0)}g` : item.quantity.toString();
+      const qtyDisplay = isWeightBased ? `${((item.quantity || 0) * 1000).toFixed(0)}g` : (item.quantity || 0).toString();
       
       kotContent += `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 15px;">
           <span style="flex: 1; padding-right: 5px;">${item.item_name}</span>
           <span style="min-width: 30px; text-align: right;">${qtyDisplay}</span>
         </div>
@@ -672,22 +896,28 @@ const decreaseItemQuantity = (index) => {
         </div>
         
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
-          <div style="margin-bottom: 5px; font-size: 10px;">
-            <strong>Total: ฿ ${total.toFixed(2)}</strong>
+          <div style="margin-bottom: 5px; font-size: 15px;">
+            <strong>Total: ฿ ${totalAmount.toFixed(2)}</strong>
           </div>
-          <div style="font-size: 8px; color: #666;">
+          <div style="font-size: 11px; color: #666;">
             ${new Date().toLocaleString()}
           </div>
         </div>
+
+        ${timingInfo ? `
+        <div style="text-align: center; margin-top: 6px; font-size: 12px; font-weight: bold; border-top: 1px dashed #000; padding-top: 5px;">
+          Remark: Valid for 60 minute only
+        </div>
+        ` : ''}
         
-        <div style="text-align: center; margin-top: 8px; font-size: 8px; color: #666;">
+        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
           <p style="margin: 0;">Thank you!</p>
         </div>
       </div>
     `;
 
     // Create and open print window immediately
-    const printWindow = window.open("", "_blank", "width=280,height=400");
+    const printWindow = window.open("", "_blank", "width=480,height=700");
     
     if (printWindow) {
       // Write content immediately
@@ -695,16 +925,16 @@ const decreaseItemQuantity = (index) => {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>${kotHeader} - Table ${selectedTable}</title>
+          <title>${kotHeader} - Table ${tableNumber}</title>
           <style>
             @media print {
               body { margin: 0; }
-              @page { margin: 0.3in; size: 3in 4in; }
+              @page { margin: 0.2in; size: 4in 6in; }
             }
             body {
               font-family: 'Courier New', monospace;
-              font-size: 8px;
-              line-height: 1.2;
+              font-size: 12px;
+              line-height: 1.35;
               color: #000;
               background: #fff;
             }
@@ -772,7 +1002,36 @@ const decreaseItemQuantity = (index) => {
     }
   };
 
-  const windowPrintKOTByGroup = (orderItems) => {
+  const windowPrintKOTByGroup = (orderItems, options = {}) => {
+    const parseDateLike = (value) => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const getShishaStartDate = (items) => {
+      const candidates = (items || []).flatMap((item) => [
+        item?.kot_print_time,
+        item?.print_time,
+        item?.created_at,
+        item?.updated_at,
+        item?.timestamp,
+        item?.time,
+      ]);
+
+      const validDates = candidates
+        .map((candidate) => parseDateLike(candidate))
+        .filter((candidate) => candidate instanceof Date);
+
+      if (validDates.length === 0) return new Date();
+      return new Date(Math.min(...validDates.map((value) => value.getTime())));
+    };
+
+    const formatTimeOnly = (dateObj) => {
+      if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return '-';
+      return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     const normalizeGroup = (value) => {
       const text = String(value || '').trim().toLowerCase();
       if (text.includes('bar')) return 'BAR';
@@ -792,20 +1051,65 @@ const decreaseItemQuantity = (index) => {
       buckets[group].push(item);
     });
 
+    const shishaTimingJobs = buckets.SHISHA.flatMap((item) => {
+      const qty = Number(item?.quantity || 1);
+      const slipCount = Number.isFinite(qty) && qty > 1 ? Math.floor(qty) : 1;
+
+      return Array.from({ length: slipCount }, (_, copyIndex) => ({
+        group: 'SHISHA',
+        header: 'Shisha Timing',
+        isTimingSlip: true,
+        timingItem: item,
+        copyIndex,
+        copyTotal: slipCount,
+      }));
+    });
+
     const jobs = [
-      { group: 'FOOD', header: 'KOT Food' },
-      { group: 'BAR', header: 'KOT Bar' },
-      { group: 'SHISHA', header: 'KOT Shisha' }
+      { group: 'FOOD', header: 'KOT Food', isTimingSlip: false },
+      { group: 'BAR', header: 'KOT Bar', isTimingSlip: false },
+      { group: 'SHISHA', header: 'KOT Shisha', isTimingSlip: false },
+      ...shishaTimingJobs,
     ].filter((job) => buckets[job.group].length > 0);
 
     if (jobs.length === 0) {
-      windowPrintKOT(orderItems, 'KOT');
+      windowPrintKOT(orderItems, 'KOT', options);
       return;
     }
 
     jobs.forEach((job, index) => {
       setTimeout(() => {
-        windowPrintKOT(buckets[job.group], job.header);
+        const bucketItems = job.isTimingSlip ? [job.timingItem] : buckets[job.group];
+        const bucketTotal = bucketItems.reduce((sum, item) => {
+          const itemTotal = parseFloat(item.total_amount || item.total_price || 0);
+          const fallback = parseFloat(item.price || 0) * parseFloat(item.quantity || 0);
+          return sum + (Number.isFinite(itemTotal) && itemTotal > 0 ? itemTotal : fallback);
+        }, 0);
+
+        let timingInfo = null;
+        if (job.group === 'SHISHA' && job.isTimingSlip) {
+          const shishaStartDate = parseDateLike(job?.timingItem?.kot_print_time)
+            || parseDateLike(job?.timingItem?.print_time)
+            || parseDateLike(job?.timingItem?.created_at)
+            || parseDateLike(job?.timingItem?.updated_at)
+            || parseDateLike(job?.timingItem?.timestamp)
+            || parseDateLike(job?.timingItem?.time)
+            || parseDateLike(options?.shishaStartTime)
+            || getShishaStartDate(bucketItems);
+          const shishaEndDate = new Date(shishaStartDate.getTime() + (60 * 60 * 1000));
+          timingInfo = {
+            itemName: job?.timingItem?.item_name || '-',
+            startTime: formatTimeOnly(shishaStartDate),
+            endTime: formatTimeOnly(shishaEndDate),
+            slipLabel: job?.copyTotal > 1 ? `Slip ${Number(job.copyIndex) + 1}/${job.copyTotal}` : '',
+          };
+        }
+
+        windowPrintKOT(bucketItems, job.header, {
+          ...options,
+          totalAmount: bucketTotal,
+          timingInfo,
+        });
       }, index * 350);
     });
   };
@@ -843,7 +1147,7 @@ const decreaseItemQuantity = (index) => {
 
     orderItems.forEach((item) => {
       const isWeightBased = item.weight_based === 1 || item.weight_based === "1";
-      const qtyDisplay = isWeightBased ? `${(parseFloat(item.quantity || 0) * 1000).toFixed(0)}g` : item.quantity;
+      const qtyDisplay = isWeightBased ? `${(parseFloat(item.quantity || 0) * 1000).toFixed(0)}g` : (item.quantity || 0).toString();
 
       kotContent += `
         <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 13px;">
@@ -1035,19 +1339,16 @@ const decreaseItemQuantity = (index) => {
     };
 
     try {
-      const printResult = await printKOTThermal(kotData, {
-        showSuccessMessage: false,
-        showErrorMessage: false
-      });
+      const printResult = await sendEscPosKotCommand(kotData);
 
       if (printResult) {
-        toast.success("KOT sent to thermal printer.");
+        toast.success("KOT sent via ESC/POS command.");
       } else {
-        toast.error("KOT print failed. Check printer.");
+        toast.error("KOT command failed.");
       }
     } catch (error) {
       console.error("Error reprinting KOT ESC/POS:", error);
-      toast.error("Failed to print KOT.");
+      toast.error(error?.response?.data?.message || "Failed to send ESC/POS command.");
     }
   };
 
@@ -1137,17 +1438,13 @@ const decreaseItemQuantity = (index) => {
           total: total.toFixed(2)
         };
 
-        // Print KOT using thermal printer service
-        const printResult = await printKOTThermal(kotData, {
-          showSuccessMessage: false, // We'll show custom message
-          showErrorMessage: false    // We'll handle errors here
-        });
+        const printResult = await sendEscPosKotCommand(kotData);
 
         if (printResult) {
-          console.log('✅ KOT sent to thermal printer successfully');
-          toast.success('Order saved and KOT sent to thermal printer!');
+          console.log('✅ KOT ESC/POS command sent successfully');
+          toast.success('Order saved and KOT ESC/POS command sent!');
         } else {
-          toast.warning('Order saved but KOT print failed. Check printer.');
+          toast.warning('Order saved but ESC/POS command failed.');
         }
         
         // Clear cart after successful operations
@@ -1234,9 +1531,6 @@ const decreaseItemQuantity = (index) => {
       //   table_cat_id: item.table_cat_id 
       // })));
 
-      // Print KOT immediately while saving data in background
-      windowPrintKOTByGroup(orderItems);
-      
       // console.log("=== SAVING TO DATABASE ===");
       // console.log("Orders API call data:", {
       //   userid: getUserName(),
@@ -1280,6 +1574,46 @@ const decreaseItemQuantity = (index) => {
 
       if (response1.data.success) {
         console.log("✅ ORDER SAVED SUCCESSFULLY");
+
+        let savedOrderItems = [];
+        try {
+          savedOrderItems = await fetchData("order_items", null, "id", {
+            table_number: selectedTable,
+            order_number: maxNumber,
+            setup_date: setupDate,
+          }) || [];
+        } catch (fetchError) {
+          console.warn("Unable to fetch saved order items for timing KOT:", fetchError);
+        }
+
+        const effectiveOrderItems = Array.isArray(savedOrderItems) && savedOrderItems.length > 0
+          ? savedOrderItems
+          : orderItems;
+
+        const shishaRows = effectiveOrderItems.filter((item) =>
+          String(item?.item_group || item?.itemGroup || item?.itemgroup || item?.group_name || item?.item_type || '')
+            .toLowerCase()
+            .includes('shisha')
+        );
+
+        const shishaStartSource = shishaRows.find((row) =>
+          row?.kot_print_time || row?.print_time || row?.created_at || row?.updated_at || row?.timestamp || row?.time
+        );
+
+        const shishaStartTime = shishaStartSource?.kot_print_time
+          || shishaStartSource?.print_time
+          || shishaStartSource?.created_at
+          || shishaStartSource?.updated_at
+          || shishaStartSource?.timestamp
+          || shishaStartSource?.time
+          || null;
+
+        windowPrintKOTByGroup(effectiveOrderItems, {
+          tableNumber: selectedTable,
+          orderNumber: maxNumber,
+          shishaStartTime,
+        });
+
         toast.success(response.data.message);
         setOrderNumber((prevOrder) => prevOrder + 1);
         
@@ -1918,7 +2252,7 @@ const decreaseItemQuantity = (index) => {
                         </span>
                       </h5>
                     </div>
-                    <div className="total-container mt-2 d-flex justify-content-between align-items-center">
+                    <div className="total-container mt-2 d-flex justify-content-between align-items-center gap-2">
                       <button 
                         className="btn btn-primary" 
                         onClick={handlePrintOrder}
@@ -1935,6 +2269,33 @@ const decreaseItemQuantity = (index) => {
                       > 
                         <FaPrint className="me-1" />KOT ESC/POS
                       </button>
+                      <ESCPosAutoDetectButton 
+                        orderData={{
+                          id: maxNumber,
+                          order_number: maxNumber,
+                          queue_number: maxNumber,
+                          table: selectedTable,
+                          table_number: selectedTable,
+                          timestamp: new Date().toISOString(),
+                          items: cart.map(item => ({
+                            item_name: item.iname,
+                            quantity: item.quantity,
+                            price: item.offerprice,
+                            special_instructions: item.notes || '',
+                            category: resolveItemGroup(item),
+                            item_group: resolveItemGroup(item)
+                          })),
+                          customer_name: 'Order',
+                          total: total
+                        }}
+                        sendPrintCommand={handleESCPosOrderFlow}
+                        onPrintSuccess={() => {
+                          console.log('✅ ESC/POS order completed successfully');
+                          toast.success('KOT sent to printer and cart cleared!');
+                        }}
+                        size="small"
+                        buttonType="default"
+                      />
                       <button 
                         className="btn btn-danger" 
                         onClick={handleDeleteOrder}

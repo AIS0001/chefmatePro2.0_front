@@ -17,8 +17,8 @@ import { isTokenExpired, logout } from './utility/auth';
 //  export const baseURL = "https://www.pindapi.livecloudnet.com";  // Use export
 //  axios.defaults.baseURL = "https://www.pindapi.livecloudnet.com/api";
 
- export const baseURL = "https://www.jlaungeapi.livecloudnet.com";  // Use export
- axios.defaults.baseURL = "https://www.jlaungeapi.livecloudnet.com/api";
+  export const baseURL = "https://www.welcomesuitapi.livecloudnet.com";  // Use export
+  axios.defaults.baseURL = "https://www.welcomesuitapi.livecloudnet.com/api";
 
 // export const baseURL = "http://localhost:4402";  // Use export
 // axios.defaults.baseURL = "http://localhost:4402/api";

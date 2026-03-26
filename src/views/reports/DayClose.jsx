@@ -853,10 +853,12 @@ export default function DayClose() {
     try {
       setLoading(true);
       
+      const totalSalesIncludingEntertainment = toNumber(dayCloseData?.total_sales);
+      
       // Prepare day close summary data
       const dayClosePayload = {
         close_date: selectedDate,
-        total_sales: dayCloseData.total_sales || 0,
+        total_sales: totalSalesIncludingEntertainment,
         cash_sales: dayCloseData.cash_sales || 0,
         upi_sales: dayCloseData.upi_sales || 0,
         card_sales: dayCloseData.card_sales || 0,
@@ -867,7 +869,7 @@ export default function DayClose() {
         other_sales: dayCloseData.other_sales || 0,
         total_orders: dayCloseData.total_orders || 0,
         total_items_sold: dayCloseData.total_items_sold || 0,
-        net_sales: dayCloseData.total_sales || 0,
+        net_sales: totalSalesIncludingEntertainment,
         closed_by: getUserName(),
         closing_time: new Date().toISOString(),
         status: 'closed',

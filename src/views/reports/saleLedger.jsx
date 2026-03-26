@@ -7,7 +7,7 @@ import "jspdf-autotable";
 import { CSVLink } from "react-csv";
 import logo from "../../assets/logo.png";
 
-import { Button, Card, Col, DatePicker, Popconfirm, Row, Select, Space, Table, Tooltip } from "antd";
+import { Button, Card, Checkbox, Col, DatePicker, Popconfirm, Row, Select, Space, Table, Tooltip } from "antd";
 import { DeleteOutlined, FileExcelOutlined, FilePdfOutlined, FilterOutlined, ReloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import Header from "../../components/Header";
@@ -25,11 +25,12 @@ export default function BillHistory() {
   const [formdata, setFormData] = useState({
     from: "",
     to: "",
-    accounttype: "",
+    accounttype: "Account Recievable",
     account_id: "",
     showAllClosingBalance: false,
     showCustomerFinalBalance: false,
   });
+  const [customerFinalBalanceData, setCustomerFinalBalanceData] = useState([]);
 
   const columns = [
     { label: "Txn ID", field: "transaction_id" },
@@ -59,14 +60,69 @@ export default function BillHistory() {
     return customerName ? `${accountId} - ${customerName}` : String(accountId);
   };
 
-  const finalAccountReceivableClosingBalance = Alldata
-    .filter((row) => row.account_type === "Account Recievable")
-    .reduce((sum, row) => sum + (Number(row.debit_amount) || 0) - (Number(row.credit_amount) || 0), 0);
+  const getRowBalance = (row) =>
+    (Number(row?.debit_amount) || 0) - (Number(row?.credit_amount) || 0) - (Number(row?.discount_amount) || 0);
 
-  const customerFinalBalanceRows = Object.values(
-    Alldata
-      .filter((row) => row.account_type === "Account Recievable")
-      .reduce((acc, row) => {
+  const loadImageAsDataUrl = (src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+
+  const filterData = () => {
+    const { from, to, accounttype, account_id, showAllClosingBalance } = formdata;
+    const customerIdSet = new Set((customerdata || []).map((cust) => String(cust.id)));
+
+    // Keep report scoped to customer ledger only.
+    let filtered = [...Alldata]
+      .filter((r) => r.account_type === "Account Recievable")
+      .filter((r) => {
+        if (!customerIdSet.size) return true;
+        return customerIdSet.has(String(r.account_id));
+      });
+
+    const safeFrom = formatDateSafe(from);
+    const safeTo = formatDateSafe(to);
+
+    if (safeFrom && safeTo) {
+      filtered = filtered.filter((r) => {
+        const d = formatDateSafe(r.date);
+        return d && d >= safeFrom && d <= safeTo;
+      });
+    }
+
+    if (accounttype) {
+      filtered = filtered.filter((r) => r.account_type === accounttype);
+    }
+
+    if (account_id) {
+      filtered = filtered.filter((r) => String(r.account_id) === String(account_id));
+    }
+
+    const customerLedgerAll = [...Alldata]
+      .filter((r) => r.account_type === "Account Recievable")
+      .filter((r) => {
+        if (!customerIdSet.size) return true;
+        return customerIdSet.has(String(r.account_id));
+      });
+
+    const totalsSource = showAllClosingBalance ? customerLedgerAll : filtered;
+    const credit = totalsSource.reduce((sum, r) => sum + (Number(r.credit_amount) || 0), 0);
+    const debit = totalsSource.reduce((sum, r) => sum + (Number(r.debit_amount) || 0), 0);
+    const discount = totalsSource.reduce((sum, r) => sum + (Number(r.discount_amount) || 0), 0);
+    setTotals({ credit, debit, discount, balance: debit - credit - discount });
+
+    const finalRows = Object.values(
+      filtered.reduce((acc, row) => {
         const accountId = String(row.account_id);
         if (!acc[accountId]) {
           acc[accountId] = {
@@ -91,57 +147,22 @@ export default function BillHistory() {
 
         return acc;
       }, {})
-  );
+    ).map((row) => ({
+      ...row,
+      balance: (Number(row.debit_amount) || 0) - (Number(row.credit_amount) || 0),
+    }));
 
-  const loadImageAsDataUrl = (src) => new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    img.onerror = reject;
-    img.src = src;
-  });
-
-  const filterData = () => {
-    const { from, to, accounttype, account_id, showAllClosingBalance } = formdata;
-    let filtered = [...Alldata];
-
-    const safeFrom = formatDateSafe(from);
-    const safeTo = formatDateSafe(to);
-
-    if (safeFrom && safeTo) {
-      filtered = filtered.filter((r) => {
-        const d = formatDateSafe(r.date);
-        return d && d >= safeFrom && d <= safeTo;
-      });
-    }
-
-    if (accounttype) {
-      filtered = filtered.filter((r) => r.account_type === accounttype);
-    }
-
-    if (account_id) {
-      filtered = filtered.filter((r) => r.account_id == account_id);
-    }
-
-const totalsSource = showAllClosingBalance ? Alldata : filtered;
- const credit = totalsSource.reduce((sum, r) => sum + (Number(r.credit_amount) || 0), 0);
-const debit = totalsSource.reduce((sum, r) => sum + (Number(r.debit_amount) || 0), 0);
-const discount = totalsSource.reduce((sum, r) => sum + (Number(r.discount_amount) || 0), 0);
-setTotals({ credit, debit, discount, balance: debit - credit - discount });
+    setCustomerFinalBalanceData(finalRows);
 
     setData(filtered);
   };
 
   const exportToPDF = async () => {
-    const doc = new jsPDF();
-    const tableColumn = columns.map((col) => col.label);
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const displayRows = formdata.showCustomerFinalBalance ? customerFinalBalanceData : data;
+    const tableColumn = formdata.showCustomerFinalBalance
+      ? ["Txn ID", "Date", "A/C Type", "A/C ID", "Description", "Discount", "Debit", "Credit", "Balance"]
+      : columns.map((col) => col.label);
     const tableRows = [];
 
     try {
@@ -162,28 +183,38 @@ setTotals({ credit, debit, discount, balance: debit - credit - discount });
     doc.setFontSize(10);
     doc.text("Sales Ledger Report", headerX, 36);
 
-    data.forEach((row) => {
-      tableRows.push([
+    displayRows.forEach((row) => {
+      const base = [
         row.transaction_id,
         formatDateSafe(row.date),
         row.account_type,
         getAccountDisplay(row),
         row.description,
-        row.discount_amount,
-        row.debit_amount,
-        row.credit_amount,
-      ]);
+        Number(row.discount_amount || 0).toFixed(2),
+        Number(row.debit_amount || 0).toFixed(2),
+        Number(row.credit_amount || 0).toFixed(2),
+      ];
+
+      if (formdata.showCustomerFinalBalance) {
+        tableRows.push([
+          ...base,
+          Number(row.balance ?? getRowBalance(row)).toFixed(2),
+        ]);
+      } else {
+        tableRows.push(base);
+      }
     });
 
     tableRows.push([
-      "TOTALS",
+      "SUMMARY",
       "",
       "",
       "",
-      "Balance: " + Totals.balance,
-      (Totals.discount).toFixed(2),
+      "Final Balance",
+      "",
       (Totals.debit).toFixed(2),
       (Totals.credit).toFixed(2),
+      ...(formdata.showCustomerFinalBalance ? [(Totals.balance).toFixed(2)] : []),
     ]);
 
     doc.autoTable({
@@ -196,8 +227,10 @@ setTotals({ credit, debit, discount, balance: debit - credit - discount });
     doc.save("ledger_report.pdf");
   };
 
+  const exportRows = formdata.showCustomerFinalBalance ? customerFinalBalanceData : data;
+
   const exportCSVData = [
-    ...data.map((row) => ({
+    ...exportRows.map((row) => ({
       transaction_id: row.transaction_id,
       date: formatDateSafe(row.date),
       customer_name: getCustomerNameByAccountId(row.account_id),
@@ -207,6 +240,9 @@ setTotals({ credit, debit, discount, balance: debit - credit - discount });
       discount_amount: row.discount_amount,
       debit_amount: row.debit_amount,
       credit_amount: row.credit_amount,
+      balance: formdata.showCustomerFinalBalance
+        ? Number(row.balance ?? getRowBalance(row)).toFixed(2)
+        : "",
     })),
     {
       transaction_id: "",
@@ -214,28 +250,18 @@ setTotals({ credit, debit, discount, balance: debit - credit - discount });
       customer_name: "",
       account_type: "",
       account_id: "",
-      description: "Total",
-      discount_amount: (Totals.discount).toFixed(2) || 0,
+      description: "Summary",
+      discount_amount: "",
       debit_amount: (Totals.debit).toFixed(2) || 0,
       credit_amount: (Totals.credit).toFixed(2) || 0,
-    },
-    {
-      transaction_id: "",
-      date: "",
-      customer_name: "",
-      account_type: "",
-      account_id: "",
-      description: "Balance",
-      discount_amount: "",
-      debit_amount: "",
-      credit_amount: Totals.balance.toFixed(2),
+      balance: (Totals.balance).toFixed(2),
     },
   ];
 const resetFilters = () => {
   setFormData({
     from: "",
     to: "",
-    accounttype: "",
+    accounttype: "Account Recievable",
     account_id: "",
     showAllClosingBalance: false,
     showCustomerFinalBalance: false,
@@ -326,40 +352,51 @@ const resetFilters = () => {
       align: "right",
       render: (value) => Number(value || 0).toFixed(2),
     },
-    {
-      title: "Action",
-      key: "action",
-      align: "center",
-      width: 100,
-      render: (_, record) => {
-        if (canDeleteLedger) {
-          return (
-            <Popconfirm
-              title="Delete ledger entries"
-              description={`Delete all entries for transaction ${record.transaction_id}?`}
-              onConfirm={() => handleDeleteByTransactionId(record.transaction_id)}
-              okText="Delete"
-              cancelText="Cancel"
-            >
-              <Tooltip title="Delete by transaction id">
-                <Button
-                  type="text"
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={deletingTxnId === record.transaction_id}
-                />
-              </Tooltip>
-            </Popconfirm>
-          );
-        }
+    ...(formdata.showCustomerFinalBalance
+      ? [{
+          title: "Balance",
+          dataIndex: "balance",
+          key: "balance",
+          align: "right",
+          render: (_, record) => Number(record.balance ?? getRowBalance(record)).toFixed(2),
+        }]
+      : []),
+    ...(!formdata.showCustomerFinalBalance
+      ? [{
+          title: "Action",
+          key: "action",
+          align: "center",
+          width: 100,
+          render: (_, record) => {
+            if (canDeleteLedger) {
+              return (
+                <Popconfirm
+                  title="Delete ledger entries"
+                  description={`Delete all entries for transaction ${record.transaction_id}?`}
+                  onConfirm={() => handleDeleteByTransactionId(record.transaction_id)}
+                  okText="Delete"
+                  cancelText="Cancel"
+                >
+                  <Tooltip title="Delete by transaction id">
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={deletingTxnId === record.transaction_id}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              );
+            }
 
-        return (
-          <Tooltip title="No delete permission. Only admin/account can delete.">
-            <Button type="text" danger icon={<DeleteOutlined />} disabled />
-          </Tooltip>
-        );
-      },
-    },
+            return (
+              <Tooltip title="No delete permission. Only admin/account can delete.">
+                <Button type="text" danger icon={<DeleteOutlined />} disabled />
+              </Tooltip>
+            );
+          },
+        }]
+      : []),
   ];
 
   useEffect(() => {
@@ -382,7 +419,8 @@ const resetFilters = () => {
 
   useEffect(() => {
     filterData();
-  }, [formdata, Alldata]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formdata, Alldata, customerdata]);
 
   return (
     <Layout>
@@ -422,9 +460,6 @@ const resetFilters = () => {
                 value={formdata.accounttype || undefined}
                 onChange={(value) => setFormData({ ...formdata, accounttype: value || "" })}
                 options={[
-                  { label: "Sales", value: "Sales" },
-                  { label: "Cash", value: "Cash" },
-                  { label: "Discount", value: "Discount" },
                   { label: "Account Recievable", value: "Account Recievable" },
                 ]}
                 style={{ width: "100%" }}
@@ -454,6 +489,22 @@ const resetFilters = () => {
                 }))}
                 style={{ width: "100%" }}
               />
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 28 }}>
+              <Checkbox
+                checked={formdata.showCustomerFinalBalance}
+                onChange={(e) => setFormData({ ...formdata, showCustomerFinalBalance: e.target.checked })}
+              >
+                Show Final Balance Per Customer
+              </Checkbox>
+              <Checkbox
+                checked={formdata.showAllClosingBalance}
+                onChange={(e) => setFormData({ ...formdata, showAllClosingBalance: e.target.checked })}
+              >
+                Closing Balance From All Customer Ledger
+              </Checkbox>
             </div>
           </Col>
         </Row>
@@ -490,21 +541,16 @@ const resetFilters = () => {
         <div className="col-12">
           <Table
             columns={antColumns}
-            dataSource={formdata.showCustomerFinalBalance ? customerFinalBalanceRows : data}
+            dataSource={formdata.showCustomerFinalBalance ? customerFinalBalanceData : data}
             rowKey="id"
             pagination={{ pageSize: 50, showSizeChanger: true }}
-            scroll={{ x: 1100 }}
+            scroll={{ x: formdata.showCustomerFinalBalance ? 1250 : 1100 }}
             summary={() => (
               <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={5}>
+                <Table.Summary.Cell index={0} colSpan={6}>
                   <strong>
-                    Closing Balance {formdata.showAllClosingBalance ? "(All Ledger)" : "(Filtered)"}: {(Totals.balance).toFixed(2)}
-                    {" | "}
-                    Final A/C Recievable Closing: {finalAccountReceivableClosingBalance.toFixed(2)}
+                    Final Balance {formdata.showAllClosingBalance ? "(All Customer Ledger)" : "(Filtered)"}: {(Totals.balance).toFixed(2)}
                   </strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={5} align="right">
-                  <strong>{(Totals.discount).toFixed(2)}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={6} align="right">
                   <strong>{(Totals.debit).toFixed(2)}</strong>
@@ -512,16 +558,19 @@ const resetFilters = () => {
                 <Table.Summary.Cell index={7} align="right">
                   <strong>{(Totals.credit).toFixed(2)}</strong>
                 </Table.Summary.Cell>
-                <Table.Summary.Cell index={8} />
+                {formdata.showCustomerFinalBalance && (
+                  <Table.Summary.Cell index={8} align="right">
+                    <strong>{(Totals.balance).toFixed(2)}</strong>
+                  </Table.Summary.Cell>
+                )}
+                <Table.Summary.Cell index={formdata.showCustomerFinalBalance ? 9 : 8} />
               </Table.Summary.Row>
             )}
           />
           <div className="mt-3">
             <strong>Total Credit:</strong> {(Totals.credit).toFixed(2)} |{" "}
-            <strong>Total Discount:</strong> {(Totals.discount).toFixed(2)} |{" "}
             <strong>Total Debit:</strong> {(Totals.debit).toFixed(2)} |{" "}
-            <strong>Balance:</strong> {(Totals.balance).toFixed(2)} |{" "}
-            <strong>Final A/C Recievable Closing:</strong> {finalAccountReceivableClosingBalance.toFixed(2)}
+            <strong>Final Balance:</strong> {(Totals.balance).toFixed(2)}
           </div>
         </div>
       </div>

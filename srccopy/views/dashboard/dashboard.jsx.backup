@@ -1,0 +1,1668 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import Layout from "../../layout/Layout";
+import Header from "../../components/Header";
+import { getHeaders } from "../../utility/getHeader";
+import fetchData from "../../functions/fetchData";
+
+export default function Dashboard() {
+  const [currency, setCurrency] = useState("₹");
+  const [dashboardData, setDashboardData] = useState({
+    todaySales: 0,
+    todayPurchases: 0,
+    totalBills: 0,
+    averageOrderPrice: 0
+  });
+  const [chartData, setChartData] = useState([]);
+  const [recentSales, setRecentSales] = useState([]);
+  const [recentPurchases, setRecentPurchases] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch currency settings
+      const coreSettings = await fetchData('coresetting', null, 'id', {});
+      if (coreSettings && coreSettings.length > 0) {
+        setCurrency(coreSettings[0].currency || '₹');
+      }
+
+      // Fetch today's summary
+      const todaySummaryRes = await axios.get("/report/todaysummary", getHeaders());
+      const todayData = todaySummaryRes.data || {};
+
+      // Fetch daily sales and purchase data for chart (last 7 days)
+      const salesRes = await axios.get("/report/sale?range=week", getHeaders());
+      const purchaseRes = await axios.get("/report/purchase?range=week", getHeaders());
+
+      // Fetch recent bills for table data
+      const billsData = await fetchData('final_bill', null, 'id', { limit: 5, orderBy: 'created_at', order: 'DESC' });
+      const purchaseData = await fetchData('purchase', null, 'id', { limit: 5, orderBy: 'created_at', order: 'DESC' });
+
+      // Process chart data
+      const salesData = salesRes.data || [];
+      const purchasesData = purchaseRes.data || [];
+      
+      const combinedChartData = salesData.map((sale, index) => ({
+        date: sale.date || sale.day,
+        sales: parseFloat(sale.amount || sale.total || 0),
+        purchases: parseFloat(purchasesData[index]?.amount || purchasesData[index]?.total || 0)
+      }));
+
+      // Calculate metrics
+      const todaySales = parseFloat(todayData.todaySales || 0);
+      const todayPurchases = parseFloat(todayData.todayPurchases || 0);
+      const totalBills = parseInt(todayData.billCount || billsData.length || 0);
+      const averageOrderPrice = totalBills > 0 ? (todaySales / totalBills) : 0;
+
+      setDashboardData({
+        todaySales,
+        todayPurchases,
+        totalBills,
+        averageOrderPrice
+      });
+
+      setChartData(combinedChartData);
+      setRecentSales(billsData.slice(0, 5));
+      setRecentPurchases(purchaseData.slice(0, 5));
+
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <Header title="Dashboard" />
+        <div className="container-fluid">
+          <div className="row justify-content-center mt-5">
+            <div className="col-md-6 text-center">
+              <div className="spinner-border text-primary" role="status">
+                <span className="sr-only">Loading...</span>
+              </div>
+              <p className="mt-3">Loading dashboard data...</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <Header title="Dashboard" />
+      <div className="container-fluid">
+        
+        {/* Metrics Cards */}
+        <div className="row mt-4">
+          <div className="col-md-3 mb-3">
+            <div className="card bg-primary text-white">
+              <div className="card-body text-center">
+                <h5>Today's Sales</h5>
+                <h3>{currency}{dashboardData.todaySales.toFixed(2)}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 mb-3">
+            <div className="card bg-success text-white">
+              <div className="card-body text-center">
+                <h5>Today's Purchases</h5>
+                <h3>{currency}{dashboardData.todayPurchases.toFixed(2)}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 mb-3">
+            <div className="card bg-info text-white">
+              <div className="card-body text-center">
+                <h5>Total Bills</h5>
+                <h3>{dashboardData.totalBills}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 mb-3">
+            <div className="card bg-warning text-white">
+              <div className="card-body text-center">
+                <h5>Average Order Price</h5>
+                <h3>{currency}{dashboardData.averageOrderPrice.toFixed(2)}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="row mt-4">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-header">
+                <h5>Daily Sales & Purchase Trends</h5>
+              </div>
+              <div className="card-body">
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => [`${currency}${value.toFixed(2)}`, name]}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="sales" 
+                      stroke="#007bff" 
+                      strokeWidth={3}
+                      name="Sales"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="purchases" 
+                      stroke="#28a745" 
+                      strokeWidth={3}
+                      name="Purchases"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tables Section */}
+        <div className="row mt-4">
+          {/* Recent Sales */}
+          <div className="col-md-6">
+            <div className="card">
+              <div className="card-header">
+                <h5>Recent Sales (Last 5)</h5>
+              </div>
+              <div className="card-body">
+                <div className="table-responsive">
+                  <table className="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Bill No</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentSales.length > 0 ? (
+                        recentSales.map((sale, index) => (
+                          <tr key={index}>
+                            <td>{sale.inv_id || sale.bill_no || `#${sale.id}`}</td>
+                            <td>{sale.customer_name || 'Walk-in Customer'}</td>
+                            <td>{currency}{parseFloat(sale.grand_total || sale.total || 0).toFixed(2)}</td>
+                            <td>{new Date(sale.created_at || sale.inv_date).toLocaleDateString()}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">No recent sales data</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Purchases */}
+          <div className="col-md-6">
+            <div className="card">
+              <div className="card-header">
+                <h5>Recent Purchases (Last 5)</h5>
+              </div>
+              <div className="card-body">
+                <div className="table-responsive">
+                  <table className="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Purchase No</th>
+                        <th>Supplier</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentPurchases.length > 0 ? (
+                        recentPurchases.map((purchase, index) => (
+                          <tr key={index}>
+                            <td>{purchase.purchase_id || `#${purchase.id}`}</td>
+                            <td>{purchase.supplier_name || purchase.vendor_name || 'Unknown Supplier'}</td>
+                            <td>{currency}{parseFloat(purchase.total_amount || purchase.grand_total || 0).toFixed(2)}</td>
+                            <td>{new Date(purchase.created_at || purchase.purchase_date).toLocaleDateString()}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">No recent purchase data</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </Layout>
+  );
+}
+    console.log('Processing customer data:', {
+      totalRecords: customerData ? customerData.length : 0,
+      sampleRecord: customerData && customerData.length > 0 ? customerData[0] : 'No data'
+    });
+
+    if (!customerData || customerData.length === 0) {
+      console.log('No customer data available from API');
+      return { 
+        repeatCustomers: 0, 
+        newCustomers: 0, 
+        topCustomers: []
+      };
+    }
+
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    let repeatCustomers = 0;
+    let newCustomers = 0;
+    const customerSales = {};
+    let skippedRecords = 0;
+
+    // Process each customer record
+    customerData.forEach(customer => {
+      const customerId = customer.customer_id || customer.id || customer.customer_name;
+      let customerName = customer.customer_name || customer.name || 'Unknown Customer';
+      
+      // Enhanced filtering to exclude walk-in customers and invalid names
+      const isWalkInCustomer = !customerName || 
+                              customerName === 'Unknown Customer' || 
+                              customerName === 'Walk-in Customer' ||
+                              customerName.toLowerCase().includes('walk-in') ||
+                              customerName.toLowerCase().includes('walkin') ||
+                              customerName.trim() === '' ||
+                              customerName.trim() === '-' ||
+                              customerName.length < 2;
+
+      if (!customerId || isWalkInCustomer) {
+        skippedRecords++;
+        return;
+      }
+
+      // Clean up customer name
+      customerName = customerName.trim();
+      
+      const orderDate = new Date(customer.created_at || customer.order_date || customer.inv_date);
+      const totalAmount = parseFloat(customer.total_amount || customer.grand_total || customer.subtotal || 0);
+
+      // Skip if invalid amount or date
+      if (totalAmount <= 0 || isNaN(orderDate.getTime())) {
+        skippedRecords++;
+        return;
+      }
+
+      // Count customer orders and total spending
+      if (!customerSales[customerId]) {
+        customerSales[customerId] = {
+          name: customerName,
+          total: 0,
+          orderCount: 0,
+          firstOrderDate: orderDate,
+          lastOrderDate: orderDate
+        };
+      }
+
+      customerSales[customerId].total += totalAmount;
+      customerSales[customerId].orderCount += 1;
+      
+      // Update date ranges
+      if (orderDate < customerSales[customerId].firstOrderDate) {
+        customerSales[customerId].firstOrderDate = orderDate;
+      }
+      if (orderDate > customerSales[customerId].lastOrderDate) {
+        customerSales[customerId].lastOrderDate = orderDate;
+      }
+    });
+
+    console.log('Customer processing stats:', {
+      totalRecords: customerData.length,
+      skippedRecords,
+      validCustomers: Object.keys(customerSales).length,
+      customerNames: Object.values(customerSales).map(c => c.name)
+    });
+
+    // If no valid customers found after filtering, return empty data
+    if (Object.keys(customerSales).length === 0) {
+      console.log('No valid customers found after filtering');
+      return { 
+        repeatCustomers: 0, 
+        newCustomers: 0, 
+        topCustomers: []
+      };
+    }
+
+    // Analyze customer behavior
+    Object.values(customerSales).forEach(customer => {
+      const daysSinceFirstOrder = (today - customer.firstOrderDate) / (1000 * 60 * 60 * 24);
+      
+      // Consider as repeat if has more than 1 order OR first order was more than 7 days ago and has recent activity
+      if (customer.orderCount > 1 || (daysSinceFirstOrder > 7 && customer.lastOrderDate > thirtyDaysAgo)) {
+        repeatCustomers++;
+      } else {
+        newCustomers++;
+      }
+    });
+
+    // Get top customers by total spending
+    const topCustomers = Object.values(customerSales)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+      .map(customer => ({
+        name: customer.name,
+        total: customer.total.toFixed(2),
+        orderCount: customer.orderCount
+      }));
+
+    console.log('Final customer analysis:', {
+      repeatCustomers,
+      newCustomers,
+      topCustomers
+    });
+
+    return { repeatCustomers, newCustomers, topCustomers };
+  };
+
+  // Function to fetch currency from coresetting
+  const fetchCurrency = async () => {
+    try {
+      setIsLoadingCurrency(true);
+      const coreSettings = await fetchData('coresetting', null, 'id', {});
+      if (coreSettings && coreSettings.length > 0) {
+        const currencyFromDb = coreSettings[0].currency;
+        // Map currency codes to symbols
+        const currencySymbols = {
+          'THB': '฿',
+          'TH': '฿',
+          'INR': '₹',
+          'IN': '₹',
+          'USD': '$',
+          'US': '$',
+          'EUR': '€',
+          'GBP': '£',
+          'UK': '£',
+          'JPY': '¥',
+          'AUD': 'A$',
+          'CAD': 'C$',
+          'SGD': 'S$',
+          'HKD': 'HK$',
+          'MYR': 'RM',
+          'PHP': '₱',
+          'VND': '₫',
+          'KRW': '₩',
+          'CNY': '¥',
+          'TWD': 'NT$',
+          'IDR': 'Rp',
+          'BRL': 'R$',
+          'RUB': '₽',
+          'ZAR': 'R',
+          'TRY': '₺',
+          'AED': 'د.إ',
+          'SAR': 'ر.س',
+          'QAR': 'ر.ق',
+          'KWD': 'د.ك',
+          'BHD': 'د.ب',
+          'OMR': 'ر.ع',
+          'JOD': 'د.أ',
+          'EGP': 'ج.م',
+          'PKR': '₨',
+          'LKR': 'Rs',
+          'BDT': '৳',
+          'NPR': 'रू',
+          'MMK': 'K',
+          'LAK': '₭',
+          'KHR': '៛',
+          'MOP': 'MOP$',
+          'BND': 'B$',
+          'FJD': 'FJ$',
+          'NZD': 'NZ$',
+          'PGK': 'K',
+          'SBD': 'SI$',
+          'TOP': 'T$',
+          'VUV': 'VT',
+          'WST': 'WS$'
+        };
+        
+        const currencySymbol = currencySymbols[currencyFromDb] || currencyFromDb || '₹';
+        setCurrency(currencySymbol);
+        console.log('Currency loaded from database:', currencyFromDb, '→', currencySymbol);
+      } else {
+        console.log('No core settings found, using default currency');
+        setCurrency('₹');
+      }
+    } catch (error) {
+      console.error('Error fetching currency from coresetting:', error);
+      toast.error('Failed to load currency setting, using default');
+      setCurrency('₹'); // Fallback to default
+    } finally {
+      setIsLoadingCurrency(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrency();
+  }, []);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const [salesRes, purchaseRes, weeklySalesRes, weeklyPurchaseRes, monthlySalesRes, monthlyPurchaseRes, summaryRes, todaysummaryRes, weeklySummaryRes, monthlySummaryRes, lowStock, getTopproducts, customersRes, billsRes, customersTableRes] = await Promise.all([
+          axios.get(`/report/sale?range=${dateRange}`, getHeaders()),
+          axios.get(`/report/purchase?range=${dateRange}`, getHeaders()),
+          axios.get(`/report/weeklysales`, getHeaders()).catch(() => {
+            console.log('Weekly sales API not found, falling back to sale?range=week');
+            return axios.get(`/report/sale?range=week`, getHeaders());
+          }),
+          axios.get(`/report/weeklypurchase`, getHeaders()).catch(() => {
+            console.log('Weekly purchase API not found, falling back to purchase?range=week');
+            return axios.get(`/report/purchase?range=week`, getHeaders());
+          }),
+          axios.get(`/report/monthlysales`, getHeaders()).catch(() => {
+            console.log('Monthly sales API not found, falling back to sale?range=month');
+            return axios.get(`/report/sale?range=month`, getHeaders());
+          }),
+          axios.get(`/report/monthlypurchase`, getHeaders()).catch(() => {
+            console.log('Monthly purchase API not found, falling back to purchase?range=month');
+            return axios.get(`/report/purchase?range=month`, getHeaders());
+          }),
+          axios.get("/report/summary", getHeaders()),
+          axios.get("/report/todaysummary", getHeaders()),
+          axios.get("/report/weeklysummary", getHeaders()).catch(() => {
+            console.log('Weekly summary API not found, will calculate manually');
+            return { data: null };
+          }),
+          axios.get("/report/monthlysummary", getHeaders()).catch(() => {
+            console.log('Monthly summary API not found, will calculate manually');
+            return { data: null };
+          }),
+          axios.get("/report/getlowstockalert", getHeaders()),
+          axios.get("/report/gettopproducts", getHeaders()),
+          axios.get("/report/customers", getHeaders()).catch(() => ({ data: [] })), // Fallback if API doesn't exist
+          fetchData('final_bill', null, 'id', {}).catch(() => []), // Get bills data as fallback
+          fetchData('customers', null, 'id', {}).catch(() => []), // Get customers table data
+        ]);
+
+        setSalesData(salesRes.data);
+        setPurchaseData(purchaseRes.data);
+        setWeeklySalesData(weeklySalesRes.data);
+        setWeeklyPurchaseData(weeklyPurchaseRes.data);
+
+        console.log('API Response Status:', {
+          weeklySales: weeklySalesRes.status,
+          weeklyPurchase: weeklyPurchaseRes.status,
+          monthlySales: monthlySalesRes.status,
+          monthlyPurchase: monthlyPurchaseRes.status,
+          weeklySummary: weeklySummaryRes.status,
+          monthlySummary: monthlySummaryRes.status
+        });
+
+        console.log('Financial Intelligence Data Check:', {
+          weeklySalesData: {
+            available: !!weeklySalesRes.data,
+            length: Array.isArray(weeklySalesRes.data) ? weeklySalesRes.data.length : 'not array',
+            sample: weeklySalesRes.data?.slice(0, 2)
+          },
+          weeklyPurchaseData: {
+            available: !!weeklyPurchaseRes.data,
+            length: Array.isArray(weeklyPurchaseRes.data) ? weeklyPurchaseRes.data.length : 'not array',
+            sample: weeklyPurchaseRes.data?.slice(0, 2)
+          },
+          monthlySalesData: {
+            available: !!monthlySalesRes.data,
+            length: Array.isArray(monthlySalesRes.data) ? monthlySalesRes.data.length : 'not array',
+            sample: monthlySalesRes.data?.slice(0, 2)
+          },
+          monthlyPurchaseData: {
+            available: !!monthlyPurchaseRes.data,
+            length: Array.isArray(monthlyPurchaseRes.data) ? monthlyPurchaseRes.data.length : 'not array',
+            sample: monthlyPurchaseRes.data?.slice(0, 2)
+          },
+          weeklySummaryAPI: {
+            available: !!weeklySummaryRes.data,
+            hasExpectedFields: weeklySummaryRes.data && weeklySummaryRes.data.total_Sales !== undefined,
+            data: weeklySummaryRes.data
+          },
+          monthlySummaryAPI: {
+            available: !!monthlySummaryRes.data,
+            hasExpectedFields: monthlySummaryRes.data && monthlySummaryRes.data.totalSales !== undefined,
+            data: monthlySummaryRes.data
+          }
+        });
+
+        console.log('Weekly sales data from API:', {
+          endpoint: '/report/weeklysales',
+          count: weeklySalesRes.data?.length || 0,
+          sample: weeklySalesRes.data?.slice(0, 3) || []
+        });
+        
+        console.log('Weekly purchase data from API:', {
+          endpoint: '/report/weeklypurchase',
+          count: weeklyPurchaseRes.data?.length || 0,
+          sample: weeklyPurchaseRes.data?.slice(0, 3) || []
+        });
+
+        console.log('Monthly sales data from API:', {
+          endpoint: '/report/monthlysales',
+          count: monthlySalesRes.data?.length || 0,
+          sample: monthlySalesRes.data?.slice(0, 3) || []
+        });
+        
+        console.log('Monthly purchase data from API:', {
+          endpoint: '/report/monthlypurchase',
+          count: monthlyPurchaseRes.data?.length || 0,
+          sample: monthlyPurchaseRes.data?.slice(0, 3) || []
+        });
+
+        // Calculate weekly summaries - use dedicated API if available, otherwise calculate manually
+        let weeklyTotalSales = 0, weeklyTotalPurchases = 0, weeklyProfitMargin = 0;
+        
+        if (weeklySummaryRes.data && weeklySummaryRes.data.totalSales !== undefined) {
+          // Use dedicated weekly summary API
+          weeklyTotalSales = parseFloat(weeklySummaryRes.data.totalSales) || 0;
+          weeklyTotalPurchases = parseFloat(weeklySummaryRes.data.totalPurchases) || 0;
+          weeklyProfitMargin = parseFloat(weeklySummaryRes.data.profitMargin) || 0;
+          
+          console.log('✅ Using dedicated weekly summary API:', {
+            weeklyTotalSales,
+            weeklyTotalPurchases,
+            weeklyProfitMargin
+          });
+        } else {
+          // Calculate manually from weekly data
+          console.log('⚠️ Weekly summary API not available, calculating manually...');
+          
+          // Handle different data formats for weekly sales
+          if (Array.isArray(weeklySalesRes.data)) {
+            weeklyTotalSales = weeklySalesRes.data.reduce((sum, item) => {
+              const amount = parseFloat(item.amount || item.total || item.sales || item.grand_total || 0);
+              return sum + amount;
+            }, 0);
+          } else if (weeklySalesRes.data && typeof weeklySalesRes.data === 'object') {
+            weeklyTotalSales = parseFloat(weeklySalesRes.data.total || weeklySalesRes.data.totalSales || 0);
+          }
+          
+          // Handle different data formats for weekly purchases
+          if (Array.isArray(weeklyPurchaseRes.data)) {
+            weeklyTotalPurchases = weeklyPurchaseRes.data.reduce((sum, item) => {
+              const amount = parseFloat(item.amount || item.total || item.purchase || item.grand_total || 0);
+              return sum + amount;
+            }, 0);
+          } else if (weeklyPurchaseRes.data && typeof weeklyPurchaseRes.data === 'object') {
+            weeklyTotalPurchases = parseFloat(weeklyPurchaseRes.data.total || weeklyPurchaseRes.data.totalPurchases || 0);
+          }
+          
+          weeklyProfitMargin = weeklyTotalSales > 0 ? ((weeklyTotalSales - weeklyTotalPurchases) / weeklyTotalSales * 100) : 0;
+          
+          console.log('📊 Manual weekly calculation:', {
+            weeklyTotalSales,
+            weeklyTotalPurchases,
+            weeklyProfitMargin: weeklyProfitMargin.toFixed(2),
+            salesDataType: Array.isArray(weeklySalesRes.data) ? 'array' : typeof weeklySalesRes.data,
+            purchaseDataType: Array.isArray(weeklyPurchaseRes.data) ? 'array' : typeof weeklyPurchaseRes.data,
+            salesDataLength: Array.isArray(weeklySalesRes.data) ? weeklySalesRes.data.length : 'not array',
+            purchaseDataLength: Array.isArray(weeklyPurchaseRes.data) ? weeklyPurchaseRes.data.length : 'not array'
+          });
+        }
+
+        // Calculate monthly summaries - use dedicated API if available, otherwise calculate manually
+        let monthlyTotalSales = 0, monthlyTotalPurchases = 0, monthlyProfitMargin = 0;
+        
+        if (monthlySummaryRes.data && monthlySummaryRes.data.totalSales !== undefined) {
+          // Use dedicated monthly summary API
+          monthlyTotalSales = parseFloat(monthlySummaryRes.data.totalSales) || 0;
+          monthlyTotalPurchases = parseFloat(monthlySummaryRes.data.totalPurchases) || 0;
+          monthlyProfitMargin = parseFloat(monthlySummaryRes.data.profitMargin) || 0;
+          
+          console.log('✅ Using dedicated monthly summary API:', {
+            monthlyTotalSales,
+            monthlyTotalPurchases,
+            monthlyProfitMargin
+          });
+        } else {
+          // Calculate manually from monthly data
+          console.log('⚠️ Monthly summary API not available, calculating manually...');
+          
+          // Handle different data formats for monthly sales
+          if (Array.isArray(monthlySalesRes.data)) {
+            monthlyTotalSales = monthlySalesRes.data.reduce((sum, item) => {
+              const amount = parseFloat(item.amount || item.total || item.sales || item.grand_total || 0);
+              return sum + amount;
+            }, 0);
+          } else if (monthlySalesRes.data && typeof monthlySalesRes.data === 'object') {
+            monthlyTotalSales = parseFloat(monthlySalesRes.data.total || monthlySalesRes.data.totalSales || 0);
+          }
+          
+          // Handle different data formats for monthly purchases
+          if (Array.isArray(monthlyPurchaseRes.data)) {
+            monthlyTotalPurchases = monthlyPurchaseRes.data.reduce((sum, item) => {
+              const amount = parseFloat(item.amount || item.total || item.purchase || item.grand_total || 0);
+              return sum + amount;
+            }, 0);
+          } else if (monthlyPurchaseRes.data && typeof monthlyPurchaseRes.data === 'object') {
+            monthlyTotalPurchases = parseFloat(monthlyPurchaseRes.data.total || monthlyPurchaseRes.data.totalPurchases || 0);
+          }
+          
+          monthlyProfitMargin = monthlyTotalSales > 0 ? ((monthlyTotalSales - monthlyTotalPurchases) / monthlyTotalSales * 100) : 0;
+          
+          console.log('📊 Manual monthly calculation:', {
+            monthlyTotalSales,
+            monthlyTotalPurchases,
+            monthlyProfitMargin: monthlyProfitMargin.toFixed(2),
+            salesDataType: Array.isArray(monthlySalesRes.data) ? 'array' : typeof monthlySalesRes.data,
+            purchaseDataType: Array.isArray(monthlyPurchaseRes.data) ? 'array' : typeof monthlyPurchaseRes.data,
+            salesDataLength: Array.isArray(monthlySalesRes.data) ? monthlySalesRes.data.length : 'not array',
+            purchaseDataLength: Array.isArray(monthlyPurchaseRes.data) ? monthlyPurchaseRes.data.length : 'not array'
+          });
+        }
+
+        // Process customer data for insights
+        let customerData = customersRes.data || [];
+        
+        console.log('Initial customer data from API:', {
+          source: 'customers API',
+          count: customerData.length,
+          sample: customerData.slice(0, 3)
+        });
+        
+        // If customer API doesn't return data, try to use bills data
+        if (customerData.length === 0 && billsRes.length > 0) {
+          console.log('Using bills data as fallback for customer analysis');
+          customerData = billsRes
+            .filter(bill => {
+              const customerName = bill.customer_name;
+              return customerName && 
+                     customerName.trim() !== '' && 
+                     customerName !== 'Walk-in Customer' &&
+                     !customerName.toLowerCase().includes('walk-in') &&
+                     !customerName.toLowerCase().includes('walkin') &&
+                     customerName.trim() !== '-' &&
+                     customerName.length >= 2;
+            })
+            .map(bill => ({
+              customer_id: bill.customer_id || bill.id,
+              customer_name: bill.customer_name || `Customer ${bill.id}`,
+              total_amount: parseFloat(bill.grand_total) || 0,
+              created_at: bill.created_at || bill.inv_date,
+              order_date: bill.inv_date || bill.created_at
+            }));
+          
+          console.log('Filtered bills data:', {
+            totalBills: billsRes.length,
+            validCustomerBills: customerData.length,
+            sample: customerData.slice(0, 3)
+          });
+        }
+
+        // If still no data, try to combine customers table with bills
+        if (customerData.length === 0 && customersTableRes.length > 0) {
+          console.log('Using customers table with bills as fallback');
+          const customerMap = {};
+          
+          // Create map of customers
+          customersTableRes.forEach(customer => {
+            if (customer.name && customer.name.trim() !== '' && customer.name !== 'Walk-in Customer') {
+              customerMap[customer.id] = {
+                id: customer.id,
+                name: customer.name,
+                phone: customer.phone,
+                totalSpent: 0,
+                orderCount: 0
+              };
+            }
+          });
+
+          // Add bill data to customers
+          billsRes.forEach(bill => {
+            const customerId = bill.customer_id;
+            if (customerId && customerMap[customerId] && bill.grand_total) {
+              customerMap[customerId].totalSpent += parseFloat(bill.grand_total || 0);
+              customerMap[customerId].orderCount += 1;
+            }
+          });
+
+          // Convert to customer data format
+          customerData = Object.values(customerMap)
+            .filter(customer => customer.orderCount > 0 && customer.totalSpent > 0)
+            .map(customer => ({
+              customer_id: customer.id,
+              customer_name: customer.name,
+              total_amount: customer.totalSpent,
+              created_at: new Date(),
+              order_count: customer.orderCount
+            }));
+          
+          console.log('Combined customer and bills data:', {
+            totalCustomersTable: customersTableRes.length,
+            validCombinedCustomers: customerData.length,
+            sample: customerData.slice(0, 3)
+          });
+        }
+
+        const { repeatCustomers, newCustomers, topCustomers } = processCustomerData(customerData);
+        
+        console.log('Customer Data Analysis:', {
+          totalCustomers: customerData.length,
+          repeatCustomers,
+          newCustomers,
+          topCustomers
+        });
+
+        // Enhanced top products data processing
+        const processedTopProducts = getTopproducts.data ? getTopproducts.data.map(item => ({
+          ...item,
+          item_name: item.item_name || item.product_name || item.name || 'Unknown Product',
+          closing_stock: item.closing_stock || item.stock || item.quantity || 0,
+          sales_count: item.sales_count || item.sold_quantity || item.total_sold || 0
+        })) : [];
+
+        console.log('Top Products Data Processing:', {
+          rawData: getTopproducts.data,
+          processedData: processedTopProducts,
+          count: processedTopProducts.length
+        });
+
+        setSummary(prev => ({
+          ...prev,
+          totalSales: parseFloat(summaryRes.data.totalSales) || 0,
+          totalPurchase: parseFloat(summaryRes.data.totalPurchase) || 0,
+          topProduct: summaryRes.data.topProduct || 'N/A',
+          profitMargin: summaryRes.data.totalSales > 0
+            ? ((summaryRes.data.totalSales - summaryRes.data.totalPurchase) / summaryRes.data.totalSales * 100).toFixed(2)
+            : 0,
+          lowStockItems: (lowStock.data || []).map(item => ({
+            ...item,
+            stock: item.closing_stock || item.stock || item.quantity || 0,
+            item_name: item.item_name || item.product_name || item.name || 'Unknown Product'
+          })),
+          topProductList: processedTopProducts,
+          customerStats: {
+            repeat: repeatCustomers,
+            new: newCustomers
+          },
+          topCustomers: topCustomers,
+          weeklySummary: {
+            totalSales: weeklyTotalSales,
+            totalPurchases: weeklyTotalPurchases,
+            profitMargin: weeklyProfitMargin
+          },
+          monthlySummary: {
+            totalSales: monthlyTotalSales,
+            totalPurchases: monthlyTotalPurchases,
+            profitMargin: monthlyProfitMargin
+          }
+        }));
+
+        console.log('Final Summary Data Set:', {
+          weeklySummary: {
+            totalSales: parseFloat(weeklyTotalSales) || 0,
+            totalPurchases: parseFloat(weeklyTotalPurchases) || 0,
+            profitMargin: parseFloat(weeklyProfitMargin) || 0
+          },
+          monthlySummary: {
+            totalSales: parseFloat(monthlyTotalSales) || 0,
+            totalPurchases: parseFloat(monthlyTotalPurchases) || 0,
+            profitMargin: parseFloat(monthlyProfitMargin) || 0
+          }
+        });
+
+        console.log('🎯 Final Financial Intelligence Summary:', {
+          weeklySummary: {
+            totalSales: weeklyTotalSales,
+            totalPurchases: weeklyTotalPurchases,
+            profitMargin: weeklyProfitMargin,
+            profit: weeklyTotalSales - weeklyTotalPurchases
+          },
+          monthlySummary: {
+            totalSales: monthlyTotalSales,
+            totalPurchases: monthlyTotalPurchases,
+            profitMargin: monthlyProfitMargin,
+            profit: monthlyTotalSales - monthlyTotalPurchases
+          },
+          topProducts: {
+            count: processedTopProducts.length,
+            products: processedTopProducts.slice(0, 3).map(p => ({
+              name: p.item_name,
+              stock: p.closing_stock,
+              sales: p.sales_count
+            }))
+          },
+          topCustomers: {
+            count: topCustomers.length,
+            customers: topCustomers.slice(0, 3).map(c => ({
+              name: c.name,
+              total: c.total,
+              orders: c.orderCount
+            }))
+          }
+        });
+
+        setTodaySummary(todaysummaryRes.data);
+
+        // Set low stock alerts data and processed top products
+        setLowStockAlerts(lowStock.data || []);
+        setTopProducts(processedTopProducts);
+
+      } catch (error) {
+        toast.error("Failed to load dashboard data");
+        console.error("Error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [dateRange]);
+
+
+  const combinedData = salesData.map((sale, index) => ({
+    date: sale.date,
+    salesAmount: sale.amount,
+    purchaseAmount: purchaseData[index]?.amount || 0,
+    transactions: Math.floor(sale.amount / 100)
+  }));
+
+  const weeklyCombinedData = weeklySalesData.map((sale, index) => ({
+    date: sale.date,
+    salesAmount: sale.amount,
+    purchaseAmount: weeklyPurchaseData[index]?.amount || 0,
+    transactions: Math.floor(sale.amount / 100)
+  }));
+
+  // Radial chart data for customer stats
+  const customerRadialData = [
+    {
+      name: 'Repeat Customers',
+      value: summary.customerStats?.repeat || 0,
+      fill: COLORS.success
+    },
+    {
+      name: 'New Customers',
+      value: summary.customerStats?.new || 0,
+      fill: COLORS.info
+    }
+  ];
+
+  // Only show chart if we have customer data
+  const hasCustomerData = (summary.customerStats?.repeat || 0) > 0 || (summary.customerStats?.new || 0) > 0;
+
+  return (
+    <Layout>
+      <style jsx>{`
+        /* Enhanced Creative Dashboard Styles */
+        .dashboard-container {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          min-height: 100vh;
+          padding: 20px 0;
+        }
+
+        .metric-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          padding: 25px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .metric-card:hover::before {
+          opacity: 1;
+        }
+
+        .metric-card:hover {
+          transform: translateY(-10px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .metric-icon {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 15px;
+          font-size: 24px;
+          color: white;
+          position: relative;
+          z-index: 2;
+        }
+
+        .metric-icon::after {
+          content: '';
+          position: absolute;
+          top: -10px;
+          left: -10px;
+          right: -10px;
+          bottom: -10px;
+          border-radius: 50%;
+          background: inherit;
+          opacity: 0.3;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.1); opacity: 0.1; }
+        }
+
+        .metric-value {
+          font-size: 2.5rem;
+          font-weight: 800;
+          text-align: center;
+          margin-bottom: 10px;
+          background: linear-gradient(135deg, #bdf1a5ff, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .metric-label {
+          color: #6c757d;
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          text-align: center;
+        }
+
+        .chart-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          padding: 30px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .chart-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+          background-size: 300% 100%;
+          animation: gradientMove 3s ease infinite;
+        }
+
+        @keyframes gradientMove {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        .chart-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-header {
+          display: flex;
+          justify-content: between;
+          align-items: center;
+          margin-bottom: 25px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .chart-title {
+          font-size: 1.4rem;
+          font-weight: 700;
+          color: #2d3748;
+          margin: 0;
+        }
+
+        .chart-icon {
+          color: #667eea;
+          opacity: 0.6;
+        }
+
+        .financial-summary-card {
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+          backdrop-filter: blur(15px);
+          border-radius: 20px;
+          padding: 25px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .financial-summary-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #28a745, #20c997, #17a2b8);
+          background-size: 200% 100%;
+          animation: shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        .financial-summary-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .summary-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .summary-period {
+          display: flex;
+          align-items: center;
+          font-weight: 600;
+          color: #2d3748;
+          font-size: 1.1rem;
+        }
+
+        .period-text {
+          font-size: 1rem;
+          margin-left: 8px;
+        }
+
+        .summary-badge .badge {
+          font-size: 12px;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .summary-metrics {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          height: calc(100% - 80px);
+        }
+
+        .metric-item {
+          display: flex;
+          align-items: center;
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(10px);
+          border-radius: 15px;
+          padding: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .metric-item::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .metric-item:hover::before {
+          opacity: 1;
+        }
+
+        .metric-item:hover {
+          background: rgba(255, 255, 255, 0.95);
+          border-color: rgba(102, 126, 234, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 15px;
+          color: white;
+          font-size: 20px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          position: relative;
+        }
+
+        .metric-icon::after {
+          content: '';
+          position: absolute;
+          top: -5px;
+          left: -5px;
+          right: -5px;
+          bottom: -5px;
+          border-radius: 50%;
+          background: inherit;
+          opacity: 0.3;
+          z-index: -1;
+          animation: pulse 2s infinite;
+        }
+
+        .metric-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .metric-label {
+          font-size: 12px;
+          color: #6c757d;
+          font-weight: 600;
+          margin-bottom: 5px;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+        }
+
+        .metric-value {
+          font-size: 1.8rem;
+          font-weight: 800;
+          line-height: 1.2;
+          word-break: break-all;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .bg-success {
+          background: linear-gradient(135deg, #28a745, #20c997) !important;
+        }
+
+        .bg-info {
+          background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+        }
+
+        .bg-primary {
+          background: linear-gradient(135deg, #007bff, #667eea) !important;
+        }
+
+        .bg-dark {
+          background: linear-gradient(135deg, #343a40, #495057) !important;
+        }
+
+        .bg-warning {
+          background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+        }
+
+        .bg-danger {
+          background: linear-gradient(135deg, #dc3545, #e83e8c) !important;
+        }
+
+        .text-success {
+          color: #28a745 !important;
+        }
+
+        .text-info {
+          color: #17a2b8 !important;
+        }
+
+        .text-primary {
+          color: #007bff !important;
+        }
+
+        .text-dark {
+          color: #343a40 !important;
+        }
+
+        /* Creative Loading States */
+        .loading-shimmer {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        /* Enhanced Mobile Responsiveness */
+        @media (max-width: 768px) {
+          .dashboard-title {
+            font-size: 2rem;
+          }
+          
+          .metric-value {
+            font-size: 1.5rem;
+          }
+          
+          .chart-card {
+            padding: 20px;
+          }
+          
+          .summary-metrics {
+            grid-template-columns: 1fr;
+            gap: 15px;
+          }
+          
+          .metric-item {
+            padding: 15px;
+          }
+          
+          .metric-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            font-size: 16px;
+          }
+          
+          .metric-value {
+            font-size: 1.4rem;
+          }
+          
+          .metric-label {
+            font-size: 10px;
+          }
+        }
+
+        /* Glass morphism effects */
+        .glass-card {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Floating animation */
+        .floating {
+          animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+
+        /* Gradient text effects */
+        .gradient-text {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        /* Customer Insights Optimization */
+        .customer-list {
+          scrollbar-width: thin;
+          scrollbar-color: #dee2e6 #f8f9fa;
+        }
+
+        .customer-list::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .customer-list::-webkit-scrollbar-track {
+          background: #f8f9fa;
+          border-radius: 3px;
+        }
+
+        .customer-list::-webkit-scrollbar-thumb {
+          background: #dee2e6;
+          border-radius: 3px;
+        }
+
+        .customer-list::-webkit-scrollbar-thumb:hover {
+          background: #adb5bd;
+        }
+
+        .customer-card {
+          border: 1px solid #e9ecef !important;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .customer-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .customer-card:hover::before {
+          opacity: 1;
+        }
+
+        .customer-avatar {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .customer-avatar::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+          transform: rotate(45deg);
+          transition: all 0.6s ease;
+          opacity: 0;
+        }
+
+        .customer-card:hover .customer-avatar::after {
+          animation: shimmer 1.5s ease-in-out;
+          opacity: 1;
+        }
+
+        @keyframes shimmer {
+          0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+          50% { transform: translateX(0%) translateY(0%) rotate(45deg); }
+          100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .empty-state {
+          background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+          border-radius: 12px;
+          border: 2px dashed #e9ecef;
+          margin: 10px;
+        }
+
+        .rank-badge .badge {
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .total-amount {
+          text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+      `}</style>
+      <Header 
+        title="Business Intelligence Dashboard" 
+        subtitle={!isLoadingCurrency ? `${currency} • Real-time Analytics & Performance Insights` : "Loading system configuration..."}
+      />
+
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        toastStyle={{
+          borderRadius: '15px',
+          backdropFilter: 'blur(10px)',
+          background: 'rgba(255, 255, 255, 0.9)'
+        }}
+      />
+
+      {isLoadingCurrency ? (
+        <div className="row justify-content-center">
+          <div className="col-md-8">
+            <div className="glass-card" style={{ padding: '50px', textAlign: 'center' }}>
+              <div className="loading-shimmer" style={{ 
+                width: '60px', 
+                height: '60px', 
+                borderRadius: '50%', 
+                margin: '0 auto 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div className="spinner-border text-primary" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+              </div>
+              <h3 className="gradient-text mb-3">Loading Dashboard</h3>
+              <p className="text-muted">Fetching currency and system settings...</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="dashboard-container">
+          {/* Enhanced Header with Quick Actions */}
+          <div className="row mb-4">
+            <div className="col-12">
+              <div className="d-flex justify-content-between align-items-center p-3" style={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '15px',
+                color: 'white',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+              }}>
+                <div>
+                  <h2 className="mb-0" style={{ fontWeight: '600' }}>
+                    <i className="fas fa-tachometer-alt me-2"></i>
+                    Dashboard Overview
+                  </h2>
+                  <p className="mb-0 mt-1" style={{ opacity: '0.9', fontSize: '0.95rem' }}>
+                    Monitor your business performance and daily operations
+                  </p>
+                </div>
+                <div className="d-flex gap-2">
+                  <Link 
+                    to="/day-close" 
+                    className="btn btn-light btn-sm px-3"
+                    style={{ 
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    <i className="fas fa-calendar-check me-2"></i>
+                    Day Close
+                  </Link>
+                  <button 
+                    className="btn btn-outline-light btn-sm px-3"
+                    onClick={() => window.location.reload()}
+                    style={{ 
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <i className="fas fa-sync-alt me-2"></i>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Simple Metrics Row */}
+          <div className="row mb-4">
+            {/* Today's Sales Card */}
+            <div className="col-lg-6 col-md-6 mb-4">
+              <div className="card metric-card-simple border-0 shadow-sm h-100" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', minHeight: '140px' }}>
+                <div className="card-body d-flex align-items-center justify-content-between p-4">
+                  <div className="text-white">
+                    <h5 className="metric-label-simple text-white-50 mb-2 fw-normal">Today's Sales</h5>
+                    <h3 className="metric-value-simple text-white mb-2 fw-bold">
+                      {currency}{todaySummary.todaySales.toLocaleString()}
+                    </h3>
+                    <p className="text-white-50 mb-0 small">
+                      <i className="fas fa-shopping-cart me-2"></i>
+                      {summary.transactionsCount} orders today
+                    </p>
+                  </div>
+                  <div className="metric-icon-simple bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                    <i className="fas fa-chart-line text-white fs-4"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Average Order Value Card */}
+            <div className="col-lg-6 col-md-6 mb-4">
+              <div className="card metric-card-simple border-0 shadow-sm h-100" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', minHeight: '140px' }}>
+                <div className="card-body d-flex align-items-center justify-content-between p-4">
+                  <div className="text-white">
+                    <h5 className="metric-label-simple text-white-50 mb-2 fw-normal">Average Order Value</h5>
+                    <h3 className="metric-value-simple text-white mb-2 fw-bold">
+                      {currency}{summary.transactionsCount > 0 ? Math.round(todaySummary.todaySales / summary.transactionsCount).toLocaleString() : 0}
+                    </h3>
+                    <p className="text-white-50 mb-0 small">
+                      <i className="fas fa-exclamation-triangle me-2"></i>
+                      {lowStockAlerts.length} stock alerts
+                    </p>
+                  </div>
+                  <div className="metric-icon-simple bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                    <i className="fas fa-chart-bar text-white fs-4"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="row">
+            {/* Sales vs Purchase Comparison */}
+            <div className="col-lg-6 col-md-12 mb-4">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-white border-0 pb-0">
+                  <h5 className="card-title mb-0 text-dark">Sales vs Purchase Comparison</h5>
+                  <p className="text-muted small mb-0">Monthly performance overview</p>
+                </div>
+                <div className="card-body pt-3">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={salesData.slice(-12)}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                      <YAxis stroke="#64748b" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#ffffff', 
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        }} 
+                      />
+                      <Legend />
+                      <Bar dataKey="sales" fill="#667eea" name="Sales" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="purchases" fill="#10b981" name="Purchases" radius={[4, 4, 0, 0]} />
+                      <Line type="monotone" dataKey="profit" stroke="#f59e0b" strokeWidth={3} name="Profit" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Sales Trend */}
+            <div className="col-lg-6 col-md-12 mb-4">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-white border-0 pb-0">
+                  <h5 className="card-title mb-0 text-dark">Sales Trend</h5>
+                  <p className="text-muted small mb-0">Revenue growth analysis</p>
+                </div>
+                <div className="card-body pt-3">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={salesData.slice(-12)}>
+                      <defs>
+                        <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#667eea" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#667eea" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                      <YAxis stroke="#64748b" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#ffffff', 
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        }} 
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="sales" 
+                        stroke="#667eea" 
+                        strokeWidth={3}
+                        fill="url(#salesGradient)" 
+                        name="Sales Revenue"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+}

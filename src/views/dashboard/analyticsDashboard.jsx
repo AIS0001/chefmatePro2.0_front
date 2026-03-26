@@ -36,6 +36,11 @@ function AnalyticsDashboard() {
     saleDate: '',
     total_all_sales: 0
   });
+  const [pendingInvoiceData, setPendingInvoiceData] = useState({
+    totalAmount: 0,
+    totalItems: 0,
+    items: []
+  });
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -167,6 +172,18 @@ function AnalyticsDashboard() {
     }
   };
 
+  const fetchPendingInvoiceData = async () => {
+    try {
+      const response = await axios.get('/accounts/order-items/pending-invoice', getHeaders());
+      if (response.data.success) {
+        setPendingInvoiceData(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching pending invoice data:', error);
+      // Keep default values on error
+    }
+  };
+
   useEffect(() => {
     const fetchAllData = async () => {
       setIsLoading(true);
@@ -181,7 +198,8 @@ function AnalyticsDashboard() {
           fetchSalesExpensesData(),
           fetchDailySalesData(),
           fetchPurchaseTrendsData(),
-          fetchFoodDrinksSaleData()
+          fetchFoodDrinksSaleData(),
+          fetchPendingInvoiceData()
         ]);
       } catch (error) {
         console.error('Error fetching analytics data:', error);
@@ -253,7 +271,8 @@ function AnalyticsDashboard() {
                       fetchCategoryData(),
                       fetchSalesExpensesData(),
                       fetchDailySalesData(),
-                      fetchPurchaseTrendsData()
+                      fetchPurchaseTrendsData(),
+                      fetchPendingInvoiceData()
                     ]);
                   } catch (error) {
                     console.error('Error refreshing analytics data:', error);
@@ -337,6 +356,16 @@ function AnalyticsDashboard() {
                 <span className="metric-value">{dashboardData.cancelledBills || 0}</span>
                 <span className="metric-label">Cancelled Bills</span>
                 <span className="metric-subtext">Total</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div className="metric-card-analytics pending-invoice">
+              <div className="metric-header">
+                <span className="metric-value">฿{parseFloat(pendingInvoiceData.totalAmount || 0).toLocaleString()}</span>
+                <span className="metric-label">Pending Invoice</span>
+                <span className="metric-subtext">{pendingInvoiceData.totalItems || 0} items</span>
               </div>
             </div>
           </div>
@@ -609,6 +638,49 @@ function AnalyticsDashboard() {
                 ) : (
                   <div className="text-center py-5">
                     <p className="text-muted">No daily sales data available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Invoice Records */}
+        <div className="row">
+          <div className="col-lg-12 col-md-12 mb-4">
+            <div className="analytics-panel bottom-chart-panel">
+              <div className="panel-header">
+                <h6>PENDING INVOICE RECORDS</h6>
+              </div>
+              <div className="panel-content">
+                {pendingInvoiceData.items && pendingInvoiceData.items.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table table-hover table-striped align-middle">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Table No.</th>
+                          <th className="text-end">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingInvoiceData.items.map((item, index) => (
+                          <tr key={index}>
+                            <td>{item.table_num || item.table_number || item.table_no || 'N/A'}</td>
+                            <td className="text-end">฿{parseFloat(item.amount || item.total_price || 0).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="table-secondary">
+                        <tr>
+                          <th>Total</th>
+                          <th className="text-end">฿{parseFloat(pendingInvoiceData.totalAmount || 0).toFixed(2)}</th>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-5">
+                    <p className="text-muted">No pending invoice records</p>
                   </div>
                 )}
               </div>

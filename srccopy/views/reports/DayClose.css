@@ -1,0 +1,686 @@
+/* Day Close Component Styles */
+.day-close-container {
+  padding: 20px;
+  background: #ffffff;
+  min-height: calc(100vh - 120px);
+}
+
+.page-header {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+  border: 1px solid #f0f0f0;
+}
+
+.page-title {
+  color: #2c3e50;
+  margin: 0;
+  font-weight: 600;
+}
+
+.date-picker {
+  max-width: 200px;
+}
+
+.dayclose-ant-stat-card {
+  border-radius: 16px !important;
+  border: 1px solid #eef2f7 !important;
+  box-shadow: 0 3px 12px rgba(31, 65, 114, 0.08) !important;
+  background: #ffffff !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 6px 4px;
+}
+
+.dayclose-ant-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(31, 65, 114, 0.14) !important;
+}
+
+.dayclose-ant-stat-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dayclose-ant-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #1e9be9;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.dayclose-ant-stat-value {
+  color: #1f2937;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.dayclose-ant-stat-label {
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.dayclose-ant-payment-card .dayclose-ant-stat-value {
+  font-size: 1.2rem;
+}
+
+.dayclose-ant-payment-card .dayclose-ant-stat-label {
+  font-size: 0.86rem;
+}
+
+.dayclose-ant-status {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dayclose-ant-status.active {
+  color: #16a34a;
+}
+
+.dayclose-ant-status.inactive {
+  color: #9ca3af;
+}
+
+.dayclose-card-total_amount {
+  background: #f0f9ff !important;
+  border-color: #dbeafe !important;
+}
+
+.dayclose-card-total_discount {
+  background: #fff7ed !important;
+  border-color: #ffedd5 !important;
+}
+
+.dayclose-card-total_sales {
+  background: #f0fdf4 !important;
+  border-color: #dcfce7 !important;
+}
+
+.dayclose-card-entertainment_amount {
+  background: #faf5ff !important;
+  border-color: #f3e8ff !important;
+}
+
+.dayclose-card-cancelled_bills {
+  background: #fef2f2 !important;
+  border-color: #fee2e2 !important;
+}
+
+.dayclose-card-total_orders {
+  background: #eef6ff !important;
+  border-color: #dbeafe !important;
+}
+
+.dayclose-card-items_sold {
+  background: #fffbeb !important;
+  border-color: #fef3c7 !important;
+}
+
+.dayclose-card-avg_order {
+  background: #ecfeff !important;
+  border-color: #cffafe !important;
+}
+
+.dayclose-card-total_amount .dayclose-ant-stat-icon,
+.dayclose-card-total_sales .dayclose-ant-stat-icon {
+  background: #22c55e;
+}
+
+.dayclose-card-total_discount .dayclose-ant-stat-icon,
+.dayclose-card-items_sold .dayclose-ant-stat-icon {
+  background: #f59e0b;
+}
+
+.dayclose-card-total_orders .dayclose-ant-stat-icon,
+.dayclose-card-avg_order .dayclose-ant-stat-icon {
+  background: #3b82f6;
+}
+
+.dayclose-card-entertainment_amount .dayclose-ant-stat-icon {
+  background: #a855f7;
+}
+
+.dayclose-card-cancelled_bills .dayclose-ant-stat-icon {
+  background: #ef4444;
+}
+
+.dayclose-payment-col:nth-child(6n + 1) .dayclose-ant-payment-card {
+  background: #f0f9ff !important;
+  border-color: #dbeafe !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 2) .dayclose-ant-payment-card {
+  background: #f0fdf4 !important;
+  border-color: #dcfce7 !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 3) .dayclose-ant-payment-card {
+  background: #fffbeb !important;
+  border-color: #fef3c7 !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 4) .dayclose-ant-payment-card {
+  background: #faf5ff !important;
+  border-color: #f3e8ff !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 5) .dayclose-ant-payment-card {
+  background: #ecfeff !important;
+  border-color: #cffafe !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 6) .dayclose-ant-payment-card {
+  background: #fef2f2 !important;
+  border-color: #fee2e2 !important;
+}
+
+.dayclose-payment-col:nth-child(6n + 1) .dayclose-ant-stat-icon { background: #0ea5e9; }
+.dayclose-payment-col:nth-child(6n + 2) .dayclose-ant-stat-icon { background: #22c55e; }
+.dayclose-payment-col:nth-child(6n + 3) .dayclose-ant-stat-icon { background: #f59e0b; }
+.dayclose-payment-col:nth-child(6n + 4) .dayclose-ant-stat-icon { background: #a855f7; }
+.dayclose-payment-col:nth-child(6n + 5) .dayclose-ant-stat-icon { background: #06b6d4; }
+.dayclose-payment-col:nth-child(6n + 6) .dayclose-ant-stat-icon { background: #ef4444; }
+
+/* Enhanced Payment Method Cards */
+.payment-method-card-enhanced {
+  cursor: pointer;
+  position: relative;
+  background-attachment: fixed;
+}
+
+.payment-method-card-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.payment-method-card-enhanced:hover::before {
+  opacity: 1;
+}
+
+/* Minimal Payment Method Cards */
+.payment-method-card-minimal {
+  cursor: pointer;
+  position: relative;
+}
+
+.payment-method-card-minimal:hover {
+  border-color: #dee2e6 !important;
+}
+
+.payment-icon-minimal {
+  filter: none;
+  transition: all 0.3s ease;
+}
+
+.payment-method-card-minimal:hover .payment-icon-minimal {
+  transform: scale(1.1);
+}
+
+.status-badge {
+  transition: all 0.3s ease;
+}
+
+.payment-icon-large {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.payment-trend {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Animated gradients for payment cards */
+.payment-method-card-enhanced {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Summary Cards */
+.summary-card {
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card.total-sales {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #2c3e50;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #28a745;
+}
+
+.summary-card.total-sales .summary-icon {
+  color: #28a745;
+}
+
+.summary-card.total-orders {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #2c3e50;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #007bff;
+}
+
+.summary-card.total-orders .summary-icon {
+  color: #007bff;
+}
+
+.summary-card.total-items {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #2c3e50;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #ffc107;
+}
+
+.summary-card.total-items .summary-icon {
+  color: #ffc107;
+}
+
+.summary-card.avg-order {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #2c3e50;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #17a2b8;
+}
+
+.summary-card.avg-order .summary-icon {
+  color: #17a2b8;
+}
+
+.summary-icon {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  opacity: 1;
+}
+
+.summary-amount {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 10px 0;
+  color: #2c3e50;
+  text-shadow: none;
+}
+
+.summary-label {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.8;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+/* Payment Method Cards */
+.payment-method-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 4px solid;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.payment-method-card:hover {
+  transform: translateX(5px);
+}
+
+.payment-icon {
+  font-size: 2rem;
+}
+
+/* Cash Summary in Modal */
+.cash-summary {
+  border: 1px solid #dee2e6;
+}
+
+.cash-summary .d-flex {
+  margin-bottom: 5px;
+}
+
+.cash-summary .d-flex:last-child {
+  margin-bottom: 0;
+}
+
+/* Table Styles */
+.table {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 15px;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.01);
+  transition: all 0.2s ease;
+}
+
+.table tbody td {
+  padding: 12px 15px;
+  vertical-align: middle;
+}
+
+/* Alerts */
+.alert {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Styles */
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom: none;
+}
+
+.modal-header .btn-close {
+  filter: invert(1);
+}
+
+.modal-body {
+  padding: 30px;
+}
+
+.modal-footer {
+  border-top: none;
+  padding: 20px 30px;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Header Actions */
+.header-actions {
+  align-items: center;
+}
+
+.header-actions .btn {
+  white-space: nowrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .day-close-container {
+    padding: 10px;
+  }
+  
+  .page-header {
+    padding: 15px;
+  }
+  
+  .page-header .d-flex {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .header-actions .btn,
+  .date-picker {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .summary-amount {
+    font-size: 1.5rem;
+  }
+  
+  .payment-method-card {
+    padding: 15px;
+  }
+
+  .dayclose-ant-stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .summary-card .card-body {
+    padding: 15px;
+  }
+  
+  .summary-icon {
+    font-size: 2rem;
+  }
+  
+  .summary-amount {
+    font-size: 1.3rem;
+  }
+  
+  .payment-icon {
+    font-size: 1.5rem;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+
+  .dayclose-ant-stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dayclose-ant-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .dayclose-ant-payment-card .dayclose-ant-stat-value {
+    font-size: 1.05rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .day-close-container {
+    background: white;
+    padding: 0;
+  }
+  
+  .page-header {
+    box-shadow: none;
+    border-bottom: 2px solid #333;
+  }
+  
+  .header-actions {
+    display: none !important;
+  }
+  
+  .summary-card {
+    box-shadow: none;
+    border: 1px solid #333;
+    break-inside: avoid;
+  }
+  
+  .summary-card.total-sales,
+  .summary-card.total-orders,
+  .summary-card.total-items,
+  .summary-card.avg-order {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .table {
+    box-shadow: none;
+    border: 1px solid #333;
+  }
+  
+  .table thead th {
+    background: #f8f9fa !important;
+    color: black !important;
+  }
+}
+
+/* Loading Styles */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Status Indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.status-indicator.open {
+  color: #28a745;
+}
+
+.status-indicator.closed {
+  color: #dc3545;
+}
+
+/* Animation for cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.summary-card,
+.payment-method-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Stagger animation for multiple cards */
+.summary-card:nth-child(1) { animation-delay: 0.1s; }
+.summary-card:nth-child(2) { animation-delay: 0.2s; }
+.summary-card:nth-child(3) { animation-delay: 0.3s; }
+.summary-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Modal Centering and Enhanced Styling */
+.modal-dialog.modal-lg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px);
+  margin: 30px auto;
+}
+
+.modal-content {
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: none;
+}
+
+.modal-header {
+  border-bottom: 1px solid #e9ecef;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 15px 15px 0 0;
+}
+
+.modal-header .modal-title {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  border-top: 1px solid #e9ecef;
+  padding: 20px 24px;
+  background: #f8f9fa;
+  border-radius: 0 0 15px 15px;
+}
+
+/* Cash summary styling */
+.cash-summary {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  margin-top: 15px;
+}
+
+.cash-summary h6 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+/* Override any conflicting modal styles */
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+/* Ensure modal backdrop doesn't interfere */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Additional centering for smaller screens */
+@media (max-width: 768px) {
+  .modal-dialog.modal-lg {
+    margin: 15px;
+    min-height: calc(100vh - 30px);
+  }
+  
+  .modal-body {
+    max-height: 60vh;
+  }
+}

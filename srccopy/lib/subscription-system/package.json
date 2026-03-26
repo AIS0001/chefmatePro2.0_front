@@ -1,0 +1,33 @@
+{
+  "name": "@chefmate/subscription-system",
+  "version": "1.0.0",
+  "description": "Reusable subscription-based feature control system for React applications",
+  "main": "index.js",
+  "author": "ChefMate Team",
+  "license": "MIT",
+  "keywords": [
+    "subscription",
+    "feature-control",
+    "react",
+    "subscription-management",
+    "plan-based-features",
+    "saas"
+  ],
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "axios": "^1.0.0"
+  },
+  "dependencies": {
+    "prop-types": "^15.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chefmate/subscription-system"
+  },
+  "bugs": {
+    "url": "https://github.com/chefmate/subscription-system/issues"
+  },
+  "homepage": "https://github.com/chefmate/subscription-system#readme"
+}

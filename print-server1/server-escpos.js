@@ -260,8 +260,8 @@ app.post('/test-print', async (req, res) => {
       ...Buffer.from(`Printer: ${printer.name}\n`),
       ...Buffer.from(`IP: ${printer.ip}:${printer.port}\n`),
       ...Buffer.from(`Time: ${new Date().toLocaleString()}\n`),
-      ...Buffer.from('\n\n\n'),
-      0x1D, 0x56, 0x42, 0x00  // Cut paper
+      ...Buffer.from('\n\n\n\n\n\n'),  // Extra padding at bottom
+      0x1D, 0x56, 0x42, 0x00  // Cut paper (full cut)
     ]);
 
     const base64Data = escpos.toString('base64');

@@ -23,14 +23,15 @@ export default function MainContent({ children, isSidebarOpen }) {
       style={{
         marginLeft: isMobile ? "0" : (isSidebarOpen ? "240px" : "60px"),
         transition: "margin-left 0.3s ease",
+        paddingTop: "2px",
       }}
     >
       <div className="container-fluid">
         {children}
       </div>
 
-      <WhatsAppButton phoneNumber="66986643299" />
-      <PhoneButton phoneNumber="66986643299" />
+      {/* <WhatsAppButton phoneNumber="66986643299" />
+      <PhoneButton phoneNumber="66986643299" /> */}
       <Footer />
     </div>
   );
