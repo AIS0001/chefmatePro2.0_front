@@ -1,0 +1,203 @@
+/* Shops Management Styles */
+
+.shops-management {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.page-header p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+/* Filters Section */
+
+.filters-section {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.filters-section .ant-space {
+  width: 100%;
+}
+
+/* Table Section */
+
+.table-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.table-section .ant-spin-nested-loading {
+  padding: 20px;
+}
+
+.shops-table {
+  margin-bottom: 0;
+}
+
+.shops-table .ant-table-thead > tr > th {
+  background: #f8f9fa;
+  color: #2c3e50;
+  font-weight: 600;
+  border: none;
+}
+
+.shops-table .ant-table-tbody > tr {
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.shops-table .ant-table-tbody > tr:hover {
+  background: #f8f9fa;
+}
+
+.shop-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.shop-code {
+  color: #95a5a6;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.user-count {
+  background: #e8f5e9;
+  color: #27ae60;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Pagination */
+
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-top: 1px solid #ecf0f1;
+  background: #f8f9fa;
+}
+
+.pagination-info {
+  color: #7f8c8d;
+  font-size: 13px;
+}
+
+.pagination-section .ant-pagination {
+  margin: 0;
+}
+
+/* Modal Styles */
+
+.ant-modal-header {
+  border: none;
+  padding: 20px;
+  background: #f8f9fa;
+}
+
+.ant-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.ant-modal-body {
+  padding: 20px;
+}
+
+.ant-form-item-label > label {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.ant-input,
+.ant-select-selector,
+.ant-input-number {
+  border-color: #bdc3c7 !important;
+}
+
+.ant-input:hover,
+.ant-select-selector:hover,
+.ant-input-number:hover {
+  border-color: #3498db !important;
+}
+
+.ant-input:focus,
+.ant-select-selector:focus,
+.ant-input-number:focus {
+  border-color: #3498db !important;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .filters-section {
+    margin-bottom: 15px;
+  }
+
+  .pagination-section {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+}
+
+/* Status Tags */
+
+.ant-tag-success {
+  background: #e8f5e9;
+  border: 1px solid #4caf50;
+  color: #27ae60;
+}
+
+.ant-tag-error {
+  background: #ffebee;
+  border: 1px solid #f44336;
+  color: #e74c3c;
+}
+
+.ant-tag-processing {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  color: #3498db;
+}
+
+.ant-tag-default {
+  background: #f5f5f5;
+  border: 1px solid #d4d4d4;
+  color: #7f8c8d;
+}

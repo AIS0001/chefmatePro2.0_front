@@ -1,0 +1,98 @@
+/* User Management Styles */
+
+.user-management {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.page-header p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+/* Table Section */
+
+.users-table-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  padding: 20px;
+}
+
+.users-table-section .ant-table {
+  margin-bottom: 0;
+}
+
+/* Username and Email */
+
+.username {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.email {
+  color: #95a5a6;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Tags */
+
+.user-management .ant-tag {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Modal */
+
+.ant-modal-header {
+  border: none;
+  padding: 20px;
+  background: #f8f9fa;
+}
+
+.ant-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.ant-modal-body {
+  padding: 20px;
+}
+
+.ant-form-item-label > label {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+}

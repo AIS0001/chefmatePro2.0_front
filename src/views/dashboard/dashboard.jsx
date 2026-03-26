@@ -21,6 +21,7 @@ import Layout from "../../layout/Layout";
 import Header from "../../components/Header";
 import { getHeaders } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
+import { getSelectedShopId } from "../../utils/shopContext";
 import './dashboard.css';
 
 export default function Dashboard() {
@@ -59,6 +60,10 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       
+      // Get shop_id from sessionStorage
+      const shopId = getSelectedShopId();
+      console.log('Using shop_id for dashboard:', shopId);
+      
       // Fetch currency settings
       const coreSettings = await fetchData('coresetting', null, 'id', {});
       if (coreSettings && coreSettings.length > 0) {
@@ -67,33 +72,48 @@ export default function Dashboard() {
 
       console.log('Fetching dashboard data...');
 
+      // Build query params with shop_id
+      const shopParam = shopId ? `&shop_id=${shopId}` : '';
+
       // Fetch today's summary
-      const todaySummaryRes = await axios.get("analytics/report/todaysummary", getHeaders());
+      const todaySummaryRes = await axios.get(`analytics/report/todaysummary${shopId ? '?shop_id=' + shopId : ''}`, getHeaders());
       const todayData = todaySummaryRes.data || {};
       console.log('Today Summary Data:', todayData);
 
       // Fetch daily sales and purchase data for chart (last 7 days)
-      const salesRes = await axios.get("/report/sale?range=week", getHeaders());
-      const purchaseRes = await axios.get("analytics/report/purchase?range=week", getHeaders());
+      const salesRes = await axios.get(`/report/sale?range=week${shopParam}`, getHeaders());
+      const purchaseRes = await axios.get(`analytics/report/purchase?range=week${shopParam}`, getHeaders());
       
       console.log('Sales Response:', salesRes.data);
       console.log('Purchase Response:', purchaseRes.data);
 
       // Fetch summary data for business analysis
-      const summaryRes = await axios.get("analytics/report/summary", getHeaders());
+      const summaryRes = await axios.get(`analytics/report/summary${shopId ? '?shop_id=' + shopId : ''}`, getHeaders());
       const summaryData = summaryRes.data || {};
       console.log('Summary Data:', summaryData);
 
-      // Fetch additional data for business analysis
+      // Fetch additional data for business analysis with shop_id filter
+      const filterParams = shopId ? { shop_id: shopId } : {};
+      
       const [lowStockRes, topProductsRes, customersRes] = await Promise.all([
-        axios.get("analytics/report/getlowstockalert", getHeaders()).catch(() => ({ data: [] })),
-        axios.get("analytics/report/gettopproducts", getHeaders()).catch(() => ({ data: [] })),
-        fetchData('customers', null, 'id', {}).catch(() => [])
+        axios.get(`analytics/report/getlowstockalert${shopId ? '?shop_id=' + shopId : ''}`, getHeaders()).catch(() => ({ data: [] })),
+        axios.get(`analytics/report/gettopproducts${shopId ? '?shop_id=' + shopId : ''}`, getHeaders()).catch(() => ({ data: [] })),
+        fetchData('customers', null, 'id', filterParams).catch(() => [])
       ]);
 
-      // Fetch recent bills for table data
-      const billsData = await fetchData('final_bill', null, 'id', { limit: 5, orderBy: 'setup_date', order: 'DESC' });
-      const purchaseData = await fetchData('purchase', null, 'id', { limit: 5, orderBy: 'setup_date', order: 'DESC' });
+      // Fetch recent bills for table data with shop_id filter
+      const billsData = await fetchData('final_bill', null, 'id', { 
+        ...filterParams,
+        limit: 5, 
+        orderBy: 'setup_date', 
+        order: 'DESC' 
+      });
+      const purchaseData = await fetchData('purchase', null, 'id', { 
+        ...filterParams,
+        limit: 5, 
+        orderBy: 'setup_date', 
+        order: 'DESC' 
+      });
 
       console.log('Bills Data:', billsData);
       console.log('Purchase Data:', purchaseData);

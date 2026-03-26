@@ -102,6 +102,16 @@ import PublicAccess from './views/public/PublicAccess';
 import VendingMachine from './views/public/VendingMachine';
 import { Views } from 'react-big-calendar';
 
+// Super Admin Pages
+import LoginSelector from './views/pages/LoginSelector';
+import SuperAdminLogin from './views/pages/SuperAdminLogin';
+import SuperAdminLayout from './views/superAdmin/SuperAdminLayout';
+import SuperAdminDashboard from './views/superAdmin/SuperAdminDashboard';
+import ShopsManagement from './views/superAdmin/ShopsManagement';
+import BillingManagement from './views/superAdmin/BillingManagement';
+import UserManagement from './views/superAdmin/UserManagement';
+import AuditLogs from './views/superAdmin/AuditLogs';
+
 // Dummy FeatureProtectedRoute that always returns children
 const FeatureProtectedRoute = ({ children }) => children;
 
@@ -112,8 +122,9 @@ function AppRoutes() {
   
   return (
     <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<LoginSelector />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/superadmin-login" element={<SuperAdminLogin />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/accessdenied" element={<AccessDenied />} />
           
@@ -426,6 +437,18 @@ function AppRoutes() {
               <PrivateRoute><LoginAttempts /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
+
+          {/* Super Admin Routes - Nested under SuperAdminLayout */}
+          <Route path="/superadmin" element={
+            <PrivateRoute><SuperAdminLayout /></PrivateRoute>
+          }>
+            <Route index element={<SuperAdminDashboard />} />
+            <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="shops" element={<ShopsManagement />} />
+            <Route path="billing" element={<BillingManagement />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
+          </Route>
         </Routes>
   );
 }

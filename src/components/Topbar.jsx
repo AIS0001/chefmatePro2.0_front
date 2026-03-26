@@ -1,58 +1,83 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Layout, Button, Dropdown, Avatar, Badge, Menu, Space, Tooltip } from 'antd'
-import { MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SettingOutlined, UserOutlined, LogoutOutlined, ProfileOutlined, MailOutlined, PoweroffOutlined } from '@ant-design/icons'
+import { Layout, Button, Dropdown, Avatar, Badge, Space } from 'antd'
+import { MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SettingOutlined, UserOutlined, LogoutOutlined, ProfileOutlined, ClockCircleOutlined, ShopOutlined, CalendarOutlined } from '@ant-design/icons'
+import axios from 'axios'
+import { getAuthToken } from '../utility/auth'
 
 export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+	const [currentTime, setCurrentTime] = useState(new Date());
+	const [businessDate, setBusinessDate] = useState('');
+	const [shopName, setShopName] = useState(localStorage.getItem('shop_name') || sessionStorage.getItem('shop_name') || '');
 	const { Header } = Layout;
+
+	const userType = (localStorage.getItem('usertype') || sessionStorage.getItem('usertype') || '').toLowerCase();
+	const isSuperAdmin = userType === 'super_admin' || window.location.pathname.startsWith('/super-admin');
+	const shopId = localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
+
+	// Fetch shop name from backend if not in storage but shop_id exists
+	useEffect(() => {
+		if (shopName || !shopId || isSuperAdmin) return;
+		const fetchShopName = async () => {
+			try {
+				const token = getAuthToken();
+				if (!token) return;
+				const res = await axios.get('/shop-name', {
+					headers: { Authorization: `Bearer ${token}` },
+					params: { shop_id: shopId }
+				});
+				if (res.data?.shop_name) {
+					setShopName(res.data.shop_name);
+					const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+					storage.setItem('shop_name', res.data.shop_name);
+				}
+			} catch (err) {
+				console.warn('Could not fetch shop name:', err.message);
+			}
+		};
+		fetchShopName();
+	}, [shopId, shopName, isSuperAdmin]);
 	
 	const toggleMobileNav = () => {
 		setIsMobileNavOpen(!isMobileNavOpen);
 	};
 
+	// Real-time clock - updates every second
 	useEffect(() => {
-		// Add CSS animation for scrolling text and mobile responsive styles
+		const timer = setInterval(() => {
+			setCurrentTime(new Date());
+		}, 1000);
+		return () => clearInterval(timer);
+	}, []);
+
+	// Fetch business date from day_close_summary
+	useEffect(() => {
+		const fetchBusinessDate = async () => {
+			try {
+				const token = getAuthToken();
+				if (!token) return;
+				const res = await axios.get('/business-date', {
+					headers: { Authorization: `Bearer ${token}` }
+				});
+				if (res.data?.business_date) {
+					setBusinessDate(res.data.business_date);
+				}
+			} catch (err) {
+				// fallback to today
+				setBusinessDate(new Date().toISOString().split('T')[0]);
+			}
+		};
+		fetchBusinessDate();
+	}, []);
+
+	useEffect(() => {
+		// Add CSS for mobile responsive styles
 		const style = document.createElement('style');
 		style.textContent = `
-			@keyframes scroll-back-forth {
-				0% {
-					transform: translateX(-100%);
-				}
-				50% {
-					transform: translateX(100%);
-				}
-				100% {
-					transform: translateX(-100%);
-				}
-			}
-			
-			.center-scrolling-text {
-				position: absolute;
-				left: 50%;
-				top: 50%;
-				transform: translate(-50%, -50%);
-				z-index: 1;
-				overflow: hidden;
-				width: 60%;
-				white-space: nowrap;
-				pointer-events: none;
-			}
-			
-			.scrolling-content {
-				display: inline-block;
-				animation: scroll-back-forth 45s ease-in-out infinite;
-				color: #fff;
-				font-weight: bold;
-				font-size: 16px;
-				text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-				width: 100%;
-				text-align: center;
-			}
-			
 			/* Mobile responsive styles */
 			@media (max-width: 768px) {
-				.center-scrolling-text {
+				.topbar-center-info {
 					display: none !important;
 				}
 				
@@ -242,9 +267,47 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 					onClick={onToggleSidebar}
 					style={{color: '#fff', fontSize: '18px'}}
 				/>
-				{/* <div className="center-scrolling-text">
-					<div className="scrolling-content">ChefMate POS</div>
-				</div> */}
+			</div>
+
+			{/* Center - Business Date, Clock & Shop Name */}
+			<div style={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: '20px',
+				color: '#fff',
+				fontSize: '14px',
+				fontWeight: 500,
+			}}>
+				{!isSuperAdmin && shopName && (
+					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+						<ShopOutlined style={{ fontSize: '16px', color: '#1890ff' }} />
+						<span style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.3px' }}>{shopName}</span>
+					</div>
+				)}
+				{!isSuperAdmin && shopName && <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.25)' }} />}
+				<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+					<CalendarOutlined style={{ fontSize: '14px', color: '#52c41a' }} />
+					<span>
+						<span style={{ opacity: 0.7, fontSize: '12px', marginRight: 4 }}>Biz Date:</span>
+						{businessDate
+							? new Date(businessDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+							: '...'
+						}
+					</span>
+				</div>
+				<div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.25)' }} />
+				<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+					<ClockCircleOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+					<span style={{
+						fontFamily: "'Courier New', monospace",
+						fontSize: '16px',
+						fontWeight: 700,
+						letterSpacing: '1px',
+						minWidth: '80px',
+					}}>
+						{currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+					</span>
+				</div>
 			</div>
 
 			{/* Right side - Navigation */}

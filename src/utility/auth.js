@@ -21,6 +21,11 @@ const getAuthToken = () => {
     return localStorage.getItem('user_uuid');
   };
 
+  // Function to get the shop_id bound to the logged-in user
+  const getShopId = () => {
+    return localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
+  };
+
   // Function to set up headers
   const getHeaders = () => {
     const token = getAuthToken();
@@ -42,12 +47,16 @@ const logout=() =>{
   localStorage.removeItem("expirationTime");
   localStorage.removeItem("uname");
   localStorage.removeItem("usertype");
+  localStorage.removeItem("shop_id");
+  localStorage.removeItem("shop_name");
   // ✅ Do NOT remove user_uuid - it persists for device identification
 
   sessionStorage.removeItem("token");
   sessionStorage.removeItem("expirationTime");
   sessionStorage.removeItem("uname");
   sessionStorage.removeItem("usertype");
+  sessionStorage.removeItem("shop_id");
+  sessionStorage.removeItem("shop_name");
   sessionStorage.removeItem("user_uuid"); // ✅ Clear from sessionStorage only
 }
 
@@ -66,6 +75,7 @@ const clearDeviceUuid = () => {
     isTokenExpired,
     getUserType,
     getUserUuid, // ✅ Export the new function
+    getShopId, // ✅ Get shop_id for tenant scoping
     logout,
     clearDeviceUuid, // ✅ Export clear function
     

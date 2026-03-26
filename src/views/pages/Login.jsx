@@ -64,12 +64,24 @@ export default function Login() {
                   localStorage.setItem("token", token);
                   localStorage.setItem("expirationTime", expirationTime);
                   localStorage.setItem("uname", data.data.uname);
-                  localStorage.setItem("usertype", usertype); // Store normalized usertype
+                  localStorage.setItem("usertype", usertype);
+                  if (data.data.shop_id) {
+                    localStorage.setItem("shop_id", data.data.shop_id);
+                  }
+                  if (data.data.shop_name) {
+                    localStorage.setItem("shop_name", data.data.shop_name);
+                  }
                 } else {
                   sessionStorage.setItem("token", token);
                   sessionStorage.setItem("expirationTime", expirationTime);
                   sessionStorage.setItem("uname", data.data.uname);
-                  sessionStorage.setItem("usertype", usertype); // Store normalized usertype
+                  sessionStorage.setItem("usertype", usertype);
+                  if (data.data.shop_id) {
+                    sessionStorage.setItem("shop_id", data.data.shop_id);
+                  }
+                  if (data.data.shop_name) {
+                    sessionStorage.setItem("shop_name", data.data.shop_name);
+                  }
                 }
 
                 // ✅ Store UUID in localStorage (persists for device identification)

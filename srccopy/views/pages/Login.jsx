@@ -149,7 +149,7 @@ export default function Login() {
                                             >
                                                 <i className="fas fa-utensils" style={{ fontSize: "2rem", color: "#fff" }} />
                                             </div>
-                                            <Title level={2} style={{ marginBottom: 4 }}>chefmate Pro</Title>
+                                            <Title level={2} style={{ marginBottom: 4 }}>chefmate Pro 2.0</Title>
                                             <Text type="secondary">Restaurant Management System</Text>
                                         </div>
 

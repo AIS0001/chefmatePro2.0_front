@@ -4,6 +4,7 @@ import { isTokenExpired } from './auth';
 
 // Define allowed paths per userType (all lowercase)
 const roleBasedAccess = {
+  super_admin: "all", // super admin can access all routes
   cashier: [
     "/dashboard/cashier",
     "/sale/posgst",

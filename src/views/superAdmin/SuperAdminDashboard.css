@@ -1,0 +1,292 @@
+/* Super Admin Dashboard Styles */
+
+.super-admin-dashboard {
+  padding: 0;
+}
+
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 200px);
+  gap: 20px;
+}
+
+.dashboard-header {
+  margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.dashboard-header p {
+  margin: 8px 0 0 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+/* Metrics Row */
+
+.metrics-row {
+  width: 100%;
+}
+
+/* Metric Card */
+
+.metric-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.metric-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.metric-card .ant-card-body {
+  padding: 20px;
+}
+
+/* Metric Content */
+
+.metric-content-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.metric-icon-main {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-text {
+  flex: 1;
+}
+
+.metric-title {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-number {
+  margin: 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.metric-trend {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Alternative Metric Content */
+
+.metric-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.metric-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-info {
+  flex: 1;
+}
+
+.metric-label {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  margin: 4px 0 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* Distribution Chart */
+
+.distribution-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.distribution-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan-name {
+  min-width: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #ecf0f1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.count {
+  min-width: 80px;
+  text-align: right;
+  font-size: 13px;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+/* Top Shops List */
+
+.top-shops-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.shop-item:hover {
+  background: #ecf0f1;
+  transform: translateX(4px);
+}
+
+.shop-rank {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.shop-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-details h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.shop-details p {
+  margin: 4px 0 0 0;
+  color: #7f8c8d;
+  font-size: 12px;
+}
+
+/* System Health */
+
+.health-item {
+  text-align: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.health-item p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.health-item h4 {
+  margin: 8px 0 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 24px;
+  }
+
+  .metric-number {
+    font-size: 22px;
+  }
+
+  .metrics-row {
+    gap: 15px;
+  }
+}
+
+/* Ant Design Overrides */
+
+.metric-card .ant-card {
+  height: 100%;
+}
+
+.metric-card .ant-card-head {
+  border: none;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.metric-card .ant-card-head-title {
+  font-weight: 600;
+  color: #2c3e50;
+}
