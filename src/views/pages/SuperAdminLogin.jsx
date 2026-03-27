@@ -5,9 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Card, Row, Col, Typography, Space, Divider, Tooltip, message, Spin, Checkbox } from 'antd';
+import { Form, Input, Button, Card, Row, Col, Typography, Space, Divider, message, Checkbox } from 'antd';
 import { LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, SecurityScanOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { logout } from '../../utility/auth';
 import './SuperAdminLogin.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -17,7 +18,6 @@ function SuperAdminLogin() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -49,6 +49,10 @@ function SuperAdminLogin() {
 
         // Calculate expiration time (24 hours from now for super admin)
         const expirationTime = Date.now() + (24 * 60 * 60 * 1000);
+
+        // Clear any stale auth state so an expired token in the other storage
+        // cannot override the newly created super admin session.
+        logout();
 
         // Store token
         if (rememberMe) {
@@ -238,9 +242,9 @@ function SuperAdminLogin() {
                     >
                       Remember me
                     </Checkbox>
-                    <a href="#" className="forgot-link">
+                    <button type="button" className="forgot-link">
                       Forgot password?
-                    </a>
+                    </button>
                   </div>
 
                   {/* Submit Button */}
@@ -284,10 +288,10 @@ function SuperAdminLogin() {
               <div className="form-footer">
                 <Space direction="vertical" align="center" style={{ width: '100%' }}>
                   <Text className="footer-text">
-                    ChefMate Pro Platform v1.0
+                    ChefMate Pro Platform v2.0
                   </Text>
                   <Text className="footer-version">
-                    © 2026 ChefMate Technologies. All rights reserved.
+                    © 2026 Cloudnet Softwares Co. Ltd.. All rights reserved.
                   </Text>
                 </Space>
               </div>

@@ -121,6 +121,12 @@ export default function Login() {
             // 🔐 Check for device mismatch error
             if (err.response?.status === 403 && err.response?.data?.code === "DEVICE_MISMATCH") {
               toast.error(err.response.data.error);
+            } else if (err.response?.status === 403 && err.response?.data?.code === "PAYMENT_BLOCKED") {
+              const dueDate = err.response?.data?.dueDate
+                ? new Date(err.response.data.dueDate).toLocaleDateString()
+                : null;
+              const baseMessage = err.response?.data?.error || "Login blocked due to pending subscription payment.";
+              toast.error(dueDate ? `${baseMessage} Due date: ${dueDate}` : baseMessage);
             } else if (err.response?.status === 401) {
               toast.error("Invalid Username or Password");
             } else {
@@ -194,7 +200,7 @@ export default function Login() {
                                             >
                                                 <i className="fas fa-utensils" style={{ fontSize: "2rem", color: "#fff" }} />
                                             </div>
-                                            <Title level={2} style={{ marginBottom: 4 }}>chefmate Pro</Title>
+                                            <Title level={2} style={{ marginBottom: 4 }}>chefmate Pro 2.0</Title>
                                             <Text type="secondary">Restaurant Management System</Text>
                                         </div>
 

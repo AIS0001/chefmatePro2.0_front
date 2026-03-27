@@ -16,13 +16,20 @@ const getAuthToken = () => {
   return token;
 };
 
+const getResolvedShopId = () => {
+  const selectedShopId = sessionStorage.getItem('selected_shop_id');
+  const userShopId = localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
+  return selectedShopId || userShopId || null;
+};
+
 
 // Function to set up headers
 const getHeaders = () => {
   let token = getAuthToken();
+  const shopId = getResolvedShopId();
 
   if (!token) {
-    return { headers: {} };
+    return shopId ? { headers: {}, params: { shop_id: shopId } } : { headers: {} };
   }
 
   // Ensure 'Bearer' is not added twice
@@ -34,6 +41,7 @@ const getHeaders = () => {
     headers: {
       Authorization: token,
     },
+    ...(shopId ? { params: { shop_id: shopId } } : {}),
   };
 };
 

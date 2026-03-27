@@ -31,6 +31,10 @@ function BillingManagement() {
     fetchPlans();
     fetchShops();
     fetchRevenueAnalytics();
+
+    if (shopId) {
+      fetchShopBillingHistory(shopId);
+    }
   }, []);
 
   const fetchPlans = async () => {
@@ -146,9 +150,10 @@ function BillingManagement() {
       setLoading(true);
       const response = await billingAPI.getShopBilling(shopId);
       if (response.data.success) {
-        setBillingHistory(response.data.data);
+        setBillingHistory(Array.isArray(response.data.data) ? response.data.data : []);
       }
     } catch (error) {
+      setBillingHistory([]);
       message.error('Failed to fetch billing history');
     } finally {
       setLoading(false);
@@ -229,13 +234,14 @@ function BillingManagement() {
       title: 'Status',
       dataIndex: 'billing_status',
       render: (status) => {
+        const normalized = String(status || 'pending').toLowerCase();
         const statusColors = {
           paid: 'success',
           pending: 'warning',
           overdue: 'error',
           cancelled: 'default'
         };
-        return <Tag color={statusColors[status]}>{status.toUpperCase()}</Tag>;
+        return <Tag color={statusColors[normalized] || 'default'}>{normalized.toUpperCase()}</Tag>;
       }
     }
   ];
@@ -300,6 +306,7 @@ function BillingManagement() {
                 <Select
                   placeholder="Select a shop to view billing history"
                   style={{ width: '100%', marginBottom: '20px' }}
+                  value={selectedShop || undefined}
                   options={shops.map(shop => ({
                     label: shop.name,
                     value: shop.id

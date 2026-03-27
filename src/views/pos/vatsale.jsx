@@ -1225,11 +1225,13 @@ export default function VatSale() {
                         getHeaders()
                       )
                       const bill_id = res.data.bill_id
+                      const invoiceNumber = res.data.inv_number || String(bill_id)
                       // Store the latest bill id globally for print button
                       window.lastSavedBillId = bill_id
                       // Prepare order items
                       const orderItems = itemRows.map(row => ({
                         order_id: bill_id,
+                        invoice_number: invoiceNumber,
                         table_number: customer.deliveryPlace || '',
                         item_name: row.itemName,
                         quantity: row.quantity,
@@ -1248,7 +1250,7 @@ export default function VatSale() {
                         getHeaders()
                       )
                       toast.success(
-                        `Invoice generated successfully. Invoice No: ${bill_id}`
+                        `Invoice generated successfully. Invoice No: ${invoiceNumber}`
                       )
                       // Reset all data for next bill
                       setItemRows([])

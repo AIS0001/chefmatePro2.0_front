@@ -1,117 +1,108 @@
-/* Login Selector Styles */
+/* Login Selector Styles - Minimal Ant Design Feel */
+
+:root {
+  --selector-bg-1: #f4f8ff;
+  --selector-bg-2: #eef6f1;
+  --selector-text-primary: #1f2937;
+  --selector-text-secondary: #6b7280;
+  --selector-border: #dbe4ee;
+}
 
 .login-selector {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: radial-gradient(circle at 15% 10%, #ffffff 0%, var(--selector-bg-1) 42%, var(--selector-bg-2) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 28px;
 }
 
 .selector-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1180px;
 }
 
 .selector-header {
   text-align: center;
-  margin-bottom: 50px;
-  color: white;
+  margin-bottom: 34px;
 }
 
 .selector-title {
-  font-size: 48px;
-  font-weight: 700;
-  margin: 0 0 10px 0;
-  letter-spacing: -1px;
+  font-size: 52px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: #0f172a;
+  letter-spacing: -1.2px;
 }
 
 .selector-subtitle {
-  font-size: 20px;
-  font-weight: 300;
+  font-size: 18px;
   margin: 0;
-  opacity: 0.9;
+  color: var(--selector-text-secondary);
+  font-weight: 500;
 }
 
-/* Selector Cards */
-
 .selector-cards {
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .selector-card {
-  border: none !important;
-  border-radius: 16px !important;
-  padding: 40px 30px !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1px solid var(--selector-border) !important;
+  border-radius: 14px !important;
+  padding: 30px 24px !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
   text-align: center;
-  background: white !important;
-  position: relative;
-  overflow: hidden;
-}
-
-.selector-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: #ffffff !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
 }
 
 .selector-card:hover {
-  transform: translateY(-8px) !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+  transform: translateY(-4px) !important;
+  border-color: #b9d8ff !important;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12) !important;
 }
 
-.selector-card.regular-card::before {
-  background: linear-gradient(90deg, #3498db, #2980b9);
+.selector-card.regular-card {
+  border-top: 4px solid #4096ff !important;
 }
 
-.selector-card.admin-card::before {
-  background: linear-gradient(90deg, #e74c3c, #c0392b);
+.selector-card.admin-card {
+  border-top: 4px solid #ff7875 !important;
 }
 
 .card-icon {
-  font-size: 48px;
-  margin-bottom: 20px;
-  color: #3498db;
+  margin-bottom: 14px;
+  color: #4096ff;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .card-icon.admin-icon {
-  color: #e74c3c;
-  font-size: 50px;
+  color: #ff4d4f;
 }
 
 .selector-card h2 {
-  margin: 20px 0 10px 0;
-  font-size: 28px;
+  margin: 8px 0 8px;
+  font-size: 36px;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--selector-text-primary);
+  letter-spacing: -0.5px;
 }
 
 .selector-card p {
-  margin: 0 0 25px 0;
-  color: #7f8c8d;
+  margin: 0 0 18px;
+  color: var(--selector-text-secondary);
   font-size: 14px;
-  line-height: 1.6;
 }
 
-/* Card Features */
-
 .card-features {
-  margin: 25px 0;
+  margin: 0 0 20px;
   text-align: left;
-  background: #f8f9fa;
-  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+  padding: 16px;
   border-radius: 10px;
-  margin-bottom: 25px;
 }
 
 .card-features ul {
@@ -121,8 +112,8 @@
 }
 
 .card-features li {
-  padding: 8px 0;
-  color: #2c3e50;
+  padding: 7px 0;
+  color: #334155;
   font-size: 13px;
   font-weight: 500;
   display: flex;
@@ -132,138 +123,71 @@
 .card-features li::before {
   content: '✓';
   margin-right: 10px;
-  color: #27ae60;
+  color: #22c55e;
   font-weight: 700;
-  font-size: 14px;
 }
 
-/* Buttons */
-
 .card-button {
-  border: none !important;
   font-size: 15px !important;
   font-weight: 600 !important;
-  height: 48px !important;
-  border-radius: 8px !important;
-  transition: all 0.3s ease !important;
+  height: 46px !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
 }
 
 .selector-card.regular-card .card-button {
-  background: linear-gradient(135deg, #3498db, #2980b9) !important;
-}
-
-.selector-card.regular-card .card-button:hover {
-  background: linear-gradient(135deg, #2980b9, #1e5f8b) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+  background: #1677ff !important;
 }
 
 .selector-card.admin-card .card-button {
-  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  background: #ff4d4f !important;
 }
-
-.selector-card.admin-card .card-button:hover {
-  background: linear-gradient(135deg, #c0392b, #a93226) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
-}
-
-/* Divider */
 
 .ant-divider {
-  background: rgba(255, 255, 255, 0.3) !important;
+  background: #d6e1ec !important;
+  margin: 16px 0 14px !important;
 }
-
-/* Footer */
 
 .selector-footer {
   text-align: center;
-  color: white;
-  font-size: 14px;
+  color: #64748b;
+  font-size: 13px;
 }
 
 .footer-text {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px;
 }
 
 .footer-text a {
-  color: #fff;
-  text-decoration: underline;
+  color: #1677ff;
+  text-decoration: none;
   font-weight: 600;
 }
 
 .footer-text a:hover {
-  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .footer-version {
   margin: 0;
-  opacity: 0.7;
   font-size: 12px;
+  color: #94a3b8;
 }
 
-/* Responsive */
-
 @media (max-width: 1200px) {
-  .selector-title {
-    font-size: 40px;
-  }
-
-  .selector-subtitle {
-    font-size: 18px;
-  }
+  .selector-title { font-size: 44px; }
 }
 
 @media (max-width: 768px) {
-  .login-selector {
-    padding: 15px;
-  }
-
-  .selector-header {
-    margin-bottom: 30px;
-  }
-
-  .selector-title {
-    font-size: 32px;
-  }
-
-  .selector-subtitle {
-    font-size: 16px;
-  }
-
-  .selector-card {
-    padding: 30px 20px !important;
-  }
-
-  .selector-card h2 {
-    font-size: 22px;
-  }
-
-  .card-features {
-    padding: 15px;
-    margin-bottom: 20px;
-  }
-
-  .card-button {
-    height: 44px !important;
-    font-size: 14px !important;
-  }
+  .login-selector { padding: 16px; }
+  .selector-header { margin-bottom: 24px; }
+  .selector-title { font-size: 34px; }
+  .selector-subtitle { font-size: 16px; }
+  .selector-card { padding: 24px 18px !important; }
+  .selector-card h2 { font-size: 30px; }
 }
 
 @media (max-width: 576px) {
-  .selector-title {
-    font-size: 26px;
-  }
-
-  .selector-card {
-    padding: 25px 15px !important;
-  }
-
-  .card-icon {
-    font-size: 40px;
-  }
-
-  .card-features li {
-    font-size: 12px;
-  }
+  .selector-title { font-size: 28px; }
+  .selector-card h2 { font-size: 26px; }
 }

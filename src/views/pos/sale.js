@@ -2052,6 +2052,7 @@ const toggleCustomerDisplay = () => {
                         getHeaders()
                       );
                       const bill_id = res.data.bill_id;
+                      const invoiceNumber = res.data.inv_number || String(bill_id);
                       window.lastSavedBillId = bill_id;
                       // Prepare order items
                      
@@ -2060,7 +2061,7 @@ const toggleCustomerDisplay = () => {
                         if (taxType === 'gst') {
                           return {
                             order_id: bill_id,
-                            invoice_number: bill_id,
+                            invoice_number: invoiceNumber,
                             table_number: customer.deliveryPlace || '',
                             item_name: row.itemName,
                             quantity: row.quantity,
@@ -2080,7 +2081,7 @@ const toggleCustomerDisplay = () => {
                         } else {
                           return {
                             order_number: bill_id,
-                            invoice_number: bill_id,
+                            invoice_number: invoiceNumber,
                             table_number: customer.deliveryPlace || '',
                             item_name: row.itemName,
                             quantity: row.quantity,
@@ -2110,7 +2111,7 @@ const toggleCustomerDisplay = () => {
                         );
                       }
                       toast.success(
-                        `Invoice generated successfully. Invoice No: ${bill_id}`
+                        `Invoice generated successfully. Invoice No: ${invoiceNumber}`
                       );
                       // Reset all data for next bill
                       setItemRows([]);

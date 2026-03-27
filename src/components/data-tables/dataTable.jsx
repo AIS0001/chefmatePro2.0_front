@@ -259,7 +259,8 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
       // Fetch the final_bill and order_items details for the given itemId
       const finalBillData = await fetchData("final_bill", setFinalBillData, "id", { id: itemId });
       await fetchData("companyinfo", setcompanyInfo, "id", {});
-      const myorderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: itemId });
+      const invoiceLookup = finalBillData?.[0]?.inv_number || String(itemId);
+      const myorderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invoiceLookup });
       // Check if inv_time exists in finalBillData
       const invTime = finalBillData[0].inv_time;
       const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined

@@ -111,6 +111,9 @@ import ShopsManagement from './views/superAdmin/ShopsManagement';
 import BillingManagement from './views/superAdmin/BillingManagement';
 import UserManagement from './views/superAdmin/UserManagement';
 import AuditLogs from './views/superAdmin/AuditLogs';
+import Monitoring from './views/superAdmin/Monitoring';
+import Support from './views/superAdmin/Support';
+import Payment from './views/superAdmin/Payment';
 
 // Dummy FeatureProtectedRoute that always returns children
 const FeatureProtectedRoute = ({ children }) => children;
@@ -446,8 +449,11 @@ function AppRoutes() {
             <Route path="dashboard" element={<SuperAdminDashboard />} />
             <Route path="shops" element={<ShopsManagement />} />
             <Route path="billing" element={<BillingManagement />} />
+            <Route path="payment" element={<Payment />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="monitoring" element={<Monitoring />} />
+            <Route path="support" element={<Support />} />
           </Route>
         </Routes>
   );

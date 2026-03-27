@@ -6,8 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Button, Tooltip, Space, Alert, Select, Spin } from 'antd';
-import { BarChartOutlined, ShopOutlined, TeamOutlined, FileTextOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { BarChartOutlined, ShopOutlined, TeamOutlined, FileTextOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, AlertOutlined, CustomerServiceOutlined, CreditCardOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { getAuthToken, logout } from '../../utility/auth';
 import './SuperAdminLayout.css';
 
 const { Header, Sider, Content } = Layout;
@@ -33,7 +34,13 @@ function SuperAdminLayout() {
   const fetchShops = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
+
+      if (!token) {
+        setError('Authentication token not found. Please log in again.');
+        return;
+      }
+
       const response = await axios.get('/super-admin/shops', {
         headers: { Authorization: `Bearer ${token}` },
         params: { limit: 100 } // Get first 100 shops
@@ -78,6 +85,11 @@ function SuperAdminLayout() {
       label: <Link to="/superadmin/billing">Billing</Link>
     },
     {
+      key: '/superadmin/payment',
+      icon: <CreditCardOutlined />,
+      label: <Link to="/superadmin/payment">Payment</Link>
+    },
+    {
       key: '/superadmin/users',
       icon: <TeamOutlined />,
       label: <Link to="/superadmin/users">Users</Link>
@@ -86,15 +98,22 @@ function SuperAdminLayout() {
       key: '/superadmin/audit-logs',
       icon: <FileTextOutlined />,
       label: <Link to="/superadmin/audit-logs">Audit Logs</Link>
+    },
+    {
+      key: '/superadmin/monitoring',
+      icon: <AlertOutlined />,
+      label: <Link to="/superadmin/monitoring">Monitoring</Link>
+    },
+    {
+      key: '/superadmin/support',
+      icon: <CustomerServiceOutlined />,
+      label: <Link to="/superadmin/support">Support</Link>
     }
   ];
 
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
-    localStorage.removeItem('usertype');
-    sessionStorage.removeItem('usertype');
+    logout();
     navigate('/', { replace: true });
   };
 

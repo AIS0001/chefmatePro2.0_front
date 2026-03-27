@@ -1,240 +1,199 @@
-/* eslint-disable no-undef */
-
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
-import { getHeaders } from "../../../utility/getHeader";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import ExportDataTable from "../../../components/Buttons/ExportdataTable";
-
-import CardComponent from "../../../components/cards/CardComponent";
-
+import React, { useEffect, useMemo, useState } from 'react';
+import { Card, Col, Form, Input, Row, Select, Button, Table, Tag, Typography, message, Space } from 'antd';
+import axios from 'axios';
+import { format } from 'date-fns';
 import Header from '../../../components/Header';
-import Layout from '../../../layout/Layout'
-import { format } from "date-fns";
-import { ComboBox, ComboBoxwithlabel } from '../../../components/Buttons/ComboBox';
+import Layout from '../../../layout/Layout';
+import { getHeaders } from '../../../utility/getHeader';
 
-import { TextfieldwithLabel } from "../../../components/Buttons/Textfield";
-import { SubmitButton } from "../../../components/Buttons/Textfield";
-import DataTable from "../../../components/data-tables/dataTable";
-import SimpleDataTable from "../../../components/data-tables/SimpledataTable";
-import fetchData from "../../../functions/fetchData";
+const { Title, Text } = Typography;
+
+const resolveShopId = () => {
+    return sessionStorage.getItem('selected_shop_id') || localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id') || null;
+};
+
+const typeOptions = [
+    { label: 'Admin', value: 'Admin' },
+    { label: 'Cashier', value: 'Cashier' },
+    { label: 'Account', value: 'Account' }
+];
 
 export default function NewUser() {
-    let currentDate = format(new Date(), "yyyy-MM-dd");
-    //  const headers = { Authorization: authheader().access_token };
-    const [data, setData] = useState([]);
-    const [errors, setErrors] = useState({});
-    const [formdata, setFormData] = useState({
-        name: "",
-        pass: "",
-        contact: "",
-        email: "",
-        usertype: "",
-        lastloggedin: currentDate,
-    });
-    const columns = [
-        { label: 'Name', field: 'name' },
-        { label: 'Uname', field: 'uname' },
-        { label: 'Contact', field: 'contact' },
-        { label: 'Email', field: 'email' },
-        { label: 'Type', field: 'type' },
-        { label: 'Last Loggedin', field: 'last_loggedin' },
-        { label: "Actions", field: "actions" }
-    ];
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        // alert(e.target);
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value,
-        }));
+    const currentDate = format(new Date(), 'yyyy-MM-dd');
+    const [form] = Form.useForm();
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [shopId, setShopId] = useState(resolveShopId());
 
-    };
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
+    const fetchUsers = async () => {
         try {
-            await axios.post(
-                "/register",
-                {
-                    name: formdata.name,
-                    pass: formdata.pass,
-                    contact: formdata.contact,
-                    email: formdata.email,
-                    type: formdata.usertype,
-                    lastloggedin: currentDate,
-                },
-                getHeaders()
-            );
-
-            // Fetch the updated data after successful submission
-            await fetchData('users', setData, 'id', {});
-
-            toast.success('User added successfully!');
-            setFormData({
-                name: "",
-                pass: "",
-                contact: "",
-                email: "",
-                usertype: "",
-                lastloggedin: currentDate,
-            });
-        } catch (err) {
-            toast.error('Error in adding user');
-            console.error(err.message);
+            setLoading(true);
+            const response = await axios.get('/users', getHeaders());
+            const rows = Array.isArray(response?.data?.data) ? response.data.data : [];
+            setUsers(rows);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            setUsers([]);
+            message.error(error.response?.data?.message || 'Failed to load users');
+        } finally {
+            setLoading(false);
         }
-
-        // Clear errors
-        setErrors({});
-    };
-
-    //Fetch data query 
-    const handleFilter = (field) => {
-        // Show a filter UI or perform a filtering action based on the clicked field
-        console.log(`Filter clicked for: ${field}`);
     };
 
     useEffect(() => {
-
-        const fetchAndSetData = async () => {
-            try {
-                await fetchData('users', setData, 'id', {});
-                console.log('Fetched data:', data); // Add this line for debugging
-            } catch (error) {
-                console.error('Error in useEffect:', error);
-            }
-        };
-
-        fetchAndSetData();
-
+        setShopId(resolveShopId());
+        fetchUsers();
     }, []);
+
+    const handleSubmit = async (values) => {
+        try {
+            setSaving(true);
+            const payload = {
+                name: values.name,
+                pass: values.pass,
+                contact: values.contact,
+                email: values.email,
+                type: values.usertype,
+                lastloggedin: currentDate,
+                shop_id: Number(shopId)
+            };
+
+            await axios.post('/register', payload, getHeaders());
+            message.success('User added successfully');
+            form.resetFields();
+            form.setFieldValue('usertype', 'Cashier');
+            await fetchUsers();
+        } catch (error) {
+            console.error('Error adding user:', error);
+            message.error(error.response?.data?.msg || error.response?.data?.error || 'Failed to add user');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const columns = useMemo(() => [
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name'
+        },
+        {
+            title: 'Username',
+            dataIndex: 'uname',
+            key: 'uname'
+        },
+        {
+            title: 'Contact',
+            dataIndex: 'contact',
+            key: 'contact'
+        },
+        {
+            title: 'Email',
+            dataIndex: 'email',
+            key: 'email'
+        },
+        {
+            title: 'Role',
+            dataIndex: 'type',
+            key: 'type',
+            render: (value) => <Tag color="blue">{String(value || '-').toUpperCase()}</Tag>
+        },
+        {
+            title: 'Last Login',
+            dataIndex: 'last_loggedin',
+            key: 'last_loggedin',
+            render: (value) => (value ? new Date(value).toLocaleDateString() : '-')
+        }
+    ], []);
+
     return (
-        <>
-            <Layout>
-                <Header title="Add New User" />
-                <ToastContainer />
-                <div className='row'>
-                    <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+        <Layout>
+            <Header title="User Management" />
 
-                        <CardComponent title="Fill User's Information" headerColor="darkblue" pull="left" bodyClass="panel-body">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <form onSubmit={handleSubmit}>
-                                        <div class="panel panel-default card-view">
+            <Row gutter={[16, 16]}>
+                <Col xs={24} lg={8}>
+                    <Card>
+                        <Space direction="vertical" size={4} style={{ marginBottom: 16 }}>
+                            <Title level={4} style={{ margin: 0 }}>Add New User</Title>
+                            <Text type="secondary">Minimal user onboarding with immediate table refresh</Text>
+                            <Text type="secondary">Current Shop ID: {shopId || 'Not selected'}</Text>
+                        </Space>
 
-                                            <TextfieldwithLabel
-                                                id="name"
-                                                onChange={(e) => handleInputChange(e)}
-                                                value={formdata.name}
-                                                type="text"
-                                                name="name"
-                                                lable="Name"
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            onFinish={handleSubmit}
+                            initialValues={{ usertype: 'Cashier' }}
+                        >
+                            <Form.Item
+                                name="name"
+                                label="Name"
+                                rules={[{ required: true, message: 'Please enter name' }]}
+                            >
+                                <Input placeholder="Enter full name" />
+                            </Form.Item>
 
-                                            />
-                                            <TextfieldwithLabel
-                                                id="pass"
-                                                onChange={(e) => handleInputChange(e)}
-                                                value={formdata.pass}
-                                                type="password"
-                                                name="pass"
-                                                lable="Password"
+                            <Form.Item
+                                name="pass"
+                                label="Password"
+                                rules={[{ required: true, message: 'Please enter password' }]}
+                            >
+                                <Input.Password placeholder="Enter password" />
+                            </Form.Item>
 
-                                            />
-                                            <TextfieldwithLabel
-                                                id="contact"
-                                                onChange={(e) => handleInputChange(e)}
-                                                value={formdata.contact}
-                                                type="text"
-                                                name="contact"
-                                                lable="Contact"
+                            <Form.Item
+                                name="contact"
+                                label="Contact"
+                                rules={[{ required: true, message: 'Please enter contact number' }]}
+                            >
+                                <Input placeholder="Phone number" />
+                            </Form.Item>
 
-                                            />
-                                            <TextfieldwithLabel
-                                                id="email"
-                                                onChange={(e) => handleInputChange(e)}
-                                                value={formdata.email}
-                                                type="text"
-                                                name="email"
-                                                lable="Email"
+                            <Form.Item
+                                name="email"
+                                label="Email"
+                                rules={[
+                                    { required: true, message: 'Please enter email' },
+                                    { type: 'email', message: 'Please enter valid email' }
+                                ]}
+                            >
+                                <Input placeholder="example@domain.com" />
+                            </Form.Item>
 
-                                            />
-                                            <div className="combo-box-container">
-                                            <div className='combo-box'>
-                                                <label className='control-label mb-10'>Type</label>
-                                                <select
-                                                    id="usertype"
-                                                    onChange={(e) => handleInputChange(e)}
-                                                    name="usertype"
-                                                    value={formdata.usertype}
-                                                    className='combo-box-select'
-                                                    data-style='form-control btn-default btn-outline'
-                                                >
-                                                    <option value="Admin">Admin </option>
-                                                    <option value="Cashier">Cashier </option>
-                                                    <option value="Account">Account </option>
+                            <Form.Item
+                                name="usertype"
+                                label="Role"
+                                rules={[{ required: true, message: 'Please select role' }]}
+                            >
+                                <Select options={typeOptions} />
+                            </Form.Item>
 
-                                                </select>
-                                                <div className="combo-box-arrow"></div>
-                                            </div>
-                                            <div className="form-group">
-                                            <label className='control-label mb-12'></label>
-                                            <SubmitButton
-                                                type="submit"
-                                                name="Save"
-                                                cls="btn btn-success btn-anim"
-                                            />
-                                            </div>
-                                          
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                loading={saving}
+                                disabled={!shopId}
+                                block
+                            >
+                                Add User
+                            </Button>
+                        </Form>
+                    </Card>
+                </Col>
 
-
-                                        </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </CardComponent>
-
-                    </div>
-                    {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-                    <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-                        {data.length === 0 ? (
-                            <p>No data available</p>
-                        ) : (
-                            //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                            <DataTable columns={columns} data={data} tablename="users" />
-                        )}
-
-                        {/* <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="lightblue"
-                            pull="right"
-                            bodyClass="panel-body">
-
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
-
-                        </CardComponent> */}
-
-                    </div>
-
-
-                </div>
-            </Layout>
-        </>
-    )
+                <Col xs={24} lg={16}>
+                    <Card title="Users Table">
+                        <Table
+                            rowKey="id"
+                            loading={loading}
+                            columns={columns}
+                            dataSource={users}
+                            pagination={{ pageSize: 20 }}
+                        />
+                    </Card>
+                </Col>
+            </Row>
+        </Layout>
+    );
 }

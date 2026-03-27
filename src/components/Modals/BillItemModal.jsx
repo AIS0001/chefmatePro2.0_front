@@ -72,7 +72,7 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
     setLoading(true);
     try {
       // Fetch order items for this bill (invoice number preferred)
-      const invoiceId = bill?.id;
+      const invoiceId = bill?.inv_number || bill?.invoice_number || String(bill?.id || '');
       if (!invoiceId) {
         setItems([]);
         return;

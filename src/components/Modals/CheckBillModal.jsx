@@ -120,6 +120,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [phones, setphones] = useState("");
   const printRef = useRef();
   const [latestBillId, setLatestBillId] = useState(null);
+  const [latestInvoiceNumber, setLatestInvoiceNumber] = useState(null);
   const [savedSplitInvoices, setSavedSplitInvoices] = useState([]);
 
 
@@ -164,6 +165,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       setsubtotalAfterDiscount(0);
       setIsBillSaved(false);
       setLatestBillId(null);
+      setLatestInvoiceNumber(null);
       setSavedSplitInvoices([]);
       
       // Clear merge states
@@ -821,7 +823,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               <table class="table">
                 
                   <tr >
-                    <td class="header" >Bill ID: ${myfinalbilldata[0].id}</td>
+                    <td class="header" >Invoice No: ${myfinalbilldata[0].inv_number || myfinalbilldata[0].id}</td>
                    
                     <td class="header" >${myfinalbilldata[0].table_number}</td>
                     
@@ -1105,8 +1107,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         throw new Error("Invalid response from server - no bill ID returned");
       }
 
-      const { bill_id } = response.data; // Get the inserted bill ID
+      const { bill_id, inv_number } = response.data; // Get the inserted bill ID
       setLatestBillId(bill_id);
+      setLatestInvoiceNumber(inv_number || String(bill_id));
       setSavedSplitInvoices([]);
 
       // console.log('Bill saved successfully with ID:', bill_id);
@@ -1124,7 +1127,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
           // Update order items for each table
           await updateData("order_items", {
             status: "0", // Mark orders as completed
-            invoice_number: bill_id, // Attach the invoice number
+            invoice_number: inv_number || String(bill_id), // Attach the invoice number
             setup_date: setupDate // ✅ Add setup_date when updating order_items
           },
             {
@@ -1144,7 +1147,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         // Update order items status and attach invoice number
         await updateData("order_items", {
           status: "0", // Mark orders as completed
-          invoice_number: bill_id, // Attach the invoice number
+          invoice_number: inv_number || String(bill_id), // Attach the invoice number
           setup_date: setupDate // ✅ Add setup_date when updating order_items
         },
           {
@@ -1159,7 +1162,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       refreshTables(); // Auto-refresh tables modal with updated records
 
       // Show success toast message
-      toast.success(`Bill saved successfully! Bill ID: ${bill_id}`);
+      toast.success(`Bill saved successfully! Invoice No: ${inv_number || bill_id}`);
       setIsBillSaved(true);
       setFormData((prev) => ({ ...prev, remark: "" }));
 
@@ -1275,7 +1278,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         };
 
         const response = await axios.post("/savebill", billData, getHeaders());
-        const { bill_id } = response.data || {};
+        const { bill_id, inv_number } = response.data || {};
         if (!bill_id) {
           throw new Error(`Failed to create ${split.name}`);
         }
@@ -1284,6 +1287,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
         splitInvoicesForPrint.push({
           billId: bill_id,
+          invoiceNumber: inv_number || String(bill_id),
           queueNumber: `${selectedTable} - ${split.name}`,
           items: split.items.map((item) => ({
             item_name: item.item_name,
@@ -1310,7 +1314,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             "order_items",
             {
               status: "0",
-              invoice_number: bill_id,
+              invoice_number: inv_number || String(bill_id),
               setup_date: setupDate
             },
             {
@@ -1327,10 +1331,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       refreshTables();
 
       setLatestBillId(createdBillIds[createdBillIds.length - 1] || null);
+      setLatestInvoiceNumber(splitInvoicesForPrint[splitInvoicesForPrint.length - 1]?.invoiceNumber || null);
       setSavedSplitInvoices(splitInvoicesForPrint);
       setIsBillSaved(true);
       setFormData((prev) => ({ ...prev, remark: "" }));
-      toast.success(`Split bills saved successfully! Bill IDs: ${createdBillIds.join(', ')}`);
+      toast.success(`Split bills saved successfully! Invoice Nos: ${splitInvoicesForPrint.map((invoice) => invoice.invoiceNumber).join(', ')}`);
     } catch (err) {
       console.error("Error occurred during split bill save:", err);
       toast.error(`Error saving split bills: ${err.message || 'Unknown error'}`);
@@ -1372,6 +1377,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         ? savedSplitInvoices
         : [{
             billId: latestBillId,
+            invoiceNumber: latestInvoiceNumber || String(latestBillId || ''),
             queueNumber: selectedTable,
             items: finalData.map((item) => ({
               item_name: item.item_name,
@@ -1401,7 +1407,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
           <div class="bill-bill-body">
             <table class="table">
               <tr>
-                <th class="header">Bill ID: ${invoice.billId || '-'}</th>
+                <th class="header">Invoice No: ${invoice.invoiceNumber || invoice.billId || '-'}</th>
                 <th class="header">${invoice.queueNumber || '-'}</th>
               </tr>
               <tr>
@@ -1674,7 +1680,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               <div class="bill-bill-body">
                 <table class="table">
                   <tr>
-                    <th class="header">Bill ID: ${invoice.billId || '-'}</th>
+                    <th class="header">Invoice No: ${invoice.invoiceNumber || invoice.billId || '-'}</th>
                     <th class="header">${invoice.queueNumber || '-'}</th>
                   </tr>
                   <tr>
@@ -1738,7 +1744,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               <div class="bill-bill-body">
                 <table class="table">
                   <tr>
-                    <th class="header">Bill ID: ${latestBillId || "-"}</th>
+                    <th class="header">Invoice No: ${FinalBillData?.[0]?.inv_number || latestInvoiceNumber || latestBillId || "-"}</th>
                     <th class="header">${selectedTable || "-"}</th>
                   </tr>
                   <tr>

@@ -1,210 +1,309 @@
 /* eslint-disable no-undef */
 
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Button, Card, Form, Input, Popconfirm, Select, Space, Table, Tabs, Typography, message } from "antd";
 import axios from "axios";
-import { getHeaders } from "../../utility/getHeader";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
-import CardComponent from "../../components/cards/CardComponent";
-
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import { format } from "date-fns";
-
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { SubmitButton } from "../../components/Buttons/Textfield";
-import DataTable from "../../components/data-tables/dataTable";
-import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
+import { getHeaders } from "../../utility/getHeader";
+
+const { Text } = Typography;
 
 export default function TableList() {
-  let currentDate = format(new Date(), "yyyy-MM-dd");
-  //  const headers = { Authorization: authheader().access_token };
-  const [data, setData] = useState([]);
+  const [formTables] = Form.useForm();
+  const [formCategories] = Form.useForm();
+  const [tables, setTables] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [formdata, setFormData] = useState({
-    name: "",
-  });
-  const categoryMap = categories.reduce((acc, cat) => {
-    acc[cat.id] = cat.cat_name || "";
-    return acc;
-  }, {});
+  const [isSubmittingTable, setIsSubmittingTable] = useState(false);
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const columns = [
-    { label: "ID", field: "id" },
-    { label: "Table name", field: "name" },
-    { label: "Category", field: "category_display" },
-    { label: "Actions", field: "actions" },
-  ];
+  const categoryMap = useMemo(() => {
+    const map = new Map();
+    categories.forEach((cat) => map.set(String(cat.id), cat.cat_name || ""));
+    return map;
+  }, [categories]);
 
-  const dataWithCategory = data.map((row) => ({
-    ...row,
-    category_display: categoryMap[row.category] || row.category || "",
-  }));
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [tableRows, categoryRows] = await Promise.all([
+        fetchData("tablelist", null, "id", {}),
+        fetchData("table_category", null, "id", {}),
+      ]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    // alert(e.target);
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+      setTables(Array.isArray(tableRows) ? tableRows : []);
+      setCategories(Array.isArray(categoryRows) ? categoryRows : []);
+    } catch (error) {
+      message.error("Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
   };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const onFinishTable = async (values) => {
+    const name = (values.name || "").trim();
+    if (!name || !values.category) {
+      message.warning("Please enter table name and select category");
+      return;
+    }
+
+    setIsSubmittingTable(true);
     try {
       await axios.post(
         "/insertdata/tablelist",
         {
-          name: formdata.name,
-          category: formdata.category,
+          name,
+          category: values.category,
         },
         getHeaders()
       );
-
-      // Fetch the updated data after successful submission
-      await fetchData("tablelist", setData, "id", {});
-      console.log("Fetched data after add:", data);
-      toast.success("Table added successfully!");
-    } catch (err) {
-      toast.error("Error in adding table");
-      console.error(err.message);
+      message.success("Table added successfully");
+      formTables.resetFields();
+      await loadData();
+    } catch (error) {
+      message.error("Failed to add table");
+    } finally {
+      setIsSubmittingTable(false);
     }
-
-    // Clear form data and errors
-    // setFormData({});
-    setErrors({});
   };
 
-  useEffect(() => {
-    const fetchAndSetData = async () => {
-      try {
-        await fetchData("tablelist", setData, "id", {});
-        console.log("Fetched data:", data); // Add this line for debugging
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
-    };
+  const onFinishCategory = async (values) => {
+    const catName = (values.cat_name || "").trim();
+    if (!catName) {
+      message.warning("Please enter category name");
+      return;
+    }
 
-    fetchAndSetData();
-  }, []);
+    setIsSubmittingCategory(true);
+    try {
+      await axios.post(
+        "/insertdata/table_category",
+        {
+          cat_name: catName,
+        },
+        getHeaders()
+      );
+      message.success("Table category added successfully");
+      formCategories.resetFields();
+      await loadData();
+    } catch (error) {
+      message.error("Failed to add category");
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
 
-  useEffect(() => {
-    // Fetch table categories for combo box
-    fetchData(
-      "table_category",
-      (result) => {
-        console.log("Fetched categories:", result);
-        setCategories(result);
+  const handleDeleteTable = async (id) => {
+    try {
+      await axios.delete(`/deletebyid/tablelist/id/${id}`, getHeaders());
+      message.success("Table deleted");
+      await loadData();
+    } catch (error) {
+      message.error("Failed to delete table");
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+      await axios.delete(`/deletebyid/table_category/id/${id}`, getHeaders());
+      message.success("Category deleted");
+      await loadData();
+    } catch (error) {
+      message.error("Failed to delete category");
+    }
+  };
+
+  const tableColumns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 90,
+      sorter: (a, b) => Number(a.id || 0) - Number(b.id || 0),
+      render: (value) => <Text>{value}</Text>,
+    },
+    {
+      title: "Table Name",
+      dataIndex: "name",
+      key: "name",
+      sorter: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
+      render: (value) => <Text strong>{value}</Text>,
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+      sorter: (a, b) => {
+        const nameA = categoryMap.get(String(a.category || "")) || "";
+        const nameB = categoryMap.get(String(b.category || "")) || "";
+        return nameA.localeCompare(nameB);
       },
-      "id",
-      {}
-    );
-  }, []);
+      render: (value) => categoryMap.get(String(value)) || `Category #${value}`,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      sorter: (a, b) => String(a.status || "").localeCompare(String(b.status || "")),
+      render: (value) => (value === "active" ? <Text type="success">Active</Text> : <Text type="secondary">Inactive</Text>),
+    },
+    {
+      title: "Action",
+      key: "action",
+      fixed: "right",
+      width: 130,
+      render: (_, record) => (
+        <Popconfirm
+          title="Delete table?"
+          onConfirm={() => handleDeleteTable(record.id)}
+          okText="Delete"
+          cancelText="Cancel"
+        >
+          <Button danger size="small">Delete</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+
+  const categoryColumns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 90,
+      sorter: (a, b) => Number(a.id || 0) - Number(b.id || 0),
+      render: (value) => <Text>{value}</Text>,
+    },
+    {
+      title: "Category Name",
+      dataIndex: "cat_name",
+      key: "cat_name",
+      sorter: (a, b) => String(a.cat_name || "").localeCompare(String(b.cat_name || "")),
+      render: (value) => <Text strong>{value}</Text>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      sorter: (a, b) => String(a.status || "").localeCompare(String(b.status || "")),
+      render: (value) => (value === "active" ? <Text type="success">Active</Text> : <Text type="secondary">Inactive</Text>),
+    },
+    {
+      title: "Action",
+      key: "action",
+      fixed: "right",
+      width: 130,
+      render: (_, record) => (
+        <Popconfirm
+          title="Delete category?"
+          onConfirm={() => handleDeleteCategory(record.id)}
+          okText="Delete"
+          cancelText="Cancel"
+        >
+          <Button danger size="small">Delete</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+
+  const tabItems = [
+    {
+      key: "1",
+      label: "Tables",
+      children: (
+        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          <Card title="Add New Table">
+            <Form form={formTables} layout="vertical" onFinish={onFinishTable}>
+              <Form.Item
+                label="Table Name"
+                name="name"
+                rules={[{ required: true, message: "Table name is required" }]}
+              >
+                <Input placeholder="Enter table name (e.g., Table 1, VIP Table)" maxLength={100} />
+              </Form.Item>
+              <Form.Item
+                label="Table Category"
+                name="category"
+                rules={[{ required: true, message: "Please select a category" }]}
+              >
+                <Select
+                  placeholder="Select table category"
+                  options={categories.map((cat) => ({
+                    label: cat.cat_name,
+                    value: cat.id,
+                  }))}
+                  showSearch
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+              <Button type="primary" htmlType="submit" loading={isSubmittingTable}>
+                Save Table
+              </Button>
+            </Form>
+          </Card>
+
+          <Card title="Table List">
+            <Table
+              rowKey="id"
+              columns={tableColumns}
+              dataSource={tables}
+              loading={isLoading}
+              pagination={{ pageSize: 10 }}
+              showSorterTooltip={{ target: "sorter-icon" }}
+              scroll={{ x: 1000 }}
+            />
+          </Card>
+        </Space>
+      ),
+    },
+    {
+      key: "2",
+      label: "Table Categories",
+      children: (
+        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          <Card title="Add New Table Category">
+            <Form form={formCategories} layout="vertical" onFinish={onFinishCategory}>
+              <Form.Item
+                label="Category Name"
+                name="cat_name"
+                rules={[{ required: true, message: "Category name is required" }]}
+              >
+                <Input placeholder="Enter category name (e.g., Indoor, Outdoor, VIP)" maxLength={100} />
+              </Form.Item>
+              <Button type="primary" htmlType="submit" loading={isSubmittingCategory}>
+                Save Category
+              </Button>
+            </Form>
+          </Card>
+
+          <Card title="Category List">
+            <Table
+              rowKey="id"
+              columns={categoryColumns}
+              dataSource={categories}
+              loading={isLoading}
+              pagination={{ pageSize: 10 }}
+              showSorterTooltip={{ target: "sorter-icon" }}
+              scroll={{ x: 800 }}
+            />
+          </Card>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <>
-      <Layout>
-        <Header title="Add New Table" />
-        <ToastContainer />
-        <div className="row">
-          <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Add Table Name"
-              headerColor="darkorange"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div class="row">
-                <div class="col-md-12">
-                  <form onSubmit={handleSubmit}>
-                    <div class="panel panel-default card-view">
-                      <TextfieldwithLabel
-                        id="name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.name}
-                        type="text"
-                        name="name"
-                        lable="Table Name"
-                      />
-                      {/* Combo box for table category */}
-                      <div className="form-group">
-                        <label htmlFor="category">Table Category</label>
-                        <select
-                          id="category"
-                          name="category"
-                          className="form-control"
-                          value={formdata.category || ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              category: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Select Category</option>
-                          {categories.map((cat) => (
-                            <option
-                              key={cat.id}
-                              value={cat.id}
-                            >{cat.cat_name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="control-label mb-12"></label>
-                      <SubmitButton
-                        type="submit"
-                        name="Save"
-                        cls="btn btn-darkblue btn-anim"
-                      />
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </CardComponent>
-          </div>
-          {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-          <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-            {data.length === 0 ? (
-              <p>No data available</p>
-            ) : (
-              //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-              <DataTable columns={columns} data={dataWithCategory} tablename="tablelist" />
-            )}
-
-            {/* <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="lightblue"
-                            pull="right"
-                            bodyClass="panel-body">
-
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
-
-                        </CardComponent> */}
-          </div>
-        </div>
-      </Layout>
-    </>
+    <Layout>
+      <Header title="Table Management" />
+      <div style={{ padding: 16 }}>
+        <Tabs items={tabItems} type="card" />
+      </div>
+    </Layout>
   );
 }

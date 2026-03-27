@@ -1,292 +1,163 @@
-/* Super Admin Dashboard Styles */
+/* Super Admin Dashboard - Minimal */
 
 .super-admin-dashboard {
-  padding: 0;
-}
-
-.dashboard-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: calc(100vh - 200px);
-  gap: 20px;
-}
-
-.dashboard-header {
-  margin-bottom: 30px;
-}
-
-.dashboard-header h1 {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.dashboard-header p {
-  margin: 8px 0 0 0;
-  color: #7f8c8d;
-  font-size: 14px;
-}
-
-/* Metrics Row */
-
-.metrics-row {
   width: 100%;
 }
 
-/* Metric Card */
-
-.metric-card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  background: white;
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.metric-card:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  transform: translateY(-4px);
-}
-
-.metric-card .ant-card-body {
-  padding: 20px;
-}
-
-/* Metric Content */
-
-.metric-content-main {
+.dashboard-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
 }
 
-.metric-icon-main {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
+.quick-presets {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  gap: 6px;
 }
 
-.metric-text {
-  flex: 1;
+.quick-preset-btn {
+  border-color: #d6e4ff;
+  color: #1d39c4;
+  background: #f0f5ff;
 }
 
-.metric-title {
+.quick-preset-btn:hover,
+.quick-preset-btn:focus {
+  border-color: #91caff;
+  color: #0958d9;
+  background: #e6f4ff;
+}
+
+.quick-preset-btn-active,
+.quick-preset-btn-active:hover,
+.quick-preset-btn-active:focus {
+  border-color: #1677ff;
+  color: #ffffff;
+  background: #1677ff;
+  box-shadow: 0 6px 14px rgba(22, 119, 255, 0.18);
+}
+
+.dashboard-header h2 {
   margin: 0;
-  color: #7f8c8d;
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.metric-number {
-  margin: 8px 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.metric-trend {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Alternative Metric Content */
-
-.metric-content {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.metric-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.metric-info {
-  flex: 1;
-}
-
-.metric-label {
-  margin: 0;
-  color: #7f8c8d;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.metric-value {
-  margin: 4px 0 0 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-/* Distribution Chart */
-
-.distribution-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.distribution-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.plan-name {
-  min-width: 100px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background: #ecf0f1;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.count {
-  min-width: 80px;
-  text-align: right;
-  font-size: 13px;
-  color: #7f8c8d;
-  font-weight: 500;
-}
-
-/* Top Shops List */
-
-.top-shops-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.shop-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.shop-item:hover {
-  background: #ecf0f1;
-  transform: translateX(4px);
-}
-
-.shop-rank {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.shop-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.shop-details h4 {
-  margin: 0;
-  color: #2c3e50;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.shop-details p {
-  margin: 4px 0 0 0;
-  color: #7f8c8d;
-  font-size: 12px;
-}
-
-/* System Health */
-
-.health-item {
-  text-align: center;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.health-item p {
-  margin: 0;
-  color: #7f8c8d;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.health-item h4 {
-  margin: 8px 0 0 0;
   font-size: 24px;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1f2937;
 }
 
-/* Responsive */
+.dashboard-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.distribution-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.shop-item-minimal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-wrap {
+  width: 100%;
+  min-height: 280px;
+}
+
+.ant-card {
+  border-radius: 10px;
+}
+
+.kpi-card {
+  border: 1px solid #e8edf3;
+}
+
+.kpi-soft-blue {
+  background: linear-gradient(180deg, #f3f8ff 0%, #ffffff 42%);
+}
+
+.kpi-soft-green {
+  background: linear-gradient(180deg, #f2fbf5 0%, #ffffff 42%);
+}
+
+.kpi-soft-cyan {
+  background: linear-gradient(180deg, #f2fcfc 0%, #ffffff 42%);
+}
+
+.kpi-soft-amber {
+  background: linear-gradient(180deg, #fff8ed 0%, #ffffff 42%);
+}
+
+.kpi-soft-purple {
+  background: linear-gradient(180deg, #f7f3ff 0%, #ffffff 42%);
+}
+
+.kpi-soft-rose {
+  background: linear-gradient(180deg, #fff3f4 0%, #ffffff 42%);
+}
+
+.soft-header-card .ant-card-head {
+  border-bottom: 1px solid #edf2f7;
+}
+
+.soft-header-blue .ant-card-head {
+  background: #f2f7ff;
+}
+
+.soft-header-green .ant-card-head {
+  background: #f2fbf7;
+}
+
+.soft-header-amber .ant-card-head {
+  background: #fff8ef;
+}
+
+.soft-header-purple .ant-card-head {
+  background: #f6f2ff;
+}
+
+.soft-header-card .ant-card-body .ant-typography {
+  display: block;
+  margin-top: 6px;
+}
+
+.system-health-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
 
 @media (max-width: 768px) {
-  .dashboard-header h1 {
-    font-size: 24px;
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
-  .metric-number {
-    font-size: 22px;
+  .dashboard-actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
-  .metrics-row {
-    gap: 15px;
+  .quick-presets {
+    width: 100%;
+    flex-wrap: wrap;
   }
-}
 
-/* Ant Design Overrides */
-
-.metric-card .ant-card {
-  height: 100%;
-}
-
-.metric-card .ant-card-head {
-  border: none;
-  padding: 16px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #ecf0f1;
-}
-
-.metric-card .ant-card-head-title {
-  font-weight: 600;
-  color: #2c3e50;
+  .dashboard-header h2 {
+    font-size: 20px;
+  }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Table, Modal, Form, Alert, Spinner } from 'react-bootstrap';
-import { Card as AntCard, Row as AntRow, Col as AntCol, Spin, Divider } from 'antd';
+import { Card as AntCard, Row as AntRow, Col as AntCol, Divider } from 'antd';
 import { Button, CircularProgress } from '@mui/material';
 import { Visibility, Lock, Print, Cancel, LockClock } from '@mui/icons-material';
 import { ToastContainer, toast } from "react-toastify";
@@ -14,6 +14,15 @@ import Layout from '../../layout/Layout';
 import './DayClose.css';
 
 export default function DayClose() {
+  const DEFAULT_PAYMENT_OPTIONS = [
+    { name: 'Cash' },
+    { name: 'UPI' },
+    { name: 'Card' },
+    { name: 'QR Code' },
+    { name: 'Bank Transfer' },
+    { name: 'Online' },
+  ];
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [dayCloseData, setDayCloseData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,6 +38,7 @@ export default function DayClose() {
   const [detailedView, setDetailedView] = useState(false);
   const [salesBreakdown, setSalesBreakdown] = useState([]);
   const [paymentOptions, setPaymentOptions] = useState([]);
+  const [companyInfo, setCompanyInfo] = useState(null);
 
 
   // Enhanced payment method icons mapping with gradients
@@ -105,10 +115,12 @@ export default function DayClose() {
   }, []);
 
   useEffect(() => {
-    if (paymentOptions.length > 0) {
-      fetchDayCloseData();
-    }
-  }, [selectedDate, paymentOptions]);
+    fetchCompanyInfo();
+  }, []);
+
+  useEffect(() => {
+    fetchDayCloseData();
+  }, [selectedDate]);
 
   // Debug useEffect to track state changes
   useEffect(() => {
@@ -118,33 +130,51 @@ export default function DayClose() {
   const fetchPaymentOptions = async () => {
     try {
       const options = await fetchComboData("paymentoptions", "name");
-      setPaymentOptions(options || []);
+      const normalizedOptions = Array.isArray(options)
+        ? options
+        : Array.isArray(options?.data)
+          ? options.data
+          : [];
+
+      setPaymentOptions(normalizedOptions.length > 0 ? normalizedOptions : DEFAULT_PAYMENT_OPTIONS);
     } catch (error) {
       console.error('Error fetching payment options:', error);
       // Fallback to default payment methods if API fails
-      setPaymentOptions([
-        { name: 'Cash' },
-        { name: 'UPI' },
-        { name: 'Card' },
-        { name: 'QR Code' },
-        { name: 'Bank Transfer' },
-        { name: 'Online' }
-      ]);
+      setPaymentOptions(DEFAULT_PAYMENT_OPTIONS);
+    }
+  };
+
+  const getShopId = () =>
+    sessionStorage.getItem('selected_shop_id') || localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
+
+  const fetchCompanyInfo = async () => {
+    try {
+      const shopId = getShopId();
+      const companyRows = await fetchData('companyinfo', null, 'id', shopId ? { shop_id: shopId } : {});
+      if (Array.isArray(companyRows) && companyRows.length > 0) {
+        setCompanyInfo(companyRows[0]);
+      } else {
+        setCompanyInfo(null);
+      }
+    } catch (error) {
+      console.error('Error fetching company info:', error);
+      setCompanyInfo(null);
     }
   };
 
   const fetchDayCloseData = async () => {
     setLoading(true);
+    const shopId = getShopId();
     try {
       // Check if day is already closed by looking for existing record
-      const summaryData = await fetchData("day_close_summary", null, "id", { close_date: selectedDate });
+      const summaryData = await fetchData("day_close_summary", null, "id", { close_date: selectedDate, ...(shopId ? { shop_id: shopId } : {}) });
 
       if (summaryData && summaryData.length > 0) {
         // Day close record exists
         setIsDayClosed(true); // If record exists, day is considered closed
 
         // Recalculate totals from bills to include discounts and total amount
-        const bills = await fetchData("final_bill", null, "id", { setup_date: selectedDate }) || [];
+        const bills = await fetchData("final_bill", null, "id", { setup_date: selectedDate, ...(shopId ? { shop_id: shopId } : {}) }) || [];
         const computedSummary = bills.length > 0 ? await buildSummaryFromBills(bills) : {
           close_date: selectedDate,
           total_amount: 0,
@@ -269,7 +299,8 @@ export default function DayClose() {
 
     // Fetch total items sold from order_items if available
     try {
-      const itemsData = await fetchData("order_items", null, "id", { setup_date: selectedDate });
+      const shopId = getShopId();
+      const itemsData = await fetchData("order_items", null, "id", { setup_date: selectedDate, ...(shopId ? { shop_id: shopId } : {}) });
       
       if (itemsData && itemsData.length > 0) {
         summary.total_items_sold = itemsData.reduce((total, item) => {
@@ -289,7 +320,8 @@ export default function DayClose() {
       setIsDayClosed(false);
       
       // Fetch sales data directly from final_bill table for the selected date
-      const salesData = await fetchData("final_bill", null, "id", { setup_date: selectedDate });
+      const shopId = getShopId();
+      const salesData = await fetchData("final_bill", null, "id", { setup_date: selectedDate, ...(shopId ? { shop_id: shopId } : {}) });
 
       if (salesData && salesData.length > 0) {
         const bills = salesData;
@@ -369,7 +401,8 @@ export default function DayClose() {
   const fetchPaymentSummary = async () => {
     try {
       // Get bills for the selected date using setup_date filter
-      const bills = await fetchData("final_bill", null, "id", { setup_date: selectedDate }) || [];
+      const shopId = getShopId();
+      const bills = await fetchData("final_bill", null, "id", { setup_date: selectedDate, ...(shopId ? { shop_id: shopId } : {}) }) || [];
 
       // Calculate summary
       const summary = {
@@ -436,7 +469,8 @@ export default function DayClose() {
   const fetchDetailedBreakdown = async () => {
     try {
       // Get order items for detailed breakdown using setup_date
-      const items = await fetchData("order_items", null, "id", { setup_date: selectedDate }) || [];
+      const shopId = getShopId();
+      const items = await fetchData("order_items", null, "id", { setup_date: selectedDate, ...(shopId ? { shop_id: shopId } : {}) }) || [];
 
       // Group by item name
       const breakdown = {};
@@ -777,6 +811,10 @@ export default function DayClose() {
       0,
       toNumber(dayCloseData?.total_sales) - entertainmentAmount
     );
+    const resolvedCompanyName = companyInfo?.name || 'ChefMate Restaurant';
+    const resolvedCompanyPhone = companyInfo?.phone_number || companyInfo?.phone || '';
+    const resolvedCompanyTaxId = companyInfo?.tax_id || '';
+    const resolvedCompanyAddress = companyInfo?.address || '';
 
     const printWindow = window.open('', '_blank');
     const html = `
@@ -799,7 +837,10 @@ export default function DayClose() {
         </head>
         <body>
           <div class="header">
-            <div class="company">Jannaat Launge</div>
+            <div class="company">${resolvedCompanyName}</div>
+            ${resolvedCompanyPhone ? `<div class="date">Phone: ${resolvedCompanyPhone}</div>` : ''}
+            ${resolvedCompanyTaxId ? `<div class="date">Tax ID: ${resolvedCompanyTaxId}</div>` : ''}
+            ${resolvedCompanyAddress ? `<div class="date">${resolvedCompanyAddress}</div>` : ''}
             <div class="separator"></div>
             <div class="title">Day Close Summary</div>
             <div class="date">${selectedDate}</div>
@@ -1154,10 +1195,7 @@ export default function DayClose() {
               </div>
               <div className="p-2">
                 {paymentOptions.length === 0 ? (
-                  <div className="text-center py-5">
-                    <Spin size="large" className="mb-3" />
-                    <span className="text-muted" style={{ display: 'block' }}>Loading payment methods...</span>
-                  </div>
+                  <div className="text-center py-3 text-muted">No payment methods configured</div>
                 ) : (
                   <>
                     <AntRow gutter={[16, 16]}>

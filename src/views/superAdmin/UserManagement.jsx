@@ -136,7 +136,7 @@ function UserManagement() {
       render: (text, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{text}</div>
-          <div style={{ fontSize: 12, color: '#888' }}>Login: <code>{record.uname}</code></div>
+          <div style={{ fontSize: 12, color: '#888' }}>Username: <code>{record.username || record.uname || '-'}</code></div>
         </div>
       ),
       width: 180,

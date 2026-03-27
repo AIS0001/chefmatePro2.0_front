@@ -24,6 +24,7 @@ export default function PaymentVouchers() {
     const [invoices, setInvoices] = useState([]);
     const [selectedInvoice, setSelectedInvoice] = useState("");
     const [data, setData] = useState([]);
+    const getShopId = () => sessionStorage.getItem('selected_shop_id') || localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
     const columns = [
  
         { label: "Supplier ID", field: "supplier_id" },
@@ -97,7 +98,8 @@ export default function PaymentVouchers() {
 useEffect(() => {
   const fetchAndSetData = async () => {
     try {
-      await fetchData("payment_vouchers", setData, "id", {});
+            const shopId = getShopId();
+            await fetchData("payment_vouchers", setData, "id", shopId ? { shop_id: shopId } : {});
       console.log("Fetched data:", data);
     } catch (error) {
       console.error("Error in useEffect:", error);
@@ -145,7 +147,8 @@ if (!selectedCustomer || !paymentAmount || !paymentMode) {
     };
 const fetchVoucherData = async () => {
   try {
-    await fetchData("payment_vouchers", setData, "id", {});
+        const shopId = getShopId();
+        await fetchData("payment_vouchers", setData, "id", shopId ? { shop_id: shopId } : {});
   } catch (error) {
     console.error("Error fetching payment vouchers:", error);
   }

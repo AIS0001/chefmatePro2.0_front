@@ -272,6 +272,7 @@ function AnalyticsDashboard() {
                       fetchSalesExpensesData(),
                       fetchDailySalesData(),
                       fetchPurchaseTrendsData(),
+                      fetchFoodDrinksSaleData(),
                       fetchPendingInvoiceData()
                     ]);
                   } catch (error) {

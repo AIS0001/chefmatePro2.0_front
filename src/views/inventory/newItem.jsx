@@ -9,6 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import { format } from "date-fns";
+import { Button, Input, Select, Space, Table, Tag, Tooltip } from "antd";
+import { DeleteOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
 
 import fetchData from "../../functions/fetchData";
 import { deleteItem, deleteBulkItems } from "../../functions/delateData";
@@ -1008,17 +1010,19 @@ export default function NewItem() {
 
   // Filter handlers - memoized
   const handleSearchChange = useCallback((e) => {
-    setSearchTerm(e.target.value);
+    const value = typeof e === "string" ? e : e?.target?.value || "";
+    setSearchTerm(value);
   }, []);
 
-  const handleCategoryChange = useCallback((e) => {
-    const value = e.target.value;
-    setSelectedCategory(value);
+  const handleCategoryChange = useCallback((value) => {
+    const nextValue = typeof value === "string" ? value : value || "";
+    setSelectedCategory(nextValue);
     setSelectedSubcategory("");
   }, []);
 
-  const handleSubcategoryChange = useCallback((e) => {
-    setSelectedSubcategory(e.target.value);
+  const handleSubcategoryChange = useCallback((value) => {
+    const nextValue = typeof value === "string" ? value : value || "";
+    setSelectedSubcategory(nextValue);
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -1034,6 +1038,97 @@ export default function NewItem() {
   useEffect(() => {
     applyFilters();
   }, [searchTerm, selectedCategory, selectedSubcategory, originalData, applyFilters]);
+
+  const columns = useMemo(() => [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 90,
+      sorter: (a, b) => Number(a.id || 0) - Number(b.id || 0),
+      defaultSortOrder: "descend",
+      render: (value) => <strong>{value}</strong>,
+    },
+    {
+      title: "Item Code",
+      dataIndex: "item_code",
+      key: "item_code",
+      sorter: (a, b) => String(a.item_code || "").localeCompare(String(b.item_code || "")),
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Item Name",
+      dataIndex: "iname",
+      key: "iname",
+      sorter: (a, b) => String(a.iname || "").localeCompare(String(b.iname || "")),
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Unit",
+      dataIndex: "unit",
+      key: "unit",
+      sorter: (a, b) => String(a.unit || "").localeCompare(String(b.unit || "")),
+      render: (value) => value || "N/A",
+      width: 110,
+    },
+    {
+      title: "Tax (%)",
+      dataIndex: "tax",
+      key: "tax",
+      width: 110,
+      sorter: (a, b) => Number(a.tax || 0) - Number(b.tax || 0),
+      render: (value) => `${value || 0}%`,
+    },
+    {
+      title: "MRP",
+      dataIndex: "mrp",
+      key: "mrp",
+      width: 120,
+      sorter: (a, b) => Number(a.mrp || 0) - Number(b.mrp || 0),
+      render: (value) => `฿${Number(value || 0).toFixed(2)}`,
+    },
+    {
+      title: "Offer Price",
+      dataIndex: "offerprice",
+      key: "offerprice",
+      width: 130,
+      sorter: (a, b) => Number(a.offerprice || 0) - Number(b.offerprice || 0),
+      render: (value) => `฿${Number(value || 0).toFixed(2)}`,
+    },
+    {
+      title: "Details",
+      dataIndex: "description",
+      key: "description",
+      ellipsis: true,
+      render: (value) => value || "No description",
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      fixed: "right",
+      width: 140,
+      render: (_, item) => (
+        <Space>
+          <Tooltip title="Edit Item">
+            <Button type="default" size="small" icon={<EditOutlined />} onClick={() => handleEditClick(item)} />
+          </Tooltip>
+          <Tooltip title="Delete Item">
+            <Button danger size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteItem(item.id)} />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ], [handleEditClick]);
+
+  const rowSelection = {
+    selectedRowKeys: selectedItems,
+    onChange: (selectedRowKeys) => {
+      setSelectedItems(selectedRowKeys);
+      setSelectAll(false);
+    },
+    preserveSelectedRowKeys: true,
+  };
+
   return (
     <>
       <style jsx>{`
@@ -1438,158 +1533,60 @@ export default function NewItem() {
       <Layout>
         <Header title="Item Details" />
         <ToastContainer />
-        {/* Single Row Layout: Delete Button | Search | Export Buttons | Action Buttons */}
-        <div className="row mb-3">
-          <div className="col-12">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-              {/* Left Section: Delete Button */}
-              <div className="d-flex align-items-center">
-                {selectedItems.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleBulkDelete}
-                    className="btn btn-danger btn-sm"
-                    title={`Delete ${selectedItems.length} selected item(s)`}
-                  >
-                    <i className="fas fa-trash"></i> Delete ({selectedItems.length})
-                  </button>
-                )}
-              </div>
-
-              {/* Center Section: Search */}
-              <div className="d-flex align-items-center flex-grow-1 mx-3 gap-2 flex-wrap">
-                <label className="form-label me-2 mb-0 text-nowrap">Search:</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  placeholder="Search by item name, description, or ID..."
+        <div style={{ marginBottom: 16 }}>
+          <Space direction="vertical" size={12} style={{ width: "100%" }}>
+            <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
+              <Space wrap>
+                <Input
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder="Search by item name, description, or ID"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  style={{ maxWidth: '300px' }}
+                  style={{ width: 300 }}
                 />
-                <select
-                  className="form-select form-select-sm"
-                  value={selectedCategory}
+                <Select
+                  allowClear
+                  placeholder="All Categories"
+                  value={selectedCategory || undefined}
                   onChange={handleCategoryChange}
-                  style={{ maxWidth: '220px' }}
-                >
-                  <option value="">All Categories</option>
-                  {categoryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-                <select
-                  className="form-select form-select-sm"
-                  value={selectedSubcategory}
+                  style={{ width: 220 }}
+                  options={categoryOptions}
+                />
+                <Select
+                  allowClear
+                  placeholder="All Subcategories"
+                  value={selectedSubcategory || undefined}
                   onChange={handleSubcategoryChange}
-                  style={{ maxWidth: '220px' }}
+                  style={{ width: 220 }}
                   disabled={subcategoryOptions.length === 0}
-                >
-                  <option value="">All Subcategories</option>
-                  {subcategoryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-                {(searchTerm || selectedCategory || selectedSubcategory) && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm ms-2"
-                    onClick={clearFilters}
-                    title="Clear filters"
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                )}
-                <small className="text-muted ms-3 text-nowrap">
+                  options={subcategoryOptions}
+                />
+                <Tag color={(searchTerm || selectedCategory || selectedSubcategory) ? "blue" : "default"}>
                   {filteredData.length} of {originalData.length} items
-                  {(searchTerm || selectedCategory || selectedSubcategory) && <i className="fas fa-search ms-1"></i>}
-                </small>
-              </div>
+                </Tag>
+                {(searchTerm || selectedCategory || selectedSubcategory) && (
+                  <Button onClick={clearFilters}>Clear Filters</Button>
+                )}
+              </Space>
 
-              {/* Right Section: Export and Action Buttons */}
-              <div className="d-flex align-items-center gap-2">
-                {/* Export Buttons */}
-                <div className="btn-group" role="group" aria-label="Export options">
-                  <button
-                    type="button"
-                    className="btn btn-success btn-sm"
-                    onClick={exportToExcel}
-                    title="Export to Excel"
-                    disabled={filteredData.length === 0}
-                  >
-                    <i className="fas fa-file-excel"></i> Excel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-sm"
-                    onClick={exportToPDF}
-                    title="Export to PDF"
-                    disabled={filteredData.length === 0}
-                  >
-                    <i className="fas fa-file-pdf"></i> PDF
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-info btn-sm"
-                    onClick={printTable}
-                    title="Print Table"
-                    disabled={filteredData.length === 0}
-                  >
-                    <i className="fas fa-print"></i> Print
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-warning btn-sm"
-                    onClick={printThermal}
-                    title="Print to Thermal Printer (Item Code, Name, MRP)"
-                    disabled={filteredData.length === 0}
-                  >
-                    <i className="fas fa-receipt"></i> Print Thermal
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={printThermalHTML}
-                    title="Print Thermal HTML (Item Code, Name, MRP)"
-                    disabled={filteredData.length === 0}
-                  >
-                    <i className="fas fa-file-invoice"></i> Thermal HTML
-                  </button>
-                </div>
-
-                {/* Action Buttons */}
-                <button
-                  type="button"
-                  name="add"
-                  onClick={AddNewItemPriceButton}
-                  className="btn btn-primary btn-sm"
-                  title="Add New Item"
-                >
-                  <i className="fas fa-plus"></i> Add New Item
-                </button>
-                
-                <button
-                  type="button"
-                  name="addAnt"
-                  onClick={AddNewItemAntButton}
-                  className="btn btn-success btn-sm"
-                  title="Add New Item (Liquor/Multi-Unit)"
-                >
-                  <i className="fas fa-plus-circle"></i> Add Item (Ant)
-                </button>
-                
-                <button
-                  type="button"
-                  name="generate"
-                  onClick={GenerateBarcodeButton}
-                  className="btn btn-secondary btn-sm"
-                  title="Generate Barcode"
-                >
-                  <i className="fas fa-barcode"></i> Generate Barcode
-                </button>
-              </div>
-            </div>
-          </div>
+              <Space wrap>
+                {selectedItems.length > 0 && (
+                  <Button danger onClick={handleBulkDelete} icon={<DeleteOutlined />}>
+                    Delete ({selectedItems.length})
+                  </Button>
+                )}
+                <Button onClick={exportToExcel} disabled={filteredData.length === 0}>Excel</Button>
+                <Button onClick={exportToPDF} disabled={filteredData.length === 0}>PDF</Button>
+                <Button onClick={printTable} disabled={filteredData.length === 0}>Print</Button>
+                <Button onClick={printThermal} disabled={filteredData.length === 0}>Print Thermal</Button>
+                <Button onClick={printThermalHTML} disabled={filteredData.length === 0}>Thermal HTML</Button>
+                <Button type="primary" onClick={AddNewItemPriceButton}>Add New Item</Button>
+                <Button type="default" onClick={AddNewItemAntButton}>Add Item (Ant)</Button>
+                <Button type="dashed" onClick={GenerateBarcodeButton}>Generate Barcode</Button>
+              </Space>
+            </Space>
+          </Space>
         </div>
 
         <div className="row">
@@ -1601,215 +1598,30 @@ export default function NewItem() {
               </div>
             ) : (
               <>
-                <div className="table-responsive">
-                <table className="table table-striped table-bordered custom-table">
-                  <thead>
-                    <tr>
-                      <th>
-                        <input
-                          type="checkbox"
-                          checked={selectAll}
-                          onChange={(e) => handleSelectAll(e.target.checked)}
-                          title="Select All"
-                        />
-                      </th>
-                      <th>ID</th>
-                      <th>Item Code</th>
-                      <th>Item Name</th>
-                      <th>Unit</th>
-                      <th>Tax (%)</th>
-                      <th>MRP</th>
-                      <th>Offer Price</th>
-                      <th>Details</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentData.map((item) => (
-                      <tr key={item.id} className={selectedItems.includes(item.id) ? 'table-active' : ''}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.includes(item.id)}
-                            onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-                            title={`Select item ${item.id}`}
-                          />
-                        </td>
-                        <td><strong>{item.id}</strong></td>
-                        <td>{item.item_code || 'N/A'}</td>
-                        <td>{item.iname || 'N/A'}</td>
-                        <td>{item.unit || 'N/A'}</td>
-                        <td>{item.tax ? `${item.tax}%` : '0%'}</td>
-                        <td>฿{item.mrp ? parseFloat(item.mrp).toFixed(2) : '0.00'}</td>
-                        <td>฿{item.offerprice ? parseFloat(item.offerprice).toFixed(2) : '0.00'}</td>
-                        <td>{item.description || 'No description'}</td>
-                        <td>
-                          <div className="btn-group" role="group">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-warning"
-                              onClick={() => handleEditClick(item)}
-                              title="Edit Item"
-                            >
-                              <i className="fas fa-edit"></i> Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDeleteItem(item.id)}
-                              title="Delete Item"
-                            >
-                              <i className="fas fa-trash"></i> Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="pagination-container mt-4">
-                  <div className="row">
-                    <div className="col-md-3">
-                      <div className="pagination-info">
-                        <span>
-                          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
-                        </span>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="page-size-selector">
-                        <label htmlFor="pageSize" className="me-2">Show:</label>
-                        <select 
-                          id="pageSize"
-                          className="form-select form-select-sm d-inline-block w-auto"
-                          value={itemsPerPage}
-                          onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
-                        >
-                          <option value={5}>5</option>
-                          <option value={10}>10</option>
-                          <option value={25}>25</option>
-                          <option value={50}>50</option>
-                          <option value={100}>100</option>
-                        </select>
-                        <span className="ms-2">entries</span>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <nav aria-label="Page navigation">
-                        <ul className="pagination justify-content-end mb-0">
-                          {/* First Page Button */}
-                          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                            <button 
-                              className="page-link" 
-                              onClick={goToFirstPage}
-                              disabled={currentPage === 1}
-                              title="First Page"
-                            >
-                              <i className="fas fa-angle-double-left"></i>
-                            </button>
-                          </li>
-                          
-                          {/* Previous Page Button */}
-                          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                            <button 
-                              className="page-link" 
-                              onClick={goToPreviousPage}
-                              disabled={currentPage === 1}
-                              title="Previous Page"
-                            >
-                              <i className="fas fa-angle-left"></i>
-                            </button>
-                          </li>
-                          
-                          {/* Page Numbers */}
-                          {(() => {
-                            const { startPage, endPage } = getPageRange();
-                            const pages = [];
-                            
-                            // Show ellipsis if we're not starting from page 1
-                            if (startPage > 1) {
-                              pages.push(
-                                <li key="1" className="page-item">
-                                  <button className="page-link" onClick={() => goToPage(1)}>1</button>
-                                </li>
-                              );
-                              if (startPage > 2) {
-                                pages.push(
-                                  <li key="ellipsis1" className="page-item disabled">
-                                    <span className="page-link">...</span>
-                                  </li>
-                                );
-                              }
-                            }
-                            
-                            // Show page numbers in range
-                            for (let i = startPage; i <= endPage; i++) {
-                              pages.push(
-                                <li key={i} className={`page-item ${currentPage === i ? 'active' : ''}`}>
-                                  <button 
-                                    className="page-link" 
-                                    onClick={() => goToPage(i)}
-                                  >
-                                    {i}
-                                  </button>
-                                </li>
-                              );
-                            }
-                            
-                            // Show ellipsis if we're not ending at the last page
-                            if (endPage < totalPages) {
-                              if (endPage < totalPages - 1) {
-                                pages.push(
-                                  <li key="ellipsis2" className="page-item disabled">
-                                    <span className="page-link">...</span>
-                                  </li>
-                                );
-                              }
-                              pages.push(
-                                <li key={totalPages} className="page-item">
-                                  <button className="page-link" onClick={() => goToPage(totalPages)}>
-                                    {totalPages}
-                                  </button>
-                                </li>
-                              );
-                            }
-                            
-                            return pages;
-                          })()}
-                          
-                          {/* Next Page Button */}
-                          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button 
-                              className="page-link" 
-                              onClick={goToNextPage}
-                              disabled={currentPage === totalPages}
-                              title="Next Page"
-                            >
-                              <i className="fas fa-angle-right"></i>
-                            </button>
-                          </li>
-                          
-                          {/* Last Page Button */}
-                          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button 
-                              className="page-link" 
-                              onClick={goToLastPage}
-                              disabled={currentPage === totalPages}
-                              title="Last Page"
-                            >
-                              <i className="fas fa-angle-double-right"></i>
-                            </button>
-                          </li>
-                        </ul>
-                      </nav>
-                    </div>
-                  </div>
-                </div>
-              )}
+                <Table
+                  rowKey="id"
+                  columns={columns}
+                  dataSource={filteredData}
+                  rowSelection={rowSelection}
+                  showSorterTooltip={{ target: "sorter-icon" }}
+                  pagination={{
+                    current: currentPage,
+                    pageSize: itemsPerPage,
+                    total: filteredData.length,
+                    showSizeChanger: true,
+                    pageSizeOptions: ["5", "10", "25", "50", "100"],
+                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                    onChange: (page, pageSize) => {
+                      setCurrentPage(page);
+                      setItemsPerPage(pageSize);
+                    },
+                    onShowSizeChange: (_, size) => {
+                      setItemsPerPage(size);
+                      setCurrentPage(1);
+                    },
+                  }}
+                  scroll={{ x: 1200 }}
+                />
               </>
             )}
           </div>

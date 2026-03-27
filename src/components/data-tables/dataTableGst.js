@@ -114,7 +114,8 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
        let  myCustomerdetails =[];
 if(tblname=="final_bill")
 {
- myorderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: itemId });
+ const invoiceLookup = finalBillData?.[0]?.inv_number || String(itemId);
+ myorderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: invoiceLookup });
   myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: finalBillData[0].customer_id });
 }
 else

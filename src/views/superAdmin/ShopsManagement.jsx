@@ -5,10 +5,38 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Spin, message, Space, Tooltip, Tag, Pagination, Card, Empty, Alert, Drawer, Popconfirm, Badge } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ExclamationCircleOutlined, ReloadOutlined, TeamOutlined, UserAddOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ExclamationCircleOutlined, ReloadOutlined, TeamOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import { shopUsersAPI } from '../../api/superAdminAPI';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { shopUsersAPI, shopsAPI } from '../../api/superAdminAPI';
 import './ShopsManagement.css';
+
+const buildBillPrefixFromName = (shopName = '') => {
+  const stopWords = new Set(['AND', 'CO', 'COMPANY', 'INC', 'LTD', 'LIMITED', 'LLC', 'PVT', 'PRIVATE']);
+  const words = String(shopName)
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .map((word) => word.replace(/[^A-Z]/g, ''))
+    .filter(Boolean)
+    .filter((word) => !stopWords.has(word));
+
+  if (words.length >= 3) {
+    return words.slice(0, 3).map((word) => word[0]).join('');
+  }
+
+  if (words.length === 2) {
+    const [firstWord, secondWord] = words;
+    return `${firstWord[0]}${secondWord[0]}${secondWord.slice(-1) || 'X'}`;
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 3).padEnd(3, words[0].slice(-1) || 'X');
+  }
+
+  return '';
+};
 
 const STATUS_COLORS = {
   active: 'success',
@@ -126,6 +154,7 @@ function ShopsManagement() {
     form.setFieldsValue({
       name: shop.name,
       shop_code: shop.shop_code,
+      bill_prefix: shop.bill_prefix,
       tax_id: shop.tax_id,
       phone_number: shop.phone_number,
       email: shop.email,
@@ -146,16 +175,20 @@ function ShopsManagement() {
   const handleSubmit = async (values) => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const payload = {
+        ...values,
+        bill_prefix: String(values.bill_prefix || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+      };
       
       if (editingShop) {
         // Update shop
-        await axios.put(`/super-admin/shops/${editingShop.id}`, values, {
+        await axios.put(`/super-admin/shops/${editingShop.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         message.success('Shop updated successfully');
       } else {
         // Create new shop
-        await axios.post('/super-admin/shops', values, {
+        await axios.post('/super-admin/shops', payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         message.success('Shop created successfully');
@@ -275,6 +308,186 @@ function ShopsManagement() {
     }
   };
 
+  const formatDateTime = (value) => {
+    if (!value) return '-';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '-';
+    return dt.toLocaleString();
+  };
+
+  const loadImageDataUrl = async (src) => {
+    const response = await fetch(src);
+    if (!response.ok) {
+      throw new Error(`Unable to load image: ${src}`);
+    }
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleExportShopDetails = async (shop) => {
+    try {
+      const [shopResponse, usersResponse] = await Promise.all([
+        shopsAPI.getById(shop.id),
+        shopUsersAPI.getAll(shop.id)
+      ]);
+
+      const shopData = shopResponse?.data?.data || shop;
+      const users = Array.isArray(usersResponse?.data?.data) ? usersResponse.data.data : [];
+      const reportTime = new Date().toLocaleString();
+      let logoDataUrl = null;
+
+      try {
+        logoDataUrl = await loadImageDataUrl('/assets/img/logo/cloudnet_logo.png');
+      } catch (logoError) {
+        console.warn('Cloudnet logo not loaded for PDF export:', logoError?.message || logoError);
+      }
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(232, 244, 253);
+      doc.roundedRect(24, 20, pageWidth - 48, 126, 10, 10, 'F');
+
+      if (logoDataUrl) {
+        doc.addImage(logoDataUrl, 'PNG', 34, 34, 102, 44, undefined, 'FAST');
+      }
+
+      doc.setTextColor(23, 37, 84);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(17);
+      doc.text('Cloudnet Softwares Co. Ltd.', 152, 50);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Product Name: Chefmate Pro 2.0', 152, 66);
+      doc.text('Website: www.cloudnetsoftwares,cin', 152, 80);
+      doc.text('Phone: +66 948712350 (WhatsApp/Line)', 152, 94);
+      doc.text('Email: indo@cloudnetsoftwares.com', 152, 108);
+      doc.text(`Generated: ${reportTime}`, 152, 122);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(30, 41, 59);
+      doc.text('Shop Details Report', 40, 170);
+
+      autoTable(doc, {
+        startY: 182,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 6, textColor: [31, 41, 55] },
+        headStyles: { fillColor: [191, 219, 254], textColor: [17, 24, 39], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 150, fontStyle: 'bold', fillColor: [239, 246, 255] },
+          1: { cellWidth: 360 }
+        },
+        body: [
+          ['Shop ID', String(shopData.id || '-')],
+          ['Shop Name', String(shopData.name || '-')],
+          ['Shop Code', String(shopData.shop_code || '-')],
+          ['Bill Prefix', String(shopData.bill_prefix || '-')],
+          ['Tax ID', String(shopData.tax_id || '-')],
+          ['Email', String(shopData.email || '-')],
+          ['Phone Number', String(shopData.phone_number || '-')],
+          ['Address', String(shopData.address || '-')],
+          ['City / State / Zip', `${shopData.city || '-'} / ${shopData.state || '-'} / ${shopData.zip_code || '-'}`],
+          ['Country', String(shopData.country || '-')],
+          ['Plan Name', String(shopData.plan_name || shopData.subscription_plan || '-')],
+          ['Subscription Status', String(shopData.subscription_status || '-')],
+          ['Created At', String(formatDateTime(shopData.created_at))],
+          ['Total Users', String(users.length)]
+        ]
+      });
+
+      const usersTableStart = doc.lastAutoTable.finalY + 16;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(30, 41, 59);
+      doc.text('Shop Users', 40, usersTableStart);
+
+      autoTable(doc, {
+        startY: usersTableStart + 8,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 5, textColor: [31, 41, 55] },
+        headStyles: { fillColor: [167, 243, 208], textColor: [17, 24, 39], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [240, 253, 250] },
+        head: [['#', 'Name', 'Username', 'Email', 'Contact', 'Role', 'Status', 'Last Login']],
+        body: users.length > 0
+          ? users.map((user, idx) => [
+              idx + 1,
+              user.name || '-',
+              user.uname || '-',
+              user.email || '-',
+              user.contact || '-',
+              user.type || '-',
+              Number(user.status) === 1 ? 'Active' : 'Inactive',
+              formatDateTime(user.last_loggedin)
+            ])
+          : [['', 'No users found for this shop', '', '', '', '', '', '']]
+      });
+
+      const footerHeight = 78;
+      const footerBottomMargin = 18;
+      const currentPageHeight = doc.internal.pageSize.getHeight();
+      const footerBoxYCurrentPage = currentPageHeight - footerHeight - footerBottomMargin;
+
+      // Keep footer pinned to page end; move to new page if table would overlap.
+      if (doc.lastAutoTable.finalY + 24 > footerBoxYCurrentPage) {
+        doc.addPage();
+      }
+
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const footerBoxY = pageHeight - footerHeight - footerBottomMargin;
+      const footerY = footerBoxY + 16;
+
+      doc.setFillColor(254, 242, 242);
+      doc.roundedRect(32, footerBoxY, pageWidth - 64, footerHeight, 8, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(127, 29, 29);
+      doc.text('Note:', 40, footerY + 2);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(69, 10, 10);
+      doc.text(
+        'For any issue, contact Cloudnet Softwares: +66 948712350 (WhatsApp/Line) | info@cloudnetsoftwares.com',
+        74,
+        footerY + 2,
+        { maxWidth: pageWidth - 120 }
+      );
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 64, 175);
+      doc.text('Company Address:', 40, footerY + 30);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(30, 41, 59);
+      doc.text(
+        '109, 19 Soi-14, Pattaya City, Bang Lamung District, Chon Buri 20150',
+        126,
+        footerY + 30,
+        { maxWidth: pageWidth - 166 }
+      );
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(30, 41, 59);
+      doc.text('Design and Developed by Cloudnet Softwares', pageWidth / 2, footerY + 60, { align: 'center' });
+
+      const safeName = String(shopData.name || `shop-${shop.id}`).replace(/[^a-zA-Z0-9-_]/g, '_');
+      doc.save(`${safeName}_details_report.pdf`);
+      message.success('Shop details exported to PDF successfully');
+    } catch (error) {
+      console.error('Export shop details error:', error);
+      message.error(error?.response?.data?.error || 'Failed to export shop details');
+    }
+  };
+
   const userColumns = [
     {
       title: 'Name',
@@ -346,7 +559,7 @@ function ShopsManagement() {
       render: (text, record) => (
         <div>
           <div className="shop-name">{text}</div>
-          <div className="shop-code">{record.shop_code}</div>
+          <div className="shop-code">{record.shop_code} {record.bill_prefix ? `• ${record.bill_prefix}` : ''}</div>
         </div>
       ),
       width: 200
@@ -388,7 +601,7 @@ function ShopsManagement() {
     {
       title: 'Action',
       key: 'action',
-      width: 200,
+      width: 250,
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="Manage Users">
@@ -413,6 +626,14 @@ function ShopsManagement() {
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEditShop(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Export Shop Report">
+            <Button
+              type="default"
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => handleExportShopDetails(record)}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -556,6 +777,21 @@ function ShopsManagement() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          onValuesChange={(changedValues, allValues) => {
+            if (editingShop || !('name' in changedValues)) {
+              return;
+            }
+
+            const currentPrefix = String(allValues.bill_prefix || '').trim();
+            if (currentPrefix) {
+              return;
+            }
+
+            const suggestedPrefix = buildBillPrefixFromName(changedValues.name || '');
+            if (suggestedPrefix) {
+              form.setFieldsValue({ bill_prefix: suggestedPrefix });
+            }
+          }}
           autoComplete="off"
         >
           <Form.Item
@@ -573,6 +809,17 @@ function ShopsManagement() {
               rules={[{ required: true, message: 'Please enter shop code' }]}
             >
               <Input placeholder="e.g., SHOP001" disabled={!!editingShop} />
+            </Form.Item>
+
+            <Form.Item
+              name="bill_prefix"
+              label="Bill Prefix"
+              rules={[
+                { required: true, message: 'Please enter bill prefix' },
+                { pattern: /^[A-Za-z0-9]{2,10}$/, message: 'Use 2-10 letters or numbers only' }
+              ]}
+            >
+              <Input placeholder="e.g., TVW" maxLength={10} style={{ textTransform: 'uppercase' }} />
             </Form.Item>
 
             <Form.Item

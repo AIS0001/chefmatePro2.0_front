@@ -313,7 +313,8 @@ const CheckBillGstModal = ({ isOpen, customer, uptableList, onClose }) => {
       //alert(invId);
       // Fetch the final_bill and order_items details for the given itemId
       const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
-      const myOrderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: invId });
+      const invoiceLookup = myfinalbilldata?.[0]?.inv_number || String(invId);
+      const myOrderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: invoiceLookup });
       const myCustomerdetails = await fetchData("customers", setCustomerDetailsdb, "id", { id: myfinalbilldata[0].customer_id });
       // Check if inv_time exists in finalBillData
       const invTime = myfinalbilldata[0].inv_time;
@@ -644,7 +645,7 @@ const handleCancelBill = async () => {
       //console.log('API Response:', response.data);  // Log the response from the API
 
 
-      const { bill_id } = response.data; // Get the inserted bill ID
+      const { bill_id, inv_number } = response.data; // Get the inserted bill ID
       // alert(bill_id);
       setLatestBillId(bill_id);
       // ✅ Call print function directly
@@ -663,7 +664,7 @@ const handleCancelBill = async () => {
       // Update order items status and attach invoice number
       await updateData("order_items_gst", {
         status: "0", // Mark orders as completed
-        invoice_number: bill_id, // Attach the invoice number
+        invoice_number: inv_number || String(bill_id), // Attach the invoice number
       },
         {
           table_number: selectedTable, // Match the table number

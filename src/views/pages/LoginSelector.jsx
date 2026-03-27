@@ -79,7 +79,7 @@ function LoginSelector() {
 
         <div className="selector-footer">
           <p className="footer-text">
-            Don't have an account? <a href="mailto:support@chefmate.com">Contact Support</a>
+            Don't have an account? <a href="mailto:support@cloudnetsoftwares.com">Contact Support</a>
           </p>
           <p className="footer-version">ChefMate Pro SAAS v1.0</p>
         </div>
