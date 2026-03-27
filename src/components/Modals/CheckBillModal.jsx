@@ -583,14 +583,19 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         return;
       }
 
-      // Get bill IDs from saved split invoices or latest bill
-      const invoiceIds = (savedSplitInvoices && savedSplitInvoices.length > 0)
+      // Build print jobs with both bill id and invoice number
+      const invoicePrintJobs = (savedSplitInvoices && savedSplitInvoices.length > 0)
         ? savedSplitInvoices
-            .map((inv) => inv?.billId)
-            .filter((id) => id !== undefined && id !== null && id !== "")
-        : (latestBillId ? [latestBillId] : []);
+            .map((inv) => ({
+              billId: inv?.billId,
+              invoiceNo: inv?.invoiceNumber || null,
+            }))
+            .filter((job) => job.billId !== undefined && job.billId !== null && job.billId !== "")
+        : (latestBillId
+            ? [{ billId: latestBillId, invoiceNo: latestInvoiceNumber || null }]
+            : []);
 
-      if (invoiceIds.length === 0) {
+      if (invoicePrintJobs.length === 0) {
         toast.error("No invoice number found. Please save bill first.");
         return;
       }
@@ -598,10 +603,12 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       toastId = toast.loading("Sending invoice to RSC POS cashier printer...");
 
       let allSuccess = true;
-      for (const billId of invoiceIds) {
+      for (const { billId, invoiceNo } of invoicePrintJobs) {
         const response = await axios.post(
           `/cloud-agent/print-invoice/${billId}`,
           {
+            billId,
+            invoiceNo,
             machine_uuid: machineUuid,
             location: "cashier",
             mode: "single"
@@ -619,7 +626,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
       if (allSuccess) {
         toast.success(
-          invoiceIds.length > 1
+          invoicePrintJobs.length > 1
             ? "Split invoices printed on RSC POS cashier printer!"
             : "Invoice printed on RSC POS cashier printer!"
         );
@@ -885,8 +892,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             </div>
             <div class="footer">
               <p>Printed on ${new Date().toLocaleString()}</p>
-              <p>Cashier: ${getUserName() || 'N/A'}</p>
-              <p>Powered by ${companyInfo[0].developer}</p>
+              <p>Powered by Cloudnet Softwares</p>
             </div>
           </body>
         </html>
@@ -1463,8 +1469,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             </div>
           </div>
           <div class="footer">
-            <p>Operated By: ${getUserName() || 'N/A'}</p>
-            <p>Powered by chefmatePro 2.0 POS !! </p>
+            <p>Powered by Cloudnet Softwares</p>
           </div>
         </div>
       `);
@@ -1732,8 +1737,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 </div>
               </div>
               <div class="footer">
-                <p>Operated By: ${getUserName() || 'N/A'}</p>
-                <p>Powered by chefmatePro 2.0 POS !!</p>
+                <p>Powered by Cloudnet Softwares</p>
               </div>
             </div>
           `)
@@ -1796,8 +1800,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 </div>
               </div>
               <div class="footer">
-                <p>Operated By: ${getUserName() || 'N/A'}</p>
-                <p>Powered by chefmatePro 2.0 POS !!</p>
+                <p>Powered by Cloudnet Softwares</p>
               </div>
             </div>
             `

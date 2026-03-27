@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Select, Upload, Card, Table, Space, Modal, message, DatePicker, Tag, Empty, Divider, Row, Col, Checkbox } from 'antd';
-import { UploadOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Select, Card, Table, Space, Modal, message, DatePicker, Tag, Empty, Divider, Row, Col, Checkbox } from 'antd';
+import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { getAuthToken } from '../../utility/auth';
 import './NotificationManagement.css';
@@ -13,8 +13,6 @@ export default function NotificationManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [targetType, setTargetType] = useState('all');
   const [selectedShops, setSelectedShops] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -103,19 +101,6 @@ export default function NotificationManagement() {
     }
   };
 
-  // Handle image upload
-  const handleImageUpload = (e) => {
-    const file = e.file;
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImagePreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   // Handle form submission
   const handleSubmit = async (values) => {
     if (targetType === 'specific_shops' && selectedShops.length === 0) {
@@ -130,42 +115,25 @@ export default function NotificationManagement() {
     setSubmitting(true);
     try {
       const token = getAuthToken();
-      const formData = new FormData();
+      const payload = {
+        title: values.title,
+        message: values.message,
+        notificationType: values.notificationType || 'general',
+        targetType,
+        priority: values.priority || 'normal',
+        shopIds: selectedShops.length > 0 ? selectedShops : undefined,
+        userIds: selectedUsers.length > 0 ? selectedUsers : undefined,
+        scheduledFor: values.scheduledFor ? values.scheduledFor.toISOString() : undefined,
+        expiresAt: values.expiresAt ? values.expiresAt.toISOString() : undefined,
+      };
 
-      formData.append('title', values.title);
-      formData.append('message', values.message);
-      formData.append('notificationType', values.notificationType || 'general');
-      formData.append('targetType', targetType);
-      formData.append('priority', values.priority || 'normal');
-
-      if (selectedShops.length > 0) {
-        formData.append('shopIds', JSON.stringify(selectedShops));
-      }
-      if (selectedUsers.length > 0) {
-        formData.append('userIds', JSON.stringify(selectedUsers));
-      }
-      if (values.scheduledFor) {
-        formData.append('scheduledFor', values.scheduledFor.toISOString());
-      }
-      if (values.expiresAt) {
-        formData.append('expiresAt', values.expiresAt.toISOString());
-      }
-
-      if (imageFile) {
-        formData.append('image', imageFile);
-      }
-
-      const res = await axios.post('/super-admin/notifications/create', formData, {
-        headers: { 
-          Authorization: `Bearer ${token}`
-        }
+      const res = await axios.post('/super-admin/notifications/create', payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.data?.success) {
         message.success('Notification created successfully');
         form.resetFields();
-        setImageFile(null);
-        setImagePreview(null);
         setSelectedShops([]);
         setSelectedUsers([]);
         setTargetType('all');
@@ -457,22 +425,6 @@ export default function NotificationManagement() {
               </Col>
             </Row>
 
-            <Form.Item label="Attach Image (Optional)">
-              <Upload
-                maxCount={1}
-                accept="image/*"
-                onChange={handleImageUpload}
-                beforeUpload={() => false}
-              >
-                <Button icon={<UploadOutlined />}>Select Image</Button>
-              </Upload>
-              {imagePreview && (
-                <div className="image-preview">
-                  <img src={imagePreview} alt="preview" style={{ maxHeight: '100px', marginTop: '10px' }} />
-                </div>
-              )}
-            </Form.Item>
-
             <Form.Item>
               <Button type="primary" htmlType="submit" size="large" loading={submitting}>
                 Create Notification
@@ -513,12 +465,6 @@ export default function NotificationManagement() {
             <p><strong>Type:</strong> {selectedNotification.notification_type}</p>
             <p><strong>Priority:</strong> {selectedNotification.priority}</p>
             <p><strong>Target:</strong> {selectedNotification.target_type}</p>
-            {selectedNotification.image_url && (
-              <div>
-                <p><strong>Image:</strong></p>
-                <img src={selectedNotification.image_url} alt="notification" style={{ maxWidth: '100%', maxHeight: '300px' }} />
-              </div>
-            )}
             <p><strong>Created:</strong> {new Date(selectedNotification.created_at).toLocaleString()}</p>
           </div>
         )}
