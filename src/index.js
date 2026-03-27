@@ -74,7 +74,11 @@ const withShopIdParams = (config) => {
 
 axios.interceptors.request.use(
   (config) => {
-    withShopIdParams(config);
+    // Skip interceptor processing for FormData requests to preserve multipart boundary
+    const isFormData = config.data instanceof FormData;
+    if (!isFormData) {
+      withShopIdParams(config);
+    }
 
     const requestUrl = (config?.url || '').toString().toLowerCase();
     const isLoginRequest = requestUrl.includes('/login');

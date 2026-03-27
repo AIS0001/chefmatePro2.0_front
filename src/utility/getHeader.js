@@ -49,6 +49,7 @@ const getHeaders = () => {
 
   export {
 getAuthToken,
+getResolvedShopId,
 getHeaders,
 
   }

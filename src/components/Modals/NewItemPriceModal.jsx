@@ -4,8 +4,7 @@ import { FaTimes } from "react-icons/fa"; // Importing the close icon from react
 import { TextfieldwithLabel } from "../Buttons/Textfield";
 import axios from "axios";
 import { fetchComboData, fetchComboDataWithWhere } from "../../services/api";
-import { getHeaders } from "../../utility/getHeader";
-import { getAuthToken } from "../../utility/getHeader";
+import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import { SubmitButton } from "../Buttons/Textfield";
 import { ToastContainer, toast } from "react-toastify";
@@ -127,14 +126,14 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       }
 
       // Step 3: Upload images
-      const formdata1 = e.target;
       const formData = new FormData();
       
-      if (formdata1.images && formdata1.images.files && formdata1.images.files.length > 0) {
-        Array.from(formdata1.images.files).forEach((file, index) => {
+      if (images && images.length > 0) {
+        images.forEach((file, index) => {
           console.log(`📸 Adding image ${index + 1}:`, file.name, file.size, 'bytes');
           formData.append("images", file);
         });
+        console.log('✅ Added', images.length, 'images to FormData');
       } else {
         console.log('⚠️ No images selected');
       }
@@ -149,17 +148,19 @@ const NewItemPriceModal = ({ isOpen, customer, onClose, onItemAdded }) => {
           return;
         }
 
-        const authHeaders = getHeaders();
-        
         for (let pair of formData.entries()) {
           console.log(pair[0], pair[1]);
         }
         
-        const post2 = await axios.post("/addnewproduct/item_images", formData, {
+        // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
+        const shopId = getResolvedShopId();
+        const config = {
           headers: {
-            'Authorization': authHeaders.headers.Authorization
-          }
-        });
+            Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}`
+          },
+          ...(shopId ? { params: { shop_id: shopId } } : {})
+        };
+        const post2 = await axios.post("/addnewproduct/item_images", formData, config);
         
         console.log('✅ Images uploaded successfully:', post2.data);
       } catch (imgErr) {

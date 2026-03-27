@@ -1,166 +1,174 @@
-/* eslint-disable no-undef */
-
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Button, Card, Form, Input, Popconfirm, Space, Table, Typography, message } from "antd";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
-import CardComponent from "../../components/cards/CardComponent";
-
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import { format } from "date-fns";
-
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { SubmitButton } from "../../components/Buttons/Textfield";
-import DataTable from "../../components/data-tables/dataTable";
-import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
 
+const { Text, Title } = Typography;
+
+const pageStyles = {
+  background: "linear-gradient(180deg, #fffdf7 0%, #f6fbff 48%, #f9fff7 100%)",
+  minHeight: "100%",
+  padding: 20,
+};
+
+const softCardStyle = {
+  borderRadius: 20,
+  border: "1px solid #e8f3ff",
+  boxShadow: "0 18px 40px rgba(134, 185, 255, 0.12)",
+  background: "rgba(255, 255, 255, 0.92)",
+};
+
+const headerAccentStyle = {
+  background: "linear-gradient(135deg, #fff3bf 0%, #d9f7be 50%, #bae7ff 100%)",
+  borderRadius: 16,
+  padding: "18px 20px",
+  border: "1px solid #e6f4ff",
+};
+
 export default function PaymentOptions() {
-  let currentDate = format(new Date(), "yyyy-MM-dd");
-  //  const headers = { Authorization: authheader().access_token };
-  const [data, setData] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [formdata, setFormData] = useState({
-    name: "",
-   
-  });
-  const columns = [
-    { label: "ID", field: "id" },
-    { label: "Options", field: "name" },
-    { label: "Actions", field: "actions" }
-  ];
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    // alert(e.target);
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const [form] = Form.useForm();
+  const [options, setOptions] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const loadPaymentOptions = async () => {
+    setIsLoading(true);
     try {
-      await axios.post(
-        "/insertdata/paymentoptions",
-        {
-          name: formdata.name,
-        },
-        getHeaders()
-      );
-     
-      // Fetch the updated data after successful submission
-      await fetchData("paymentoptions", setData, "id", {});
-
-      toast.success("Option added successfully!");
-      setFormData({name:""});
-    } catch (err) {
-      toast.error("Error in adding Options");
-      console.error(err.message);
+      const rows = await fetchData("paymentoptions", null, "id", {});
+      setOptions(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      message.error("Failed to load payment options");
+    } finally {
+      setIsLoading(false);
     }
-
-    // Clear form data and errors
-    setFormData({});
-    setErrors({});
-  };
-
-  //Fetch data query
-  const handleFilter = (field) => {
-    // Show a filter UI or perform a filtering action based on the clicked field
-    console.log(`Filter clicked for: ${field}`);
   };
 
   useEffect(() => {
-    const fetchAndSetData = async () => {
-      try {
-        await fetchData("paymentoptions", setData, "id", {});
-        console.log("Fetched data:", data); // Add this line for debugging
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
-    };
-
-    fetchAndSetData();
+    loadPaymentOptions();
   }, []);
+
+  const onFinish = async (values) => {
+    const name = (values.name || "").trim();
+    if (!name) {
+      message.warning("Please enter option name");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await axios.post(
+        "/insertdata/paymentoptions",
+        { name },
+        getHeaders()
+      );
+      message.success("Payment option added successfully");
+      form.resetFields();
+      await loadPaymentOptions();
+    } catch (error) {
+      message.error("Failed to add payment option");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/deletebyid/paymentoptions/id/${id}`, getHeaders());
+      message.success("Payment option deleted");
+      await loadPaymentOptions();
+    } catch (error) {
+      message.error("Failed to delete payment option");
+    }
+  };
+
+  const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
+      sorter: (a, b) => Number(a.id || 0) - Number(b.id || 0),
+      render: (value) => <Text>{value}</Text>,
+    },
+    {
+      title: "Option",
+      dataIndex: "name",
+      key: "name",
+      sorter: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
+      render: (value) => <Text strong style={{ color: "#144d7a" }}>{value}</Text>,
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 130,
+      render: (_, record) => (
+        <Popconfirm
+          title="Delete payment option?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Delete"
+          cancelText="Cancel"
+        >
+          <Button danger size="small">Delete</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+
   return (
-    <>
-      <Layout>
-        <Header title="Add New Payment Options" />
-        <ToastContainer />
-        <div className="row">
-          <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Add payment Optiong eg. Cash,Credit,QR etc"
-              headerColor="darkblue"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div class="row">
-                <div class="col-md-12">
-                  <form onSubmit={handleSubmit}>
-                    <div class="panel panel-default card-view">
-                      <TextfieldwithLabel
-                        id="name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.name}
-                        type="text"
-                        name="name"
-                        lable="Option Name"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="control-label mb-12"></label>
-                      <SubmitButton
-                        type="submit"
-                        name="Save"
-                        cls="btn btn-darkblue btn-anim"
-                      />
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </CardComponent>
+    <Layout>
+      <Header title="Payment Options" />
+      <div style={pageStyles}>
+        <Space direction="vertical" size={18} style={{ width: "100%" }}>
+          <div style={headerAccentStyle}>
+            <Title level={4} style={{ margin: 0, color: "#16324f" }}>
+              Payment Option Settings
+            </Title>
+            <Text style={{ color: "#45607a" }}>
+              Manage available payment methods such as cash, credit, and QR in one brighter workspace.
+            </Text>
           </div>
-          {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-          <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-            {data.length === 0 ? (
-              <p>No data available</p>
-            ) : (
-              //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-              <DataTable columns={columns} data={data} tablename="categories" />
-            )}
 
-            {/* <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="lightblue"
-                            pull="right"
-                            bodyClass="panel-body">
+          <Card title="Add Payment Option" style={softCardStyle} bodyStyle={{ paddingBottom: 10 }}>
+            <Form form={form} layout="vertical" onFinish={onFinish}>
+              <Form.Item
+                label="Option Name"
+                name="name"
+                rules={[{ required: true, message: "Option name is required" }]}
+              >
+                <Input placeholder="Cash, Credit, QR, Bank Transfer" maxLength={100} style={{ borderRadius: 12 }} />
+              </Form.Item>
 
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                style={{
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #69c0ff 0%, #95de64 100%)",
+                  border: "none",
+                  color: "#12324a",
+                  fontWeight: 600,
+                }}
+              >
+                Save Option
+              </Button>
+            </Form>
+          </Card>
 
-                        </CardComponent> */}
-          </div>
-        </div>
-      </Layout>
-    </>
+          <Card title="Payment Option List" style={softCardStyle}>
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={options}
+              loading={isLoading}
+              pagination={{ pageSize: 10 }}
+            />
+          </Card>
+        </Space>
+      </div>
+    </Layout>
   );
 }

@@ -74,6 +74,19 @@ export default function CompanyInfo() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [qrPreview, setQrPreview] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
+  const [userRole, setUserRole] = useState(null);
+  
+  // Check if user is super admin
+  const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'Admin';
+  
+  // Super admin only fields
+  const superAdminOnlyFields = ['name', 'taxId'];
+  
+  // Helper to check if field is editable
+  const isFieldEditable = (fieldName) => {
+    if (isSuperAdmin) return true;
+    return !superAdminOnlyFields.includes(fieldName);
+  };
 
   // Modern theme colors
   const theme = {
@@ -179,9 +192,9 @@ export default function CompanyInfo() {
   const validateForm = () => {
     const newErrors = {};
     
-    // Required field validations
-    if (!formdata.name.trim()) newErrors.name = "Company name is required";
-    if (!formdata.taxId.trim()) newErrors.taxId = "Tax ID is required";
+    // Required field validations - skip restricted fields for non-superadmin
+    if (!formdata.name.trim() && isSuperAdmin) newErrors.name = "Company name is required";
+    if (!formdata.taxId.trim() && isSuperAdmin) newErrors.taxId = "Tax ID is required";
     if (!formdata.phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
     if (!formdata.email.trim()) newErrors.email = "Email is required";
     if (!formdata.address.trim()) newErrors.address = "Address is required";
@@ -249,30 +262,80 @@ export default function CompanyInfo() {
         submitData.append('qr_code_name', formdata.qrCode.name);
       }
 
+      // Get token directly for Authorization header only
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
       const headers = {
-        ...getHeaders(),
-        'Content-Type': 'multipart/form-data'
+        Authorization: token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : undefined,
       };
-
+      
+      // Don't append shop_id to URL - let the axios interceptor handle it via params
       let response;
       if (editMode) {
-        response = await axios.put(`/updatedata/companyinfo/${editId}`, submitData, { headers });
-        toast.success("Company information updated successfully!");
+        try {
+          response = await axios.put(`/updatedata/company_profile/${editId}`, submitData, { headers });
+          toast.success("Company information updated successfully!");
+        } catch (updateErr) {
+          // If 404, it means the company profile doesn't exist yet, so create it instead
+          if (updateErr.response?.status === 404) {
+            console.log('Company profile not found, creating new one instead...');
+            response = await axios.post(`/insertdata/company_profile`, submitData, { headers });
+            toast.success("Company information created successfully!");
+            
+            // Switch to edit mode with the newly created data
+            if (response.data) {
+              setEditMode(true);
+              setEditId(response.data.id || response.data.insertId);
+            }
+          } else {
+            throw updateErr;
+          }
+        }
       } else {
-        response = await axios.post("/insertdata/companyinfo", submitData, { headers });
-        toast.success("Company information saved successfully!");
+        try {
+          response = await axios.post(`/insertdata/company_profile`, submitData, { headers });
+          toast.success("Company information saved successfully!");
+          
+          // After successful save, switch to edit mode with the saved data
+          if (response.data) {
+            setEditMode(true);
+            setEditId(response.data.id || response.data.insertId);
+          }
+        } catch (insertErr) {
+          // If duplicate key error, it means profile already exists for this shop
+          // Check for both 400 (validation) and 500 (database) errors with Duplicate message
+          const isDuplicateError = insertErr.response?.data?.message?.includes?.('Duplicate') ||
+                                   insertErr.response?.data?.sqlMessage?.includes?.('Duplicate') ||
+                                   insertErr.response?.data?.error?.includes?.('Duplicate');
+          
+          if (isDuplicateError) {
+            console.log('Company profile already exists, fetching existing profile...');
+            const existingData = await fetchData("company_profile", setData, "id", {});
+            
+            if (existingData && existingData.length > 0) {
+              const existing = existingData[0];
+              handleEdit(existing);
+              toast.info("Switched to edit mode for existing company profile");
+            } else {
+              throw insertErr;
+            }
+          } else {
+            throw insertErr;
+          }
+        }
       }
       
-      // After successful save, switch to edit mode with the saved data
-      if (!editMode && response.data) {
-        setEditMode(true);
-        setEditId(response.data.id || response.data.insertId);
-      }
-      
-      await fetchData("companyinfo", setData, "id", {});
+      await fetchData("company_profile", setData, "id", {});
     } catch (err) {
       console.error('Error:', err);
-      toast.error(editMode ? "Error updating company info" : "Error adding company info");
+      // Check if it's a duplicate key error from database
+      if (err.response?.data?.error?.includes?.('Duplicate') || err.response?.data?.sqlMessage?.includes?.('Duplicate')) {
+        toast.error("A company profile already exists for your shop. Switching to edit mode...");
+        // Try to reload existing data
+        await fetchData("company_profile", setData, "id", {});
+      } else {
+        toast.error(editMode ? "Error updating company info" : "Error adding company info");
+      }
     } finally {
       setLoading(false);
     }
@@ -324,16 +387,28 @@ export default function CompanyInfo() {
   useEffect(() => {
     const fetchAndSetData = async () => {
       try {
-        setLoading(true);
-        const companyData = await fetchData("companyinfo", setData, "id", {});
+        // Get user role from localStorage/sessionStorage
+        const storedRole = localStorage.getItem('userRole') || sessionStorage.getItem('userRole');
+        setUserRole(storedRole);
         
-        // If there's existing company data, load it into the form automatically
+        setLoading(true);
+        const companyData = await fetchData("company_profile", setData, "id", {});
+        
+        // If there's existing company data, load it into the form automatically in edit mode
         if (companyData && companyData.length > 0) {
-          const company = companyData[0]; // Get the first company record
+          const company = companyData[0]; // Get the first company record for this shop
           handleEdit(company);
+        } else {
+          // No existing profile found, reset form to create mode
+          setEditMode(false);
+          setEditId(null);
+          resetForm();
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+        // If error fetching, assume no profile exists yet and stay in create mode
+        setEditMode(false);
+        setEditId(null);
         toast.error("Error loading company information");
       } finally {
         setLoading(false);
@@ -475,13 +550,14 @@ export default function CompanyInfo() {
                             color: theme.dark,
                             fontSize: '12px'
                           }}>
-                            Company Name *
+                            Company Name * {!isSuperAdmin && <span style={{color: theme.danger, fontSize: '10px'}}>🔒 SuperAdmin Only</span>}
                           </label>
                           <input
                             type="text"
                             name="name"
                             value={formdata.name}
                             onChange={handleInputChange}
+                            disabled={!isFieldEditable('name')}
                             placeholder="Enter company name"
                             style={{
                               width: '100%',
@@ -489,12 +565,20 @@ export default function CompanyInfo() {
                               border: `1px solid ${errors.name ? theme.danger : theme.border}`,
                               borderRadius: '6px',
                               fontSize: '13px',
-                              outline: 'none'
+                              outline: 'none',
+                              backgroundColor: isFieldEditable('name') ? 'white' : '#f5f5f5',
+                              cursor: isFieldEditable('name') ? 'text' : 'not-allowed',
+                              opacity: isFieldEditable('name') ? 1 : 0.6
                             }}
                           />
                           {errors.name && (
                             <span style={{ color: theme.danger, fontSize: '11px', marginTop: '2px', display: 'block' }}>
                               {errors.name}
+                            </span>
+                          )}
+                          {!isSuperAdmin && !isFieldEditable('name') && (
+                            <span style={{ color: theme.muted, fontSize: '10px', marginTop: '2px', display: 'block' }}>
+                              Only SuperAdmin can modify this field
                             </span>
                           )}
                         </div>
@@ -508,13 +592,14 @@ export default function CompanyInfo() {
                             color: theme.dark,
                             fontSize: '12px'
                           }}>
-                            Tax ID *
+                            Tax ID * {!isSuperAdmin && <span style={{color: theme.danger, fontSize: '10px'}}>🔒 SuperAdmin Only</span>}
                           </label>
                           <input
                             type="text"
                             name="taxId"
                             value={formdata.taxId}
                             onChange={handleInputChange}
+                            disabled={!isFieldEditable('taxId')}
                             placeholder="Tax ID"
                             style={{
                               width: '100%',
@@ -522,12 +607,20 @@ export default function CompanyInfo() {
                               border: `1px solid ${errors.taxId ? theme.danger : theme.border}`,
                               borderRadius: '6px',
                               fontSize: '13px',
-                              outline: 'none'
+                              outline: 'none',
+                              backgroundColor: isFieldEditable('taxId') ? 'white' : '#f5f5f5',
+                              cursor: isFieldEditable('taxId') ? 'text' : 'not-allowed',
+                              opacity: isFieldEditable('taxId') ? 1 : 0.6
                             }}
                           />
                           {errors.taxId && (
                             <span style={{ color: theme.danger, fontSize: '11px', marginTop: '2px', display: 'block' }}>
                               {errors.taxId}
+                            </span>
+                          )}
+                          {!isSuperAdmin && !isFieldEditable('taxId') && (
+                            <span style={{ color: theme.muted, fontSize: '10px', marginTop: '2px', display: 'block' }}>
+                              Only SuperAdmin can modify this field
                             </span>
                           )}
                         </div>

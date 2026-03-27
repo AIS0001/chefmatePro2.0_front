@@ -23,7 +23,7 @@ import {
   CloseOutlined
 } from "@ant-design/icons";
 import axios from "axios";
-import { getHeaders } from "../../utility/getHeader";
+import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import { COMMON_LIQUOR_UNITS, COMMON_BOTTLE_SIZES } from "../../utility/unitConversions";
 
@@ -353,7 +353,16 @@ const NewItemModalAnt = ({ isOpen, onClose, onItemAdded }) => {
           console.log(pair[0], pair[1]);
         }
 
-        await axios.post("/addnewproduct/item_images", formData, getHeaders());
+        // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
+        const token = getAuthToken();
+        const shopId = getResolvedShopId();
+        const config = {
+          headers: {
+            Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
+          },
+          ...(shopId ? { params: { shop_id: shopId } } : {})
+        };
+        await axios.post("/addnewproduct/item_images", formData, config);
         console.log("✅ Images uploaded successfully");
       }
 

@@ -1,0 +1,141 @@
+.notification-management {
+  padding: 20px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.notification-management .header-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.notification-management .form-card {
+  background: white;
+  margin-bottom: 30px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.notification-management .table-card {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.notification-management .image-preview {
+  margin-top: 10px;
+}
+
+.notification-management .image-preview img {
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  padding: 4px;
+}
+
+.notification-management .notification-detail {
+  padding: 20px;
+}
+
+.notification-management .notification-detail p {
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.notification-management .notification-detail strong {
+  color: #1890ff;
+  min-width: 120px;
+  display: inline-block;
+}
+
+.notification-management .notification-detail img {
+  border-radius: 6px;
+  margin-top: 10px;
+  border: 1px solid #e0e0e0;
+}
+
+/* Multi-select Dropdown Styles */
+.notification-management .ant-select-multiple .ant-select-selector {
+  min-height: 40px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.notification-management .ant-select-multiple .ant-select-selector:hover {
+  border-color: #40a9ff;
+}
+
+.notification-management .ant-select-focused .ant-select-selector {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.notification-management .ant-select-multiple .ant-select-selection-item {
+  background: #1890ff;
+  border-radius: 4px;
+  color: white;
+  padding: 4px 8px;
+  margin: 2px 4px;
+}
+
+.notification-management .ant-select-multiple .ant-select-selection-item-remove {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.notification-management .ant-select-multiple .ant-select-selection-item-remove:hover {
+  color: white;
+}
+
+.notification-management .ant-select-clear {
+  color: #999;
+}
+
+/* Form Item Styling */
+.notification-management .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.notification-management .ant-form-item-label > label {
+  color: #262626;
+  font-weight: 500;
+}
+
+.notification-management .ant-form-item-label > label.ant-form-item-required::before {
+  color: #ff4d4f;
+}
+
+/* Dropdown option styling */
+.notification-management .ant-select-dropdown {
+  border-radius: 4px;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12);
+}
+
+.notification-management .ant-select-item {
+  padding: 8px 12px;
+}
+
+.notification-management .ant-select-item-option:hover {
+  background: #f5f5f5;
+}
+
+.notification-management .ant-select-item-option-selected {
+  background: #f0f5ff;
+  color: #1890ff;
+}
+
+@media (max-width: 768px) {
+  .notification-management {
+    padding: 10px;
+  }
+
+  .notification-management .header-card {
+    margin-bottom: 10px;
+  }
+
+  .notification-management .form-card {
+    margin-bottom: 15px;
+  }
+
+  .notification-management .ant-select-multiple .ant-select-selector {
+    min-height: 36px;
+  }
+}

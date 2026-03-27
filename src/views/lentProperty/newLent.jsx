@@ -10,8 +10,7 @@ import Layout from "../../layout/Layout";
 import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
 import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
-import { getAuthToken } from "../../utility/getHeader";
-import { getHeaders } from "../../utility/getHeader";
+import { getAuthToken, getHeaders, getResolvedShopId } from "../../utility/getHeader";
 import ExportDataTable from "../../components/Buttons/ExportdataTable";
 import DateDiffCalculatorPrompt from "../../components/DateDiffcalculator";
 
@@ -78,16 +77,24 @@ export default function NewLent() {
       }, { headers });
 //console.log(post1);
       const formData = new FormData();
-      Array.from(formdata1.images.files).forEach((file) => {
-        formData.append("images", file);
-      });
+      if (images && images.length > 0) {
+        images.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
       //console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
 
-      const post2 = await axios.post("/addnewproduct/customer_images", formData, {
+      // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
+      const token = getAuthToken();
+      const shopId = getResolvedShopId();
+      const formDataConfig = {
         headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${getAuthToken()}`, // Again, make sure the token is correct
+          Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
+        },
+        ...(shopId ? { params: { shop_id: shopId } } : {})
+      };
+      const post2 = await axios.post("/addnewproduct/customer_images", formData, formDataConfig);
         },
       });
 

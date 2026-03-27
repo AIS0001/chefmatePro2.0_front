@@ -114,6 +114,9 @@ import AuditLogs from './views/superAdmin/AuditLogs';
 import Monitoring from './views/superAdmin/Monitoring';
 import Support from './views/superAdmin/Support';
 import Payment from './views/superAdmin/Payment';
+import NotificationManagement from './views/superAdmin/NotificationManagement';
+import LogsViewer from './views/superAdmin/LogsViewer';
+import NotificationsPage from './views/pages/NotificationsPage';
 
 // Dummy FeatureProtectedRoute that always returns children
 const FeatureProtectedRoute = ({ children }) => children;
@@ -441,6 +444,11 @@ function AppRoutes() {
             </FeatureProtectedRoute>
           } />
 
+          {/* User Notifications Page */}
+          <Route path="/notifications" element={
+            <PrivateRoute><NotificationsPage /></PrivateRoute>
+          } />
+
           {/* Super Admin Routes - Nested under SuperAdminLayout */}
           <Route path="/superadmin" element={
             <PrivateRoute><SuperAdminLayout /></PrivateRoute>
@@ -453,7 +461,9 @@ function AppRoutes() {
             <Route path="users" element={<UserManagement />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="monitoring" element={<Monitoring />} />
+            <Route path="logs" element={<LogsViewer />} />
             <Route path="support" element={<Support />} />
+            <Route path="notifications" element={<NotificationManagement />} />
           </Route>
         </Routes>
   );

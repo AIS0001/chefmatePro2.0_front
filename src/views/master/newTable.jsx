@@ -1,5 +1,3 @@
-/* eslint-disable no-undef */
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Button, Card, Form, Input, Popconfirm, Select, Space, Table, Tabs, Typography, message } from "antd";
 import axios from "axios";
@@ -8,7 +6,27 @@ import Layout from "../../layout/Layout";
 import fetchData from "../../functions/fetchData";
 import { getHeaders } from "../../utility/getHeader";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
+
+const pageStyles = {
+  background: "linear-gradient(180deg, #fffdf7 0%, #f6fbff 48%, #f9fff7 100%)",
+  minHeight: "100%",
+  padding: 20,
+};
+
+const softCardStyle = {
+  borderRadius: 20,
+  border: "1px solid #e8f3ff",
+  boxShadow: "0 18px 40px rgba(134, 185, 255, 0.12)",
+  background: "rgba(255, 255, 255, 0.92)",
+};
+
+const headerAccentStyle = {
+  background: "linear-gradient(135deg, #fff3bf 0%, #ffd6e7 38%, #bae7ff 100%)",
+  borderRadius: 16,
+  padding: "18px 20px",
+  border: "1px solid #e6f4ff",
+};
 
 export default function TableList() {
   const [formTables] = Form.useForm();
@@ -133,7 +151,7 @@ export default function TableList() {
       dataIndex: "name",
       key: "name",
       sorter: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
-      render: (value) => <Text strong>{value}</Text>,
+      render: (value) => <Text strong style={{ color: "#144d7a" }}>{value}</Text>,
     },
     {
       title: "Category",
@@ -185,7 +203,7 @@ export default function TableList() {
       dataIndex: "cat_name",
       key: "cat_name",
       sorter: (a, b) => String(a.cat_name || "").localeCompare(String(b.cat_name || "")),
-      render: (value) => <Text strong>{value}</Text>,
+      render: (value) => <Text strong style={{ color: "#144d7a" }}>{value}</Text>,
     },
     {
       title: "Status",
@@ -218,14 +236,14 @@ export default function TableList() {
       label: "Tables",
       children: (
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          <Card title="Add New Table">
+          <Card title="Add New Table" style={softCardStyle} bodyStyle={{ paddingBottom: 10 }}>
             <Form form={formTables} layout="vertical" onFinish={onFinishTable}>
               <Form.Item
                 label="Table Name"
                 name="name"
                 rules={[{ required: true, message: "Table name is required" }]}
               >
-                <Input placeholder="Enter table name (e.g., Table 1, VIP Table)" maxLength={100} />
+                <Input placeholder="Enter table name (e.g., Table 1, VIP Table)" maxLength={100} style={{ borderRadius: 12 }} />
               </Form.Item>
               <Form.Item
                 label="Table Category"
@@ -242,13 +260,24 @@ export default function TableList() {
                   optionFilterProp="label"
                 />
               </Form.Item>
-              <Button type="primary" htmlType="submit" loading={isSubmittingTable}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmittingTable}
+                style={{
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #69c0ff 0%, #95de64 100%)",
+                  border: "none",
+                  color: "#12324a",
+                  fontWeight: 600,
+                }}
+              >
                 Save Table
               </Button>
             </Form>
           </Card>
 
-          <Card title="Table List">
+          <Card title="Table List" style={softCardStyle}>
             <Table
               rowKey="id"
               columns={tableColumns}
@@ -267,22 +296,33 @@ export default function TableList() {
       label: "Table Categories",
       children: (
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          <Card title="Add New Table Category">
+          <Card title="Add New Table Category" style={softCardStyle} bodyStyle={{ paddingBottom: 10 }}>
             <Form form={formCategories} layout="vertical" onFinish={onFinishCategory}>
               <Form.Item
                 label="Category Name"
                 name="cat_name"
                 rules={[{ required: true, message: "Category name is required" }]}
               >
-                <Input placeholder="Enter category name (e.g., Indoor, Outdoor, VIP)" maxLength={100} />
+                <Input placeholder="Enter category name (e.g., Indoor, Outdoor, VIP)" maxLength={100} style={{ borderRadius: 12 }} />
               </Form.Item>
-              <Button type="primary" htmlType="submit" loading={isSubmittingCategory}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmittingCategory}
+                style={{
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #69c0ff 0%, #ffd666 100%)",
+                  border: "none",
+                  color: "#12324a",
+                  fontWeight: 600,
+                }}
+              >
                 Save Category
               </Button>
             </Form>
           </Card>
 
-          <Card title="Category List">
+          <Card title="Category List" style={softCardStyle}>
             <Table
               rowKey="id"
               columns={categoryColumns}
@@ -301,8 +341,19 @@ export default function TableList() {
   return (
     <Layout>
       <Header title="Table Management" />
-      <div style={{ padding: 16 }}>
-        <Tabs items={tabItems} type="card" />
+      <div style={pageStyles}>
+        <Space direction="vertical" size={18} style={{ width: "100%" }}>
+          <div style={headerAccentStyle}>
+            <Title level={4} style={{ margin: 0, color: "#16324f" }}>
+              Table And Seating Setup
+            </Title>
+            <Text style={{ color: "#45607a" }}>
+              Manage tables and table categories in one brighter master workspace.
+            </Text>
+          </div>
+
+          <Tabs items={tabItems} type="card" />
+        </Space>
       </div>
     </Layout>
   );

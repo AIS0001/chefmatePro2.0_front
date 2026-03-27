@@ -26,10 +26,10 @@ export default function NewUser() {
     const [saving, setSaving] = useState(false);
     const [shopId, setShopId] = useState(resolveShopId());
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (shopIdParam) => {
         try {
             setLoading(true);
-            const response = await axios.get('/users', getHeaders());
+            const response = await axios.get(`/users?shop_id=${shopIdParam}`, getHeaders());
             const rows = Array.isArray(response?.data?.data) ? response.data.data : [];
             setUsers(rows);
         } catch (error) {
@@ -42,8 +42,11 @@ export default function NewUser() {
     };
 
     useEffect(() => {
-        setShopId(resolveShopId());
-        fetchUsers();
+        const resolvedShopId = resolveShopId();
+        setShopId(resolvedShopId);
+        if (resolvedShopId) {
+            fetchUsers(resolvedShopId);
+        }
     }, []);
 
     const handleSubmit = async (values) => {
@@ -63,7 +66,7 @@ export default function NewUser() {
             message.success('User added successfully');
             form.resetFields();
             form.setFieldValue('usertype', 'Cashier');
-            await fetchUsers();
+            await fetchUsers(shopId);
         } catch (error) {
             console.error('Error adding user:', error);
             message.error(error.response?.data?.msg || error.response?.data?.error || 'Failed to add user');

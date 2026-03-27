@@ -1,169 +1,164 @@
-/* eslint-disable no-undef */
-
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Button, Card, Form, Input, Popconfirm, Space, Table, Typography, message } from "antd";
 import axios from "axios";
-import { getHeaders } from "../../utility/getHeader";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
-import CardComponent from "../../components/cards/CardComponent";
-
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import { format } from "date-fns";
-
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { SubmitButton } from "../../components/Buttons/Textfield";
-import DataTable from "../../components/data-tables/dataTable";
-import SimpleDataTable from "../../components/data-tables/SimpledataTable";
 import fetchData from "../../functions/fetchData";
+import { getHeaders, getResolvedShopId } from "../../utility/getHeader";
+
+const { Text } = Typography;
 
 export default function Units() {
-  let currentDate = format(new Date(), "yyyy-MM-dd");
-  //  const headers = { Authorization: authheader().access_token };
-  const [data, setData] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [formdata, setFormData] = useState({
-    name: "",
-  });
-  const columns = [
-    
-    { label: " Name", field: "name" },
-    { label: "Description", field: "description" },
-    { label: "Actions", field: "actions" },
-  ];
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    // alert(e.target);
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const [form] = Form.useForm();
+  const [units, setUnits] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const getScopedConfig = () => {
+    const shopId = getResolvedShopId();
+    const baseConfig = getHeaders() || {};
+    return {
+      ...baseConfig,
+      params: {
+        ...(baseConfig.params || {}),
+        ...(shopId ? { shop_id: shopId } : {}),
+      },
+    };
+  };
+
+  const loadUnits = async () => {
+    setIsLoading(true);
+    try {
+      const rows = await fetchData("units", null, "id", {});
+      setUnits(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      message.error("Failed to load units");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUnits();
+  }, []);
+
+  const onFinish = async (values) => {
+    const shopId = getResolvedShopId();
+    const name = (values.name || "").trim();
+    const description = (values.description || "").trim();
+
+    if (!name) {
+      message.warning("Please enter unit name");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await axios.post(
         "/insertdata/units",
         {
-          name: formdata.name,
-          description: formdata.desc,
+          name,
+          description,
+          ...(shopId ? { shop_id: shopId } : {}),
         },
-        getHeaders()
+        getScopedConfig()
       );
 
-      // Fetch the updated data after successful submission
-      await fetchData("units", setData, "id", {});
-      //console.log("Fetched data after add:", data); 
-      toast.success("units added successfully!");
-      
-    } catch (err) {
-      toast.error("Error in adding table");
-      console.error(err.message);
+      message.success("Unit added successfully");
+      form.resetFields();
+      await loadUnits();
+    } catch (error) {
+      message.error("Failed to add unit");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Clear form data and errors
-    // setFormData({});
-    setErrors({});
   };
 
-  useEffect(() => {
-    const fetchAndSetData = async () => {
-      try {
-        await fetchData("units", setData, "id", {});
-        console.log("Fetched data:", data); // Add this line for debugging
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
-    };
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/deletebyid/units/id/${id}`, getScopedConfig());
+      message.success("Unit deleted successfully");
+      await loadUnits();
+    } catch (error) {
+      message.error("Failed to delete unit");
+    }
+  };
 
-    fetchAndSetData();
-  }, []);
+  const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 90,
+      sorter: (a, b) => Number(a.id || 0) - Number(b.id || 0),
+      render: (value) => <Text>{value}</Text>,
+    },
+    {
+      title: "Unit Name",
+      dataIndex: "name",
+      key: "name",
+      sorter: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
+      render: (value) => <Text strong>{value}</Text>,
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      render: (value) => <Text>{value || "-"}</Text>,
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 120,
+      render: (_, record) => (
+        <Popconfirm
+          title="Delete unit?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Delete"
+          cancelText="Cancel"
+        >
+          <Button danger size="small">Delete</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
+
   return (
-    <>
-      <Layout>
-        <Header title="Add New unit" />
-        <ToastContainer />
-        <div className="row">
-          <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Add Unit Name"
-              headerColor="darkorange"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div class="row">
-                <div class="col-md-12">
-                  <form onSubmit={handleSubmit}>
-                    <div class="panel panel-default card-view">
-                      <TextfieldwithLabel
-                        id="name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.name}
-                        type="text"
-                        name="name"
-                        lable=" Name"
-                      />
-                        <TextfieldwithLabel
-                        id="desc"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.desc}
-                        type="text"
-                        name="desc"
-                        lable="Description"
-                      />
-                    </div>
+    <Layout>
+      <Header title="Units" />
+      <div style={{ padding: 16 }}>
+        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          <Card title="Add Unit">
+            <Form form={form} layout="vertical" onFinish={onFinish}>
+              <Form.Item
+                label="Unit Name"
+                name="name"
+                rules={[{ required: true, message: "Unit name is required" }]}
+              >
+                <Input placeholder="Enter unit name" maxLength={100} />
+              </Form.Item>
 
-                    <div className="form-group">
-                      <label className="control-label mb-12"></label>
-                      <SubmitButton
-                        type="submit"
-                        name="Save"
-                        cls="btn btn-darkblue btn-anim"
-                      />
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </CardComponent>
-          </div>
-          {/* <ExportDataTable
-                                tableId="tableid"
-                                tableData={data} /> */}
-          <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-            {data.length === 0 ? (
-              <p>No data available</p>
-            ) : (
-              //  <DataTable columns={columns} data={data} onFilter={handleFilter} />
-              <DataTable columns={columns} data={data} tablename="units" />
-            )}
+              <Form.Item label="Description" name="description">
+                <Input placeholder="Enter description (optional)" maxLength={255} />
+              </Form.Item>
 
-            {/* <CardComponent 
-                            title=""
-                            headerContent=
-                            {
-                            <ExportDataTable
-                                tableId="datatable1"
-                                tableData={data} // Pass complete dataset to export function
-                            />
-                            }
-                            headerColor="lightblue"
-                            pull="right"
-                            bodyClass="panel-body">
+              <Button type="primary" htmlType="submit" loading={isSubmitting}>
+                Save Unit
+              </Button>
+            </Form>
+          </Card>
 
-                            {data.length === 0 ? (
-                                <p>No data available</p>
-                            ) : (
-                                 <DataTable columns={columns} data={data} onFilter={handleFilter} />
-                                //<SimpleDataTable columns={columns} data={data}/>
-                            )}
-
-                        </CardComponent> */}
-          </div>
-        </div>
-      </Layout>
-    </>
+          <Card title="Units List">
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={units}
+              loading={isLoading}
+              pagination={{ pageSize: 10 }}
+            />
+          </Card>
+        </Space>
+      </div>
+    </Layout>
   );
 }

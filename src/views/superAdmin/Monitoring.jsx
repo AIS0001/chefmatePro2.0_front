@@ -25,7 +25,8 @@ import {
   message,
   Tooltip,
   Badge,
-  Tabs
+  Tabs,
+  Pagination
 } from 'antd';
 import {
   SearchOutlined,
@@ -73,7 +74,6 @@ const Monitoring = () => {
     search: ''
   });
   const [fileLogFilters, setFileLogFilters] = useState({
-    shop_id: '',
     date_from: '',
     date_to: '',
     search_term: ''
@@ -84,6 +84,7 @@ const Monitoring = () => {
     fetchErrorLogs();
     fetchStats();
     fetchFileLogStats();
+    fetchFileLogs();
   }, []);
 
   const fetchErrorLogs = async (page = 1) => {
@@ -262,7 +263,6 @@ const Monitoring = () => {
 
   const handleFileLogReset = () => {
     setFileLogFilters({
-      shop_id: '',
       date_from: '',
       date_to: '',
       search_term: ''
@@ -579,15 +579,6 @@ const Monitoring = () => {
                     <Form layout="vertical">
                       <Row gutter={16}>
                         <Col xs={24} sm={12} md={8}>
-                          <Form.Item label="Shop ID">
-                            <Input
-                              placeholder="Enter shop ID..."
-                              value={fileLogFilters.shop_id}
-                              onChange={e => handleFileLogFilterChange('shop_id', e.target.value)}
-                            />
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={8}>
                           <Form.Item label="Search Term">
                             <Input
                               placeholder="Search in logs..."
@@ -605,8 +596,6 @@ const Monitoring = () => {
                             />
                           </Form.Item>
                         </Col>
-                      </Row>
-                      <Row gutter={16}>
                         <Col xs={24} sm={12} md={8}>
                           <Form.Item label="To Date">
                             <DatePicker
@@ -653,17 +642,20 @@ const Monitoring = () => {
                                 setFileLogDrawer(true);
                               }}
                             >
-                              <Row justify="space-between">
-                                <Col>
+                              <Row justify="space-between" align="middle">
+                                <Col flex="auto">
                                   <Space direction="vertical">
-                                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                                      📄 {log.filepath.split('/').slice(-1)[0]}
-                                    </p>
+                                    <Space>
+                                      <Tag color={getSeverityColor(log.severity)}>{log.severity}</Tag>
+                                      <span style={{ fontWeight: 'bold' }}>
+                                        {log.method} {log.statusCode}
+                                      </span>
+                                    </Space>
                                     <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-                                      Date: {new Date(log.date).toLocaleString()}
+                                      {log.endpoint}
                                     </p>
                                     <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
-                                      Size: {(log.size / 1024).toFixed(2)} KB
+                                      {new Date(log.timestamp).toLocaleString()} • Shop: {log.shopId} • {log.responseTime}ms
                                     </p>
                                   </Space>
                                 </Col>
@@ -676,19 +668,16 @@ const Monitoring = () => {
                             </Card>
                           ))}
                           <Row justify="center" style={{ marginTop: '24px' }}>
-                            <Button
-                              onClick={() => {
-                                setFileLogsPagination(prev => ({
-                                  ...prev,
-                                  current: prev.current + 1
-                                }));
-                                fetchFileLogs(fileLogsPagination.current + 1);
+                            <Pagination
+                              current={fileLogsPagination.current}
+                              pageSize={fileLogsPagination.pageSize}
+                              total={fileLogsPagination.total}
+                              onChange={(page) => {
+                                setFileLogsPagination(prev => ({ ...prev, current: page }));
+                                fetchFileLogs(page);
                               }}
-                              disabled={fileLogsPagination.current * fileLogsPagination.pageSize >= fileLogsPagination.total}
-                              loading={fileLogsLoading}
-                            >
-                              Load More
-                            </Button>
+                              disabled={fileLogsLoading}
+                            />
                           </Row>
                         </div>
                       )}
@@ -821,7 +810,7 @@ const Monitoring = () => {
 
       {/* File Log Drawer */}
       <Drawer
-        title="File Log Contents"
+        title="API Error Log Details"
         placement="right"
         onClose={() => setFileLogDrawer(false)}
         open={fileLogDrawer}
@@ -829,36 +818,91 @@ const Monitoring = () => {
       >
         {selectedFileLog && (
           <div>
+            <Row gutter={16} style={{ marginBottom: '16px' }}>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>Status Code:</label>
+                  <Tag color={selectedFileLog.statusCode >= 500 ? 'red' : 'orange'}>
+                    {selectedFileLog.statusCode}
+                  </Tag>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>Severity:</label>
+                  <Tag color={getSeverityColor(selectedFileLog.severity)}>
+                    {selectedFileLog.severity}
+                  </Tag>
+                </div>
+              </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginBottom: '16px' }}>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>Method:</label>
+                  <p>{selectedFileLog.method}</p>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>Shop ID:</label>
+                  <p>{selectedFileLog.shopId || 'N/A'}</p>
+                </div>
+              </Col>
+            </Row>
+
             <div className="detail-item" style={{ marginBottom: '16px' }}>
-              <label>Filepath:</label>
-              <p><code>{selectedFileLog.filepath}</code></p>
+              <label>Endpoint:</label>
+              <p style={{ wordBreak: 'break-all', fontSize: '12px', fontFamily: 'monospace' }}>
+                {selectedFileLog.endpoint}
+              </p>
             </div>
 
             <div className="detail-item" style={{ marginBottom: '16px' }}>
-              <label>Date:</label>
-              <p>{new Date(selectedFileLog.date).toLocaleString()}</p>
+              <label>Error Message:</label>
+              <p style={{ background: '#fff7e6', padding: '8px', borderRadius: '4px' }}>
+                {selectedFileLog.error}
+              </p>
             </div>
 
-            <div className="detail-item" style={{ marginBottom: '16px' }}>
-              <label>File Size:</label>
-              <p>{(selectedFileLog.size / 1024).toFixed(2)} KB</p>
-            </div>
+            <Row gutter={16} style={{ marginBottom: '16px' }}>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>Timestamp:</label>
+                  <p style={{ fontSize: '12px' }}>
+                    {new Date(selectedFileLog.timestamp).toLocaleString()}
+                  </p>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>Response Time:</label>
+                  <p>{selectedFileLog.responseTime}ms</p>
+                </div>
+              </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginBottom: '16px' }}>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>IP Address:</label>
+                  <p style={{ fontSize: '12px', fontFamily: 'monospace' }}>{selectedFileLog.ip}</p>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className="detail-item">
+                  <label>User ID:</label>
+                  <p>{selectedFileLog.userId || 'N/A'}</p>
+                </div>
+              </Col>
+            </Row>
 
             <div className="detail-item" style={{ marginBottom: '16px' }}>
-              <label>Log Contents:</label>
-              <pre
-                style={{
-                  background: '#f5f5f5',
-                  padding: '12px',
-                  borderRadius: '4px',
-                  overflow: 'auto',
-                  maxHeight: '500px',
-                  fontSize: '12px',
-                  fontFamily: 'monospace'
-                }}
-              >
-                {selectedFileLog.content}
-              </pre>
+              <label>User Agent:</label>
+              <p style={{ fontSize: '11px', wordBreak: 'break-word', color: '#999' }}>
+                {selectedFileLog.userAgent}
+              </p>
             </div>
 
             <Button onClick={() => setFileLogDrawer(false)}>

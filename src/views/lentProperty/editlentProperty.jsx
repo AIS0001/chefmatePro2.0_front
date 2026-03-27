@@ -11,7 +11,7 @@ import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
 import { getHeaders } from "../../utility/getHeader";
 import { useParams } from "react-router-dom";
-import fetchData from "../../functions/fetchData";
+import { getAuthToken } from "../../utility/getHeader";
 import { isTokenExpired } from "../../utility/auth";
 
 export default function EditLentProperty() {
@@ -85,16 +85,20 @@ export default function EditLentProperty() {
    
  // Optionally handle images if required
  const formData = new FormData();
- Array.from(formdata1.images.files).forEach((file) => {
-   formData.append("images", file);
- });
- if (images.length > 0) {
-   await axios.post("/addnewproduct/customer_images", formData, {
-     headers: {
-       "Content-Type": "multipart/form-data",
-       Authorization: `Bearer ${localStorage.getItem("token")}`,
-     },
+ if (images && images.length > 0) {
+   images.forEach((file) => {
+     formData.append("images", file);
    });
+ }
+ if (images.length > 0) {
+   // For FormData, only set Authorization header. Let axios handle Content-Type with multipart boundary
+   const token = getAuthToken();
+   const config = {
+     headers: {
+       Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
+     }
+   };
+   await axios.post("/addnewproduct/customer_images", formData, config);
    toast.success("Contract and images added successfully!");
  }
  if (response.data.success) {

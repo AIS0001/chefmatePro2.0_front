@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Button, Tooltip, Space, Alert, Select, Spin } from 'antd';
-import { BarChartOutlined, ShopOutlined, TeamOutlined, FileTextOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, AlertOutlined, CustomerServiceOutlined, CreditCardOutlined } from '@ant-design/icons';
+import { BarChartOutlined, ShopOutlined, TeamOutlined, FileTextOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, AlertOutlined, CustomerServiceOutlined, CreditCardOutlined, BellOutlined, BugOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { getAuthToken, logout } from '../../utility/auth';
 import './SuperAdminLayout.css';
@@ -103,6 +103,16 @@ function SuperAdminLayout() {
       key: '/superadmin/monitoring',
       icon: <AlertOutlined />,
       label: <Link to="/superadmin/monitoring">Monitoring</Link>
+    },
+    {
+      key: '/superadmin/notifications',
+      icon: <BellOutlined />,
+      label: <Link to="/superadmin/notifications">Notifications</Link>
+    },
+    {
+      key: '/superadmin/logs',
+      icon: <BugOutlined />,
+      label: <Link to="/superadmin/logs">System Logs</Link>
     },
     {
       key: '/superadmin/support',

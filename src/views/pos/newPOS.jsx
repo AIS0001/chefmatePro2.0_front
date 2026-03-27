@@ -2261,14 +2261,14 @@ const decreaseItemQuantity = (index) => {
                       > 
                         <FaPrint className="me-1" />Send KOT
                       </button>
-                      <button 
+                      {/* <button 
                         className="btn btn-success" 
                         onClick={handleSendKOTESCPOS}
                         style={{ padding: '6px 12px', fontSize: '12px' }}
                         title="Send KOT via ESC/POS Thermal Printer"
                       > 
                         <FaPrint className="me-1" />KOT ESC/POS
-                      </button>
+                      </button> */}
                       <ESCPosAutoDetectButton 
                         orderData={{
                           id: maxNumber,
@@ -2293,8 +2293,9 @@ const decreaseItemQuantity = (index) => {
                           console.log('✅ ESC/POS order completed successfully');
                           toast.success('KOT sent to printer and cart cleared!');
                         }}
-                        size="small"
+                        size="medium"
                         buttonType="default"
+                        buttonText="KOT ESC"
                       />
                       <button 
                         className="btn btn-danger" 

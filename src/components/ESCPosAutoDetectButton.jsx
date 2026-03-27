@@ -12,7 +12,9 @@ export default function ESCPosAutoDetectButton({
   sendPrintCommand = null,
   onPrintSuccess = null, 
   size = 'middle', 
-  buttonType = 'primary' 
+  buttonType = 'primary',
+  buttonText = null,
+  buttonTextStyle = {}
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -105,10 +107,13 @@ export default function ESCPosAutoDetectButton({
         onClick={handlePrintClick}
         style={{
           backgroundColor: '#1890ff',
-          borderColor: '#1890ff'
+          borderColor: '#1890ff',
+          color: '#fff',
+          fontWeight: 'bold',
+          ...buttonTextStyle
         }}
       >
-        {size === 'small' ? '' : 'ESC POS'}
+        {buttonText !== null ? buttonText : (size === 'small' ? '' : 'ESC POS')}
       </Button>
     </Tooltip>
   );

@@ -5,7 +5,7 @@ import { FaTimes } from "react-icons/fa"; // Importing the close icon from react
 import { TextfieldwithLabel } from "../Buttons/Textfield";
 import axios from "axios";
 import { fetchComboData, fetchComboDataWithWhere } from "../../services/api";
-import { getHeaders } from "../../utility/getHeader";
+import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import { SubmitButton } from "../Buttons/Textfield";
 import { Modal as AntModal, Table, Row, Col, Card, Button, Input, Select, Space, Statistic, Badge, Spin, Divider, Tag } from "antd";
@@ -212,20 +212,25 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         },
         getHeaders()
       );
-      const formdata1 = e.target;
       const formData = new FormData();
-      Array.from(formdata1.images.files).forEach((file) => {
-        formData.append("images", file);
-      });
+      if (images && images.length > 0) {
+        images.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
       // console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
 
-      const post2 = await axios.post("/addnewproduct/item_images", formData, {
+      // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
+      const token = getAuthToken();
+      const shopId = getResolvedShopId();
+      const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Again, make sure the token is correct
+          Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
         },
-      });
+        ...(shopId ? { params: { shop_id: shopId } } : {})
+      };
+      const post2 = await axios.post("/addnewproduct/item_images", formData, config);
       // Immediately fetch updated data after adding an item
       // await fetchData("items", setData, "id", {});
       //  onItemAdded(); // Call this to trigger the reload function in NewItem

@@ -13,6 +13,7 @@ import {
 } from "../../components/Buttons/Textfield";
 import { ComboBox } from "../../components/Buttons/ComboBox";
 import { SubmitButton } from "../../components/Buttons/Textfield";
+import { getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 
 const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
@@ -99,18 +100,22 @@ export default function NewPOS() {
       );
 
       const formData = new FormData();
-      Array.from(formdata1.images.files).forEach((file) => {
-        formData.append("images", file);
-      });
+      if (images && images.length > 0) {
+        images.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
       console.log(post1.data.id);
       formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
 
-      const post2 = await axios.post("/addnewproduct/images", formData, {
+      // For FormData, only set Authorization header. Let axios handle Content-Type with multipart boundary
+      const token = getAuthToken();
+      const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Again, make sure the token is correct
-        },
-      });
+          Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
+        }
+      };
+      const post2 = await axios.post("/addnewproduct/images", formData, config);
 
       toast.success("Product and images added successfully!");
       setImages([]);

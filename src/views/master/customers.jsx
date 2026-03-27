@@ -1,16 +1,32 @@
-/* eslint-disable no-undef */
-
 import React, { useEffect, useState } from "react";
 import { Button, Card, Form, Input, Popconfirm, Space, Table, Typography, message } from "antd";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import fetchData from "../../functions/fetchData";
 
 const { Text } = Typography;
+
+const pageStyles = {
+  background: "linear-gradient(180deg, #fffdf7 0%, #f6fbff 48%, #f9fff7 100%)",
+  minHeight: "100%",
+  padding: 20,
+};
+
+const softCardStyle = {
+  borderRadius: 20,
+  border: "1px solid #e8f3ff",
+  boxShadow: "0 18px 40px rgba(134, 185, 255, 0.12)",
+  background: "rgba(255, 255, 255, 0.92)",
+};
+
+const headerAccentStyle = {
+  background: "linear-gradient(135deg, #fff3bf 0%, #ffd6e7 40%, #bae7ff 100%)",
+  borderRadius: 16,
+  padding: "18px 20px",
+  border: "1px solid #e6f4ff",
+};
 
 export default function Customers() {
   const [form] = Form.useForm();
@@ -88,7 +104,7 @@ export default function Customers() {
       dataIndex: "name",
       key: "name",
       sorter: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
-      render: (value) => <Text strong>{value}</Text>,
+      render: (value) => <Text strong style={{ color: "#144d7a" }}>{value}</Text>,
     },
     {
       title: "Contact",
@@ -139,49 +155,68 @@ export default function Customers() {
   return (
     <Layout>
       <Header title="Customers" />
-      <ToastContainer />
-      <div style={{ padding: 16 }}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          <Card title="Add New Customer">
+      <div style={pageStyles}>
+        <Space direction="vertical" size={18} style={{ width: "100%" }}>
+          <div style={headerAccentStyle}>
+            <Typography.Title level={4} style={{ margin: 0, color: "#16324f" }}>
+              Customer Directory
+            </Typography.Title>
+            <Text style={{ color: "#45607a" }}>
+              Manage customer records in a softer, brighter workspace built for daily operations.
+            </Text>
+          </div>
+
+          <Card title="Add New Customer" style={softCardStyle} bodyStyle={{ paddingBottom: 10 }}>
             <Form form={form} layout="vertical" onFinish={onFinish}>
               <Form.Item
                 label="Customer Name"
                 name="name"
                 rules={[{ required: true, message: "Customer name is required" }]}
               >
-                <Input placeholder="Enter customer name" maxLength={100} />
+                <Input placeholder="Enter customer name" maxLength={100} style={{ borderRadius: 12 }} />
               </Form.Item>
               <Form.Item
                 label="Contact"
                 name="contact"
               >
-                <Input placeholder="Enter contact number" maxLength={20} />
+                <Input placeholder="Enter contact number" maxLength={20} style={{ borderRadius: 12 }} />
               </Form.Item>
               <Form.Item
                 label="Email"
                 name="email"
               >
-                <Input type="email" placeholder="Enter email address" maxLength={100} />
+                <Input type="email" placeholder="Enter email address" maxLength={100} style={{ borderRadius: 12 }} />
               </Form.Item>
               <Form.Item
                 label="Tax ID"
                 name="taxid"
               >
-                <Input placeholder="Enter tax ID (if any)" maxLength={50} />
+                <Input placeholder="Enter tax ID (if any)" maxLength={50} style={{ borderRadius: 12 }} />
               </Form.Item>
               <Form.Item
                 label="Address"
                 name="address"
               >
-                <Input.TextArea placeholder="Enter address" rows={3} maxLength={200} />
+                <Input.TextArea placeholder="Enter address" rows={3} maxLength={200} style={{ borderRadius: 12 }} />
               </Form.Item>
-              <Button type="primary" htmlType="submit" loading={isSubmitting}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                style={{
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #69c0ff 0%, #ffd666 100%)",
+                  border: "none",
+                  color: "#12324a",
+                  fontWeight: 600,
+                }}
+              >
                 Save Customer
               </Button>
             </Form>
           </Card>
 
-          <Card title="Customer List">
+          <Card title="Customer List" style={softCardStyle}>
             <Table
               rowKey="id"
               columns={columns}

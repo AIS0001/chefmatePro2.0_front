@@ -9,7 +9,7 @@ import Layout from "../../layout/Layout";
 import { AdvanceInput } from "../../components/Buttons/advanceinput";
 import { SubmitButton } from "../../components/Buttons/Textfield";
 import fetchData from "../../functions/fetchData";
-import { getHeaders } from "../../utility/getHeader";
+import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import ExportDataTable from "../../components/Buttons/ExportdataTable";
 import DataTable from "../../components/data-tables/dataTable";
 
@@ -61,12 +61,16 @@ export default function NewProduct1() {
     });
 
     try {
-      await axios.post("/addnewproduct/images", formData, {
+      // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
+      const token = getAuthToken();
+      const shopId = getResolvedShopId();
+      const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
-          ...getHeaders(),
+          Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
         },
-      });
+        ...(shopId ? { params: { shop_id: shopId } } : {})
+      };
+      await axios.post("/addnewproduct/images", formData, config);
 
       await fetchData("images", setData, "id", {});
       toast.success("Product added successfully!");

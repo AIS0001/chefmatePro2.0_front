@@ -194,19 +194,24 @@ const NewItemModal = ({ isOpen, customer, onClose, onItemAdded }) => {
       }
 
       // Step 3: Upload images
-      const formdata1 = e.target;
       const formData = new FormData();
-      Array.from(formdata1.images.files).forEach((file) => {
-        formData.append("images", file);
-      });
+      if (images && images.length > 0) {
+        images.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
       formData.append("product_id", productId);
 
-      await axios.post("/addnewproduct/item_images", formData, {
+      // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
+      const token = getAuthToken();
+      const shopId = getResolvedShopId();
+      const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
         },
-      });
+        ...(shopId ? { params: { shop_id: shopId } } : {})
+      };
+      await axios.post("/addnewproduct/item_images", formData, config);
 
       onItemAdded();
       toast.success("Item created successfully with units and variants!");

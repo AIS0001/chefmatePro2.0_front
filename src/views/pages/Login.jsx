@@ -12,7 +12,10 @@ import {
     Checkbox,
     Typography,
     Space,
-    Grid
+    Grid,
+    Divider,
+    Modal,
+    Alert
 } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -24,6 +27,10 @@ export default function Login() {
     const [uname, unamechange] = useState("");
     const [pass, passchange] = useState("");
     const [keepLoggedIn, setKeepLoggedIn] = useState(false); // State for "Keep Me Logged In"
+    const [paymentBlocked, setPaymentBlocked] = useState(false);
+    const [paymentMessage, setPaymentMessage] = useState("");
+    const [paymentDueDate, setPaymentDueDate] = useState(null);
+    const [paymentStatus, setPaymentStatus] = useState(null);
     const navigate = useNavigate();
     const { Title, Text } = Typography;
     const { Content } = Layout;
@@ -118,21 +125,30 @@ export default function Login() {
             }
           })
           .catch((err) => {
-            // 🔐 Check for device mismatch error
-            if (err.response?.status === 403 && err.response?.data?.code === "DEVICE_MISMATCH") {
-              toast.error(err.response.data.error);
-            } else if (err.response?.status === 403 && err.response?.data?.code === "PAYMENT_BLOCKED") {
-              const dueDate = err.response?.data?.dueDate
-                ? new Date(err.response.data.dueDate).toLocaleDateString()
-                : null;
-              const baseMessage = err.response?.data?.error || "Login blocked due to pending subscription payment.";
-              toast.error(dueDate ? `${baseMessage} Due date: ${dueDate}` : baseMessage);
-            } else if (err.response?.status === 401) {
+            // ✅ Check 401 FIRST - plain authentication failure
+            if (err.response?.status === 401) {
               toast.error("Invalid Username or Password");
-            } else {
-              toast.error(err.response?.data?.error || "Wrong username/Password");
             }
-            console.log(err.message);
+            // 🔐 Check for device mismatch error (403)
+            else if (err.response?.status === 403 && err.response?.data?.code === "DEVICE_MISMATCH") {
+              toast.error(err.response.data.error);
+            }
+            // 💳 Check for payment/subscription error (403 + PAYMENT_BLOCKED)
+            else if (err.response?.status === 403 && err.response?.data?.code === "PAYMENT_BLOCKED") {
+              // Show subscription payment modal instead of toast
+              const dueDate = err.response?.data?.dueDate
+                ? new Date(err.response.data.dueDate)
+                : null;
+              setPaymentBlocked(true);
+              setPaymentMessage(err.response?.data?.error || "Your subscription payment is overdue. Please renew your subscription to continue.");
+              setPaymentDueDate(dueDate);
+              setPaymentStatus(err.response?.data?.status || "PAYMENT_OVERDUE");
+            }
+            // Default error handling
+            else {
+              toast.error(err.response?.data?.error || "Invalid login credentials");
+            }
+            console.log('Login error:', err.message);
           });
     };
     useEffect(() => {
@@ -170,6 +186,146 @@ export default function Login() {
     return (
         <Layout style={{ minHeight: "100vh", background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)" }}>
             <Content style={{ padding: screens.md ? "48px" : "24px" }}>
+                {/* ✅ Payment Blocked Modal Popup */}
+                <Modal
+                    title={null}
+                    open={paymentBlocked}
+                    onCancel={() => {
+                        setPaymentBlocked(false);
+                        setPaymentMessage("");
+                        setPaymentDueDate(null);
+                        setPaymentStatus(null);
+                    }}
+                    footer={null}
+                    closable={true}
+                    centered
+                    width={520}
+                    bodyStyle={{
+                        padding: "40px",
+                        textAlign: "center"
+                    }}
+                    style={{
+                        top: "50%",
+                        transform: "translateY(-50%)"
+                    }}
+                >
+                    <Space direction="vertical" size="large" style={{ width: "100%" }}>
+                        {/* Warning Icon */}
+                        <div
+                            style={{
+                                width: 80,
+                                height: 80,
+                                margin: "0 auto",
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: "#fef3c7",
+                                boxShadow: "0 10px 24px rgba(217, 119, 6, 0.15)"
+                            }}
+                        >
+                            <i className="fas fa-exclamation-triangle" style={{ fontSize: "2.5rem", color: "#d97706" }} />
+                        </div>
+
+                        {/* Main Message */}
+                        <div>
+                            <Title level={3} style={{ marginBottom: 8, color: "#1f2937" }}>
+                                Payment Required
+                            </Title>
+                            <Text type="secondary" style={{ fontSize: 14, display: "block", marginBottom: 16 }}>
+                                Your subscription payment is overdue
+                            </Text>
+                            <Alert
+                                message={paymentMessage}
+                                type="error"
+                                showIcon
+                                style={{ 
+                                    marginBottom: 16,
+                                    borderRadius: 6
+                                }}
+                            />
+                        </div>
+
+                        {/* Due Date Display */}
+                        {paymentDueDate && (
+                            <div style={{
+                                background: "#fef3c7",
+                                padding: "12px 16px",
+                                borderRadius: "8px",
+                                border: "1px solid #fcd34d"
+                            }}>
+                                <Text strong style={{ color: "#92400e", fontSize: 14 }}>
+                                    Due Date: {paymentDueDate.toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    })}
+                                </Text>
+                            </div>
+                        )}
+
+                        {/* Status Badge */}
+                        {paymentStatus && (
+                            <div style={{
+                                background: "#fee2e2",
+                                padding: "8px 12px",
+                                borderRadius: "6px",
+                                border: "1px solid #fecaca"
+                            }}>
+                                <Text style={{ color: "#991b1b", fontSize: 12 }}>
+                                    Status: <strong>{paymentStatus.replace(/_/g, ' ')}</strong>
+                                </Text>
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <Space direction="vertical" style={{ width: "100%" }} size="small">
+                            <Button 
+                                type="primary" 
+                                size="large" 
+                                block
+                                style={{
+                                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                                    border: "none",
+                                    height: "40px",
+                                    fontSize: "14px"
+                                }}
+                                onClick={() => {
+                                    navigate('/subscription', { state: { fromLogin: true } });
+                                }}
+                            >
+                                <i className="fas fa-credit-card" style={{ marginRight: 8 }} />
+                                Renew Subscription Now
+                            </Button>
+                            
+                            <Button 
+                                size="large" 
+                                block
+                                style={{
+                                    height: "40px",
+                                    fontSize: "14px"
+                                }}
+                                onClick={() => {
+                                    setPaymentBlocked(false);
+                                    setPaymentMessage("");
+                                    setPaymentDueDate(null);
+                                    setPaymentStatus(null);
+                                }}
+                            >
+                                Close
+                            </Button>
+
+                            <Divider style={{ margin: "12px 0" }} />
+
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                <i className="fas fa-headset" style={{ marginRight: 6 }} />
+                                Need help? <a href="mailto:support@chefmate.com">Contact Support</a>
+                            </Text>
+                        </Space>
+                    </Space>
+                </Modal>
+
+                {/* ✅ Regular Login Form (Always Visible) */}
                 <Row justify="center" align="middle" style={{ minHeight: "calc(100vh - 96px)" }}>
                     <Col xs={24} md={20} lg={16} xl={14}>
                         <Card
@@ -277,6 +433,7 @@ export default function Login() {
                                 </Col>
                             </Row>
                         </Card>
+                        )}
                     </Col>
                 </Row>
             </Content>

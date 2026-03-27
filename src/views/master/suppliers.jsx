@@ -1,193 +1,230 @@
-/* eslint-disable no-undef */
-
 import React, { useEffect, useState } from "react";
+import { Button, Card, Form, Input, Popconfirm, Space, Table, Typography, message } from "antd";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
-import CardComponent from "../../components/cards/CardComponent";
-
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import { format } from "date-fns";
-
-import { TextfieldwithLabel } from "../../components/Buttons/Textfield";
-import { SubmitButton } from "../../components/Buttons/Textfield";
-import DataTable from "../../components/data-tables/dataTable";
 import fetchData from "../../functions/fetchData";
 
+const { Text, Title } = Typography;
+
+const pageStyles = {
+  background: "linear-gradient(180deg, #fffdf7 0%, #f6fbff 48%, #f9fff7 100%)",
+  minHeight: "100%",
+  padding: 20,
+};
+
+const softCardStyle = {
+  borderRadius: 20,
+  border: "1px solid #e8f3ff",
+  boxShadow: "0 18px 40px rgba(134, 185, 255, 0.12)",
+  background: "rgba(255, 255, 255, 0.92)",
+};
+
+const headerAccentStyle = {
+  background: "linear-gradient(135deg, #fff3bf 0%, #ffd6e7 40%, #bae7ff 100%)",
+  borderRadius: 16,
+  padding: "18px 20px",
+  border: "1px solid #e6f4ff",
+};
+
 export default function Suppliers() {
-  let currentDate = format(new Date(), "yyyy-MM-dd");
-  //  const headers = { Authorization: authheader().access_token };
-  const [data, setData] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [formdata, setFormData] = useState({
-    name: "",
-    company_name: "",
-    contact: "",
-    email: "",
-    taxid: "",
-    address: "",
-  });
+  const [form] = Form.useForm();
+  const [suppliers, setSuppliers] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const columns = [
-    { label: "ID", field: "id" },
-    { label: "Name", field: "name" },
-    { label: "Company Name", field: "company_name" },
-    { label: "Contact", field: "contact" },
-    { label: "Email", field: "email" },
-    { label: "Tax ID", field: "taxid" },
-    { label: "Address", field: "address" },
-    { label: "Actions", field: "actions" },
-  ];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+  const loadSuppliers = async () => {
+    setIsLoading(true);
+    try {
+      const rows = await fetchData("suppliers", null, "id", {});
+      setSuppliers(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      message.error("Failed to load suppliers");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    loadSuppliers();
+  }, []);
 
+  const onFinish = async (values) => {
+    const name = (values.name || "").trim();
+    if (!name) {
+      message.warning("Please enter supplier name");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await axios.post(
         "/insertdata/suppliers",
         {
-          name: formdata.name,
-          company_name: formdata.company_name,
-          contact: formdata.contact,
-          email: formdata.email,
-          taxid: formdata.taxid,
-          address: formdata.address,
+          name,
+          company_name: values.company_name || "",
+          contact: values.contact || "",
+          email: values.email || "",
+          taxid: values.taxid || "",
+          address: values.address || "",
         },
         getHeaders()
       );
 
-      await fetchData("suppliers", setData, "id", {});
-
-      toast.success("Supplier added successfully!");
-      setFormData({
-        name: "",
-        company_name: "",
-        contact: "",
-        email: "",
-        taxid: "",
-        address: "",
-      });
-    } catch (err) {
-      toast.error("Error in adding supplier");
-      console.error(err.message);
+      message.success("Supplier added successfully");
+      form.resetFields();
+      await loadSuppliers();
+    } catch (error) {
+      message.error("Failed to add supplier");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setErrors({});
   };
 
-  useEffect(() => {
-    const fetchAndSetData = async () => {
-      try {
-        await fetchData("suppliers", setData, "id", {});
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-      }
-    };
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/deletebyid/suppliers/id/${id}`, getHeaders());
+      message.success("Supplier deleted");
+      await loadSuppliers();
+    } catch (error) {
+      message.error("Failed to delete supplier");
+    }
+  };
 
-    fetchAndSetData();
-  }, []);
+  const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
+      sorter: (a, b) => Number(a.id || 0) - Number(b.id || 0),
+      render: (value) => <Text>{value}</Text>,
+    },
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      sorter: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
+      render: (value) => <Text strong style={{ color: "#144d7a" }}>{value}</Text>,
+    },
+    {
+      title: "Company Name",
+      dataIndex: "company_name",
+      key: "company_name",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Contact",
+      dataIndex: "contact",
+      key: "contact",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Tax ID",
+      dataIndex: "taxid",
+      key: "taxid",
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Address",
+      dataIndex: "address",
+      key: "address",
+      ellipsis: true,
+      render: (value) => value || "N/A",
+    },
+    {
+      title: "Action",
+      key: "action",
+      fixed: "right",
+      width: 130,
+      render: (_, record) => (
+        <Popconfirm
+          title="Delete supplier?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Delete"
+          cancelText="Cancel"
+        >
+          <Button danger size="small">Delete</Button>
+        </Popconfirm>
+      ),
+    },
+  ];
 
   return (
-    <>
-      <Layout>
-        <Header title="Supplier Management" />
-        <ToastContainer />
-        <div className="row">
-          <div className="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Add New Supplier"
-              headerColor="darkblue"
-              pull="left"
-              bodyClass="panel-body"
-            >
-              <div className="row">
-                <div className="col-md-12">
-                  <form onSubmit={handleSubmit}>
-                    <div className="panel panel-default card-view">
-                      <TextfieldwithLabel
-                        id="name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.name}
-                        type="text"
-                        name="name"
-                        lable="Supplier Name"
-                      />
-                      <TextfieldwithLabel
-                        id="company_name"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.company_name}
-                        type="text"
-                        name="company_name"
-                        lable="Company Name"
-                      />
-                      <TextfieldwithLabel
-                        id="contact"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.contact}
-                        type="number"
-                        name="contact"
-                        lable="Contact"
-                      />
-                      <TextfieldwithLabel
-                        id="email"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.email}
-                        type="text"
-                        name="email"
-                        lable="Email ID"
-                      />
-                      <TextfieldwithLabel
-                        id="taxid"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.taxid}
-                        type="text"
-                        name="taxid"
-                        lable="Tax ID (if Any)"
-                      />
-                      <TextfieldwithLabel
-                        id="address"
-                        onChange={(e) => handleInputChange(e)}
-                        value={formdata.address}
-                        type="text"
-                        name="address"
-                        lable="Address"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="control-label mb-12"></label>
-                      <SubmitButton
-                        type="submit"
-                        name="Save Supplier"
-                        cls="btn btn-darkblue btn-anim"
-                      />
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </CardComponent>
+    <Layout>
+      <Header title="Supplier Management" />
+      <div style={pageStyles}>
+        <Space direction="vertical" size={18} style={{ width: "100%" }}>
+          <div style={headerAccentStyle}>
+            <Title level={4} style={{ margin: 0, color: "#16324f" }}>
+              Supplier Directory
+            </Title>
+            <Text style={{ color: "#45607a" }}>
+              Maintain supplier records in the same brighter master workspace.
+            </Text>
           </div>
 
-          <div className="col-lg-8 col-md-8 col-sm-12 col-xs-12" id="tableid">
-            {data.length === 0 ? (
-              <p>No data available</p>
-            ) : (
-              <DataTable columns={columns} data={data} tablename="suppliers" />
-            )}
-          </div>
-        </div>
-      </Layout>
-    </>
+          <Card title="Add New Supplier" style={softCardStyle} bodyStyle={{ paddingBottom: 10 }}>
+            <Form form={form} layout="vertical" onFinish={onFinish}>
+              <Form.Item
+                label="Supplier Name"
+                name="name"
+                rules={[{ required: true, message: "Supplier name is required" }]}
+              >
+                <Input placeholder="Enter supplier name" maxLength={100} style={{ borderRadius: 12 }} />
+              </Form.Item>
+              <Form.Item label="Company Name" name="company_name">
+                <Input placeholder="Enter company name" maxLength={100} style={{ borderRadius: 12 }} />
+              </Form.Item>
+              <Form.Item label="Contact" name="contact">
+                <Input placeholder="Enter contact number" maxLength={20} style={{ borderRadius: 12 }} />
+              </Form.Item>
+              <Form.Item label="Email" name="email">
+                <Input type="email" placeholder="Enter email" maxLength={100} style={{ borderRadius: 12 }} />
+              </Form.Item>
+              <Form.Item label="Tax ID" name="taxid">
+                <Input placeholder="Enter tax ID" maxLength={50} style={{ borderRadius: 12 }} />
+              </Form.Item>
+              <Form.Item label="Address" name="address">
+                <Input.TextArea placeholder="Enter address" rows={3} maxLength={200} style={{ borderRadius: 12 }} />
+              </Form.Item>
+
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                style={{
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #69c0ff 0%, #ffd666 100%)",
+                  border: "none",
+                  color: "#12324a",
+                  fontWeight: 600,
+                }}
+              >
+                Save Supplier
+              </Button>
+            </Form>
+          </Card>
+
+          <Card title="Supplier List" style={softCardStyle}>
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={suppliers}
+              loading={isLoading}
+              pagination={{ pageSize: 10 }}
+              scroll={{ x: 1100 }}
+            />
+          </Card>
+        </Space>
+      </div>
+    </Layout>
   );
 }
