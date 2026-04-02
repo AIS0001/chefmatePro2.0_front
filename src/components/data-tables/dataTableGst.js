@@ -3,42 +3,34 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaAirbnb,
-  FaAddressBook,
-  FaBandcamp,
 } from "react-icons/fa";
 import { useNavigate, Link } from "react-router-dom";
-import { Modal, Button, Table } from "react-bootstrap";
-import ExportDataTable from "../Buttons/ExportdataTable";
 import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
 import "react-image-lightbox/style.css"; // Import lightbox styles
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { baseURL } from "../..";
 import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
-import EditModal from "../Modals/EditModals";
 import deleteRecord from "../../functions/delateData";
 import cancelRecord from "../../functions/cancelBill";
 import fetchData from "../../functions/fetchData";
 
 const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [companyInfo, setcompanyInfo] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(false); // Add loading state
-  const [editingRecord, setEditingRecord] = useState(null); // State for editing record
   const [tableData, setTableData] = useState(data); // Manage the table data state
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
-  const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+  const [, setOrderItemsData] = useState([]); // Manage the table data state
   const rowsPerPage = 50;
   const agent_id =
     localStorage.getItem("uname") || sessionStorage.getItem("uname");
 
-  const [showModal, setShowModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
- const [CustomerDetails, setCustomerDetailsdb] = useState([]); // Manage the table data state
+  const [, setShowModal] = useState(false);
+  const [, setSelectedCustomer] = useState(null);
+ const [, setCustomerDetailsdb] = useState([]); // Manage the table data state
 
   const editableTables = ["items","order_items_gst",  "customers", "taxes"]; // Tables where edit is allowed
   const printableTables = ["order_items_gst", "final_bill","advance_order_items_gst","advance_final_bill", "customers"]; // Tables where print is allowed
@@ -77,8 +69,8 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
-  const [editId, setEditId] = useState(null);
-  const [formdata, setFormData] = useState({
+  const [, setEditId] = useState(null);
+  const [, setFormData] = useState({
     taxname: "",
     taxvalue: "",
     included: false,
@@ -112,7 +104,7 @@ const DataTableGst = ({ columns, data, tablename,onEditClick  }) => {
       let finalBillData = await fetchData(tblname, setFinalBillData, "id", { id: itemId });
        let myorderItemsData = [];
        let  myCustomerdetails =[];
-if(tblname=="final_bill")
+if(tblname === "final_bill")
 {
  const invoiceLookup = finalBillData?.[0]?.inv_number || String(itemId);
  myorderItemsData = await fetchData("order_items_gst", setOrderItemsData, "id", { invoice_number: invoiceLookup });
@@ -454,7 +446,7 @@ else
       `;
       // Open the print dialog with the formatted content
       const newWindow = window.open("", "_blank");
-      if(tblname=="final_bill")
+      if(tblname === "final_bill")
 {
 newWindow.document.write(printContent);
 }

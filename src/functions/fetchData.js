@@ -51,7 +51,7 @@ export const fetchShopScopedData = async (tblname, setData, orderby, where = {})
     });
 }
 
-const fetchdatanotequal = async (tblname, setData, orderby, where) => {
+export const fetchdatanotequal = async (tblname, setData, orderby, where) => {
     // Build the URL dynamically based on the provided parameters
     let url = `/fetchdatanotequal`;
     if (tblname) {

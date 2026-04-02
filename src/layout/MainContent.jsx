@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Footer from "./Footer";
-import WhatsAppButton from "../components/floatingbuttons/Whatsappbutton";
-import PhoneButton from "../components/floatingbuttons/PhoneButton";
 
 export default function MainContent({ children, isSidebarOpen }) {
   const [isMobile, setIsMobile] = useState(false);

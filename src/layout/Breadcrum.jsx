@@ -1,7 +1,7 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Breadcrumb } from 'react-bootstrap';
-export default function Breadcrum({title}) {
+export default function Breadcrum() {
 	const location = useLocation();
 	const pathnames = location.pathname.split('/').filter(x => x);
   return (

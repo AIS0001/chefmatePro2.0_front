@@ -23,21 +23,15 @@ import {
   Checkbox,
   message,
   Drawer,
-  Empty,
   Spin,
-  Badge,
-  Tooltip,
   Alert
 } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
-  DeleteOutlined,
   EyeOutlined,
-  CreditCardOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined,
   DollarOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
@@ -63,7 +57,6 @@ const Payment = () => {
   const [subscriptionModalVisible, setSubscriptionModalVisible] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [subscriptionForm] = Form.useForm();
-  const [form] = Form.useForm();
   const [planForm] = Form.useForm();
   const [paymentForm] = Form.useForm();
   const [shops, setShops] = useState([]);

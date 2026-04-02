@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
@@ -13,8 +13,6 @@ const BoardingPass = () => {
     });
     
     const [printStyle, setPrintStyle] = useState('vertical'); // vertical or horizontal
-    
-    const printRef = useRef();
     
     const generateTicketNo = () => {
         const timestamp = Date.now();

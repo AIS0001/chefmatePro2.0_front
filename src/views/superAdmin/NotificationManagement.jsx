@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Select, Card, Table, Space, Modal, message, DatePicker, Tag, Empty, Divider, Row, Col, Checkbox } from 'antd';
+import { Form, Input, Button, Select, Card, Table, Space, Modal, message, DatePicker, Tag, Empty, Divider, Row, Col } from 'antd';
 import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { getAuthToken } from '../../utility/auth';
 import './NotificationManagement.css';
-import dayjs from 'dayjs';
 
 export default function NotificationManagement() {
   const [form] = Form.useForm();
@@ -18,8 +17,6 @@ export default function NotificationManagement() {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
-
-  const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:4402';
 
   // Fetch notifications, shops, and users on mount
   useEffect(() => {

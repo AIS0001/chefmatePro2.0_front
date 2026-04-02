@@ -3,20 +3,14 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaAirbnb,
-  FaAddressBook,
-  FaBandcamp,
 } from "react-icons/fa";
 import { useNavigate, Link } from "react-router-dom";
-import { Modal, Button, Table } from "react-bootstrap";
-import ExportDataTable from "../Buttons/ExportdataTable";
 import Pagination from "../Pagination/Pagination";
 import Lightbox from "react-image-lightbox";
 import "react-image-lightbox/style.css"; // Import lightbox styles
 import { ToastContainer, toast } from "react-toastify";
 import { baseURL } from "../..";
 import { FaEdit, FaTrash, FaPrint } from "react-icons/fa";
-import EditModal from "../Modals/EditModals";
 import deleteRecord, { deleteBulkRecords } from "../../functions/delateData";
 import cancelRecord from "../../functions/cancelBill";
 import fetchData from "../../functions/fetchData";
@@ -30,17 +24,16 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(false); // Add loading state
-  const [editingRecord, setEditingRecord] = useState(null); // State for editing record
   const [tableData, setTableData] = useState(data); // Manage the table data state
   const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
-  const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+  const [, setOrderItemsData] = useState([]); // Manage the table data state
   const [selectedRows, setSelectedRows] = useState([]); // State for selected rows
   const [selectAll, setSelectAll] = useState(false); // State for select all checkbox
   const rowsPerPage = 50;
   const agent_id =localStorage.getItem("uname") || sessionStorage.getItem("uname");
 
-  const [showModal, setShowModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [, setShowModal] = useState(false);
+  const [, setSelectedCustomer] = useState(null);
 
 
   const editableTables = [ "customers", "taxes","items","suppliers"]; // Tables where edit is allowed
@@ -204,7 +197,7 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
       const allCurrentPageSelected = currentPageIds.every(id => selectedRows.includes(id));
       setSelectAll(allCurrentPageSelected && currentPageIds.length > 0);
     }
-  }, [paginatedData, selectedRows, bulkDeleteColumn]);
+  }, [paginatedData, selectedRows, getBulkRowId]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -212,8 +205,8 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
     setSelectedRows([]);
     setSelectAll(false);
   };
-  const [editId, setEditId] = useState(null);
-  const [formdata, setFormData] = useState({
+  const [, setEditId] = useState(null);
+  const [, setFormData] = useState({
     taxname: "",
     taxvalue: "",
     included: false,
@@ -404,6 +397,7 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
           </body>
         </html>
       `;
+      void printContent1;
       const printContent = `
       <html>
         <head>
@@ -787,7 +781,7 @@ const DataTable = ({ columns, data, tablename, onEditClick, onDeleteSuccess }) =
                   console.error("❌ API connection test failed:", error);
                   // If test endpoint doesn't exist, try to get items to test connection
                   try {
-                    const itemsResponse = await axios.get('/items', getHeaders());
+                    await axios.get('/items', getHeaders());
                     console.log("✅ API connection via items endpoint successful");
                     toast.success("API connection OK (via items)");
                   } catch (itemsError) {

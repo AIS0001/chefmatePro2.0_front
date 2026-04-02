@@ -41,6 +41,5 @@ export const getNextSetupDate = async () => {
  */
 export const getSetupDateTime = async () => {
   const setupDate = await getNextSetupDate();
-  const currentTime = new Date().toTimeString().split(' ')[0]; // Get HH:mm:ss
   return `${setupDate}`;
 };

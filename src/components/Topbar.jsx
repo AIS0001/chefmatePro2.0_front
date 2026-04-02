@@ -24,6 +24,31 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	const isSuperAdmin = userType === 'super_admin' || window.location.pathname.startsWith('/super-admin');
 	const shopId = localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
 
+	const normalizeReadFlag = (notif) => {
+		const raw = notif?.isRead ?? notif?.is_read ?? notif?.read ?? notif?.read_status;
+		if (typeof raw === 'boolean') return raw;
+		if (typeof raw === 'number') return raw === 1;
+		if (typeof raw === 'string') {
+			const normalized = raw.trim().toLowerCase();
+			if (['true', '1', 'yes', 'read'].includes(normalized)) return true;
+			if (['false', '0', 'no', 'unread'].includes(normalized)) return false;
+		}
+
+		return Boolean(notif?.readAt || notif?.read_at);
+	};
+
+	const normalizeNotification = (notif) => ({
+		id: notif.id,
+		title: notif.title,
+		message: notif.message,
+		type: notif.notificationType || notif.type || 'general',
+		priority: notif.priority || 'normal',
+		imageUrl: notif.image_url || notif.imageUrl,
+		timestamp: notif.created_at || notif.createdAt || notif.timestamp,
+		isRead: normalizeReadFlag(notif),
+		createdAt: notif.created_at || notif.createdAt || notif.timestamp
+	});
+
 	// Fetch initial notifications from database
 	const fetchInitialNotifications = async () => {
 		try {
@@ -45,17 +70,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				console.log('✅ Initial notifications loaded:', notificationsData.length);
 				
 				// Transform and add to state
-				const transformed = notificationsData.map(notif => ({
-					id: notif.id,
-					title: notif.title,
-					message: notif.message,
-					type: notif.notificationType || 'general',
-					priority: notif.priority || 'normal',
-					imageUrl: notif.image_url,
-					timestamp: notif.created_at,
-					isRead: notif.isRead || false,
-					createdAt: notif.created_at
-				}));
+				const transformed = notificationsData.map(normalizeNotification);
 				
 				setRealtimeNotifications(transformed);
 				
@@ -299,6 +314,10 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 		try {
 			const token = getAuthToken();
 			if (!token) return;
+			const targetId = String(notificationId);
+			const wasUnread = realtimeNotifications.some(
+				notif => String(notif.id) === targetId && !notif.isRead
+			);
 			
 			// Get shop_id from storage to pass to backend
 			const currentShopId = localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id') || 0;
@@ -314,11 +333,13 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				// Update notification in state to mark as read
 				setRealtimeNotifications(prev => 
 					prev.map(notif => 
-						notif.id === notificationId ? { ...notif, isRead: true } : notif
+						String(notif.id) === targetId ? { ...notif, isRead: true } : notif
 					)
 				);
 				// Decrement unread count
-				setUnreadCount(prev => Math.max(0, prev - 1));
+				if (wasUnread) {
+					setUnreadCount(prev => Math.max(0, prev - 1));
+				}
 				console.log('✅ Notification marked as read:', notificationId);
 				
 				// Sync unread count from server to ensure accuracy
@@ -552,7 +573,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	// Notification menu
 	const notificationMenuItems = realtimeNotifications.length > 0
 		? [
-			...realtimeNotifications.map((notif, index) => {
+			...realtimeNotifications.map((notif) => {
 				// Format timestamp - show relative time (1 min ago, 15 mins ago, etc)
 				const formatDate = (dateString) => {
 					try {
@@ -640,13 +661,13 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				const briefDesc = notif.message?.substring(0, 60) + (notif.message?.length > 60 ? '...' : '') || '';
 				
 				return {
-					key: `realtime-notif-${index}`,
+					key: `realtime-notif-${notif.id || notif.timestamp || Math.random()}`,
 					label: (
 						<div 
 							style={{
 								padding: '8px 12px',
-								background: !notif.isRead ? '#f0f5ff' : 'white',
-								border: !notif.isRead ? '1px solid #91d5ff' : '1px solid #f0f0f0',
+								background: !notif.isRead ? '#f0f5ff' : '#fafafa',
+								border: !notif.isRead ? '1px solid #91d5ff' : '1px solid #e6e6e6',
 								borderRadius: '4px',
 								marginBottom: '4px',
 								cursor: 'pointer',
@@ -655,7 +676,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 								minWidth: '280px'
 							}}
 							onMouseEnter={(e) => {
-								e.currentTarget.style.background = '#e6f7ff';
+								e.currentTarget.style.background = !notif.isRead ? '#e6f7ff' : '#f5f5f5';
 								e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.08)';
 							}}
 							onMouseLeave={(e) => {
@@ -679,7 +700,9 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 								<div style={{
 									flex: 1,
 									fontWeight: !notif.isRead ? 'bold' : 500,
-									color: notif.priority === 'urgent' ? '#ff4d4f' : notif.priority === 'high' ? '#ff7a45' : '#262626',
+									color: !notif.isRead
+										? (notif.priority === 'urgent' ? '#ff4d4f' : notif.priority === 'high' ? '#ff7a45' : '#262626')
+										: '#666',
 									fontSize: '12px',
 									lineHeight: '1.4',
 									wordBreak: 'break-word'
@@ -842,9 +865,22 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 
 			{/* Right side - Navigation */}
 			<Space size="large" className="topbar-nav-right">
-				<div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: 600 }}>
+				<button
+					type="button"
+					onClick={() => navigate('/changelog')}
+					style={{
+						color: 'rgba(255,255,255,0.9)',
+						fontSize: '12px',
+						fontWeight: 700,
+						border: 'none',
+						background: 'transparent',
+						cursor: 'pointer',
+						padding: 0
+					}}
+					title="Open changelog"
+				>
 					v{appVersion}
-				</div>
+				</button>
 				{/* Notifications */}
 				<Dropdown menu={{items: notificationMenuItems}} placement="bottomRight">
 					<Badge count={unreadCount} showZero style={{backgroundColor: unreadCount > 0 ? '#ff4d4f' : '#d9d9d9'}}>

@@ -1,20 +1,18 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Layout, Menu, Button, Tooltip, Divider } from 'antd';
-import { LogoutOutlined, MenuFoldOutlined } from '@ant-design/icons';
+import { Menu, Button, Tooltip, Divider } from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
 import getMenuItems from "../components/MenuItems";
 import getMenuItems_vat from "../components/Menu_item_vat";
 import fetchData from "../functions/fetchData";
 
 export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
   const navigate = useNavigate();
-  const [activeMenu, setActiveMenu] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
-  const [hoveredMenu, setHoveredMenu] = useState(null);
+  const [, setHoveredMenu] = useState(null);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const sidebarRef = useRef(null);
-  const { Sider } = Layout;
 
   useEffect(() => {
     // Fetch tax_type from coresetting and set menu accordingly
@@ -36,17 +34,6 @@ export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
     }
     fetchTaxTypeAndMenu();
   }, [usertype]);
-
-  const handleMenuClick = (index) => {
-    setActiveMenu(activeMenu === index ? null : index);
-  };
-
-  // Handle menu link clicks for mobile
-  const handleMenuLinkClick = (item) => {
-    if (isMobile && !item.submenu) {
-      onClose();
-    }
-  };
 
   // Convert menu items to Ant Design Menu format
   const convertMenuItems = (items) => {

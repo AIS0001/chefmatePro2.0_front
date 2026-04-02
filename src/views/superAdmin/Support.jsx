@@ -24,8 +24,6 @@ import {
   message,
   Tooltip,
   Timeline,
-  Avatar,
-  Badge,
   Divider
 } from 'antd';
 import {
@@ -33,12 +31,6 @@ import {
   ReloadOutlined,
   PlusOutlined,
   EyeOutlined,
-  StepBackwardOutlined,
-  CheckOutlined,
-  UserOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  CalendarOutlined,
   FileTextOutlined,
   PlusCircleOutlined
 } from '@ant-design/icons';

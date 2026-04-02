@@ -3,18 +3,12 @@ import {
   Card,
   Table,
   Button,
-  Space,
   Tag,
-  Input,
-  Select,
   Spin,
-  Empty,
-  Pagination,
   Drawer,
   Row,
   Col,
   Statistic,
-  Timeline,
   Badge,
   message,
   Modal,
@@ -22,11 +16,8 @@ import {
   Descriptions
 } from 'antd';
 import {
-  DownloadOutlined,
   DeleteOutlined,
-  EyeOutlined,
-  ReloadOutlined,
-  FilterOutlined
+  ReloadOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -39,13 +30,11 @@ export default function LogsViewer() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 15, total: 0 });
   const [logStats, setLogStats] = useState({ total_files: 0, total_size_mb: 0 });
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     statusCode: undefined,
     method: undefined,
     searchText: ''
   });
-  const [sortBy, setSortBy] = useState('timestamp');
-  const [sortOrder, setSortOrder] = useState('desc');
   const [expandedGroups, setExpandedGroups] = useState([]);
 
   // Fetch error logs with pagination
@@ -168,18 +157,7 @@ export default function LogsViewer() {
     return Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
   };
 
-  const statusCodes = [...new Set(logs.map(log => log.statusCode))].sort((a, b) => a - b);
-  const methods = [...new Set(logs.map(log => log.method))].sort();
   const groupedLogs = groupLogsByFileAndDate();
-
-  // Format file size
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
 
   // Get status code color
   const getStatusCodeColor = (code) => {
@@ -292,68 +270,6 @@ export default function LogsViewer() {
       key: 'errorCount',
       width: 80,
       render: (count) => count > 0 ? <Tag color="red">{count} errors</Tag> : <Tag>0</Tag>
-    }
-  ];
-
-  // Log content columns
-  const contentColumns = [
-    {
-      title: 'Line',
-      dataIndex: 'lineNumber',
-      key: 'lineNumber',
-      width: 60,
-      render: (text) => <code>{text}</code>
-    },
-    {
-      title: 'Time',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      width: 200,
-      render: (text) => text ? format(new Date(text), 'yyyy-MM-dd HH:mm:ss') : '-'
-    },
-    {
-      title: 'Method',
-      dataIndex: 'method',
-      key: 'method',
-      width: 80,
-      render: (text) => text ? <Tag color={getMethodColor(text)}>{text}</Tag> : '-'
-    },
-    {
-      title: 'Status',
-      dataIndex: 'statusCode',
-      key: 'statusCode',
-      width: 80,
-      render: (text) => text ? <Tag color={getStatusCodeColor(text)}>{text}</Tag> : '-'
-    },
-    {
-      title: 'Endpoint',
-      dataIndex: 'endpoint',
-      key: 'endpoint',
-      width: 300,
-      render: (text) => <code style={{ fontSize: '11px' }}>{text || '-'}</code>,
-      ellipsis: true
-    },
-    {
-      title: 'Error',
-      dataIndex: 'error',
-      key: 'error',
-      width: 250,
-      render: (text) => text ? <span style={{ color: '#ff4d4f' }}>{text}</span> : '-',
-      ellipsis: true
-    },
-    {
-      title: 'Response Time',
-      dataIndex: 'responseTime',
-      key: 'responseTime',
-      width: 120,
-      render: (text) => text ? <span>{text}ms</span> : '-'
-    },
-    {
-      title: 'Shop ID',
-      dataIndex: 'shopId',
-      key: 'shopId',
-      width: 80,
-      render: (text) => text ? <Badge count={text} style={{ backgroundColor: '#52c41a' }} /> : '-'
     }
   ];
 

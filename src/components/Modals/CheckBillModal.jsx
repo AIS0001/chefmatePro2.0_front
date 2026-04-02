@@ -1,26 +1,18 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Modal from "react-modal";
-import { useNavigate, Link } from "react-router-dom";
-import { FaTimes } from "react-icons/fa"; // Importing the close icon from react-icons
-import { TextfieldwithLabel } from "../Buttons/Textfield";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { fetchComboData, fetchComboDataWithWhere } from "../../services/api";
+import { fetchComboData } from "../../services/api";
 import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
-import { SubmitButton } from "../Buttons/Textfield";
-import { Modal as AntModal, Table, Row, Col, Card, Button, Input, Select, Space, Statistic, Badge, Spin, Divider, Tag } from "antd";
+import { Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag } from "antd";
 import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import CardComponent from "../../components/cards/CardComponent";
-import FinalBillModal from "./FinalBillModal";
-import fetchOrderDetails from "../../functions/fetchOrderDetails";
 import updateData from "../../functions/updateData";
-import { FaRedo } from "react-icons/fa"; // Import refresh icon
 import CustomerDetailsModal from "./customerDetailsModal";
 import LineQRDiscountModal from "./LineQRDiscountModal";
 import QRPaymentModal from "../QRPaymentModal";
-import { getUserName } from "../../functions/storageUtils"; // Import getUserName for cashier name
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
 import { generateQRForCheckBill } from "../../services/qrPaymentService";
@@ -101,21 +93,12 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [isSplitMode, setIsSplitMode] = useState(false); // Toggle split mode
   const [selectedSplitItemKeys, setSelectedSplitItemKeys] = useState([]); // Selected items for split group creation
   const [splitGroups, setSplitGroups] = useState([]); // [{ id, name, itemKeys }]
-  const [FinalBillData, setFinalBillData] = useState([]); // Manage the table data state
-  const [OrderItemsData, setOrderItemsData] = useState([]); // Manage the table data state
+  const [, setFinalBillData] = useState([]); // Manage the table data state
+  const [, setOrderItemsData] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
   const [isQRPaymentModalOpen, setQRPaymentModalOpen] = useState(false);
 
-
-  // Handle table selection
-  const handleTableClick = (tableNumber) => {
-    setSelectedTable(tableNumber);
-
-    toast.success(`Selected Table: ${tableNumber}`);
-  };
-  const [getTax, setTax] = useState([]);
-  const [getUnit, setUnits] = useState([]);
-  const [paymentOptions, setpaymentOptions] = useState([]);
+  const [, setpaymentOptions] = useState([]);
   const [finalData, setFinalData] = useState([]);
   const [changeMoney, setChangeMoney] = useState("");
   const [phones, setphones] = useState("");
@@ -123,11 +106,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [latestBillId, setLatestBillId] = useState(null);
   const [latestInvoiceNumber, setLatestInvoiceNumber] = useState(null);
   const [savedSplitInvoices, setSavedSplitInvoices] = useState([]);
-
-
-  const [reload, setReload] = useState(false);
-  const [data, setData] = useState([]);
-  const [errors, setErrors] = useState({});
 
   const resolveCompanyName = () => {
     const company = companyInfo?.[0] || {};
@@ -189,7 +167,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       </div>
     `;
   };
-  const [images, setImages] = useState([]);
   const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
     name: "",
@@ -209,116 +186,10 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     }
   };
 
-  // Function to refresh tables and clear bill summary
-  const refreshTablesAndClearBill = async () => {
-    try {
-      // Refresh table list
-      await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-      
-      // Clear bill summary data
-      setFinalData([]);
-      setSelectedTable(null);
-      setSubtotal(0);
-      setDiscAmount(0);
-      settaxAmount(0);
-      setroundoffAmount(0);
-      setgrandAmount(0);
-      settotalAmount(0);
-      setsubtotalAfterDiscount(0);
-      setIsBillSaved(false);
-      setLatestBillId(null);
-      setLatestInvoiceNumber(null);
-      setSavedSplitInvoices([]);
-      
-      // Clear merge states
-      setSelectedTables([]);
-      setIsMergeMode(false);
-      setIsSplitMode(false);
-      setSelectedSplitItemKeys([]);
-      setSplitGroups([]);
-      
-      // Clear form data
-      setFormData({
-        pmode: "Cash",
-        discAmount: 0,
-        discountType: "percentage",
-        phones: "",
-        paidAmount: "",
-        remark: ""
-      });
-      setChangeMoney("");
-      setphones("");
-      
-      // console.log("Tables refreshed and bill summary cleared");
-    } catch (error) {
-      console.error("Error refreshing tables:", error);
-    }
-  };
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    //console.log(formdata);
-    try {
-      const post1 = await axios.post(
-        "/insertdata/items",
-        {
-          iname: formdata.iname,
-          unit: formdata.unit,
-          tax: formdata.tax,
-          mrp: formdata.mrp,
-          offerprice: formdata.offerprice,
-          catid: formdata.category,
-          subcatid: formdata.subcat,
-          description: formdata.desc,
-        },
-        getHeaders()
-      );
-      const formData = new FormData();
-      if (images && images.length > 0) {
-        images.forEach((file) => {
-          formData.append("images", file);
-        });
-      }
-      // console.log(post1.data.id);
-      formData.append("product_id", post1.data.id); // Assuming post1 returns item ID
-
-      // For FormData, only set Authorization header and shop_id params. Let axios handle Content-Type with multipart boundary
-      const token = getAuthToken();
-      const shopId = getResolvedShopId();
-      const config = {
-        headers: {
-          Authorization: token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
-        },
-        ...(shopId ? { params: { shop_id: shopId } } : {})
-      };
-      const post2 = await axios.post("/addnewproduct/item_images", formData, config);
-      // Immediately fetch updated data after adding an item
-      // await fetchData("items", setData, "id", {});
-      //  onItemAdded(); // Call this to trigger the reload function in NewItem
-      toast.success("Item added successfully!");
-      setImages([]);
-      // Optionally add a delay before closing the modal to ensure the toast is visible
-      setTimeout(() => {
-        onClose(); // Close modal
-      }, 1000); // Adjust the delay as needed
-      //console.log("Fetched data after add:", data);
-    } catch (err) {
-      toast.error("Error in adding Item");
-      console.error(err.message);
-    }
-
-    // Clear form data and errors
-    // setFormData({});
-    setErrors({});
-  };
   const navigate = useNavigate();
   //handle change money
   const handleChangeMoney = (e) => {
     const paidAmount = parseFloat(e.target.value) || 0; // Convert to a number or set to 0 if empty
-    const grandTotal = Math.round(
-      finalData.reduce((acc, item) => acc + item.total_price, 0) * 1.07
-    ); // Calculate the grand total
     const change = paidAmount - grandAmount; // Calculate the change
     setChangeMoney(change.toFixed(2)); // Update the state with the calculated change
     setFormData((prevData) => ({
@@ -2272,37 +2143,12 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         sendBillSummaryToCustomerDisplay();
       }, 500); // Small delay to ensure data is loaded
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, finalData, selectedTable, subtotal, grandAmount]); // Added dependencies
 
 
   // Dependency array ensures it runs only when finalData updates
   // Runs only when `latestBillId` updates
-  const [showLineQR, setShowLineQR] = useState(false);
-  const [lineDiscountEligible, setLineDiscountEligible] = useState(false);
-
-  const handleLineDiscount = async () => {
-    if (!customerDetails.phone) {
-      toast.warning("Please enter customer phone number first.");
-      setLineQRModalOpen(true);
-      return;
-    }
-
-    try {
-      const res = await axios.post('/checkline', {
-        phone: customerDetails.phone
-      });
-
-      if (res.data.eligible) {
-        setShowLineQR(true);
-      } else {
-        toast.error("You have already claimed the LINE discount.");
-      }
-    } catch (err) {
-      toast.error("Error checking LINE discount eligibility.");
-      console.error(err);
-    }
-  };
-
   return (
     <>
 

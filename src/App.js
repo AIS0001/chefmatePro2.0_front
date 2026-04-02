@@ -116,6 +116,7 @@ import Payment from './views/superAdmin/Payment';
 import NotificationManagement from './views/superAdmin/NotificationManagement';
 import LogsViewer from './views/superAdmin/LogsViewer';
 import NotificationsPage from './views/pages/NotificationsPage';
+import ChangelogPage from './views/pages/ChangelogPage';
 
 // Dummy FeatureProtectedRoute that always returns children
 const FeatureProtectedRoute = ({ children }) => children;
@@ -445,6 +446,11 @@ function AppRoutes() {
           {/* User Notifications Page */}
           <Route path="/notifications" element={
             <PrivateRoute><NotificationsPage /></PrivateRoute>
+          } />
+
+          {/* Changelog - accessible to all authenticated roles */}
+          <Route path="/changelog" element={
+            <PrivateRoute><Layout><ChangelogPage /></Layout></PrivateRoute>
           } />
 
           {/* Super Admin Routes - Nested under SuperAdminLayout */}
