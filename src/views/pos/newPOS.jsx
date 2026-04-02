@@ -31,7 +31,8 @@ import "./newPOS.css"; // ✅ Import POS styles
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
   
-  const LOCAL_PRINT_AGENT_URL = 'http://127.0.0.1:5010'; // Local printing agent endpoint
+  const LOCAL_PRINT_AGENT_URL =
+    process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010"; // Local printing agent endpoint
   //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
    
@@ -71,6 +72,17 @@ export default function NewPOS() {
   const [isCustomerDisplayOpen, setIsCustomerDisplayOpen] = useState(false);
 
   const [companyInfo, setCompanyInfo] = useState({});
+
+  const resolveCompanyName = () => {
+    const profileName =
+      companyInfo?.name ||
+      companyInfo?.company_name ||
+      companyInfo?.companyName ||
+      companyInfo?.shop_name;
+    const storedShopName = localStorage.getItem("shop_name") || sessionStorage.getItem("shop_name");
+
+    return (profileName || storedShopName || "Restaurant").trim();
+  };
 
   // ✅ Draggable Action Card States
   const [actionCardPos, setActionCardPos] = useState({ x: 20, y: 20 });
@@ -623,18 +635,61 @@ const decreaseItemQuantity = (index) => {
     newWindow.close();
   };
 
+  const normalizePrinterLocation = (location) =>
+    String(location || '').trim().toLowerCase();
+
+  const isCashierLocation = (location) =>
+    normalizePrinterLocation(location).includes('cashier');
+
+  const isKitchenLocation = (location) =>
+    normalizePrinterLocation(location).includes('kitchen');
+
+  const triggerCashierKotFallbackPrint = (orderItems = [], kotData = {}, reasonText = '') => {
+    const fallbackItems = Array.isArray(orderItems) && orderItems.length > 0
+      ? orderItems
+      : (Array.isArray(kotData?.items) ? kotData.items : []);
+
+    if (fallbackItems.length === 0) {
+      return;
+    }
+
+    if (reasonText) {
+      console.warn('[KOT] Cashier ESC/POS fallback:', reasonText);
+    }
+
+    toast.warning('Cashier KOT printer issue detected. Falling back to Windows thermal print.');
+
+    windowPrintKOTByGroup(fallbackItems, {
+      tableNumber: kotData?.table || kotData?.table_number || selectedTable,
+      orderNumber: kotData?.order_number || kotData?.orderNumber || maxNumber,
+      totalAmount: parseFloat(kotData?.total || total || 0) || 0,
+      shishaStartTime: kotData?.shishaStartTime || null,
+    });
+  };
+
   const sendEscPosKotCommand = async (kotData = {}) => {
+    let normalizedItems = [];
     try {
       // Get user UUID for printer lookup
       const userUuid = localStorage.getItem('user_uuid');
       
       if (!userUuid) {
+        triggerCashierKotFallbackPrint(
+          normalizedItems,
+          {
+            ...kotData,
+            table: kotData?.table || kotData?.table_number,
+            order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
+            total: kotData?.total,
+          },
+          'User UUID unavailable for ESC/POS routing. Using cashier fallback print.'
+        );
         toast.error('User UUID not found. Please login again.');
         return false;
       }
 
       // Normalize items for KOT
-      const normalizedItems = (Array.isArray(kotData?.items) ? kotData.items : []).map((item, idx) => {
+      normalizedItems = (Array.isArray(kotData?.items) ? kotData.items : []).map((item, idx) => {
         const normalized = {
           item_name: item?.item_name || item?.iname || item?.name || "Item",
           quantity: parseFloat(item?.quantity || item?.qty || 0) || 0,
@@ -646,24 +701,69 @@ const decreaseItemQuantity = (index) => {
         return normalized;
       });
 
-      // 🔍 GET PRINTER CONFIG FOR THIS USER UUID
+      let printerConfigs = [];
+
+      // 🔍 Get all active printers for this machine UUID and print KOT to all of them.
       try {
-        const printerConfigResponse = await axios.get(
-          `/printer/config/uuid/${userUuid}`,
+        const allPrinterResponse = await axios.get(
+          `/printer/config`,
           getHeaders()
         );
 
-        if (!printerConfigResponse.data.success || !printerConfigResponse.data.data) {
-          toast.error('No printer configuration found for your device. Please contact admin.');
+        const allPrinters = Array.isArray(allPrinterResponse?.data?.data)
+          ? allPrinterResponse.data.data
+          : [];
+
+        const attachedToUuid = allPrinters.filter(
+          (p) => String(p?.machine_uuid || '') === String(userUuid)
+        );
+
+        if (allPrinterResponse?.data?.success && attachedToUuid.length > 0) {
+          const seen = new Set();
+          printerConfigs = attachedToUuid.filter((p) => {
+            const key = `${p?.printer_ip || ''}:${p?.printer_port || 9100}`;
+            if (!p?.printer_ip || seen.has(key)) {
+              return false;
+            }
+            seen.add(key);
+            return true;
+          });
+
+          console.log('✅ Using printer configs for KOT:', printerConfigs.map((p) => ({
+            terminal_id: p?.terminal_id,
+            machine_uuid: p?.machine_uuid,
+            location: p?.location,
+            printer_ip: p?.printer_ip,
+            printer_port: p?.printer_port || 9100
+          })));
+        } else {
+          triggerCashierKotFallbackPrint(
+            normalizedItems,
+            {
+              ...kotData,
+              table: kotData?.table || kotData?.table_number,
+              order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
+              total: kotData?.total,
+            },
+            'No printer configs matched this machine UUID. Using cashier fallback print.'
+          );
+          toast.error('No printer configuration found for this machine UUID.');
           return false;
         }
 
-        const printerConfig = printerConfigResponse.data.data;
-        console.log(`✅ Found printer for UUID ${userUuid}:`, printerConfig);
-
       } catch (configError) {
+        triggerCashierKotFallbackPrint(
+          normalizedItems,
+          {
+            ...kotData,
+            table: kotData?.table || kotData?.table_number,
+            order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
+            total: kotData?.total,
+          },
+          configError?.message || 'Failed to fetch printer config. Using cashier fallback print.'
+        );
         if (configError.response?.status === 404) {
-          toast.error('❌ No printer assigned to your device UUID. Please contact administrator.');
+          toast.error('❌ No printer configuration found for this machine UUID.');
         } else {
           toast.error('Failed to fetch printer configuration.');
         }
@@ -671,39 +771,151 @@ const decreaseItemQuantity = (index) => {
         return false;
       }
 
-      // Prepare KOT payload for cloud agent with auto-detection
+      // Prepare KOT payload for local agent direct print (frontend -> local machine agent).
       const kotPayload = {
         jobId: `kot-${kotData?.order_number || maxNumber}-${Date.now()}`,
-        location: 'kitchen',
         table: kotData?.table || kotData?.table_number,
         items: normalizedItems,
         heading: 'KITCHEN KOT',
         total: parseFloat(kotData?.total || 0) || 0,
         timestamp: kotData?.timestamp || new Date().toLocaleString(),
-        machine_uuid: userUuid  // 🔐 Include UUID for printer routing
+        machine_uuid: userUuid,
+        companyName: resolveCompanyName()
       };
 
-      // Send to cloud agent which handles printer detection and local agent communication
-      const printResponse = await axios.post(
-        '/cloud-agent/print-with-detection',
-        kotPayload,
-        { ...getHeaders(), timeout: 15000 }
+      let cashierFallbackTriggered = false;
+      const cashierPrinterConfigs = printerConfigs.filter((config) =>
+        isCashierLocation(config?.location || 'kitchen')
       );
 
-      if (printResponse.data.success) {
-        return true;
-      } else {
-        throw new Error(printResponse.data.message || 'Print job failed');
+      if (cashierPrinterConfigs.length === 0) {
+        cashierFallbackTriggered = true;
+        triggerCashierKotFallbackPrint(
+          normalizedItems,
+          {
+            ...kotData,
+            table: kotData?.table || kotData?.table_number,
+            order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
+            total: kotData?.total,
+          },
+          'No cashier printer configured for this device. Using Windows thermal fallback for cashier copy.'
+        );
       }
 
+      // Direct local print trigger to each attached printer (no backend relay for printing).
+      const printSettledResults = await Promise.allSettled(
+        printerConfigs.map(async (printerConfig) => {
+          const localAgentPayload = {
+            printer_ip: printerConfig.printer_ip,
+            printer_port: printerConfig.printer_port || 9100,
+            terminal_id: printerConfig.terminal_id || 'KITCHEN',
+            location: printerConfig.location || 'kitchen',
+            type: 'KOT',
+            data: kotPayload,
+            ...kotPayload,
+            printerIp: printerConfig.printer_ip,
+            printerPort: printerConfig.printer_port || 9100,
+            target: printerConfig.location || 'kitchen'
+          };
+
+          const printResponse = await axios.post(
+            `${LOCAL_PRINT_AGENT_URL}/print-kot`,
+            localAgentPayload,
+            {
+              timeout: 15000,
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          return {
+            terminal_id: printerConfig.terminal_id,
+            printer_ip: printerConfig.printer_ip,
+            location: normalizePrinterLocation(printerConfig.location || 'kitchen'),
+            success: !!printResponse?.data?.success,
+            message: printResponse?.data?.message || ''
+          };
+        })
+      );
+
+      const printResults = printSettledResults.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        }
+
+        const printerConfig = printerConfigs[index] || {};
+        const errorMessage =
+          result.reason?.response?.data?.message ||
+          result.reason?.message ||
+          'Print request failed';
+
+        return {
+          terminal_id: printerConfig.terminal_id,
+          printer_ip: printerConfig.printer_ip,
+          location: normalizePrinterLocation(printerConfig.location || 'kitchen'),
+          success: false,
+          message: errorMessage,
+        };
+      });
+
+      const cashierResults = printResults.filter((result) => isCashierLocation(result.location));
+      const cashierConfigured = cashierResults.length > 0;
+      const cashierSuccessCount = cashierResults.filter((result) => result.success).length;
+
+      if (cashierConfigured && cashierSuccessCount === 0) {
+        cashierFallbackTriggered = true;
+        triggerCashierKotFallbackPrint(
+          normalizedItems,
+          {
+            ...kotData,
+            table: kotData?.table || kotData?.table_number,
+            order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
+            total: kotData?.total,
+          },
+          'No cashier ESC/POS printer accepted the KOT job.'
+        );
+      }
+
+      const okCount = printResults.filter((r) => r.success).length;
+      if (okCount === 0) {
+        const kitchenConfigured = printerConfigs.some(
+          (config) => isKitchenLocation(config?.location || 'kitchen')
+        );
+
+        if (cashierFallbackTriggered && !kitchenConfigured) {
+          toast.info('KOT printed via cashier fallback thermal print.');
+          return true;
+        }
+
+        throw new Error('Print job failed for all attached printers');
+      }
+
+      if (okCount < printResults.length) {
+        toast.warning(`KOT printed on ${okCount}/${printResults.length} attached printers.`);
+      }
+
+      return true;
+
     } catch (error) {
+      triggerCashierKotFallbackPrint(
+        normalizedItems,
+        {
+          ...kotData,
+          table: kotData?.table || kotData?.table_number,
+          order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
+          total: kotData?.total,
+        },
+        error?.message || 'ESC/POS KOT request failed; using cashier fallback print.'
+      );
+
       let errorMessage = 'Failed to print KOT';
       if (error.response?.status === 404) {
         errorMessage = 'No kitchen printer configured for your device.';
       } else if (error.response?.status === 500) {
-        errorMessage = 'Server error during KOT printing.';
-      } else if (error.code === 'ECONNREFUSED') {
-        errorMessage = 'Cannot connect to printing service.';
+        errorMessage = 'Local agent failed to process print request.';
+      } else if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+        errorMessage = 'Cannot connect to local print agent. Please start local print service.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -1183,11 +1395,12 @@ const decreaseItemQuantity = (index) => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>KOT - Table ${tableNumber}</title>
+        <title>KOT COPY - Table ${tableNumber}</title>
         <style>
           @media print {
             body { margin: 0; }
             @page { margin: 0.3in; size: 3in 4in; }
+            .watermark { display: block !important; }
           }
           body {
             font-family: 'Courier New', monospace;
@@ -1195,10 +1408,27 @@ const decreaseItemQuantity = (index) => {
             line-height: 1.3;
             color: #000;
             background: #fff;
+            position: relative;
+          }
+          .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-40deg);
+            font-size: 52px;
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.10);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 9999;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+            user-select: none;
           }
         </style>
       </head>
       <body>
+        <div class="watermark">KOT COPY</div>
         ${kotContent}
       </body>
       </html>
@@ -1828,12 +2058,19 @@ const decreaseItemQuantity = (index) => {
         await loadTablesForSelection();
         //console.log("Table list fetched successfully");
         
-        // ✅ Fetch company info for customer display
-        const companyData = await fetchData("companyinfo", null, "id", {});
-        if (companyData && companyData.length > 0) {
-          const company = companyData[0];
+        // ✅ Fetch company info for customer display and KOT header (prefer company_profile)
+        const companyProfileData = await fetchData("company_profile", null, "id", {});
+        const fallbackCompanyInfoData =
+          Array.isArray(companyProfileData) && companyProfileData.length > 0
+            ? companyProfileData
+            : await fetchData("companyinfo", null, "id", {});
+
+        if (fallbackCompanyInfoData && fallbackCompanyInfoData.length > 0) {
+          const company = fallbackCompanyInfoData[0];
           setCompanyInfo({
-            name: company.name || 'ChefMate POS',
+            name: company.name || company.company_name || company.companyName || company.shop_name || 'ChefMate POS',
+            company_name: company.company_name || company.name || company.companyName || company.shop_name || 'ChefMate POS',
+            shop_name: company.shop_name || company.name || company.company_name || company.companyName || 'ChefMate POS',
             address: company.address || 'Restaurant Address',
             phone: company.phone_number || 'Phone Number'
           });
@@ -1857,7 +2094,7 @@ const decreaseItemQuantity = (index) => {
       <div style={{ 
         width: '100vw', 
         height: '100vh', 
-        overflow: 'auto',
+        overflow: 'hidden',
         backgroundColor: '#f8f9fa',
         position: 'relative'
       }}>
@@ -1914,7 +2151,7 @@ const decreaseItemQuantity = (index) => {
           fontSize: '18px',
           color: '#333'
         }}>
-          Chefmate POS System
+          ChefmatePro 2.0 POS System
         </div>
 
         {/* Floating Table Selection Button */}
@@ -2012,10 +2249,13 @@ const decreaseItemQuantity = (index) => {
 
         {/* ✅ Main Content Area with proper spacing */}
         <div style={{ 
-          paddingTop: '40px', // Space for fixed header elements
-          paddingLeft: '20px',
-          paddingRight: '20px',
-          paddingBottom: '20px'
+          height: '100vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          paddingTop: '80px',
+          paddingLeft: '12px',
+          paddingRight: '12px',
+          paddingBottom: '200px'
         }}>
 
         {/* Main Category List */}
@@ -2069,7 +2309,14 @@ const decreaseItemQuantity = (index) => {
               titleStyle={{ color: 'white' }}
             >
               <div className="panel panel-default card-view" style={{ padding: '5px' }}>
-                  <div className="item-list-container" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                  <div
+                    className="item-list-container"
+                    style={{
+                      maxHeight: 'calc(100vh - 260px)',
+                      overflowY: 'auto',
+                      paddingBottom: '120px',
+                    }}
+                  >
                   <div className="row" style={{ margin: '0' }}>
                     {subcategories.length > 0 ? (
                       subcategories.map((subcategory, index) => (
@@ -2108,7 +2355,14 @@ const decreaseItemQuantity = (index) => {
               titleStyle={{ color: 'white' }}
             >
               <div className="panel panel-default card-view" style={{ padding: '5px' }}>
-                <div className="item-list-container">
+                <div
+                  className="item-list-container"
+                  style={{
+                    maxHeight: 'calc(100vh - 260px)',
+                    overflowY: 'auto',
+                    paddingBottom: '120px',
+                  }}
+                >
                   <div className="row mt-2" style={{ margin: '0' }}>
                     {data.length > 0 ? (
                       data.map((item, index) => (
@@ -2156,9 +2410,9 @@ const decreaseItemQuantity = (index) => {
             >
               <div className="panel panel-default card-view" style={{ padding: '5px' }}>
                 <div className="row" style={{ margin: '0' }}>
-                  <div className="col-12" style={{ paddingBottom: '120px' }}>
+                  <div className="col-12" style={{ paddingBottom: '8px' }}>
                     {/* Quick Add Item Card - Always Visible */}
-                    <div className="card" style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef', marginBottom: '12px' }}>
+                    <div className="card" style={{ padding: '12px', background: '#f8f9fa', borderRadius: '0', border: '1px solid #e9ecef', marginBottom: '12px' }}>
                       <h6 style={{ fontWeight: '700', marginBottom: '10px', fontSize: '13px', color: '#495057' }}>⚡ Quick Add Item</h6>
                       <form
                         onSubmit={async (e) => {
@@ -2208,102 +2462,50 @@ const decreaseItemQuantity = (index) => {
                       </form>
                     </div>
 
-                    {cart.length > 0 ? (
-                      cart.map((item, index) => (
-                        <>
-                          <div
-                            className="order-item d-flex align-items-center justify-content-between mb-1"
-                            key={index}
-                            style={{ padding: '3px 0' }}
-                          >
-                            <h5 className=" mb-0 pos-cart-item-name">
-                              {item.iname} x {formatQuantityForDisplay(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
-                            </h5>
-                            <div className="quantity-controls d-flex align-items-center">
-                              <button
-                                className="btn btn-dark-custom btn-sm me-1"
-                                onClick={() => decreaseItemQuantity(index)}
-                                style={{ padding: '1px 4px', fontSize: '18px' }}
-                              >
-                                -
-                              </button>
-                              <span className="quantity me-1" style={{ fontSize: '8px' }}>{item.quantity}</span>
-                              <button
-                                className="btn btn-dark-custom btn-sm"
-                                onClick={() => increaseItemQuantity(index)}
-                                style={{ padding: '1px 4px', fontSize: '18px' }}
-                              >
-                                +
-                              </button>
+                    <div
+                      style={{
+                        maxHeight: 'calc(100vh - 420px)',
+                        overflowY: 'auto',
+                        paddingRight: '4px',
+                        paddingBottom: '16px',
+                      }}
+                    >
+                      {cart.length > 0 ? (
+                        cart.map((item, index) => (
+                          <>
+                            <div
+                              className="order-item d-flex align-items-center justify-content-between mb-1"
+                              key={index}
+                              style={{ padding: '3px 0' }}
+                            >
+                              <h5 className=" mb-0 pos-cart-item-name">
+                                {item.iname} x {formatQuantityForDisplay(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
+                              </h5>
+                              <div className="quantity-controls d-flex align-items-center">
+                                <button
+                                  className="btn btn-dark-custom btn-sm me-1"
+                                  onClick={() => decreaseItemQuantity(index)}
+                                  style={{ padding: '1px 4px', fontSize: '18px' }}
+                                >
+                                  -
+                                </button>
+                                <span className="quantity me-1" style={{ fontSize: '8px' }}>{item.quantity}</span>
+                                <button
+                                  className="btn btn-dark-custom btn-sm"
+                                  onClick={() => increaseItemQuantity(index)}
+                                  style={{ padding: '1px 4px', fontSize: '18px' }}
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      ))
-                    ) : (
-                      <div style={{ padding: '10px' }}>
-                        <p style={{ fontSize: '12px', marginBottom: '8px' }}>Your cart is empty.</p>
-                      </div>
-                    )}
-                    <div className="total-container mt-2 d-flex justify-content-between align-items-center">
-                      <h5 style={{ fontSize: '14px' }}>
-                        Total:{" "}
-                        <span className="total-amount">
-                          ฿ {total.toFixed(2)}
-                        </span>
-                      </h5>
-                    </div>
-                    <div className="total-container mt-2 d-flex justify-content-between align-items-center gap-2">
-                      <button 
-                        className="btn btn-primary" 
-                        onClick={handlePrintOrder}
-                        style={{ padding: '6px 12px', fontSize: '12px' }}
-                        title="Print KOT to Kitchen & Cashier"
-                      > 
-                        <FaPrint className="me-1" />Send KOT
-                      </button>
-                      {/* <button 
-                        className="btn btn-success" 
-                        onClick={handleSendKOTESCPOS}
-                        style={{ padding: '6px 12px', fontSize: '12px' }}
-                        title="Send KOT via ESC/POS Thermal Printer"
-                      > 
-                        <FaPrint className="me-1" />KOT ESC/POS
-                      </button> */}
-                      <ESCPosAutoDetectButton 
-                        orderData={{
-                          id: maxNumber,
-                          order_number: maxNumber,
-                          queue_number: maxNumber,
-                          table: selectedTable,
-                          table_number: selectedTable,
-                          timestamp: new Date().toISOString(),
-                          items: cart.map(item => ({
-                            item_name: item.iname,
-                            quantity: item.quantity,
-                            price: item.offerprice,
-                            special_instructions: item.notes || '',
-                            category: resolveItemGroup(item),
-                            item_group: resolveItemGroup(item)
-                          })),
-                          customer_name: 'Order',
-                          total: total
-                        }}
-                        sendPrintCommand={handleESCPosOrderFlow}
-                        onPrintSuccess={() => {
-                          console.log('✅ ESC/POS order completed successfully');
-                          toast.success('KOT sent to printer and cart cleared!');
-                        }}
-                        size="medium"
-                        buttonType="default"
-                        buttonText="KOT ESC"
-                      />
-                      <button 
-                        className="btn btn-danger" 
-                        onClick={handleDeleteOrder}
-                        style={{ padding: '6px 12px', fontSize: '12px' }}
-                      > 
-                        <FaTrash className="me-1" />
-                      </button>
+                          </>
+                        ))
+                      ) : (
+                        <div style={{ padding: '10px' }}>
+                          <p style={{ fontSize: '12px', marginBottom: '8px' }}>Your cart is empty.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2316,47 +2518,105 @@ const decreaseItemQuantity = (index) => {
 
         {/* Bottom Actions Container */}
         <div style={{
-          marginTop: '24px',
+          position: 'fixed',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          zIndex: 1000,
           backgroundColor: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          padding: '16px',
-          width: '100%'
+          borderRadius: '0',
+          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)',
+          padding: '12px clamp(12px, 2vw, 20px)',
+          width: '100vw'
         }}>
-          <h6 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700', color: '#dc3545' }}>⚙️ Actions</h6>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+          <div
+            className="total-container d-flex justify-content-between align-items-center gap-2"
+            style={{
+              marginBottom: '8px',
+              paddingBottom: '8px',
+              borderBottom: '1px solid #e9ecef',
+              flexWrap: 'nowrap',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{ fontSize: '22px', fontWeight: '600', color: '#000', margin: 0, lineHeight: '1' }}>
+              Total:{" "}
+              <span style={{ color: '#000' }}>฿ {total.toFixed(2)}</span>
+            </span>
+            <div className="d-flex align-items-center gap-2">
+              <ESCPosAutoDetectButton
+                orderData={{
+                  id: maxNumber,
+                  order_number: maxNumber,
+                  queue_number: maxNumber,
+                  table: selectedTable,
+                  table_number: selectedTable,
+                  timestamp: new Date().toISOString(),
+                  items: cart.map(item => ({
+                    item_name: item.iname,
+                    quantity: item.quantity,
+                    price: item.offerprice,
+                    special_instructions: item.notes || '',
+                    category: resolveItemGroup(item),
+                    item_group: resolveItemGroup(item)
+                  })),
+                  customer_name: 'Order',
+                  total: total
+                }}
+                sendPrintCommand={handleESCPosOrderFlow}
+                onPrintSuccess={() => {
+                  console.log('✅ ESC/POS order completed successfully');
+                  toast.success('KOT sent to printer and cart cleared!');
+                }}
+                size="middle"
+                buttonType="default"
+                buttonText="KOT"
+                buttonTextStyle={{ height: '36px', padding: '0 14px', fontSize: '12px', fontWeight: '600', lineHeight: '36px', display: 'inline-flex', alignItems: 'center' }}
+              />
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteOrder}
+                style={{ height: '36px', padding: '0 14px', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: '1' }}
+                title="Clear Cart"
+              >
+                <FaTrash className="me-1" /> Clear Cart
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', overflowY: 'hidden', flexWrap: 'nowrap', paddingBottom: '4px', WebkitOverflowScrolling: 'touch' }}>
             <button 
               className="btn btn-success"
               onClick={handleBillHistory}
-              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
               📋 Bill History
             </button>
             <button 
               className="btn btn-primary"
               onClick={refreshTables}
-              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
               🔄 Refresh
             </button>
             <button 
               className="btn btn-warning"
               onClick={showtableBillDetails}
-              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
               💰 Check Bill
             </button>
             <button 
               className="btn btn-info"
               onClick={showReprintKOT}
-              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
               🖨️ Reprint KOT
             </button>
             <button 
               className="btn btn-danger"
               onClick={() => navigate('/logout')}
-              style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%' }}
+              style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
               🚪 Logout
             </button>

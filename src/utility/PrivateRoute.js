@@ -16,6 +16,7 @@ const roleBasedAccess = {
     "/reports/saleledger",
     "/vouchers/recieptvoucher",
     "/vouchers/paymentvoucher",
+    "/subscription",
     "/logout",
   ],
   account: [
@@ -35,6 +36,7 @@ const roleBasedAccess = {
     "/vouchers/recieptvoucher",
     "/vouchers/paymentvoucher",
     "/expenses/suppliersexpenses",
+    "/subscription",
     "/logout",
   ],
   manager: [
@@ -47,6 +49,7 @@ const roleBasedAccess = {
     "/reports/lowstockitems",
     "/vouchers/recieptvoucher",
     "/vouchers/paymentvoucher",
+    "/subscription",
     "/logout",
   ],
   admin: "all", // admin can access all routes

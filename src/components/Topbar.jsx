@@ -4,8 +4,10 @@ import { Layout, Button, Dropdown, Avatar, Badge, Space } from 'antd'
 import { MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SettingOutlined, UserOutlined, LogoutOutlined, ProfileOutlined, ClockCircleOutlined, ShopOutlined, CalendarOutlined, CloseOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import { getAuthToken } from '../utility/auth'
+import appPackage from '../../package.json'
 
 export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
+	const appVersion = appPackage?.version || '';
 	const navigate = useNavigate();
 	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 	const [currentTime, setCurrentTime] = useState(new Date());
@@ -840,6 +842,9 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 
 			{/* Right side - Navigation */}
 			<Space size="large" className="topbar-nav-right">
+				<div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: 600 }}>
+					v{appVersion}
+				</div>
 				{/* Notifications */}
 				<Dropdown menu={{items: notificationMenuItems}} placement="bottomRight">
 					<Badge count={unreadCount} showZero style={{backgroundColor: unreadCount > 0 ? '#ff4d4f' : '#d9d9d9'}}>

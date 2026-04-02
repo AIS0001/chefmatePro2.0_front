@@ -32,10 +32,28 @@ function UserManagement() {
 
   const fetchShops = async () => {
     try {
-      const response = await shopsAPI.getAll({ page: 1, limit: 999 });
-      if (response.data.success) {
-        setShops(response.data.data || []);
+      const pageSize = 200;
+      let currentPage = 1;
+      let totalPages = 1;
+      const allShops = [];
+
+      while (currentPage <= totalPages) {
+        const response = await shopsAPI.getAll({ page: currentPage, limit: pageSize });
+        if (!response.data.success) {
+          break;
+        }
+
+        const pageData = Array.isArray(response.data.data) ? response.data.data : [];
+        allShops.push(...pageData);
+
+        const pages = Number(response.data?.pagination?.pages || 1);
+        totalPages = pages > 0 ? pages : 1;
+        currentPage += 1;
       }
+
+      const uniqueShops = Array.from(new Map(allShops.map((shop) => [shop.id, shop])).values());
+      uniqueShops.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      setShops(uniqueShops);
     } catch (error) {
       console.error('Failed to fetch shops:', error);
     }
@@ -66,7 +84,8 @@ function UserManagement() {
     }
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
+    await fetchShops();
     setEditingUser(null);
     form.resetFields();
     setIsModalVisible(true);

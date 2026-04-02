@@ -186,17 +186,19 @@ function ShopsManagement() {
           headers: { Authorization: `Bearer ${token}` }
         });
         message.success('Shop updated successfully');
+        fetchShops();
       } else {
         // Create new shop
         await axios.post('/super-admin/shops', payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         message.success('Shop created successfully');
+        // Newly created shops are ordered first by created_at, so reset to page 1.
+        setPagination((prev) => ({ ...prev, page: 1 }));
       }
 
       setIsModalVisible(false);
       form.resetFields();
-      fetchShops();
     } catch (error) {
       message.error(error.response?.data?.error || 'Failed to save shop');
     }

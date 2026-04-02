@@ -215,13 +215,19 @@ const accountMenu = [
       { name: 'Add Expense', path: '/expenses/suppliersexpenses' },
     ]
   },
+  {
+    name: 'Subscription',
+    path: '/subscription',
+    icon: 'card-membership',
+    dataTargetId: '#subscription'
+  },
 ];
 const getMenuItems = (usertype) => {
   const normalizedUsertype = (usertype || "").toLowerCase();
   if (normalizedUsertype === "cashier")
     {
     return fullMenu
-      .filter(item => ["Dashboard", "Sale", "Reports", "Vouchers", "Logout"].includes(item.name))
+      .filter(item => ["Dashboard", "Sale", "Reports", "Vouchers", "Subscription", "Logout"].includes(item.name))
       .map(item => {
         if (item.submenu) 
           {

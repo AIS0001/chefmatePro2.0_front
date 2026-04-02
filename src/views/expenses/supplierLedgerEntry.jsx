@@ -3,7 +3,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { format } from "date-fns";
-import fetchData from "../../functions/fetchData";
+import fetchData, { fetchShopScopedData } from "../../functions/fetchData";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -11,17 +11,15 @@ import 'jspdf-autotable';
 import Layout from "../../layout/Layout";
 import Header from "../../components/Header";
 import { getHeaders } from "../../utility/getHeader";
-import { Card, Input, Button, Select, DatePicker, Table, Space, Row, Col, Divider, Statistic, Popconfirm, Tooltip, Modal } from 'antd';
+import { Card, Input, Button, Select, Table, Space, Row, Col, Divider, Statistic, Popconfirm, Tooltip, Modal } from 'antd';
 import { SaveOutlined, FilterOutlined, ClearOutlined, PrinterOutlined, FilePdfOutlined, FileExcelOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import deleteRecord from "../../functions/delateData";
 import updateData from "../../functions/updateData";
 
-const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
 export default function SupplierLedgerEntry() {
-  const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [originalData, setOriginalData] = useState([]);
   const [companyInfo, setCompanyInfo] = useState({});
@@ -59,8 +57,20 @@ export default function SupplierLedgerEntry() {
 
   const [suppliers, setSuppliers] = useState([]);
 
+  const getShopId = () => sessionStorage.getItem('selected_shop_id') || localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
+
   const userType = (localStorage.getItem("usertype") || sessionStorage.getItem("usertype") || "").toLowerCase();
   const canManageLedger = userType === "admin" || userType === "account";
+
+  const getSupplierLabel = (supplier) => {
+    if (!supplier) return "";
+    return (
+      String(supplier.name || "").trim() ||
+      String(supplier.company_name || "").trim() ||
+      String(supplier.supplier_name || "").trim() ||
+      `Supplier ${supplier.id}`
+    );
+  };
 
   // Fetch company info for thermal printing
   useEffect(() => {
@@ -80,8 +90,8 @@ export default function SupplierLedgerEntry() {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const supplierData = await fetchData("suppliers", null, "id", {});
-        setSuppliers(supplierData || []);
+        const supplierData = await fetchShopScopedData("suppliers", null, "id");
+        setSuppliers(Array.isArray(supplierData) ? supplierData : []);
       } catch (err) {
         console.error("Error fetching suppliers:", err);
         toast.error("Failed to load suppliers.");
@@ -99,7 +109,7 @@ export default function SupplierLedgerEntry() {
     e.preventDefault();
 
     try {
-      await axios.post("/insertdata/ledger_entries", formData, getHeaders());
+      await axios.post("/insertdata/Supplier_ledger_entries", { ...formData, shop_id: getShopId() }, getHeaders());
       toast.success("Supplier ledger entry saved!");
 
       setFormData({
@@ -113,7 +123,6 @@ export default function SupplierLedgerEntry() {
         reference_id: "",
       });
       
-      // Reload data
       fetchLedgerData();
     } catch (error) {
       console.error(error);
@@ -145,7 +154,7 @@ export default function SupplierLedgerEntry() {
     if (!editingEntryId) return;
 
     try {
-      await updateData("ledger_entries", editFormData, { id: editingEntryId });
+      await updateData("Supplier_ledger_entries", editFormData, { id: editingEntryId });
       toast.success("Supplier ledger entry updated!");
       setIsEditModalOpen(false);
       setEditingEntryId(null);
@@ -164,7 +173,7 @@ export default function SupplierLedgerEntry() {
 
     try {
       setDeletingEntryId(record.id);
-      await deleteRecord("ledger_entries", "id", record.id);
+      await deleteRecord("Supplier_ledger_entries", "id", record.id);
       toast.success("Entry deleted successfully");
       fetchLedgerData();
     } catch (error) {
@@ -193,16 +202,15 @@ export default function SupplierLedgerEntry() {
   const fetchLedgerData = async () => {
     try {
       setLoading(true);
-      const ledgerData = await fetchData("ledger_entries", null, "id", {account_type:'Purchase'});
-      console.log("Fetched ledger data:", ledgerData);
-      setData(ledgerData || []);
+      const ledgerData = await fetchShopScopedData("Supplier_ledger_entries", null, "id");
+      console.log("Fetched supplier ledger data:", ledgerData);
       setOriginalData(ledgerData || []);
       setFilteredData(ledgerData || []);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching ledger data:", error);
+      console.error("Error fetching supplier ledger data:", error);
       setLoading(false);
-      toast.error("Failed to load ledger entries");
+      toast.error("Failed to load supplier ledger entries");
     }
   };
 
@@ -253,7 +261,7 @@ export default function SupplierLedgerEntry() {
   // Get supplier name by ID
   const getSupplierName = (supplierId) => {
     const supplier = suppliers.find(s => s.id?.toString() === supplierId?.toString());
-    return supplier ? supplier.company_name : `ID: ${supplierId}`;
+    return supplier ? getSupplierLabel(supplier) : `ID: ${supplierId}`;
   };
 
   // Export to Excel
@@ -590,7 +598,7 @@ export default function SupplierLedgerEntry() {
               >
                 {suppliers.map((supplier) => (
                   <Select.Option key={supplier.id} value={supplier.id}>
-                    {supplier.company_name}
+                    {getSupplierLabel(supplier)}
                   </Select.Option>
                 ))}
               </Select>
@@ -651,7 +659,7 @@ export default function SupplierLedgerEntry() {
       </Card>
 
       {/* Filters */}
-      <Card title="Filter Ledger Entries" style={{ marginBottom: 24 }}>
+      <Card title="Filter Supplier Ledger Entries" style={{ marginBottom: 24 }}>
         <Row gutter={16}>
           <Col xs={24} sm={12} md={8}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date Range</label>
@@ -684,7 +692,7 @@ export default function SupplierLedgerEntry() {
             >
               {suppliers.map((supplier) => (
                 <Select.Option key={supplier.id} value={supplier.id}>
-                  {supplier.company_name}
+                  {getSupplierLabel(supplier)}
                 </Select.Option>
               ))}
             </Select>
@@ -756,7 +764,7 @@ export default function SupplierLedgerEntry() {
       </Row>
 
       {/* Data Table */}
-      <Card title={`Ledger Entries (${filteredData.length} records)`}>
+      <Card title={`Supplier Ledger Entries (${filteredData.length} records)`}>
         <Table
           columns={columns}
           dataSource={filteredData}
@@ -813,7 +821,7 @@ export default function SupplierLedgerEntry() {
             >
               {suppliers.map((supplier) => (
                 <Select.Option key={supplier.id} value={supplier.id}>
-                  {supplier.company_name}
+                  {getSupplierLabel(supplier)}
                 </Select.Option>
               ))}
             </Select>

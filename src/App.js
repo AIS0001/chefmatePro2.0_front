@@ -78,8 +78,7 @@ import CustomerDisplay from './components/CustomerDisplay/CustomerDisplay';
 import SaleCustomerDisplay from './components/CustomerDisplay/SaleCustomerDisplay';
 
 //Pages
-// 🚨 SUBSCRIPTION IMPORTS DISABLED 🚨
-// import Subscription from './views/pages/Subscription';
+import Subscription from './views/pages/Subscription';
 // import { SubscriptionDemo } from './lib/subscription-system'
 // import SubscriptionDebug from './lib/subscription-system/demo/SubscriptionDebug';
 import Layout from './layout/Layout';
@@ -293,9 +292,8 @@ function AppRoutes() {
           } />
 
           {/* Pages */}
-          {/* 🚨 SUBSCRIPTION ROUTES DISABLED 🚨 */}
-          {/* 
-          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/subscription" element={<PrivateRoute><Layout><Subscription /></Layout></PrivateRoute>} />
+          {/*
           <Route path="/demo" element={<SubscriptionDemo Layout={Layout} />} />
           <Route path="/subscription-demo" element={<SubscriptionDemo Layout={Layout} />} />
           <Route path="/subscription-debug" element={<SubscriptionDebug />} />

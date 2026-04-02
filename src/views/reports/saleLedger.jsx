@@ -14,6 +14,7 @@ import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
 import fetchData from "../../functions/fetchData";
 import deleteRecord from "../../functions/delateData";
+import { getResolvedShopId } from "../../utility/getHeader";
 export default function BillHistory() {
   const csvLinkRef = useRef(null);
   const [data, setData] = useState([]);
@@ -31,6 +32,7 @@ export default function BillHistory() {
     showCustomerFinalBalance: false,
   });
   const [customerFinalBalanceData, setCustomerFinalBalanceData] = useState([]);
+  const resolvedShopId = Number(getResolvedShopId()) || null;
 
   const columns = [
     { label: "Txn ID", field: "transaction_id" },
@@ -77,6 +79,86 @@ export default function BillHistory() {
     img.onerror = reject;
     img.src = src;
   });
+
+  const bytesToBase64 = (bytes) => {
+    if (!bytes?.length) return "";
+
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      const chunk = bytes.slice(index, index + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+
+    return window.btoa(binary);
+  };
+
+  const getCompanyLogoSource = () => {
+    const rawLogo = companyInfo?.logo;
+    const logoType = companyInfo?.logo_type || "image/png";
+    const logoName = String(companyInfo?.logo_name || "").trim();
+
+    if (!rawLogo) {
+      if (logoName) {
+        return `/assets/img/logo/${logoName}`;
+      }
+      return logo;
+    }
+
+    if (typeof rawLogo === "string") {
+      if (rawLogo.startsWith("data:image") || rawLogo.startsWith("http") || rawLogo.startsWith("/")) {
+        return rawLogo;
+      }
+
+      return `data:${logoType};base64,${rawLogo}`;
+    }
+
+    if (Array.isArray(rawLogo)) {
+      const base64 = bytesToBase64(rawLogo);
+      return base64 ? `data:${logoType};base64,${base64}` : logo;
+    }
+
+    if (rawLogo?.type === "Buffer" && Array.isArray(rawLogo?.data)) {
+      const base64 = bytesToBase64(rawLogo.data);
+      return base64 ? `data:${logoType};base64,${base64}` : logo;
+    }
+
+    if (rawLogo?.data && Array.isArray(rawLogo.data)) {
+      const base64 = bytesToBase64(rawLogo.data);
+      return base64 ? `data:${logoType};base64,${base64}` : logo;
+    }
+
+    return logo;
+  };
+
+  const pickPreferredCompanyInfo = (rows = []) => {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return {};
+    }
+
+    const scopedRows = resolvedShopId
+      ? rows.filter((row) => Number(row?.shop_id) === resolvedShopId)
+      : rows;
+    const candidates = scopedRows.length > 0 ? scopedRows : rows;
+
+    return [...candidates]
+      .filter((row) => row?.is_active !== 0)
+      .sort((left, right) => {
+        const leftHasLogo = Boolean(left?.logo || left?.logo_name);
+        const rightHasLogo = Boolean(right?.logo || right?.logo_name);
+        if (leftHasLogo !== rightHasLogo) {
+          return Number(rightHasLogo) - Number(leftHasLogo);
+        }
+
+        const leftUpdated = new Date(left?.updated_at || left?.created_at || 0).getTime();
+        const rightUpdated = new Date(right?.updated_at || right?.created_at || 0).getTime();
+        if (leftUpdated !== rightUpdated) {
+          return rightUpdated - leftUpdated;
+        }
+
+        return Number(right?.id || 0) - Number(left?.id || 0);
+      })[0] || {};
+  };
 
   const filterData = () => {
     const { from, to, accounttype, account_id, showAllClosingBalance } = formdata;
@@ -166,7 +248,7 @@ export default function BillHistory() {
     const tableRows = [];
 
     try {
-      const logoDataUrl = await loadImageAsDataUrl(logo);
+      const logoDataUrl = await loadImageAsDataUrl(getCompanyLogoSource());
       doc.addImage(logoDataUrl, "PNG", 8, 10, 28, 18);
     } catch (err) {
       console.warn("Failed to load logo for PDF:", err);
@@ -174,10 +256,10 @@ export default function BillHistory() {
 
     const headerX = 38;
     doc.setFontSize(12);
-    doc.text(companyInfo.name || "JANNAAT LAUNGE", headerX, 16);
+    doc.text(companyInfo.name || companyInfo.company_name || "JANNAAT LAUNGE", headerX, 16);
     doc.setFontSize(9);
     if (companyInfo.address) doc.text(companyInfo.address, headerX, 21);
-    const contactLine = [companyInfo.phone_number, companyInfo.email].filter(Boolean).join(" | ");
+    const contactLine = [companyInfo.phone_number || companyInfo.phone, companyInfo.email].filter(Boolean).join(" | ");
     if (contactLine) doc.text(contactLine, headerX, 26);
     if (companyInfo.tax_id) doc.text(`Tax ID: ${companyInfo.tax_id}`, headerX, 31);
     doc.setFontSize(10);
@@ -407,8 +489,23 @@ const resetFilters = () => {
         setData(fetched);
         const result = await fetchData("customers", null, "id", {});
         setCustomerdata(result);
-        const companyData = await fetchData("companyinfo", null, "id", {});
-        setCompanyInfo(companyData?.[0] || {});
+        const companyProfileData = await fetchData(
+          "company_profile",
+          null,
+          "id",
+          resolvedShopId ? { shop_id: resolvedShopId } : {}
+        );
+        if (Array.isArray(companyProfileData) && companyProfileData.length > 0) {
+          setCompanyInfo(pickPreferredCompanyInfo(companyProfileData));
+        } else {
+          const companyData = await fetchData(
+            "companyinfo",
+            null,
+            "id",
+            resolvedShopId ? { shop_id: resolvedShopId } : {}
+          );
+          setCompanyInfo(pickPreferredCompanyInfo(companyData));
+        }
 
       } catch (e) {
         console.error("Error fetching data:", e);

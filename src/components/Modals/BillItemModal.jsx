@@ -12,6 +12,7 @@ import { getUserType } from "../../utility/auth";
 import { getUserName } from "../../functions/storageUtils";
 
 export default function BillItemModal({ isOpen, onClose, bill, isEditMode = false, onBillUpdated }) {
+  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010";
   const isCancelled = bill?.status === 2 || bill?.status === "2" || bill?.status === "cancelled";
   const userType = getUserType();
   const canEditInModal = ["admin", "account"].includes((userType || "").toLowerCase());
@@ -26,6 +27,68 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
   const [editDiscountType, setEditDiscountType] = useState("amount");
   const [editDiscountValue, setEditDiscountValue] = useState(0);
 
+  const resolveCompanyName = () => {
+    const company = companyInfo?.[0] || {};
+    return (
+      company?.name ||
+      company?.company_name ||
+      company?.companyName ||
+      company?.shop_name ||
+      localStorage.getItem("shop_name") ||
+      sessionStorage.getItem("shop_name") ||
+      "Restaurant"
+    ).trim();
+  };
+
+  const escapeHtml = (value = "") =>
+    String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const resolveCompanyProfile = () => {
+    const company = companyInfo?.[0] || {};
+    return {
+      name: resolveCompanyName(),
+      address: company?.address || "",
+      city: company?.city || "",
+      state: company?.state || "",
+      zipCode: company?.zip_code || company?.zipCode || "",
+      country: company?.country || "",
+      phone: company?.phone_number || company?.phone || "",
+      email: company?.email || "",
+      website: company?.website || company?.company_website || "",
+      taxId: company?.tax_id || company?.taxId || ""
+    };
+  };
+
+  const buildCompanyHeaderHtml = (titleText = "") => {
+    const profile = resolveCompanyProfile();
+    const locationLine = [profile.city, profile.state, profile.zipCode, profile.country]
+      .filter(Boolean)
+      .join(", ");
+    const headerLines = [
+      profile.address,
+      locationLine,
+      profile.phone ? `Phone: ${profile.phone}` : "",
+      profile.email ? `Email: ${profile.email}` : "",
+      profile.website ? `Web: ${profile.website}` : "",
+      profile.taxId ? `Tax: ${profile.taxId}` : ""
+    ].filter(Boolean);
+
+    return `
+      <div class="bill-header">
+        <h2>${escapeHtml(profile.name)}</h2>
+        <div class="company-info">
+          ${headerLines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+          ${titleText ? `<p><strong>${escapeHtml(titleText)}</strong></p>` : ""}
+        </div>
+      </div>
+    `;
+  };
+
   useEffect(() => {
     if (bill?.id && isOpen) {
       fetchItems();
@@ -34,7 +97,14 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
 
   useEffect(() => {
     if (isOpen) {
-      fetchData("companyinfo", setCompanyInfo, "id", {});
+      (async () => {
+        const companyProfileData = await fetchData("company_profile", null, "id", {});
+        if (Array.isArray(companyProfileData) && companyProfileData.length > 0) {
+          setCompanyInfo(companyProfileData);
+        } else {
+          await fetchData("companyinfo", setCompanyInfo, "id", {});
+        }
+      })();
     }
   }, [isOpen]);
 
@@ -388,66 +458,154 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
   };
 
   // Handle thermal print
-  const handleThermalPrint = async () => {
-    let toastId;
-    try {
-      if (!bill?.id) {
-        toast.error("Bill ID is missing");
-        return;
-      }
+ const handleThermalPrint = async () => {
+  let toastId;
+  try {
+    if (!bill?.id) {
+      toast.error("Bill ID is missing");
+      return;
+    }
 
-      const machineUuid = localStorage.getItem("user_uuid");
-      if (!machineUuid) {
-        showPrinterErrorModal("User UUID not found. Please login again.");
-        return;
-      }
+    const machineUuid = localStorage.getItem("user_uuid");
+    if (!machineUuid) {
+      showPrinterErrorModal("User UUID not found. Please login again.");
+      return;
+    }
 
-      const billId = bill.id;
+    if (!items.length) {
+      toast.error("No items to print");
+      return;
+    }
 
-      toastId = toast.loading("Sending invoice to cashier printer...");
+    const profile = resolveCompanyProfile();
+    const companyName = profile.name;
+    const companyAddress = [
+      profile.address,
+      [profile.city, profile.state, profile.zipCode, profile.country].filter(Boolean).join(", ")
+    ].filter(Boolean).join(", ");
+    const companyPhone = profile.phone;
+    const companyWebsite = profile.website;
+    const companyTaxDetails = profile.taxId;
+
+    const printerRes = await axios.get("/printer/config", getHeaders());
+    const allPrinters = Array.isArray(printerRes?.data?.data) ? printerRes.data.data : [];
+
+    const cashierPrinters = allPrinters.filter((p) => (
+      String(p?.machine_uuid || "") === String(machineUuid) &&
+      String(p?.location || "").toLowerCase() === "cashier" &&
+      p?.printer_ip
+    ));
+
+    const seen = new Set();
+    const targetPrinters = cashierPrinters.filter((p) => {
+      const key = `${p.printer_ip}:${p.printer_port || 9100}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (!targetPrinters.length) {
+      showPrinterErrorModal("No cashier printer configured for this device UUID.");
+      return;
+    }
+
+    const invoiceNo = bill?.inv_number || bill?.invoice_number || String(bill?.id || "-");
+    const queueNumber = bill?.table_number || "-";
+    const subtotal = Number(bill?.subtotal || 0);
+    const discountAmount = Number(bill?.discount_amount || bill?.discount || 0);
+    const subtotalAfterDiscount = Number(
+      bill?.subtotal_afterdiscount || Math.max(subtotal - discountAmount, 0)
+    );
+    const taxAmount = Number(bill?.tax || 0);
+    const roundOff = Number(bill?.roundoff || bill?.round_off || 0);
+    const grandTotal = Number(bill?.grand_total || 0);
+    const taxPercent = Number(
+      bill?.tax_percentage || bill?.tax_percent || bill?.vat_rate || bill?.gst_rate || bill?.tax_rate || 7
+    );
+
+    toastId = toast.loading("Sending invoice to cashier printer...");
+
+    let successCount = 0;
+
+    for (const printer of targetPrinters) {
+      const payload = {
+        printer_ip: printer.printer_ip,
+        printer_port: printer.printer_port || 9100,
+        terminal_id: printer.terminal_id || "CASHIER",
+        location: "cashier",
+        target: "cashier",
+        type: "INVOICE",
+        heading: "INVOICE",
+        table: queueNumber,
+        items: items.map((item) => ({
+          item_name: item.item_name,
+          quantity: Number(item.quantity || 0),
+          price: Number((item.total_price || 0) / (item.quantity || 1)),
+          total_price: Number(item.total_price || item.total_amount || 0)
+        })),
+        total: grandTotal,
+        timestamp: new Date().toLocaleString(),
+        companyName,
+        invoiceNo,
+        paymentMode: bill?.payment_mode || "Cash",
+        payment_mode: bill?.payment_mode || "Cash",
+        printType: "invoice",
+        date: bill?.setup_date || bill?.inv_date || "",
+        time: bill?.inv_time || "",
+        companyAddress,
+        companyPhone,
+        companyWebsite,
+        companyTaxDetails,
+        subtotal,
+        discount_type: bill?.discount_type || "amount",
+        discountType: bill?.discount_type || "amount",
+        discount_value: Number(bill?.discount_value || discountAmount || 0),
+        discountValue: Number(bill?.discount_value || discountAmount || 0),
+        discount_amount: discountAmount,
+        discountAmount,
+        subtotal_afterdiscount: subtotalAfterDiscount,
+        subtotalAfterDiscount,
+        tax: taxAmount,
+        taxAmount,
+        roundoff: roundOff,
+        roundOff,
+        grand_total: grandTotal,
+        grandTotal,
+        tax_percent: taxPercent,
+        taxPercent
+      };
 
       const response = await axios.post(
-        `/cloud-agent/print-invoice/${billId}`,
+        `${LOCAL_PRINT_AGENT_URL}/print-kot`,
+        payload,
         {
-          machine_uuid: machineUuid,
-          location: "cashier",
-          mode: "single"
-        },
-        getHeaders()
+          timeout: 20000,
+          headers: { "Content-Type": "application/json" }
+        }
       );
 
-      toast.dismiss(toastId);
-
       if (response?.data?.success) {
-        toast.success("Invoice printed successfully!");
-      } else {
-        const backendMessage = response?.data?.message || "Failed to print invoice.";
-        showPrinterErrorModal(backendMessage);
+        successCount += 1;
       }
-    } catch (error) {
-      if (toastId) toast.dismiss(toastId);
-      console.error("❌ ESC/POS print API error:", error);
-
-      const status = error?.response?.status;
-      const backendMessage = error?.response?.data?.message || error?.response?.data?.error;
-
-      if (status === 404) {
-        showPrinterErrorModal(
-          backendMessage || "No cashier printer configured for this UUID. Please configure printer IP in printer configuration."
-        );
-        return;
-      }
-
-      if (status === 500 || status === 502) {
-        showPrinterErrorModal(
-          backendMessage || "Printer IP is wrong or printer is unreachable. Please check cashier printer IP and status."
-        );
-        return;
-      }
-
-      showPrinterErrorModal(backendMessage || "ESC/POS print failed.");
     }
-  };
+
+    if (toastId) toast.dismiss(toastId);
+
+    if (successCount === targetPrinters.length) {
+      toast.success("Invoice printed successfully!");
+    } else if (successCount > 0) {
+      toast.warning(`Printed ${successCount}/${targetPrinters.length} invoice job(s).`);
+    } else {
+      showPrinterErrorModal("Failed to print invoice.");
+    }
+  } catch (error) {
+    if (toastId) toast.dismiss(toastId);
+    console.error("❌ Cashier direct print error:", error);
+    showPrinterErrorModal(
+      error?.response?.data?.message || "Cashier ESC/POS print failed."
+    );
+  }
+};
 
   const handleThermalHtmlPrint = () => {
     if (!bill?.id) {
@@ -460,7 +618,6 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
       return;
     }
 
-    const company = companyInfo?.[0] || {};
     const currencySign = "฿";
     const subtotal = parseFloat(bill?.subtotal || bill?.subtotal_afterdiscount || 0);
     const discountAmount = parseFloat(bill?.discount_amount || bill?.discount || 0);
@@ -514,43 +671,28 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
               z-index: 5;
             }
             .bill-header {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              grid-gap: 5px;
+              text-align: center;
               text-align: center;
               margin-bottom: 10px;
+              padding-bottom: 8px;
+              border-bottom: 1px dashed #000;
             }
             .bill-header h2 {
-              grid-column: span 2;
               margin: 0;
-              font-size: 24px;
-              font-weight: bold;
+              font-size: 20px;
+              font-weight: 700;
+              line-height: 1.25;
+              word-break: break-word;
             }
             .bill-header .company-info {
-              grid-column: span 3;
-              text-align: center;
+              margin-top: 4px;
             }
             .bill-header .company-info p {
-              margin: 4px 0;
-              font-size: 18px;
-            }
-            .bill-header .contact-info {
-              display: flex;
-              justify-content: center;
-              grid-column: span 2;
-            }
-            .bill-header .left-col {
-              text-align: left;
-            }
-            .bill-header .right-col {
-              text-align: right;
-              margin-right: 20px;
-            }
-            .bill-header .tax-id {
-              text-align: left;
-              grid-column: span 2;
-              font-size: 16px;
-              margin: 0;
+              margin: 2px 0;
+              font-size: 12px;
+              line-height: 1.35;
+              word-break: break-word;
+              white-space: normal;
             }
             .table {
               width: 100%;
@@ -597,13 +739,7 @@ export default function BillItemModal({ isOpen, onClose, bill, isEditMode = fals
         <body>
           ${isCancelled ? '<div class="cancel-stamp">CANCELLED</div>' : ''}
           ${!isCancelled ? '<div class="copy-stamp">COPY</div>' : ''}
-          <div class="bill-header">
-            <h2>${company?.name || "CHEFMATE"}</h2>
-            <div class="company-info">
-              <p>${company?.address || ""}</p>
-              <p>Tax:${company?.tax_id || ""}</p>
-            </div>
-          </div>
+          ${buildCompanyHeaderHtml()}
           <div class="bill-bill-body">
             <table class="table">
               <tr>

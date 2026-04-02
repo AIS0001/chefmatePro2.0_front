@@ -5,7 +5,7 @@ import fetchData from "../../functions/fetchData";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import { getAuthToken, getHeaders } from "../../utility/getHeader";
+import { getAuthToken, getHeaders, getResolvedShopId } from "../../utility/getHeader";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Button, Card, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Table, Tooltip } from "antd";
 import Header from "../../components/Header";
@@ -14,6 +14,7 @@ import updateData from "../../functions/updateData";
 import deleteRecord from "../../functions/delateData";
 
 export default function Vouchers() {
+    const resolvedShopId = Number(getResolvedShopId()) || null;
     const [customers, setCustomers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState("");
     const [outstandingAmount, setOutstandingAmount] = useState(0);
@@ -123,7 +124,7 @@ export default function Vouchers() {
         }
 
         try {
-            const response = await axios.get(`/getcustomeroutstandingledger/${customerId}`, getHeaders());
+            const response = await axios.get(`/getoutstandingbalance/${customerId}`, getHeaders());
             const ledgerOutstanding = Number(response?.data?.outstanding_balance) || 0;
             setOutstandingAmount(ledgerOutstanding);
             setInvoices([]);
@@ -174,6 +175,7 @@ export default function Vouchers() {
                 receipt_voucher_id: editingRecord.id,
                 ledger_reference_id: editingRecord.reference_id || editingRecord.id,
                 customer_id: editingRecord.customer_id,
+                shop_id: resolvedShopId,
                 amount_paid: amountPaid,
                 payment_mode: editFormData.payment_mode,
                 discount_amount: discountAmount,
@@ -256,6 +258,7 @@ export default function Vouchers() {
             const payload = {
                 receipt_voucher_id: record.id,
                 ledger_reference_id: record.reference_id || record.id,
+                shop_id: resolvedShopId,
             };
 
             logApiDebug("DELETE_PAYMENT_LEDGER_REQUEST", "/deletepaymentledger", payload);
@@ -328,6 +331,7 @@ export default function Vouchers() {
 
         const paymentData = {
             customer_id: normalizedCustomerId,
+            shop_id: resolvedShopId,
             amount_paid: amountValue,
             discount: discountValue,
             discount_amount: discountValue,

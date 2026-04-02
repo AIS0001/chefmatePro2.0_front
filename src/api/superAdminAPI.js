@@ -5,7 +5,24 @@
 
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:4402';
+const normalizeBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+const resolveApiOrigin = () => {
+  // Prefer axios global baseURL so this module always targets the same backend as the rest of the app.
+  const axiosBaseUrl = normalizeBaseUrl(axios?.defaults?.baseURL);
+  if (axiosBaseUrl) {
+    return axiosBaseUrl.replace(/\/api$/i, '');
+  }
+
+  const envBaseUrl = normalizeBaseUrl(process.env.REACT_APP_API_URL);
+  if (envBaseUrl) {
+    return envBaseUrl;
+  }
+
+  return 'http://localhost:4402';
+};
+
+const API_BASE = resolveApiOrigin();
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -248,7 +265,7 @@ export const shopManagementAPI = {
     })
 };
 
-export default {
+const superAdminApi = {
   shopsAPI,
   billingAPI,
   dashboardAPI,
@@ -257,3 +274,5 @@ export default {
   auditLogsAPI,
   shopManagementAPI
 };
+
+export default superAdminApi;

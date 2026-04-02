@@ -83,6 +83,7 @@ const getCurrentTime = () => {
 //console.log(getCurrentDate()); // Output: YYYY-MM-DD
 
 const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger }) => {
+  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010";
   const [formdata, setFormData] = useState({
     pmode: "Cash", // Default to "Cash"
     discAmount: 0,
@@ -127,6 +128,67 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [reload, setReload] = useState(false);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState({});
+
+  const resolveCompanyName = () => {
+    const company = companyInfo?.[0] || {};
+    const profileName =
+      company?.name ||
+      company?.company_name ||
+      company?.companyName ||
+      company?.shop_name;
+    const storedShopName = localStorage.getItem("shop_name") || sessionStorage.getItem("shop_name");
+
+    return (profileName || storedShopName || "Restaurant").trim();
+  };
+
+  const escapeHtml = (value = "") =>
+    String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const resolveCompanyProfile = () => {
+    const company = companyInfo?.[0] || {};
+    return {
+      name: resolveCompanyName(),
+      address: company?.address || "",
+      city: company?.city || "",
+      state: company?.state || "",
+      zipCode: company?.zip_code || company?.zipCode || "",
+      country: company?.country || "",
+      phone: company?.phone_number || company?.phone || "",
+      email: company?.email || "",
+      website: company?.website || company?.company_website || "",
+      taxId: company?.tax_id || company?.taxId || ""
+    };
+  };
+
+  const buildCompanyHeaderHtml = (titleText = "") => {
+    const profile = resolveCompanyProfile();
+    const locationLine = [profile.city, profile.state, profile.zipCode, profile.country]
+      .filter(Boolean)
+      .join(", ");
+    const headerLines = [
+      profile.address,
+      locationLine,
+      profile.phone ? `Phone: ${profile.phone}` : "",
+      profile.email ? `Email: ${profile.email}` : "",
+      profile.website ? `Web: ${profile.website}` : "",
+      profile.taxId ? `Tax: ${profile.taxId}` : ""
+    ].filter(Boolean);
+
+    return `
+      <div class="bill-header">
+        <h2>${escapeHtml(profile.name)}</h2>
+        <div class="company-info">
+          ${headerLines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+          ${titleText ? `<p><strong>${escapeHtml(titleText)}</strong></p>` : ""}
+        </div>
+      </div>
+    `;
+  };
   const [images, setImages] = useState([]);
   const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
@@ -573,70 +635,189 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     navigate(`/reports/billhistory`);
   };
 
+  const triggerWindowsFallbackPrint = async (reasonText) => {
+    const fallbackMessage = reasonText
+      ? `${reasonText} Falling back to Windows default printer...`
+      : "ESC/POS print failed. Falling back to Windows default printer...";
+
+    toast.warning(fallbackMessage);
+
+    // Browser print dialog will use the OS-selected default printer (e.g., USB printer).
+    await handlePrintBill();
+  };
+
   // ✅ Handle RSC POS single-mode Invoice printing via cashier printer config
   const handlePrintBillRSCPOS = async () => {
     let toastId;
     try {
       const machineUuid = localStorage.getItem("user_uuid");
       if (!machineUuid) {
-        toast.error("User UUID not found. Please login again.");
+        await triggerWindowsFallbackPrint("User UUID not found for ESC/POS.");
         return;
       }
 
-      // Build print jobs with both bill id and invoice number
+      const company = companyInfo?.[0] || {};
+      const companyName = resolveCompanyName();
+      const companyAddress = company?.address || "";
+      const companyPhone = company?.phone_number || company?.phone || "";
+      const companyWebsite = company?.website || company?.company_website || "";
+      const companyTaxDetails = company?.tax_id || company?.taxId || "";
+      const queueNumber = selectedTable || "-";
+
+      // Build invoice jobs with printable item/amount details.
       const invoicePrintJobs = (savedSplitInvoices && savedSplitInvoices.length > 0)
-        ? savedSplitInvoices
-            .map((inv) => ({
-              billId: inv?.billId,
-              invoiceNo: inv?.invoiceNumber || null,
-            }))
-            .filter((job) => job.billId !== undefined && job.billId !== null && job.billId !== "")
+        ? savedSplitInvoices.map((inv) => ({
+            invoiceNo: inv?.invoiceNumber || inv?.billId || "-",
+            queueNumber: inv?.queueNumber || queueNumber,
+            items: Array.isArray(inv?.items) ? inv.items : [],
+            total: Number(inv?.total || 0),
+            paymentMethod: inv?.paymentMethod || formdata.pmode || "Cash",
+            subtotal: Number(inv?.subtotal || 0),
+            discountType: formdata.discountType || "percentage",
+            discountValue: Number(formdata.discountType === "percentage" ? (discAmount || 0) : 0),
+            discountAmount: Number(inv?.discountAmount || 0),
+            subtotalAfterDiscount: Number(inv?.subtotalAfterDiscount || 0),
+            taxAmount: Number(inv?.taxAmount || 0),
+            roundOff: Number(inv?.roundOff || 0),
+            taxPercent: Number(inv?.taxPercent || TaxesData?.[0]?.taxvalue || 0)
+          }))
         : (latestBillId
-            ? [{ billId: latestBillId, invoiceNo: latestInvoiceNumber || null }]
+            ? [{
+                invoiceNo: latestInvoiceNumber || String(latestBillId),
+                queueNumber,
+                items: (finalData || []).map((item) => ({
+                  item_name: item.item_name,
+                  quantity: Number(item.quantity || 0),
+                  price: Number((item.total_price || 0) / (item.quantity || 1)),
+                  total: Number(item.total_price || 0),
+                })),
+                total: Number(grandAmount || 0),
+                paymentMethod: formdata.pmode || "Cash",
+                subtotal: Number(subtotal || 0),
+                discountType: formdata.discountType || "percentage",
+                discountValue: Number(formdata.discountType === "percentage" ? (discAmount || 0) : 0),
+                discountAmount: Number(calculatedDiscountAmount || discAmount || 0),
+                subtotalAfterDiscount: Number(subtotalAfterDiscount || 0),
+                taxAmount: Number(taxAmount || 0),
+                roundOff: Number(roundoffAmount || 0),
+                taxPercent: Number(TaxesData?.[0]?.taxvalue || 0)
+              }]
             : []);
 
-      if (invoicePrintJobs.length === 0) {
+      if (!invoicePrintJobs.length) {
         toast.error("No invoice number found. Please save bill first.");
         return;
       }
 
-      toastId = toast.loading("Sending invoice to RSC POS cashier printer...");
+      // Fetch configured printers and keep only cashier printers for this UUID.
+      const printerRes = await axios.get('/printer/config', getHeaders());
+      const allPrinters = Array.isArray(printerRes?.data?.data) ? printerRes.data.data : [];
 
-      let allSuccess = true;
-      for (const { billId, invoiceNo } of invoicePrintJobs) {
-        const response = await axios.post(
-          `/cloud-agent/print-invoice/${billId}`,
-          {
-            billId,
-            invoiceNo,
-            machine_uuid: machineUuid,
-            location: "cashier",
-            mode: "single"
-          },
-          getHeaders()
-        );
+      const cashierPrinters = allPrinters.filter((p) => (
+        String(p?.machine_uuid || '') === String(machineUuid) &&
+        String(p?.location || '').toLowerCase() === 'cashier' &&
+        p?.printer_ip
+      ));
 
-        if (!response?.data?.success) {
-          allSuccess = false;
-          break;
+      const seen = new Set();
+      const targetPrinters = cashierPrinters.filter((p) => {
+        const key = `${p.printer_ip}:${p.printer_port || 9100}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (!targetPrinters.length) {
+        await triggerWindowsFallbackPrint("No cashier ESC/POS printer configured for this device.");
+        return;
+      }
+
+      toastId = toast.loading("Sending invoice to cashier printer...");
+
+      let successCount = 0;
+      for (const printer of targetPrinters) {
+        for (const job of invoicePrintJobs) {
+          const payload = {
+            printer_ip: printer.printer_ip,
+            printer_port: printer.printer_port || 9100,
+            terminal_id: printer.terminal_id || 'CASHIER',
+            location: 'cashier',
+            target: 'cashier',
+            type: 'INVOICE',
+            heading: 'INVOICE',
+            table: job.queueNumber,
+            items: (job.items || []).map((item) => ({
+              item_name: item.item_name,
+              quantity: Number(item.quantity || 0),
+              price: Number(item.price || 0),
+              total_price: Number(item.total || item.total_price || 0)
+            })),
+            total: Number(job.total || 0),
+            timestamp: new Date().toLocaleString(),
+            companyName,
+            invoiceNo: job.invoiceNo,
+            paymentMode: job.paymentMethod,
+            payment_mode: job.paymentMethod,
+            printType: 'invoice'
+            ,
+            date: getCurrentDate(),
+            time: getCurrentTime(),
+            companyAddress,
+            companyPhone,
+            companyWebsite,
+            companyTaxDetails,
+            subtotal: Number(job.subtotal || 0),
+            discount_type: job.discountType,
+            discountType: job.discountType,
+            discount_value: Number(job.discountValue || 0),
+            discountValue: Number(job.discountValue || 0),
+            discount_amount: Number(job.discountAmount || 0),
+            discountAmount: Number(job.discountAmount || 0),
+            subtotal_afterdiscount: Number(job.subtotalAfterDiscount || 0),
+            subtotalAfterDiscount: Number(job.subtotalAfterDiscount || 0),
+            tax: Number(job.taxAmount || 0),
+            taxAmount: Number(job.taxAmount || 0),
+            roundoff: Number(job.roundOff || 0),
+            roundOff: Number(job.roundOff || 0),
+            grand_total: Number(job.total || 0),
+            grandTotal: Number(job.total || 0),
+            tax_percent: Number(job.taxPercent || 0),
+            taxPercent: Number(job.taxPercent || 0)
+          };
+
+          const response = await axios.post(
+            `${LOCAL_PRINT_AGENT_URL}/print-kot`,
+            payload,
+            {
+              timeout: 20000,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+
+          if (response?.data?.success) {
+            successCount += 1;
+          }
         }
       }
 
       toast.dismiss(toastId);
 
-      if (allSuccess) {
+      const totalJobs = targetPrinters.length * invoicePrintJobs.length;
+      if (successCount === totalJobs) {
         toast.success(
           invoicePrintJobs.length > 1
-            ? "Split invoices printed on RSC POS cashier printer!"
-            : "Invoice printed on RSC POS cashier printer!"
+            ? "Split invoices printed on cashier printer(s)!"
+            : "Invoice printed on cashier printer(s)!"
         );
+      } else if (successCount > 0) {
+        toast.warning(`Printed ${successCount}/${totalJobs} invoice job(s) on cashier printer(s).`);
       } else {
-        toast.error("Failed to print one or more invoices.");
+        await triggerWindowsFallbackPrint("ESC/POS print job failed.");
       }
     } catch (error) {
       if (toastId) toast.dismiss(toastId);
-      console.error("❌ RSC POS print API error:", error);
-      toast.error(error?.response?.data?.message || "RSC POS print failed.");
+      console.error("❌ Cashier direct print error:", error);
+      await triggerWindowsFallbackPrint(error?.response?.data?.message || "Cashier ESC/POS print failed.");
     }
   };
 
@@ -763,16 +944,26 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               }
               .bill-header {
                 text-align: center;
-                margin-bottom: 2px;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: none;
               }
               .bill-header h2 {
                 margin: 0;
-                font-size: 24px;
-                font-weight: bold;
+                font-size: 20px;
+                font-weight: 700;
+                line-height: 1.25;
+                word-break: break-word;
               }
-              .bill-header p {
-                margin: 4px 0;
-                font-size: 18px;
+              .bill-header .company-info {
+                margin-top: 4px;
+              }
+              .bill-header .company-info p {
+                margin: 2px 0;
+                font-size: 12px;
+                line-height: 1.35;
+                word-break: break-word;
+                white-space: normal;
               }
               .table {
                 width: 100%;
@@ -817,19 +1008,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             </style>
           </head>
           <body>
-            <div class="bill-header">
-               <h2>${companyInfo[0].name}</h2>
-            <div class="company-info">
-              <p>${companyInfo[0].address}</p>
-              <p>${companyInfo[0].phone_number}</p>
-              <p>Tax:${companyInfo[0].tax_id}</p>
-            
-           
-            </div>
-             
-           
-          
-          </div>
+            ${buildCompanyHeaderHtml()}
             <div class="bill-bill-body">
              
               <table class="table">
@@ -1362,6 +1541,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     }
     await handleSaveBill(mode);
   };
+
+  const handleBillSummaryClick = async () => {
+    // Bill Summary is preview/print only and must not save to database.
+    await handlePrintBillSummary();
+  };
   // useEffect(() => {
   //   if (latestBillId) {
   //     handlePrintClick(latestBillId);
@@ -1379,10 +1563,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       }
 
       const newWindow = window.open("", "_blank");
-
-      const companyName = companyInfo[0]?.name || "";
-      const companyAddress = companyInfo[0]?.address || "";
-      const companyTaxId = companyInfo[0]?.tax_id || "";
 
       const invoicesForPrint = (savedSplitInvoices && savedSplitInvoices.length > 0)
         ? savedSplitInvoices
@@ -1408,13 +1588,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
 
       const billBlocks = invoicesForPrint.map((invoice, idx) => `
         <div class="bill-page ${idx < invoicesForPrint.length - 1 ? 'page-break' : ''}">
-          <div class="bill-header">
-            <h2>${companyName}</h2>
-            <div class="company-info">
-              <p>${companyAddress}</p>
-              <p>Tax:${companyTaxId}</p>
-            </div>
-          </div>
+          ${buildCompanyHeaderHtml()}
           <div class="bill-bill-body">
             <table class="table">
               <tr>
@@ -1484,49 +1658,32 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 font-family: 'Cambria', monospace; /* Common font for receipts */
               }
               body {
-                font-size: 18px; /* Increased font size for better readability */
+                font-size: 14px;
                 width: 80mm; /* Common thermal printer size */
               }
               .bill-header {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                grid-gap: 5px;
                 text-align: center;
                 margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 1px dashed #000;
               }
-            .bill-header h2 {
-              grid-column: span 2;
-              margin: 0;
-              font-size: 24px; /* Larger header */
-              font-weight: bold;
-            }
-            .bill-header .company-info {
-              grid-column: span 3;
-              text-align: center;
-            }
-            .bill-header .company-info p {
-              margin: 4px 0;
-              font-size: 18px; /* Larger text for better readability */
-            }
-            .bill-header .contact-info {
-              display: flex;
-              justify-content: center;
-              grid-column: span 2;
-            }
-            .bill-header .left-col {
-              text-align: left;
-            }
-            .bill-header .right-col {
-              text-align: right;
-              margin-right:20px;
-              
-            }
-            .bill-header .tax-id {
-              text-align: left;
-              grid-column: span 2;
-              font-size: 16px;
-              margin:0;
-            }
+              .bill-header h2 {
+                margin: 0;
+                font-size: 20px;
+                font-weight: 700;
+                line-height: 1.25;
+                word-break: break-word;
+              }
+              .bill-header .company-info {
+                margin-top: 4px;
+              }
+              .bill-header .company-info p {
+                margin: 2px 0;
+                font-size: 12px;
+                line-height: 1.35;
+                word-break: break-word;
+                white-space: normal;
+              }
             .table {
               width: 100%;
               margin-top: 1px;
@@ -1535,34 +1692,39 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             .table th, .table td {
               text-align: left;
               padding: 5px 0; /* Adjust padding to make text fit better */
-              font-size: 18px; /* Larger font size for readability */
-              line-height: 1.6; /* Increase line height for better readability */
+              font-size: 13px;
+              line-height: 1.35;
             }
             .table th {
               font-weight: bold;
-              border-bottom:1px solid #000;
+              border-bottom:none;
             }
             .table td {
-              border-bottom: 1px solid #ddd;
+              border-bottom: none;
             }
             .bill-body .table th,
             .bill-body .table td {
-              font-size: 14px;
-              line-height: 1.35;
+              font-size: 12px;
+              line-height: 1.3;
+            }
+            .bill-bill-body .table th,
+            .bill-bill-body .table td {
+              font-size: 12px;
+              line-height: 1.3;
             }
             .table td.total {
               font-weight: bold;
               font-size: 18px; /* Larger font for totals */
               margin-right:2px;
-              border-bottom:1px solid #000;
+              border-bottom:none;
             }
             .total-row {
               margin-top: 5px;
               margin-right: 10px;
               font-weight: bold;
               text-align: right;
-              font-size: 18px;
-              line-height: 1.6; /* Larger font size for totals */
+              font-size: 11px;
+              line-height: 1.25;
             }
             .total-row span {
               margin-left: 0px;
@@ -1570,7 +1732,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             .footer {
               margin-top: 15px;
               text-align: center;
-              font-size: 18px; /* Larger footer font */
+              font-size: 11px;
             }
             .bill-page {
               width: 100%;
@@ -1612,12 +1774,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         toast.error("No items to preview. Please add items first.");
         return;
       }
-
-      const newWindow = window.open("", "_blank");
-
-      const companyName = companyInfo[0]?.name || "";
-      const companyAddress = companyInfo[0]?.address || "";
-      const companyTaxId = companyInfo[0]?.tax_id || "";
 
       const splitPreviewInvoices = (isSplitMode && splitSummaries && splitSummaries.length > 0)
         ? (() => {
@@ -1678,19 +1834,170 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         ? savedSplitInvoices
         : splitPreviewInvoices;
 
+      const summaryPrintJobs = (invoicesForSummary && invoicesForSummary.length > 0)
+        ? invoicesForSummary.map((invoice) => ({
+            invoiceNo: ' ',
+            queueNumber: invoice.queueNumber || '-',
+            items: Array.isArray(invoice.items) ? invoice.items : [],
+            total: Number(invoice.total || 0),
+            paymentMethod: invoice.paymentMethod || formdata.pmode || 'Cash',
+            subtotal: Number(invoice.subtotal || 0),
+            discountType: formdata.discountType || 'percentage',
+            discountValue: Number(formdata.discountType === 'percentage' ? (discAmount || 0) : 0),
+            discountAmount: Number(invoice.discountAmount || 0),
+            subtotalAfterDiscount: Number(invoice.subtotalAfterDiscount || 0),
+            taxAmount: Number(invoice.taxAmount || 0),
+            roundOff: Number(invoice.roundOff || 0),
+            taxPercent: Number(invoice.taxPercent || TaxesData?.[0]?.taxvalue || 0)
+          }))
+        : [{
+            invoiceNo: ' ',
+            queueNumber: selectedTable || '-',
+            items: (finalData || []).map((item) => ({
+              item_name: item.item_name,
+              quantity: Number(item.quantity || 0),
+              price: Number((item.total_price || 0) / (item.quantity || 1)),
+              total: Number(item.total_price || 0)
+            })),
+            total: Number(grandAmount || 0),
+            paymentMethod: formdata.pmode || 'Cash',
+            subtotal: Number(subtotal || 0),
+            discountType: formdata.discountType || 'percentage',
+            discountValue: Number(formdata.discountType === 'percentage' ? (discAmount || 0) : 0),
+            discountAmount: Number(formdata.discountType === 'percentage' ? (calculatedDiscountAmount || 0) : (discAmount || 0)),
+            subtotalAfterDiscount: Number(subtotalAfterDiscount || 0),
+            taxAmount: Number(taxAmount || 0),
+            roundOff: Number(roundoffAmount || 0),
+            taxPercent: Number(TaxesData?.[0]?.taxvalue || 0)
+          }];
+
+      // Try ESC/POS first (invoice-like format), then fallback to thermal HTML.
+      let escposToastId;
+      try {
+        const machineUuid = localStorage.getItem('user_uuid');
+        if (machineUuid) {
+          const company = companyInfo?.[0] || {};
+          const companyName = resolveCompanyName();
+          const companyAddress = company?.address || '';
+          const companyPhone = company?.phone_number || company?.phone || '';
+          const companyWebsite = company?.website || company?.company_website || '';
+          const companyTaxDetails = company?.tax_id || company?.taxId || '';
+
+          const printerRes = await axios.get('/printer/config', getHeaders());
+          const allPrinters = Array.isArray(printerRes?.data?.data) ? printerRes.data.data : [];
+          const cashierPrinters = allPrinters.filter((p) => (
+            String(p?.machine_uuid || '') === String(machineUuid) &&
+            String(p?.location || '').toLowerCase() === 'cashier' &&
+            p?.printer_ip
+          ));
+
+          const seen = new Set();
+          const targetPrinters = cashierPrinters.filter((p) => {
+            const key = `${p.printer_ip}:${p.printer_port || 9100}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          if (targetPrinters.length > 0) {
+            escposToastId = toast.loading('Sending bill summary to cashier printer...');
+
+            let successCount = 0;
+            for (const printer of targetPrinters) {
+              for (const job of summaryPrintJobs) {
+                const payload = {
+                  printer_ip: printer.printer_ip,
+                  printer_port: printer.printer_port || 9100,
+                  terminal_id: printer.terminal_id || 'CASHIER',
+                  location: 'cashier',
+                  target: 'cashier',
+                  type: 'INVOICE',
+                  heading: 'BILL SUMMARY',
+                  table: job.queueNumber,
+                  items: (job.items || []).map((item) => ({
+                    item_name: item.item_name,
+                    quantity: Number(item.quantity || 0),
+                    price: Number(item.price || 0),
+                    total_price: Number(item.total || item.total_price || 0)
+                  })),
+                  total: Number(job.total || 0),
+                  timestamp: new Date().toLocaleString(),
+                  companyName,
+                  invoiceNo: job.invoiceNo,
+                  paymentMode: job.paymentMethod,
+                  payment_mode: job.paymentMethod,
+                  printType: 'bill-summary',
+                  date: getCurrentDate(),
+                  time: getCurrentTime(),
+                  companyAddress,
+                  companyPhone,
+                  companyWebsite,
+                  companyTaxDetails,
+                  subtotal: Number(job.subtotal || 0),
+                  discount_type: job.discountType,
+                  discountType: job.discountType,
+                  discount_value: Number(job.discountValue || 0),
+                  discountValue: Number(job.discountValue || 0),
+                  discount_amount: Number(job.discountAmount || 0),
+                  discountAmount: Number(job.discountAmount || 0),
+                  subtotal_afterdiscount: Number(job.subtotalAfterDiscount || 0),
+                  subtotalAfterDiscount: Number(job.subtotalAfterDiscount || 0),
+                  tax: Number(job.taxAmount || 0),
+                  taxAmount: Number(job.taxAmount || 0),
+                  roundoff: Number(job.roundOff || 0),
+                  roundOff: Number(job.roundOff || 0),
+                  grand_total: Number(job.total || 0),
+                  grandTotal: Number(job.total || 0),
+                  tax_percent: Number(job.taxPercent || 0),
+                  taxPercent: Number(job.taxPercent || 0)
+                };
+
+                const response = await axios.post(
+                  `${LOCAL_PRINT_AGENT_URL}/print-kot`,
+                  payload,
+                  {
+                    timeout: 20000,
+                    headers: { 'Content-Type': 'application/json' }
+                  }
+                );
+
+                if (response?.data?.success) {
+                  successCount += 1;
+                }
+              }
+            }
+
+            const totalJobs = targetPrinters.length * summaryPrintJobs.length;
+            if (successCount === totalJobs) {
+              if (escposToastId) toast.dismiss(escposToastId);
+              toast.success('Bill summary printed on cashier printer(s)!');
+              return;
+            }
+
+            if (escposToastId) toast.dismiss(escposToastId);
+            toast.warning(`ESC/POS printed ${successCount}/${totalJobs} summary job(s). Falling back to thermal HTML...`);
+          } else {
+            toast.warning('No cashier ESC/POS printer configured for this device. Using thermal HTML print...');
+          }
+        } else {
+          toast.warning('User UUID not found for ESC/POS. Using thermal HTML print...');
+        }
+      } catch (escposError) {
+        if (escposToastId) toast.dismiss(escposToastId);
+        console.error('Bill summary ESC/POS print error:', escposError);
+        toast.warning('ESC/POS bill summary print failed. Falling back to thermal HTML...');
+      }
+
+      const newWindow = window.open("", "_blank");
+
       const summaryBlocks = (invoicesForSummary && invoicesForSummary.length > 0)
         ? invoicesForSummary.map((invoice, idx) => `
           <div class="summary-page ${idx < invoicesForSummary.length - 1 ? 'page-break' : ''}">
-              <div class="bill-header">
-                <h2>${companyName}</h2>
-                <p>${companyAddress}</p>
-                <p>Tax:${companyTaxId}</p>
-                <p><strong>Bill Summary (${invoice.queueNumber || `Split ${idx + 1}`})</strong></p>
-              </div>
+              ${buildCompanyHeaderHtml(`Bill Summary (${invoice.queueNumber || `Split ${idx + 1}`})`)}
               <div class="bill-bill-body">
                 <table class="table">
                   <tr>
-                    <th class="header">Invoice No: ${invoice.invoiceNumber || invoice.billId || '-'}</th>
+                    <th class="header">Invoice No:</th>
                     <th class="header">${invoice.queueNumber || '-'}</th>
                   </tr>
                   <tr>
@@ -1744,16 +2051,11 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         : [
             `
             <div class="summary-page">
-              <div class="bill-header">
-                <h2>${companyName}</h2>
-                <p>${companyAddress}</p>
-                <p>Tax:${companyTaxId}</p>
-                <p><strong>Bill Summary</strong></p>
-              </div>
+              ${buildCompanyHeaderHtml("Bill Summary")}
               <div class="bill-bill-body">
                 <table class="table">
                   <tr>
-                    <th class="header">Invoice No: ${FinalBillData?.[0]?.inv_number || latestInvoiceNumber || latestBillId || "-"}</th>
+                    <th class="header">Invoice No:</th>
                     <th class="header">${selectedTable || "-"}</th>
                   </tr>
                   <tr>
@@ -1816,21 +2118,31 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 font-family: 'Cambria', monospace;
               }
               body {
-                font-size: 18px;
+                font-size: 14px;
                 width: 80mm;
               }
               .bill-header {
                 text-align: center;
-                margin-bottom: 10px;
+                margin-bottom: 8px;
+                padding-bottom: 4px;
+                border-bottom: none;
               }
               .bill-header h2 {
                 margin: 0;
-                font-size: 24px;
-                font-weight: bold;
+                font-size: 22px;
+                font-weight: 700;
+                line-height: 1.25;
+                word-break: break-word;
               }
-              .bill-header p {
-                margin: 4px 0;
-                font-size: 18px;
+              .bill-header .company-info {
+                margin-top: 4px;
+              }
+              .bill-header .company-info p {
+                margin: 2px 0;
+                font-size: 13px;
+                line-height: 1.35;
+                word-break: break-word;
+                white-space: normal;
               }
               .table {
                 width: 100%;
@@ -1839,29 +2151,48 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               }
               .table th, .table td {
                 text-align: left;
-                padding: 5px 0;
-                font-size: 18px;
-                line-height: 1.6;
+                padding: 3px 0;
+                font-size: 13px;
+                line-height: 1.3;
               }
               .table th {
                 font-weight: bold;
-                border-bottom:1px solid #000;
+                border-bottom:none;
               }
               .table td {
-                border-bottom: 1px solid #ddd;
+                border-bottom: none;
+              }
+              .bill-bill-body .table th,
+              .bill-bill-body .table td {
+                font-size: 13px;
+                line-height: 1.3;
+                font-weight: 600;
+              }
+              .bill-body .table th,
+              .bill-body .table td {
+                font-size: 12px;
+                line-height: 1.25;
+              }
+              .bill-body .table thead th {
+                text-transform: uppercase;
+                letter-spacing: 0.2px;
               }
               .total-row {
-                margin-top: 5px;
+                margin-top: 8px;
                 margin-right: 10px;
                 font-weight: bold;
                 text-align: right;
-                font-size: 18px;
-                line-height: 1.6;
+                font-size: 12px;
+                line-height: 1.3;
+              }
+              .total-row span {
+                display: block;
               }
               .footer {
-                margin-top: 15px;
+                margin-top: 10px;
                 text-align: center;
-                font-size: 18px;
+                font-size: 11px;
+                color: #444;
               }
               .summary-page {
                 width: 100%;
@@ -1897,7 +2228,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       try {
         await fetchData("taxes", setTaxesData, "id", { status: "Active" });
         await fetchData("tablelist", setTotaltablelist, "id", { status: "1" });
-        await fetchData("companyinfo", setcompanyInfo, "id", {});
+
+        const companyProfileData = await fetchData("company_profile", null, "id", {});
+        if (Array.isArray(companyProfileData) && companyProfileData.length > 0) {
+          setcompanyInfo(companyProfileData);
+        } else {
+          await fetchData("companyinfo", setcompanyInfo, "id", {});
+        }
         await setpaymentOptions(await fetchComboData("paymentoptions", "name"));
         
         // Fetch currency sign from coresetting table
@@ -1990,8 +2327,8 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
           <Divider style={{ margin: '12px 0' }} />
 
           {/* Tables Section - Touchscreen Friendly */}
-          <Card size="small" style={{ marginBottom: '20px', padding: '16px' }}>
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Card size="small" className="tables-compact-card" style={{ marginBottom: '12px' }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1890ff' }}>🏪 Tables</h4>
                 <Space>
@@ -2034,21 +2371,21 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 </div>
               )}
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: '8px', maxHeight: '160px', overflowY: 'auto', paddingRight: '2px' }}>
                 {TotalTablelist && Array.isArray(TotalTablelist) && TotalTablelist.length > 0 ? (
                   TotalTablelist.map((tables, index) => (
                     <div
                       key={index}
                       onClick={() => handleTableSelection(tables.name)}
                       style={{
-                        padding: '12px 8px',
+                        padding: '10px 8px',
                         border: `3px solid ${isMergeMode && selectedTables.includes(tables.name) ? '#1890ff' : tables.status === 0 ? '#d9d9d9' : '#ff4d4f'}`,
                         borderRadius: '8px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         backgroundColor: !isMergeMode && selectedTable === tables.name ? '#e6f7ff' : 'transparent',
                         transition: 'all 0.2s',
-                        minHeight: '80px',
+                        minHeight: '68px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
@@ -2056,7 +2393,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                         boxShadow: isMergeMode && selectedTables.includes(tables.name) ? '0 4px 12px rgba(24,144,255,0.3)' : 'none'
                       }}
                     >
-                      <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '6px' }}>{tables.name}</div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>{tables.name}</div>
                       <Badge 
                         status={tables.status === 0 ? 'success' : 'error'} 
                         text={tables.status === 0 ? 'Free' : 'Busy'}
@@ -2226,13 +2563,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                     backgroundColor: '#f0f5ff',
                     borderColor: '#b6e1ff',
                     borderRadius: 8,
-                    padding: '16px'
+                    padding: '12px'
                   }}
                 >
                   <div style={{ fontWeight: 700, marginBottom: 16, fontSize: 15, color: '#1890ff' }}>
                     💰 Discount Options
                   </div>
-                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  <div style={{ width: '100%' }}>
                     <Row gutter={[12, 12]}>
                       <Col span={12}>
                         <div style={{ fontSize: 13, marginBottom: 6, color: '#595959', fontWeight: 600 }}>Amount</div>
@@ -2259,60 +2596,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                         />
                       </Col>
                     </Row>
-
-                    <Divider style={{ margin: '10px 0' }} />
-
-                    <Row gutter={[10, 10]} style={{ display: 'none' }}>
-                      <Col span={12}>
-                        <Button
-                          type="default"
-                          size="large"
-                          block
-                          onClick={() => {
-                            if (!phones) {
-                              toast.error("Please enter customer phone first.");
-                              return;
-                            }
-                            setLineQRModalOpen(true);
-                          }}
-                          style={{
-                            backgroundColor: '#e6f7ff',
-                            color: '#1890ff',
-                            borderColor: '#91d5ff',
-                            fontWeight: '600',
-                            fontSize: '13px',
-                            height: '40px'
-                          }}
-                        >
-                          LINE
-                        </Button>
-                      </Col>
-                      <Col span={12}>
-                        <Button
-                          type="default"
-                          size="large"
-                          block
-                          onClick={() => {
-                            if (!customerDetails.phone) {
-                              toast.error("Please enter customer phone first.");
-                              return;
-                            }
-                            setLineQRModalOpen(true);
-                          }}
-                          style={{
-                            backgroundColor: '#e6f4ea',
-                            color: '#25a745',
-                            borderColor: '#95e1b3',
-                            fontWeight: '600',
-                            fontSize: '13px',
-                            height: '40px'
-                          }}
-                        >
-                          WhatsApp
-                        </Button>
-                      </Col>
-                    </Row>
-                  </Space>
+                  </div>
                 </Card>
 
                 {/* Payment Method Card - Touchscreen Friendly */}
@@ -2421,7 +2705,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                           type="primary"
                           size="large"
                           block
-                          onClick={handlePrintBillSummary}
+                          onClick={handleBillSummaryClick}
                           disabled={!finalData || finalData.length === 0}
                           style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', fontSize: '14px', fontWeight: '700', height: '50px' }}
                         >
@@ -2431,29 +2715,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                     )}
                     {isBillSaved && (
                       <Row gutter={[8, 8]} style={{ width: '100%' }}>
-                        <Col xs={24} md={8}>
-                          <Button
-                            type="primary"
-                            size="large"
-                            block
-                            onClick={handlePrintBill}
-                            style={{ backgroundColor: '#1890ff', borderColor: '#1890ff', fontSize: '14px', fontWeight: '700', height: '50px' }}
-                          >
-                            🖨️ Print Bill
-                          </Button>
-                        </Col>
-                        <Col xs={24} md={8}>
-                          <Button
-                            type="primary"
-                            size="large"
-                            block
-                            onClick={handlePrintBillSummary}
-                            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', fontSize: '14px', fontWeight: '700', height: '50px' }}
-                          >
-                            🧾 Bill Summary
-                          </Button>
-                        </Col>
-                        <Col xs={24} md={8}>
+                        <Col xs={24}>
                           <Button
                             type="primary"
                             size="large"

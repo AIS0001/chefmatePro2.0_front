@@ -726,6 +726,14 @@
   box-shadow: 0 2px 12px rgba(24, 144, 255, 0.08) !important;
 }
 
+.tables-compact-card .ant-card-body {
+  padding: 12px !important;
+}
+
+.discount-options-card .ant-card-body {
+  padding: 12px !important;
+}
+
 .discount-options-card .ant-card-head {
   background-color: transparent !important;
   border-bottom: none !important;

@@ -165,6 +165,10 @@ export default function BillHistory() {
     fetchAllData();
   }, []);
 
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
   // Initial data load effect
   useEffect(() => {
     if (data.length > 0) {
@@ -493,6 +497,37 @@ export default function BillHistory() {
     }
   };
 
+  const getCustomerForBill = (record) => {
+    if (normalizePaymentMode(record?.payment_mode) !== "credit") {
+      return null;
+    }
+
+    const customerId = record?.customer_id;
+    if (!customerId) {
+      return null;
+    }
+
+    return customers.find((customer) => (
+      String(customer?.id) === String(customerId) ||
+      String(customer?.contact) === String(customerId)
+    )) || null;
+  };
+
+  const getCustomerDisplayForBill = (record) => {
+    if (normalizePaymentMode(record?.payment_mode) !== "credit") {
+      return "-";
+    }
+
+    const customerId = record?.customer_id;
+    const matchedCustomer = getCustomerForBill(record);
+
+    if (!matchedCustomer) {
+      return customerId ? `Customer #${customerId}` : "-";
+    }
+
+    return matchedCustomer.name || matchedCustomer.customer_name || matchedCustomer.contact || `Customer #${customerId}`;
+  };
+
   const handleMoveBillToCredit = (record) => {
     if (!record?.id) {
       toast.error("Invalid bill selected.");
@@ -816,6 +851,22 @@ export default function BillHistory() {
             "Entertainment": "cyan",
           };
           return <Tag color={colorMap[displayMode] || "default"}>{displayMode}</Tag>;
+        },
+      },
+      {
+        title: "Customer",
+        key: "customer_name",
+        render: (_, record) => {
+          const matchedCustomer = getCustomerForBill(record);
+          const displayName = getCustomerDisplayForBill(record);
+
+          if (displayName === "-") {
+            return "-";
+          }
+
+          return matchedCustomer?.contact && String(matchedCustomer.contact) !== String(displayName)
+            ? `${displayName} (${matchedCustomer.contact})`
+            : displayName;
         },
       },
       ...(isCancelledTab

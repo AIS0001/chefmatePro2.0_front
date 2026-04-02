@@ -10,7 +10,7 @@ import { UpOutlined, DownOutlined } from "@ant-design/icons";
 
 import Layout from "../../layout/Layout";
 
-import fetchData from "../../functions/fetchData";
+import { fetchShopScopedData } from "../../functions/fetchData";
 
 export default function SuppliersLedger() {
   const { Title, Text } = Typography;
@@ -37,6 +37,59 @@ export default function SuppliersLedger() {
   const [isLedgerTableCollapsed, setIsLedgerTableCollapsed] = useState(false);
   const [isClosingBalanceCollapsed, setIsClosingBalanceCollapsed] = useState(false);
 
+  const pageStyle = {
+    background: "linear-gradient(180deg, #f8fbff 0%, #f3f7fb 100%)",
+    borderRadius: 16,
+    padding: 12,
+  };
+
+  const primaryCardStyle = {
+    marginBottom: 16,
+    borderRadius: 16,
+    border: "1px solid #e6edf5",
+    background: "#fcfdff",
+    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
+  };
+
+  const nestedCardStyle = {
+    marginTop: 16,
+    borderRadius: 14,
+    border: "1px solid #e8eef6",
+    background: "#f7fbff",
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.04)",
+  };
+
+  const getSupplierName = (supplierId) => {
+    if (supplierId === undefined || supplierId === null || supplierId === "") {
+      return "-";
+    }
+
+    const supplier = suppliers.find((row) => row.id?.toString() === supplierId?.toString());
+
+    return (
+      supplier?.company_name ||
+      supplier?.name ||
+      supplier?.supplier_name ||
+      `Supplier ${supplierId}`
+    );
+  };
+
+  const isSupplierLedgerRecord = (record) => {
+    const supplierId = record?.account_id?.toString();
+    const normalizedAccountType = (record?.account_type || "").trim().toLowerCase();
+    const validSupplierTypes = new Set(["purchase", "accounts payable", "supplier", "supplier payment", "supplier_payment"]);
+
+    if (!supplierId) {
+      return false;
+    }
+
+    const hasKnownSupplier = suppliers.some((row) => row.id?.toString() === supplierId);
+
+    return hasKnownSupplier && validSupplierTypes.has(normalizedAccountType);
+  };
+
+  const getSupplierLedgerRecords = () => allData.filter((record) => isSupplierLedgerRecord(record));
+
   const columns = [
     {
       title: "Txn ID",
@@ -56,9 +109,10 @@ export default function SuppliersLedger() {
       key: "account_type",
     },
     {
-      title: "A/C ID",
+      title: "Supplier",
       dataIndex: "account_id",
       key: "account_id",
+      render: (value) => getSupplierName(value),
     },
     {
       title: "Description",
@@ -96,54 +150,10 @@ export default function SuppliersLedger() {
     const f = from ? formatDate(from) : null;
     const t = to ? formatDate(to) : null;
 
-    return allData.filter((r) => {
+    return getSupplierLedgerRecords().filter((r) => {
       const date = formatDate(r.date);
       return (!f || date >= f) && (!t || date <= t);
     });
-  };
-
-  const applyFilters = () => {
-    const {
-      accountid,
-      transaction_id,
-      account_type,
-      description,
-      min_debit,
-      max_debit,
-      min_credit,
-      max_credit,
-    } = formData;
-
-    const minDebit = min_debit === "" ? null : parseFloat(min_debit);
-    const maxDebit = max_debit === "" ? null : parseFloat(max_debit);
-    const minCredit = min_credit === "" ? null : parseFloat(min_credit);
-    const maxCredit = max_credit === "" ? null : parseFloat(max_credit);
-
-    const filtered = getDateFilteredRecords().filter((r) => {
-      const debit = parseFloat(r.debit_amount || 0);
-      const credit = parseFloat(r.credit_amount || 0);
-      const accountMatch = !accountid || r.account_id?.toString() === accountid?.toString();
-      const txnMatch = !transaction_id || r.transaction_id?.toString().includes(transaction_id.toString());
-      const accountTypeMatch = !account_type || (r.account_type || "").toLowerCase() === account_type.toLowerCase();
-      const descriptionMatch = !description || (r.description || "").toLowerCase().includes(description.toLowerCase());
-      const minDebitMatch = minDebit === null || debit >= minDebit;
-      const maxDebitMatch = maxDebit === null || debit <= maxDebit;
-      const minCreditMatch = minCredit === null || credit >= minCredit;
-      const maxCreditMatch = maxCredit === null || credit <= maxCredit;
-
-      return (
-        accountMatch &&
-        txnMatch &&
-        accountTypeMatch &&
-        descriptionMatch &&
-        minDebitMatch &&
-        maxDebitMatch &&
-        minCreditMatch &&
-        maxCreditMatch
-      );
-    });
-
-    calculateTotals(filtered);
   };
 
   const handleInputChange = (name, value) => {
@@ -179,11 +189,10 @@ export default function SuppliersLedger() {
       if (!supplierId) return acc;
 
       if (!acc[supplierId]) {
-        const supplier = suppliers.find((s) => s.id?.toString() === supplierId);
         acc[supplierId] = {
           key: supplierId,
           supplier_id: supplierId,
-          supplier_name: supplier?.company_name || `Supplier ${supplierId}`,
+          supplier_name: getSupplierName(supplierId),
           debit_total: 0,
           credit_total: 0,
           closing_balance: 0,
@@ -237,12 +246,12 @@ export default function SuppliersLedger() {
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    const tableColumn = ["Txn ID", "Date", "A/C Type", "A/C ID", "Description", "Debit", "Credit"];
+    const tableColumn = ["Txn ID", "Date", "A/C Type", "Supplier", "Description", "Debit", "Credit"];
     const tableRows = data.map((r) => [
       r.transaction_id,
       formatDate(r.date),
       r.account_type,
-      r.account_id,
+      getSupplierName(r.account_id),
       r.description,
       r.debit_amount,
       r.credit_amount,
@@ -454,38 +463,98 @@ export default function SuppliersLedger() {
   };
 
   useEffect(() => {
-    fetchData("ledger_entries", (res) => {
-      setAllData(res);
-      setData(res);
-      calculateTotals(res);
-    }, "id", {});
+    const loadInitialData = async () => {
+      const ledgerRows = await fetchShopScopedData("Supplier_ledger_entries", null, "id");
+      const normalizedLedgerRows = Array.isArray(ledgerRows) ? ledgerRows : [];
+      setAllData(normalizedLedgerRows);
 
-    fetchData("suppliers", setSuppliers, "id", {});
-    fetchData("company_info", (res) => setCompanyInfo(res[0]), "id", {});
+      const supplierRows = await fetchShopScopedData("suppliers", null, "id");
+      setSuppliers(Array.isArray(supplierRows) ? supplierRows : []);
+
+      const companyProfileRows = await fetchShopScopedData("company_profile", null, "id");
+      if (Array.isArray(companyProfileRows) && companyProfileRows.length > 0) {
+        setCompanyInfo(companyProfileRows[0]);
+        return;
+      }
+
+      const companyInfoRows = await fetchShopScopedData("companyinfo", null, "id");
+      if (Array.isArray(companyInfoRows) && companyInfoRows.length > 0) {
+        setCompanyInfo(companyInfoRows[0]);
+      } else {
+        setCompanyInfo(null);
+      }
+    };
+
+    loadInitialData();
   }, []);
 
   useEffect(() => {
-    applyFilters();
-  }, [
-    formData.from,
-    formData.to,
-    formData.accountid,
-    formData.transaction_id,
-    formData.account_type,
-    formData.description,
-    formData.min_debit,
-    formData.max_debit,
-    formData.min_credit,
-    formData.max_credit,
-  ]);
+    const {
+      from,
+      to,
+      accountid,
+      transaction_id,
+      account_type,
+      description,
+      min_debit,
+      max_debit,
+      min_credit,
+      max_credit,
+    } = formData;
+
+    const minDebit = min_debit === "" ? null : parseFloat(min_debit);
+    const maxDebit = max_debit === "" ? null : parseFloat(max_debit);
+    const minCredit = min_credit === "" ? null : parseFloat(min_credit);
+    const maxCredit = max_credit === "" ? null : parseFloat(max_credit);
+    const formattedFrom = from ? formatDate(from) : null;
+    const formattedTo = to ? formatDate(to) : null;
+    const validSupplierTypes = new Set(["purchase", "accounts payable", "supplier", "supplier payment", "supplier_payment"]);
+
+    const filtered = allData.filter((r) => {
+      const supplierId = r.account_id?.toString();
+      const normalizedAccountType = (r.account_type || "").trim().toLowerCase();
+      const isSupplierRecord =
+        supplierId &&
+        suppliers.some((row) => row.id?.toString() === supplierId) &&
+        validSupplierTypes.has(normalizedAccountType);
+      const date = formatDate(r.date);
+      const debit = parseFloat(r.debit_amount || 0);
+      const credit = parseFloat(r.credit_amount || 0);
+      const dateMatch = (!formattedFrom || date >= formattedFrom) && (!formattedTo || date <= formattedTo);
+      const accountMatch = !accountid || r.account_id?.toString() === accountid?.toString();
+      const txnMatch = !transaction_id || r.transaction_id?.toString().includes(transaction_id.toString());
+      const accountTypeMatch = !account_type || (r.account_type || "").toLowerCase() === account_type.toLowerCase();
+      const descriptionMatch = !description || (r.description || "").toLowerCase().includes(description.toLowerCase());
+      const minDebitMatch = minDebit === null || debit >= minDebit;
+      const maxDebitMatch = maxDebit === null || debit <= maxDebit;
+      const minCreditMatch = minCredit === null || credit >= minCredit;
+      const maxCreditMatch = maxCredit === null || credit <= maxCredit;
+
+      return (
+        isSupplierRecord &&
+        dateMatch &&
+        accountMatch &&
+        txnMatch &&
+        accountTypeMatch &&
+        descriptionMatch &&
+        minDebitMatch &&
+        maxDebitMatch &&
+        minCreditMatch &&
+        maxCreditMatch
+      );
+    });
+
+    calculateTotals(filtered);
+  }, [formData, allData, suppliers]);
 
   const closingBalanceData = allSupplierClosingBalances();
 
   return (
     <Layout>
       <ToastContainer />
-      <Card bordered={false} style={{ marginBottom: 16 }}>
-        <Title level={4} style={{ marginBottom: 16 }}>Supplier Expense Ledger</Title>
+      <div style={pageStyle}>
+      <Card bordered={false} style={primaryCardStyle}>
+        <Title level={4} style={{ marginBottom: 16, color: "#1e3a5f" }}>Supplier Expense Ledger</Title>
         <Row gutter={[12, 12]}>
           <Col xs={24} sm={12} md={6}>
             <Text type="secondary">From Date</Text>
@@ -519,7 +588,10 @@ export default function SuppliersLedger() {
               placeholder="Select Supplier"
               allowClear
               style={{ width: "100%" }}
-              options={suppliers.map((s) => ({ value: s.id.toString(), label: s.company_name }))}
+              options={suppliers.map((s) => ({
+                value: s.id.toString(),
+                label: s.company_name || s.name || s.supplier_name || `Supplier ${s.id}`,
+              }))}
             />
           </Col>
         </Row>
@@ -535,7 +607,15 @@ export default function SuppliersLedger() {
               </Checkbox>
             <Checkbox
               checked={showAllClosingBalance}
-              onChange={(e) => setShowAllClosingBalance(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setShowAllClosingBalance(checked);
+                if (checked) {
+                  setIsLedgerTableCollapsed(true);
+                } else {
+                  setIsLedgerTableCollapsed(false);
+                }
+              }}
             >
               Show Closing Balance of All Suppliers
             </Checkbox>
@@ -544,8 +624,7 @@ export default function SuppliersLedger() {
         </Row>
 
         {showAdvancedFilters && (
-          <Card size="small" style={{ marginTop: 16, background: "#fafafa" }}>
-            <Title level={5} style={{ marginBottom: 12 }}>Advanced Filters</Title>
+          <Card bordered={false} style={nestedCardStyle}>
             <Row gutter={[12, 12]}>
               <Col xs={24} sm={12} md={8}>
                 <Text type="secondary">Transaction ID</Text>
@@ -567,6 +646,7 @@ export default function SuppliersLedger() {
                     { value: "supplier", label: "Supplier" },
                     { value: "supplier_payment", label: "Supplier Payment" },
                     { value: "purchase", label: "Purchase" },
+                    { value: "accounts payable", label: "Accounts Payable" },
                   ]}
                 />
               </Col>
@@ -625,16 +705,33 @@ export default function SuppliersLedger() {
           <Button type="primary" onClick={printThermalReport}>Print Thermal</Button>
           <CSVLink
             data={[
-              ...data,
+              ...data.map((row) => ({
+                transaction_id: row.transaction_id,
+                date: row.date,
+                account_type: row.account_type,
+                supplier_name: getSupplierName(row.account_id),
+                description: row.description,
+                debit_amount: row.debit_amount,
+                credit_amount: row.credit_amount,
+              })),
               {
                 transaction_id: "",
                 date: "",
                 account_type: "",
-                account_id: "",
+                supplier_name: "",
                 description: "Total",
                 debit_amount: totals.debit.toFixed(2),
                 credit_amount: totals.credit.toFixed(2),
               },
+            ]}
+            headers={[
+              { label: "Txn ID", key: "transaction_id" },
+              { label: "Date", key: "date" },
+              { label: "A/C Type", key: "account_type" },
+              { label: "Supplier", key: "supplier_name" },
+              { label: "Description", key: "description" },
+              { label: "Debit", key: "debit_amount" },
+              { label: "Credit", key: "credit_amount" },
             ]}
             filename="SupplierLedger.csv"
           >
@@ -644,46 +741,49 @@ export default function SuppliersLedger() {
         </Space>
       </Card>
 
-      <Card
-        bordered={false}
-        title="Supplier Ledger Table"
-        extra={
-          <Button
-            type="text"
-            onClick={() => setIsLedgerTableCollapsed((prev) => !prev)}
-            icon={isLedgerTableCollapsed ? <DownOutlined /> : <UpOutlined />}
-          >
-            {isLedgerTableCollapsed ? "Expand" : "Collapse"}
-          </Button>
-        }
-      >
-        {!isLedgerTableCollapsed && (
-          <>
-            {data.length === 0 ? (
-              <Empty description="No records found" />
-            ) : (
-              <Table
-                rowKey={(record, index) => `${record.transaction_id || 'txn'}-${index}`}
-                columns={columns}
-                dataSource={data}
-                pagination={{ pageSize: 10 }}
-                scroll={{ x: 900 }}
-              />
-            )}
+      {!showAllClosingBalance && (
+        <Card
+          bordered={false}
+          style={primaryCardStyle}
+          title="Supplier Ledger Table"
+          extra={
+            <Button
+              type="text"
+              onClick={() => setIsLedgerTableCollapsed((prev) => !prev)}
+              icon={isLedgerTableCollapsed ? <DownOutlined /> : <UpOutlined />}
+            >
+              {isLedgerTableCollapsed ? "Expand" : "Collapse"}
+            </Button>
+          }
+        >
+          {!isLedgerTableCollapsed && (
+            <>
+              {data.length === 0 ? (
+                <Empty description="No records found" />
+              ) : (
+                <Table
+                  rowKey={(record, index) => `${record.transaction_id || 'txn'}-${index}`}
+                  columns={columns}
+                  dataSource={data}
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 900 }}
+                />
+              )}
 
-            <div style={{ marginTop: 12 }}>
-              <Text strong>Total Credit:</Text> {totals.credit.toFixed(2)} |{" "}
-              <Text strong>Total Debit:</Text> {totals.debit.toFixed(2)} |{" "}
-              <Text strong>Balance:</Text> {totals.balance.toFixed(2)}
-            </div>
-          </>
-        )}
-      </Card>
+              <div style={{ marginTop: 12 }}>
+                <Text strong>Total Credit:</Text> {totals.credit.toFixed(2)} |{" "}
+                <Text strong>Total Debit:</Text> {totals.debit.toFixed(2)} |{" "}
+                <Text strong>Balance:</Text> {totals.balance.toFixed(2)}
+              </div>
+            </>
+          )}
+        </Card>
+      )}
 
       {showAllClosingBalance && (
         <Card
           bordered={false}
-          style={{ marginTop: 16 }}
+          style={primaryCardStyle}
           title="Closing Balance of All Suppliers"
           extra={
             <Space>
@@ -724,6 +824,7 @@ export default function SuppliersLedger() {
           )}
         </Card>
       )}
+      </div>
     </Layout>
   );
 }

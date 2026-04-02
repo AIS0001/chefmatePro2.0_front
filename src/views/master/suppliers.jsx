@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Button, Card, Form, Input, Popconfirm, Space, Table, Typography, message } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { Button, Card, Col, Form, Input, Popconfirm, Row, Space, Table, Typography, message } from "antd";
 import axios from "axios";
-import { getHeaders } from "../../utility/getHeader";
+import { getHeaders, getResolvedShopId } from "../../utility/getHeader";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import fetchData from "../../functions/fetchData";
+import { fetchShopScopedData } from "../../functions/fetchData";
 
 const { Text, Title } = Typography;
 
@@ -33,22 +33,23 @@ export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const resolvedShopId = getResolvedShopId();
 
-  const loadSuppliers = async () => {
+  const loadSuppliers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const rows = await fetchData("suppliers", null, "id", {});
+      const rows = await fetchShopScopedData("suppliers", null, "id");
       setSuppliers(Array.isArray(rows) ? rows : []);
     } catch (error) {
       message.error("Failed to load suppliers");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadSuppliers();
-  }, []);
+  }, [loadSuppliers]);
 
   const onFinish = async (values) => {
     const name = (values.name || "").trim();
@@ -62,6 +63,7 @@ export default function Suppliers() {
       await axios.post(
         "/insertdata/suppliers",
         {
+          ...(resolvedShopId ? { shop_id: resolvedShopId } : {}),
           name,
           company_name: values.company_name || "",
           contact: values.contact || "",
@@ -173,43 +175,61 @@ export default function Suppliers() {
 
           <Card title="Add New Supplier" style={softCardStyle} bodyStyle={{ paddingBottom: 10 }}>
             <Form form={form} layout="vertical" onFinish={onFinish}>
-              <Form.Item
-                label="Supplier Name"
-                name="name"
-                rules={[{ required: true, message: "Supplier name is required" }]}
-              >
-                <Input placeholder="Enter supplier name" maxLength={100} style={{ borderRadius: 12 }} />
-              </Form.Item>
-              <Form.Item label="Company Name" name="company_name">
-                <Input placeholder="Enter company name" maxLength={100} style={{ borderRadius: 12 }} />
-              </Form.Item>
-              <Form.Item label="Contact" name="contact">
-                <Input placeholder="Enter contact number" maxLength={20} style={{ borderRadius: 12 }} />
-              </Form.Item>
-              <Form.Item label="Email" name="email">
-                <Input type="email" placeholder="Enter email" maxLength={100} style={{ borderRadius: 12 }} />
-              </Form.Item>
-              <Form.Item label="Tax ID" name="taxid">
-                <Input placeholder="Enter tax ID" maxLength={50} style={{ borderRadius: 12 }} />
-              </Form.Item>
-              <Form.Item label="Address" name="address">
-                <Input.TextArea placeholder="Enter address" rows={3} maxLength={200} style={{ borderRadius: 12 }} />
-              </Form.Item>
-
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isSubmitting}
-                style={{
-                  borderRadius: 12,
-                  background: "linear-gradient(135deg, #69c0ff 0%, #ffd666 100%)",
-                  border: "none",
-                  color: "#12324a",
-                  fontWeight: 600,
-                }}
-              >
-                Save Supplier
-              </Button>
+              <Row gutter={[16, 6]}>
+                <Col xs={24} md={12} lg={8}>
+                  <Form.Item
+                    label="Supplier Name"
+                    name="name"
+                    rules={[{ required: true, message: "Supplier name is required" }]}
+                  >
+                    <Input placeholder="Enter supplier name" maxLength={100} style={{ borderRadius: 12 }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12} lg={8}>
+                  <Form.Item label="Company Name" name="company_name">
+                    <Input placeholder="Enter company name" maxLength={100} style={{ borderRadius: 12 }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12} lg={8}>
+                  <Form.Item label="Contact" name="contact">
+                    <Input placeholder="Enter contact number" maxLength={20} style={{ borderRadius: 12 }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12} lg={8}>
+                  <Form.Item label="Email" name="email">
+                    <Input type="email" placeholder="Enter email" maxLength={100} style={{ borderRadius: 12 }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12} lg={8}>
+                  <Form.Item label="Tax ID" name="taxid">
+                    <Input placeholder="Enter tax ID" maxLength={50} style={{ borderRadius: 12 }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} lg={16}>
+                  <Form.Item label="Address" name="address">
+                    <Input.TextArea placeholder="Enter address" rows={2} maxLength={200} style={{ borderRadius: 12 }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Form.Item label=" ">
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={isSubmitting}
+                      style={{
+                        width: "100%",
+                        borderRadius: 12,
+                        background: "linear-gradient(135deg, #69c0ff 0%, #ffd666 100%)",
+                        border: "none",
+                        color: "#12324a",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Save Supplier
+                    </Button>
+                  </Form.Item>
+                </Col>
+              </Row>
             </Form>
           </Card>
 

@@ -1,64 +1,132 @@
 /* eslint-disable no-undef */
 
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import fetchData from "../../functions/fetchData";
+import React, { useCallback, useEffect, useState } from "react";
+import fetchData, { fetchShopScopedData } from "../../functions/fetchData";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
-import CardComponent from "../../components/cards/CardComponent";
 import Header from "../../components/Header";
 import Layout from "../../layout/Layout";
-import DataTable from "../../components/data-tables/datatwoTable";
+import { Button, Card, Col, Input, InputNumber, Row, Select, Table, Typography } from "antd";
 
 export default function PaymentVouchers() {
+    const { Text } = Typography;
     const [suppliers, setsuppliers] = useState([]);
-    const [selectedCustomer, setSelectedCustomer] = useState("");
+    const [selectedSupplier, setSelectedSupplier] = useState("");
     const [outstandingAmount, setOutstandingAmount] = useState(0);
     const [paymentAmount, setPaymentAmount] = useState("");
     const [paymentMode, setPaymentMode] = useState("");
     const [referenceNumber, setReferenceNumber] = useState("");
     const [remarks, setRemarks] = useState("");
     const [balanceAfterPayment, setBalanceAfterPayment] = useState(0);
-    const [invoices, setInvoices] = useState([]);
-    const [selectedInvoice, setSelectedInvoice] = useState("");
     const [data, setData] = useState([]);
     const getShopId = () => sessionStorage.getItem('selected_shop_id') || localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
+    const formatThaiBaht = (value) => new Intl.NumberFormat("th-TH", {
+        style: "currency",
+        currency: "THB",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Number(value) || 0);
+
     const columns = [
- 
-        { label: "Supplier ID", field: "supplier_id" },
-        { label: "Date", field: "payment_date" },
-        { label: "Mode", field: "payment_mode" },
-        { label: "Paid Amount", field: "amount_paid" },
-        { label: "Ref ID", field: "reference_id" }
+        {
+            title: "Supplier",
+            dataIndex: "supplier_name",
+            key: "supplier_name",
+            ellipsis: true,
+        },
+        {
+            title: "Date",
+            dataIndex: "payment_date",
+            key: "payment_date",
+            render: (value) => value ? new Date(value).toLocaleDateString() : "-",
+        },
+        {
+            title: "Mode",
+            dataIndex: "payment_mode",
+            key: "payment_mode",
+        },
+        {
+            title: "Paid Amount",
+            dataIndex: "amount_paid",
+            key: "amount_paid",
+        },
+        {
+            title: "Ref ID",
+            dataIndex: "reference_id",
+            key: "reference_id",
+            render: (value) => value || "-",
+        },
     ];
+
+    const getSupplierLabel = (supplier) => (
+        supplier?.name || supplier?.supplier_name || supplier?.company_name || `Supplier ${supplier?.id || ""}`
+    );
+
+    const voucherRows = data.map((voucher, index) => {
+        const supplier = suppliers.find((item) => item.id?.toString() === voucher.supplier_id?.toString());
+        return {
+            key: voucher.id || `${voucher.reference_id || "ref"}-${index}`,
+            ...voucher,
+            supplier_name: getSupplierLabel(supplier),
+            amount_paid: formatThaiBaht(voucher.amount_paid),
+        };
+    });
+
     // Fetch suppliers when component loads
     useEffect(() => {
-        // fetchData("suppliers", setsuppliers);
-        fetchData("suppliers", setsuppliers, "id", {});
+        fetchShopScopedData("suppliers", setsuppliers, "id");
     }, []);
 
     const getOutStandingBalance = async (e) => {
-        const customerId = e.target.value;
-        setSelectedCustomer(customerId); // Update selected customer state
+        const supplierId = e.target.value;
+        setSelectedSupplier(supplierId);
 
-        if (!customerId) {
+        if (!supplierId) {
             setOutstandingAmount(0);
             return;
         }
 
-        //testing update upto 15may 2025
         try {
-            const res = await axios.get(`/getoutstandingbalance/Purchase/${customerId}`, getHeaders());
+            const endpoint = `/getsupplieroutstandingbalance/${supplierId}`;
+            console.log("[PaymentVouchers] Fetch supplier balance", {
+                endpoint,
+                supplierId,
+                shopId: getShopId(),
+            });
+
+            const res = await axios.get(endpoint, getHeaders());
+            console.log("[PaymentVouchers] Supplier balance response", {
+                supplierId,
+                status: res?.status,
+                data: res?.data,
+            });
+
+            const apiSuccess = Boolean(res?.data?.success);
+            const rawOutstandingBalance = res?.data?.outstanding_balance;
+            const parsedOutstandingBalance = Number(rawOutstandingBalance || 0);
+            console.log("[PaymentVouchers] Supplier balance parsed", {
+                supplierId,
+                apiSuccess,
+                rawOutstandingBalance,
+                parsedOutstandingBalance,
+                responseJson: JSON.stringify(res?.data || {}),
+            });
+
             if (res.data.success) {
-                setOutstandingAmount(res.data.outstanding_balance);
+                setOutstandingAmount(parsedOutstandingBalance);
             } else {
-                toast.error("Failed to fetch ledger balance");
+                toast.error("Failed to fetch supplier balance");
             }
         } catch (error) {
-            console.error("Error fetching outstanding balance:", error);
-            toast.error("Error fetching outstanding balance.");
+            console.error("[PaymentVouchers] Error fetching supplier outstanding balance", {
+                supplierId,
+                message: error?.message,
+                status: error?.response?.status,
+                data: error?.response?.data,
+            });
+            toast.error("Error fetching supplier outstanding balance.");
         }
     };
 
@@ -67,66 +135,18 @@ export default function PaymentVouchers() {
         setBalanceAfterPayment(remaining >= 0 ? remaining : 0);
     }, [paymentAmount, outstandingAmount]);
 
-    // Fetch outstanding balance & invoices when a customer is selected
-    useEffect(() => {
-        // alert(selectedCustomer);
-        if (selectedCustomer) {
-            // Fetch ledger balance from API
-            
-            fetchData("suppliers", setsuppliers, "id", {});
-            axios.get(`/getoutstandingbalance/Purchase/${selectedCustomer}`, getHeaders(), (res) => {
-                if (res.success) {
-                    setOutstandingAmount(res.outstanding_balance);
-                    alert(res.outstanding_balance);
-                    <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
-                    console.log(outstandingAmount);
-                } else {
-                    alert("error");
-                    console.log("error");
-                    toast.error("Failed to fetch ledger balance");
-                }
-            });
-
-            // Fetch invoices related to the customer
-            //  fetchData(`/getCustomerInvoices/${selectedCustomer}`, setInvoices);
-        } else {
-            setOutstandingAmount(0);
-            setInvoices([]);
-        }
-    }, [selectedCustomer]);
-
-useEffect(() => {
-  const fetchAndSetData = async () => {
-    try {
-            const shopId = getShopId();
-            await fetchData("payment_vouchers", setData, "id", shopId ? { shop_id: shopId } : {});
-      console.log("Fetched data:", data);
-    } catch (error) {
-      console.error("Error in useEffect:", error);
-    }
-  };
-
-  fetchAndSetData();
-}, []);
-
-    // Update remaining balance after payment
-    useEffect(() => {
-
-        const remaining = outstandingAmount - paymentAmount;
-        setBalanceAfterPayment(remaining >= 0 ? remaining : 0);
-    }, [paymentAmount, outstandingAmount]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         const paymentData = {
-            supplier_id: selectedCustomer,
+                        shop_id: getShopId(),
+                        supplier_id: selectedSupplier,
             amount_paid: parseFloat(paymentAmount) || 0,
             reference_number: referenceNumber,
             payment_mode: paymentMode,
-            remarks, remarks// ✅ add this
+                        remarks,
         };
-if (!selectedCustomer || !paymentAmount || !paymentMode) {
+if (!selectedSupplier || !paymentAmount || !paymentMode) {
   toast.error("Please fill in all required fields.");
   return;
 }
@@ -140,109 +160,147 @@ if (!selectedCustomer || !paymentAmount || !paymentMode) {
             //await fetchData("payment_vouchers", null, "POST", paymentData);
  await fetchVoucherData();
             toast.success("Payment recorded successfully!");
+            setSelectedSupplier("");
+            setOutstandingAmount(0);
+            setPaymentAmount("");
+            setPaymentMode("");
+            setReferenceNumber("");
+            setRemarks("");
         } catch (error) {
             console.error("Error saving payment:", error);
             toast.error("Error recording payment."+error);
         }
     };
-const fetchVoucherData = async () => {
-  try {
-        const shopId = getShopId();
-        await fetchData("payment_vouchers", setData, "id", shopId ? { shop_id: shopId } : {});
-  } catch (error) {
-    console.error("Error fetching payment vouchers:", error);
-  }
-};
+const fetchVoucherData = useCallback(async () => {
+    try {
+                const shopId = getShopId();
+                await fetchData("payment_vouchers", setData, "id", shopId ? { shop_id: shopId } : {});
+    } catch (error) {
+        console.error("Error fetching payment vouchers:", error);
+    }
+}, []);
 
+useEffect(() => {
+        fetchVoucherData();
+}, [fetchVoucherData]);
+
+
+    const softPageStyle = {
+        background: "linear-gradient(180deg, #f7fafc 0%, #f1f5f9 100%)",
+        borderRadius: 12,
+        padding: 16,
+    };
+
+    const formCardStyle = {
+        borderRadius: 12,
+        border: "1px solid #e6edf5",
+        background: "#f8fbff",
+    };
+
+    const tableCardStyle = {
+        borderRadius: 12,
+        border: "1px solid #e6edf5",
+        background: "#fcfdff",
+    };
 
     return (
         <Layout>
             <Header title="Payment Vouchers" />
             <ToastContainer />
+            <div style={softPageStyle}>
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} lg={9}>
+                        <Card title="Create Payment Voucher" style={formCardStyle}>
+                            <form onSubmit={handleSubmit}>
+                                <Text strong>Supplier Name</Text>
+                                <Select
+                                    value={selectedSupplier || undefined}
+                                    onChange={(value) => getOutStandingBalance({ target: { value } })}
+                                    placeholder="Select Supplier"
+                                    size="large"
+                                    style={{ width: "100%", marginTop: 6, marginBottom: 12 }}
+                                    options={suppliers.map((supplier) => ({
+                                        value: supplier.id,
+                                        label: supplier.name || supplier.supplier_name || supplier.company_name,
+                                    }))}
+                                />
 
-            <div className="row">
-                {/* Left Panel - Payment Form */}
-                <div className="col-lg-4 col-md-4 col-sm-12">
-                    <CardComponent title="Create Payment Voucher" headerColor="darkblue">
-                        <form onSubmit={handleSubmit}>
-                            {/* Customer Selection */}
-                            <label>Customer Name:</label>
-                            <select value={selectedCustomer} onChange={getOutStandingBalance} className="form-control">
+                                <Text strong>Outstanding Amount</Text>
+                                <Input
+                                    size="large"
+                                    value={formatThaiBaht(outstandingAmount)}
+                                    readOnly
+                                    style={{ marginTop: 6, marginBottom: 12, background: "#f0f5ff" }}
+                                />
 
+                                <Text strong>Payment Mode</Text>
+                                <Select
+                                    value={paymentMode || undefined}
+                                    onChange={(value) => setPaymentMode(value)}
+                                    placeholder="Select Payment Mode"
+                                    size="large"
+                                    style={{ width: "100%", marginTop: 6, marginBottom: 12 }}
+                                    options={[
+                                        { value: "Cash", label: "Cash" },
+                                        { value: "Bank", label: "Bank" },
+                                        { value: "Cheque", label: "Cheque" },
+                                        { value: "Online", label: "Online" },
+                                    ]}
+                                />
 
-                                <option value="">Select Customer</option>
-                                {suppliers.map((customer) => (
-                                    <option key={customer.id} value={customer.id}>
-                                        {customer.name}
-                                    </option>
-                                ))}
-                            </select>
+                                <Text strong>Amount Paid</Text>
+                                <InputNumber
+                                    size="large"
+                                    value={paymentAmount === "" ? null : Number(paymentAmount)}
+                                    onChange={(value) => setPaymentAmount(value ?? "")}
+                                    style={{ width: "100%", marginTop: 6, marginBottom: 12 }}
+                                    min={0}
+                                />
 
-                            {/* Outstanding Amount */}
-                            <label>Outstanding Amount:</label>
-                            <input type="text" value={`₹ ${outstandingAmount}`} readOnly className="form-control" />
+                                <Text strong>Reference Number</Text>
+                                <Input
+                                    size="large"
+                                    value={referenceNumber}
+                                    onChange={(e) => setReferenceNumber(e.target.value)}
+                                    style={{ marginTop: 6, marginBottom: 12 }}
+                                    placeholder="Optional"
+                                />
 
-                            {/* Invoice Selection */}
+                                <Text strong>Remarks</Text>
+                                <Input.TextArea
+                                    value={remarks}
+                                    onChange={(e) => setRemarks(e.target.value)}
+                                    rows={3}
+                                    style={{ marginTop: 6, marginBottom: 12 }}
+                                />
 
+                                <Text strong>Balance After Payment</Text>
+                                <Input
+                                    size="large"
+                                    value={formatThaiBaht(balanceAfterPayment)}
+                                    readOnly
+                                    style={{ marginTop: 6, marginBottom: 14, background: "#f6ffed" }}
+                                />
 
-                            {/* Payment Mode */}
-                            <label>Payment Mode:</label>
-                            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="form-control">
-                                <option value="">Select Payment Mode</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Bank">Bank</option>
-                                <option value="Cheque">Cheque</option>
-                                <option value="Online">Online</option>
-                            </select>
-
-                            {/* Amount Paid */}
-                            <label>Amount Paid:</label>
-                            <input
-                                type="number"
-                                value={paymentAmount}
-                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                className="form-control"
-                            />
-
-                            {/* Reference Number */}
-                            <label>Reference Number (if applicable):</label>
-                            <input
-                                type="text"
-                                value={referenceNumber}
-                                onChange={(e) => setReferenceNumber(e.target.value)}
-                                className="form-control"
-                            />
-
-                            {/* Remarks */}
-                            <label>Remarks:</label>
-                            <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} className="form-control" />
-
-                            {/* Balance After Payment */}
-                            <label>Balance After Payment:</label>
-                            <input type="text" value={`₹ ${balanceAfterPayment}`} readOnly className="form-control" />
-                            <label></label>
-                            {/* Submit Button */}
-                            <div className="mt-3">
-                                <button type="submit" className="btn btn-darkblue btn-block">
+                                <Button type="primary" htmlType="submit" block size="large">
                                     Save Payment
-                                </button>
-                            </div>
-                        </form>
-                    </CardComponent>
-                </div>
+                                </Button>
+                            </form>
+                        </Card>
+                    </Col>
 
-                {/* Right Panel - Payment History Table */}
-                <div className="col-lg-8 col-md-8 col-sm-12">
-                    {data.length === 0 ? (
-                        <p>No data available</p>
-                    ) : (
-                      <DataTable
-                        columns={columns}
-                        data={data}
-                        tablename={{ main: "payment_vouchers", join: "suppliers" }}
-                        />
-                    )}
-                </div>
+                    <Col xs={24} lg={15}>
+                        <Card title="Payment History" style={tableCardStyle}>
+                            <Table
+                                columns={columns}
+                                dataSource={voucherRows}
+                                pagination={{ pageSize: 8 }}
+                                locale={{ emptyText: "No data available" }}
+                                size="middle"
+                            />
+                        </Card>
+                    </Col>
+                </Row>
             </div>
         </Layout>
     );

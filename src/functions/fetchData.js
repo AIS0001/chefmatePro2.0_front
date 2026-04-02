@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getHeaders } from "../utility/getHeader";
+import { getHeaders, getResolvedShopId } from "../utility/getHeader";
 
 
 const fetchData = async (tblname, setData, orderby, where) => {
@@ -34,6 +34,23 @@ const fetchData = async (tblname, setData, orderby, where) => {
         return null;
     }
 }
+
+export const fetchShopScopedData = async (tblname, setData, orderby, where = {}) => {
+    const shopId = getResolvedShopId();
+
+    if (!shopId) {
+        if (setData && typeof setData === 'function') {
+            setData([]);
+        }
+        return [];
+    }
+
+    return fetchData(tblname, setData, orderby, {
+        ...where,
+        shop_id: shopId,
+    });
+}
+
 const fetchdatanotequal = async (tblname, setData, orderby, where) => {
     // Build the URL dynamically based on the provided parameters
     let url = `/fetchdatanotequal`;
