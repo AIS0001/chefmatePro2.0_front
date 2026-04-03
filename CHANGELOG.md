@@ -1,11 +1,19 @@
 # Changelog
-
-All notable changes to ChefMate POS will be documented in this file.
-
-Format: [version] - YYYY-MM-DD | Types: Added Changed Fixed Removed
-
 ---
 
+## [2.0.3] - 2026-04-03
+
+### Changed
+- Thermal KOT HTML print readability improved in POS (`src/views/pos/newPOS.jsx`):
+   - Increased thermal HTML font sizing (including fallback print path)
+   - Enabled bold text across KOT thermal HTML templates
+   - Footer timestamp and thank-you text switched to Arial for better visibility
+   - KOT timestamp text color updated to pure black (`#000`)
+- Thermal bill HTML print readability improved (`src/components/Modals/CheckBillModal.jsx`):
+   - Increased thermal bill HTML font sizes to improve print clarity
+   - No changes made to ESC/POS print logic
+
+---
 
 ## [2.0.2] - 2026-04-02
 

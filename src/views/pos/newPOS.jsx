@@ -629,7 +629,7 @@ const decreaseItemQuantity = (index) => {
     kotContent += `Total: ฿ ${total.toFixed(2)}\n`;
   
     const newWindow = window.open("", "_blank");
-    newWindow.document.write(`<pre style="font-family: monospace; font-size: 12px;">${kotContent}</pre>`);
+    newWindow.document.write(`<pre style="font-family: monospace; font-size: 18px; line-height: 1.6; font-weight: 700;">${kotContent}</pre>`);
     newWindow.document.close();
     newWindow.print();
     newWindow.close();
@@ -1047,12 +1047,12 @@ const decreaseItemQuantity = (index) => {
     
     // Create KOT content
     let kotContent = `
-      <div style="font-family: 'Courier New', monospace; max-width: 320px; margin: 0 auto; padding: 16px;">
+      <div style="font-family: 'Courier New', monospace; max-width: 320px; margin: 0 auto; padding: 16px; font-weight: 700;">
         <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
-          <h2 style="margin: 0; font-size: 18px;">${kotHeader}</h2>
+          <h2 style="margin: 0; font-size: 22px;">${kotHeader}</h2>
         </div>
         
-        <div style="margin-bottom: 10px; font-size: 14px;">
+        <div style="margin-bottom: 10px; font-size: 18px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
             <span><strong>Table:</strong> ${tableNumber}</span>
             <span><strong>Order #:</strong> ${orderNumber}</span>
@@ -1085,7 +1085,7 @@ const decreaseItemQuantity = (index) => {
         </div>
         
         <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 15px;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 18px;">
             <span>Item</span>
             <span>Qty</span>
           </div>
@@ -1097,7 +1097,7 @@ const decreaseItemQuantity = (index) => {
       const qtyDisplay = isWeightBased ? `${((item.quantity || 0) * 1000).toFixed(0)}g` : (item.quantity || 0).toString();
       
       kotContent += `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 15px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 18px;">
           <span style="flex: 1; padding-right: 5px;">${item.item_name}</span>
           <span style="min-width: 30px; text-align: right;">${qtyDisplay}</span>
         </div>
@@ -1108,21 +1108,21 @@ const decreaseItemQuantity = (index) => {
         </div>
         
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
-          <div style="margin-bottom: 5px; font-size: 15px;">
+          <div style="margin-bottom: 5px; font-size: 18px;">
             <strong>Total: ฿ ${totalAmount.toFixed(2)}</strong>
           </div>
-          <div style="font-size: 11px; color: #666;">
+          <div style="font-size: 18px; color: #000; font-family: Arial, sans-serif;">
             ${new Date().toLocaleString()}
           </div>
         </div>
 
         ${timingInfo ? `
-        <div style="text-align: center; margin-top: 6px; font-size: 12px; font-weight: bold; border-top: 1px dashed #000; padding-top: 5px;">
+        <div style="text-align: center; margin-top: 6px; font-size: 18px; font-weight: bold; border-top: 1px dashed #000; padding-top: 5px;">
           Remark: Valid for 60 minute only
         </div>
         ` : ''}
         
-        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
+        <div style="text-align: center; margin-top: 8px; font-size: 18px; color: #131111; font-family: Arial, sans-serif;">
           <p style="margin: 0;">Thank you!</p>
         </div>
       </div>
@@ -1145,8 +1145,9 @@ const decreaseItemQuantity = (index) => {
             }
             body {
               font-family: 'Courier New', monospace;
-              font-size: 12px;
-              line-height: 1.35;
+              font-size: 18px;
+              line-height: 1.45;
+              font-weight: 700;
               color: #000;
               background: #fff;
             }
@@ -1334,13 +1335,13 @@ const decreaseItemQuantity = (index) => {
     }, 0);
 
     let kotContent = `
-      <div style="font-family: 'Courier New', monospace; max-width: 220px; margin: 0 auto; padding: 12px; font-size: 12px;">
+      <div style="font-family: 'Courier New', monospace; max-width: 220px; margin: 0 auto; padding: 12px; font-size: 18px; font-weight: 700;">
         <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
-          <h2 style="margin: 0; font-size: 14px;">KITCHEN ORDER TICKET</h2>
-          <h3 style="margin: 2px 0; font-size: 12px;">(KOT)</h3>
-          <div style="margin-top: 4px; font-size: 18px; font-weight: bold;">COPY</div>
+          <h2 style="margin: 0; font-size: 18px;">KITCHEN ORDER TICKET</h2>
+          <h3 style="margin: 2px 0; font-size: 14px;">(KOT)</h3>
+          <div style="margin-top: 4px; font-size: 22px; font-weight: bold;">COPY</div>
         </div>
-        <div style="margin-bottom: 10px; font-size: 12px;">
+        <div style="margin-bottom: 10px; font-size: 18px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
             <span><strong>Table:</strong> ${tableNumber}</span>
             <span><strong>Order #:</strong> ${orderNumber}</span>
@@ -1351,7 +1352,7 @@ const decreaseItemQuantity = (index) => {
           </div>
         </div>
         <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; font-size: 18px;">
             <span>Item</span>
             <span>Qty</span>
           </div>
@@ -1362,7 +1363,7 @@ const decreaseItemQuantity = (index) => {
       const qtyDisplay = isWeightBased ? `${(parseFloat(item.quantity || 0) * 1000).toFixed(0)}g` : (item.quantity || 0).toString();
 
       kotContent += `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding: 1px 0; font-size: 18px;">
           <span style="flex: 1; padding-right: 5px;">${item.item_name}</span>
           <span style="min-width: 30px; text-align: right;">${qtyDisplay}</span>
         </div>
@@ -1372,14 +1373,14 @@ const decreaseItemQuantity = (index) => {
     kotContent += `
         </div>
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
-          <div style="margin-bottom: 5px; font-size: 12px;">
+          <div style="margin-bottom: 5px; font-size: 18px;">
             <strong>Total: ฿ ${totalAmount.toFixed(2)}</strong>
           </div>
-          <div style="font-size: 10px; color: #666;">
+          <div style="font-size: 18px; color: #000; font-family: Arial, sans-serif;">
             ${new Date().toLocaleString()}
           </div>
         </div>
-        <div style="text-align: center; margin-top: 8px; font-size: 10px; color: #666;">
+        <div style="text-align: center; margin-top: 8px; font-size: 18px; color: #0f0c0c; font-family: Arial, sans-serif;">
           <p style="margin: 0;">Thank you!</p>
         </div>
       </div>
@@ -1404,8 +1405,9 @@ const decreaseItemQuantity = (index) => {
           }
           body {
             font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.3;
+            font-size: 18px;
+            line-height: 1.4;
+            font-weight: 700;
             color: #000;
             background: #fff;
             position: relative;

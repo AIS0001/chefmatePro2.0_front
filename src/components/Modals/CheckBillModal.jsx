@@ -831,7 +831,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               }
               .bill-header .company-info p {
                 margin: 2px 0;
-                font-size: 12px;
+                font-size: 18px;
                 line-height: 1.35;
                 word-break: break-word;
                 white-space: normal;
@@ -1529,7 +1529,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 font-family: 'Cambria', monospace; /* Common font for receipts */
               }
               body {
-                font-size: 14px;
+                font-size: 18px;
                 width: 80mm; /* Common thermal printer size */
               }
               .bill-header {
@@ -1550,7 +1550,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               }
               .bill-header .company-info p {
                 margin: 2px 0;
-                font-size: 12px;
+                font-size: 18px;
                 line-height: 1.35;
                 word-break: break-word;
                 white-space: normal;
@@ -1563,7 +1563,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             .table th, .table td {
               text-align: left;
               padding: 5px 0; /* Adjust padding to make text fit better */
-              font-size: 13px;
+              font-size: 18px;
               line-height: 1.35;
             }
             .table th {
@@ -1575,12 +1575,12 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             }
             .bill-body .table th,
             .bill-body .table td {
-              font-size: 12px;
+              font-size: 18px;
               line-height: 1.3;
             }
             .bill-bill-body .table th,
             .bill-bill-body .table td {
-              font-size: 12px;
+              font-size: 18px;
               line-height: 1.3;
             }
             .table td.total {
@@ -1594,7 +1594,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               margin-right: 10px;
               font-weight: bold;
               text-align: right;
-              font-size: 11px;
+              font-size: 18px;
               line-height: 1.25;
             }
             .total-row span {
@@ -1603,7 +1603,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             .footer {
               margin-top: 15px;
               text-align: center;
-              font-size: 11px;
+              font-size: 18px;
             }
             .bill-page {
               width: 100%;
@@ -1989,7 +1989,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 font-family: 'Cambria', monospace;
               }
               body {
-                font-size: 14px;
+                font-size: 18px;
                 width: 80mm;
               }
               .bill-header {
@@ -2010,7 +2010,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               }
               .bill-header .company-info p {
                 margin: 2px 0;
-                font-size: 13px;
+                font-size: 18px;
                 line-height: 1.35;
                 word-break: break-word;
                 white-space: normal;
@@ -2023,7 +2023,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               .table th, .table td {
                 text-align: left;
                 padding: 3px 0;
-                font-size: 13px;
+                font-size: 18px;
                 line-height: 1.3;
               }
               .table th {
@@ -2035,13 +2035,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               }
               .bill-bill-body .table th,
               .bill-bill-body .table td {
-                font-size: 13px;
+                font-size: 18px;
                 line-height: 1.3;
                 font-weight: 600;
               }
               .bill-body .table th,
               .bill-body .table td {
-                font-size: 12px;
+                font-size: 18px;
                 line-height: 1.25;
               }
               .bill-body .table thead th {
@@ -2053,7 +2053,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 margin-right: 10px;
                 font-weight: bold;
                 text-align: right;
-                font-size: 12px;
+                font-size: 18px;
                 line-height: 1.3;
               }
               .total-row span {
@@ -2062,7 +2062,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
               .footer {
                 margin-top: 10px;
                 text-align: center;
-                font-size: 11px;
+                font-size: 18px;
                 color: #444;
               }
               .summary-page {
