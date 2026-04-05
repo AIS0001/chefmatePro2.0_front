@@ -22,6 +22,39 @@
   font-family: 'Arial', sans-serif;
 }
 
+.analytics-floating-alert {
+  position: fixed;
+  top: 76px;
+  right: 20px;
+  z-index: 2100;
+  max-width: 420px;
+  margin: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+}
+
+.analytics-refresh-button {
+  background: #0d6efd;
+  border: 1px solid #0d6efd;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+}
+
+.analytics-refresh-button:hover,
+.analytics-refresh-button:focus {
+  background: #0b5ed7;
+  border-color: #0b5ed7;
+  color: #ffffff;
+}
+
+.analytics-refresh-button:disabled {
+  background: #7aa7f9;
+  border-color: #7aa7f9;
+  color: #ffffff;
+  opacity: 1;
+}
+
 /* Top Metrics Cards */
 .metric-card-analytics {
   background: rgba(255, 255, 255, 0.95);

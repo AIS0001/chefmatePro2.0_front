@@ -6,6 +6,24 @@ import axios from 'axios'
 import { getAuthToken } from '../utility/auth'
 import appPackage from '../../package.json'
 
+const normalizeBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+const resolveWebSocketUrl = () => {
+	const explicitWsUrl = normalizeBaseUrl(process.env.REACT_APP_WS_URL);
+	if (explicitWsUrl) {
+		return `${explicitWsUrl.replace(/^http/i, 'ws')}/ws`;
+	}
+
+	const axiosBaseUrl = normalizeBaseUrl(axios?.defaults?.baseURL);
+	if (axiosBaseUrl) {
+		const backendOrigin = axiosBaseUrl.replace(/\/api$/i, '');
+		return `${backendOrigin.replace(/^http/i, 'ws')}/ws`;
+	}
+
+	const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+	return `${wsProtocol}//${window.location.host}/ws`;
+};
+
 export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	const appVersion = appPackage?.version || '';
 	const navigate = useNavigate();
@@ -18,6 +36,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	const [realtimeNotifications, setRealtimeNotifications] = useState([]);
 	const [unreadCount, setUnreadCount] = useState(0);
 	const wsRef = useRef(null);
+	const wsIntentionalCloseRef = useRef(false);
 	const { Header } = Layout;
 
 	const userType = (localStorage.getItem('usertype') || sessionStorage.getItem('usertype') || '').toLowerCase();
@@ -64,10 +83,10 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				}
 			});
 			
-			console.log('📬 Fetched initial notifications:', res.data);
+			// console.log('📬 Fetched initial notifications:', res.data);
 			if (res.data?.success) {
 				const notificationsData = res.data.data?.notifications || [];
-				console.log('✅ Initial notifications loaded:', notificationsData.length);
+				// console.log('✅ Initial notifications loaded:', notificationsData.length);
 				
 				// Transform and add to state
 				const transformed = notificationsData.map(normalizeNotification);
@@ -79,7 +98,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				setUnreadCount(unread);
 			}
 		} catch (error) {
-			console.warn('⚠️ Could not fetch initial notifications:', error.message);
+			// console.warn('⚠️ Could not fetch initial notifications:', error.message);
 		}
 	};
 
@@ -100,7 +119,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 					storage.setItem('shop_name', res.data.shop_name);
 				}
 			} catch (err) {
-				console.warn('Could not fetch shop name:', err.message);
+				// console.warn('Could not fetch shop name:', err.message);
 			}
 		};
 		fetchShopName();
@@ -151,7 +170,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 					setPaymentData(res.data);
 				}
 			} catch (err) {
-				console.warn('Could not fetch payment due date:', err.message);
+				// console.warn('Could not fetch payment due date:', err.message);
 			}
 		};
 		fetchPaymentDueDate();
@@ -174,18 +193,22 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	useEffect(() => {
 		const token = getAuthToken();
 		if (!token) return;
+		if (typeof WebSocket === 'undefined') return;
 
-		// Connect to WebSocket - use /ws path (no token in URL to avoid 431 errors)
-		const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+		const wsUrl = resolveWebSocketUrl();
+		let isUnmounted = false;
+		wsIntentionalCloseRef.current = false;
 		
-		console.log(`[Topbar WebSocket] Connecting to ${wsUrl}`);
+		// console.log(`[Topbar WebSocket] Connecting to ${wsUrl}`);
 		
 		try {
 			wsRef.current = new WebSocket(wsUrl);
 
 			wsRef.current.onopen = () => {
-				console.log('✅ WebSocket connected, sending auth token...');
+				if (isUnmounted || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+					return;
+				}
+				// console.log('✅ WebSocket connected, sending auth token...');
 				// Send auth token as first message (avoids 431 header size errors)
 				wsRef.current.send(JSON.stringify({
 					type: 'auth',
@@ -199,7 +222,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 					
 					// Handle connection response
 					if (data.type === 'connection' && data.status === 'connected') {
-						console.log('✅ WebSocket authenticated for real-time notifications');
+						// console.log('✅ WebSocket authenticated for real-time notifications');
 						return;
 					}
 
@@ -235,22 +258,28 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 						}
 					}
 				} catch (error) {
-					console.error('Error parsing WebSocket message:', error);
+					// console.error('Error parsing WebSocket message:', error);
 				}
 			};
 
 			wsRef.current.onerror = (error) => {
-				console.error('WebSocket error:', error);
+				if (!wsIntentionalCloseRef.current && !isUnmounted) {
+					// console.error('WebSocket error:', error);
+				}
 			};
 
-			wsRef.current.onclose = () => {
-				console.warn('⚠️ WebSocket disconnected - notifications will still work on page refresh');
+			wsRef.current.onclose = (event) => {
+				if (wsIntentionalCloseRef.current || isUnmounted) {
+					return;
+				}
+
+				// console.warn(`⚠️ WebSocket disconnected${event?.code ? ` (code: ${event.code})` : ''} - notifications will still work on page refresh`);
 				// Don't reload the page - user can continue working
 				// Notifications will be fetched on next page load
 			};
 
 		} catch (error) {
-			console.error('WebSocket connection error:', error);
+			// console.error('WebSocket connection error:', error);
 		}
 
 		// Request notification permission
@@ -259,9 +288,12 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 		}
 
 		return () => {
-			if (wsRef.current) {
-				wsRef.current.close();
+			isUnmounted = true;
+			wsIntentionalCloseRef.current = true;
+			if (wsRef.current && wsRef.current.readyState < WebSocket.CLOSING) {
+				wsRef.current.close(1000, 'Topbar cleanup');
 			}
+			wsRef.current = null;
 		};
 	}, []);
 
@@ -286,7 +318,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 			oscillator.start(audioContext.currentTime);
 			oscillator.stop(audioContext.currentTime + 0.5);
 		} catch (error) {
-			console.warn('Notification sound error:', error);
+			// console.warn('Notification sound error:', error);
 		}
 	};
 
@@ -302,10 +334,10 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 			
 			if (res.data?.success && res.data?.data?.unreadCount !== undefined) {
 				setUnreadCount(res.data.data.unreadCount);
-				console.log('✅ Unread count synced:', res.data.data.unreadCount);
+				// console.log('✅ Unread count synced:', res.data.data.unreadCount);
 			}
 		} catch (error) {
-			console.warn('Could not sync unread count:', error.message);
+			// console.warn('Could not sync unread count:', error.message);
 		}
 	};
 
@@ -340,13 +372,13 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				if (wasUnread) {
 					setUnreadCount(prev => Math.max(0, prev - 1));
 				}
-				console.log('✅ Notification marked as read:', notificationId);
+				// console.log('✅ Notification marked as read:', notificationId);
 				
 				// Sync unread count from server to ensure accuracy
 				setTimeout(() => syncUnreadCount(), 500);
 			}
 		} catch (error) {
-			console.warn('Could not mark notification as read:', error.message);
+			// console.warn('Could not mark notification as read:', error.message);
 		}
 	};
 
@@ -606,7 +638,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 						
 						// Check if date is valid
 						if (isNaN(date.getTime())) {
-							console.warn('Invalid date:', dateString);
+							// console.warn('Invalid date:', dateString);
 							return 'Just now';
 						}
 						
@@ -652,7 +684,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 							hour12: true
 						});
 					} catch (e) {
-						console.warn('Date format error:', e, 'for:', dateString);
+						// console.warn('Date format error:', e, 'for:', dateString);
 						return 'Just now';
 					}
 				};
@@ -803,7 +835,12 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 			alignItems: 'center',
 			padding: '0 24px',
 			height: '64px',
-			backgroundColor: '#001529'
+			backgroundColor: '#001529',
+			position: 'fixed',
+			top: 0,
+			left: 0,
+			right: 0,
+			zIndex: 2100
 		}}>
 			{/* Left side - Logo and Toggle */}
 			<div className="topbar-logo-wrap">

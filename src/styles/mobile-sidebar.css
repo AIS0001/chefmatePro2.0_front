@@ -24,12 +24,12 @@
   .wrapper .fixed-sidebar-left {
     position: fixed !important;
     left: -240px !important;
-    top: 0 !important;
-    height: 100vh !important;
+    top: 64px !important;
+    height: calc(100vh - 64px) !important;
     width: 240px !important;
     transition: left 0.3s ease !important;
     z-index: 2000 !important;
-    background: #fff !important;
+    background: #001529 !important;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -95,6 +95,45 @@
   .page-wrapper {
     margin-left: 0 !important;
     transition: margin-left 0.3s ease !important;
+  }
+
+  .wrapper .fixed-sidebar-left .ant-menu {
+    background: #001529 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    border-inline-end: none !important;
+  }
+
+  .wrapper .fixed-sidebar-left .ant-menu-item,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu-title {
+    color: rgba(255, 255, 255, 0.85) !important;
+    margin-inline: 0 !important;
+    width: 100% !important;
+  }
+
+  .wrapper .fixed-sidebar-left .ant-menu-item .ant-menu-title-content,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu-title .ant-menu-title-content,
+  .wrapper .fixed-sidebar-left .ant-menu-item a,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu .ant-menu-item a {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  .wrapper .fixed-sidebar-left .ant-menu-item .zmdi,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu-title .zmdi,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu-arrow {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  .wrapper .fixed-sidebar-left .ant-menu-item-selected,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu-selected > .ant-menu-submenu-title,
+  .wrapper .fixed-sidebar-left .ant-menu-item-active,
+  .wrapper .fixed-sidebar-left .ant-menu-submenu-title:hover,
+  .wrapper .fixed-sidebar-left .ant-menu-item:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+  }
+
+  .wrapper .fixed-sidebar-left .ant-menu-sub {
+    background: #001018 !important;
   }
 
   /* Navbar adjustments */

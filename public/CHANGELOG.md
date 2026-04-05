@@ -1,10 +1,22 @@
 # Changelog
-
-All notable changes to ChefMate POS will be documented in this file.
-
-Format: [version] - YYYY-MM-DD | Types: Added Changed Fixed Removed
-
 ---
+
+## [2.0.4] - 2026-04-04
+
+### Fixed
+- Analytics dashboard now uses live data more reliably instead of showing sample product and category data when the API returns placeholder values.
+- Analytics dashboard refresh button is now clearly visible, and warning messages no longer push the whole page content down.
+- Food, bar, shisha, sales, purchase, and order status sections were cleaned up so empty or failed API responses show safe fallback states instead of stale-looking data.
+- Main dashboard layout spacing was improved so content lines up better with the sidebar and topbar.
+- Main page content now keeps a small left-side gap from the sidebar instead of touching it directly.
+- Mobile sidebar now displays menu items correctly on small screens and keeps the same dark theme as the desktop sidebar.
+- Favicon path was corrected so the browser no longer requests `/dashboard/favicon.ico` on nested routes.
+- Unused sparkline vendor script was removed from the app shell, which stops an unnecessary request that was causing browser warnings in local development.
+- Topbar WebSocket now connects using the backend API host instead of the frontend host, which improves local and production notification connection behavior.
+
+### Changed
+- Topbar debug console output was commented out to keep the browser console cleaner.
+- Dashboard analytics panels were reorganized to show clearer live sections such as order status, sales vs purchases, and purchase trend.
 
 ## [2.0.3] - 2026-04-03
 

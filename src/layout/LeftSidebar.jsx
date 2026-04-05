@@ -71,7 +71,7 @@ export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
       style={{
         position: 'fixed',
         left: isMobile ? (isOpen ? 0 : -240) : 0,
-        top: 64, // Below the header
+        top: '64px',
         height: 'calc(100vh - 64px)',
         width: sidebarWidth,
         background: '#001529',
@@ -80,6 +80,9 @@ export default function LeftSidebar({ usertype, isOpen, isMobile, onClose }) {
         overflowY: 'auto',
         overflowX: 'hidden',
         boxShadow: isMobile && isOpen ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        marginTop: 0,
+        paddingTop: 0,
       }}
       onMouseEnter={() => { if (!isMobile && !isOpen) setSidebarHovered(true); }}
       onMouseLeave={() => { if (!isMobile && !isOpen) { setSidebarHovered(false); setHoveredMenu(null); } }}

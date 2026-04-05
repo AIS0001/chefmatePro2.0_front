@@ -7,6 +7,7 @@ import Header from "../../components/Header";
 import './analyticsDashboard.css';
 
 function AnalyticsDashboard() {
+  const REFRESH_INTERVAL_MS = 30000;
   const [dashboardData, setDashboardData] = useState({
     todaySales: 0,
     yesterdaySales: 0,
@@ -22,7 +23,6 @@ function AnalyticsDashboard() {
   const [monthlySalesData, setMonthlySalesData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [topProductsData, setTopProductsData] = useState([]);
-  const [suppliersData, setSuppliersData] = useState([]);
   const [orderStatusData, setOrderStatusData] = useState([]);
   const [salesExpensesData, setSalesExpensesData] = useState({
     totalSales: 0,
@@ -44,6 +44,66 @@ function AnalyticsDashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const formatCurrency = (value, options = {}) =>
+    `฿${Number(value || 0).toLocaleString('en-US', options)}`;
+
+  const isMockTopProducts = (products) => {
+    if (!Array.isArray(products) || products.length !== 4) {
+      return false;
+    }
+
+    const mockNames = ['Chicken Burgers', 'French Fries', 'Soft Drinks', 'Pizza Slices'];
+    return products.every((product, index) => product?.name === mockNames[index]);
+  };
+
+  const isMockCategoryDistribution = (categories) => {
+    if (!Array.isArray(categories) || categories.length !== 3) {
+      return false;
+    }
+
+    const mockCategories = [
+      { name: 'Food Items', value: 35 },
+      { name: 'Beverages', value: 25 },
+      { name: 'Other Items', value: 40 }
+    ];
+
+    return categories.every((category, index) => (
+      category?.name === mockCategories[index].name
+      && Number(category?.value) === mockCategories[index].value
+    ));
+  };
+
+  const refreshAllData = async ({ showLoader = false } = {}) => {
+    if (showLoader) {
+      setIsLoading(true);
+    }
+
+    try {
+      setError(null);
+      await Promise.all([
+        fetchDashboardData(),
+        fetchMonthlySalesData(),
+        fetchOrderStatusData(),
+        fetchTopProductsData(),
+        fetchCategoryData(),
+        fetchSalesExpensesData(),
+        fetchDailySalesData(),
+        fetchPurchaseTrendsData(),
+        fetchFoodDrinksSaleData(),
+        fetchPendingInvoiceData()
+      ]);
+      setLastUpdated(new Date());
+    } catch (refreshError) {
+      console.error('Error fetching analytics data:', refreshError);
+      setError('Failed to load dashboard data');
+    } finally {
+      if (showLoader) {
+        setIsLoading(false);
+      }
+    }
+  };
 
   // API Functions
   const fetchDashboardData = async () => {
@@ -51,9 +111,32 @@ function AnalyticsDashboard() {
       const response = await axios.get('analytics/dashboard', getHeaders());
       if (response.data.success) {
         setDashboardData(response.data.data);
+        return;
       }
+      setDashboardData({
+        todaySales: 0,
+        yesterdaySales: 0,
+        monthlyPurchases: 0,
+        todayPurchases: 0,
+        totalOrders: 0,
+        totalSuppliers: 0,
+        cancelledBills: 0,
+        entertainmentTotal: 0,
+        todayDiscount: 0
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setDashboardData({
+        todaySales: 0,
+        yesterdaySales: 0,
+        monthlyPurchases: 0,
+        todayPurchases: 0,
+        totalOrders: 0,
+        totalSuppliers: 0,
+        cancelledBills: 0,
+        entertainmentTotal: 0,
+        todayDiscount: 0
+      });
       setError('Failed to load dashboard data');
     }
   };
@@ -63,28 +146,12 @@ function AnalyticsDashboard() {
       const response = await axios.get('/analytics/monthly-sales-purchases', getHeaders());
       if (response.data.success) {
         setMonthlySalesData(response.data.data);
+        return;
       }
+      setMonthlySalesData([]);
     } catch (error) {
       console.error('Error fetching monthly sales data:', error);
-      // Keep empty array on error - chart will show empty state
-    }
-  };
-
-  const fetchSuppliersData = async () => {
-    try {
-      const response = await axios.get('analytics/suppliers-outstanding', getHeaders());
-      if (response.data.success) {
-        const formattedData = response.data.data.map(supplier => ({
-          name: supplier.supplier_name,
-          orders: supplier.total_orders,
-          amount: supplier.total_amount,
-          rating: supplier.avg_rating
-        }));
-        setSuppliersData(formattedData);
-      }
-    } catch (error) {
-      console.error('Error fetching suppliers data:', error);
-      // Keep empty array on error
+      setMonthlySalesData([]);
     }
   };
 
@@ -93,10 +160,12 @@ function AnalyticsDashboard() {
       const response = await axios.get('analytics/order-status', getHeaders());
       if (response.data.success) {
         setOrderStatusData(response.data.data);
+        return;
       }
+      setOrderStatusData([]);
     } catch (error) {
       console.error('Error fetching order status data:', error);
-      // Keep empty array on error
+      setOrderStatusData([]);
     }
   };
 
@@ -104,11 +173,20 @@ function AnalyticsDashboard() {
     try {
       const response = await axios.get('analytics/top-products', getHeaders());
       if (response.data.success) {
-        setTopProductsData(response.data.data);
+        const products = Array.isArray(response.data.data) ? response.data.data : [];
+        if (isMockTopProducts(products)) {
+          setTopProductsData([]);
+          setError('Top selling products is returning placeholder data from the API.');
+          return;
+        }
+
+        setTopProductsData(products);
+        return;
       }
+      setTopProductsData([]);
     } catch (error) {
       console.error('Error fetching top products data:', error);
-      // Keep empty array on error
+      setTopProductsData([]);
     }
   };
 
@@ -116,11 +194,20 @@ function AnalyticsDashboard() {
     try {
       const response = await axios.get('analytics/category-distribution', getHeaders());
       if (response.data.success) {
-        setCategoryData(response.data.data);
+        const categories = Array.isArray(response.data.data) ? response.data.data : [];
+        if (isMockCategoryDistribution(categories)) {
+          setCategoryData([]);
+          setError('Category distribution is returning placeholder data from the API.');
+          return;
+        }
+
+        setCategoryData(categories);
+        return;
       }
+      setCategoryData([]);
     } catch (error) {
       console.error('Error fetching category data:', error);
-      // Keep empty array on error
+      setCategoryData([]);
     }
   };
 
@@ -129,10 +216,12 @@ function AnalyticsDashboard() {
       const response = await axios.get('analytics/sales-expenses', getHeaders());
       if (response.data.success) {
         setSalesExpensesData(response.data.data);
+        return;
       }
+      setSalesExpensesData({ totalSales: 0, totalExpenses: 0, netProfit: 0 });
     } catch (error) {
       console.error('Error fetching sales expenses data:', error);
-      // Keep default values on error
+      setSalesExpensesData({ totalSales: 0, totalExpenses: 0, netProfit: 0 });
     }
   };
 
@@ -141,10 +230,12 @@ function AnalyticsDashboard() {
       const response = await axios.get('analytics/daily-sales-trend', getHeaders());
       if (response.data.success) {
         setDailySalesData(response.data.data);
+        return;
       }
+      setDailySalesData([]);
     } catch (error) {
       console.error('Error fetching daily sales data:', error);
-      // Keep empty array on error
+      setDailySalesData([]);
     }
   };
 
@@ -153,10 +244,12 @@ function AnalyticsDashboard() {
       const response = await axios.get('analytics/purchase-trends', getHeaders());
       if (response.data.success) {
         setPurchaseTrendsData(response.data.data);
+        return;
       }
+      setPurchaseTrendsData([]);
     } catch (error) {
       console.error('Error fetching purchase trends data:', error);
-      // Keep empty array on error
+      setPurchaseTrendsData([]);
     }
   };
 
@@ -164,11 +257,22 @@ function AnalyticsDashboard() {
     try {
       const response = await axios.get('analytics/food-liquor-sale', getHeaders());
       if (response.data.success) {
-        setFoodDrinksSaleData(response.data.data);
+        const liveData = response.data.data || {};
+        setFoodDrinksSaleData({
+          sales_by_group: liveData.sales_by_group || {
+            food: { total_sale: liveData.totalFoodSale || 0 },
+            bar: { total_sale: liveData.totalDrinksSale || 0 },
+            shisha: { total_sale: liveData.totalShishaSale || 0 }
+          },
+          saleDate: liveData.saleDate || '',
+          total_all_sales: liveData.total_all_sales || 0
+        });
+        return;
       }
+      setFoodDrinksSaleData({ sales_by_group: {}, saleDate: '', total_all_sales: 0 });
     } catch (error) {
       console.error('Error fetching food and drinks sales data:', error);
-      // Keep default values on error
+      setFoodDrinksSaleData({ sales_by_group: {}, saleDate: '', total_all_sales: 0 });
     }
   };
 
@@ -177,38 +281,23 @@ function AnalyticsDashboard() {
       const response = await axios.get('/accounts/order-items/pending-invoice', getHeaders());
       if (response.data.success) {
         setPendingInvoiceData(response.data.data);
+        return;
       }
+      setPendingInvoiceData({ totalAmount: 0, totalItems: 0, items: [] });
     } catch (error) {
       console.error('Error fetching pending invoice data:', error);
-      // Keep default values on error
+      setPendingInvoiceData({ totalAmount: 0, totalItems: 0, items: [] });
     }
   };
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([
-          fetchDashboardData(),
-          fetchMonthlySalesData(),
-          fetchSuppliersData(),
-          fetchOrderStatusData(),
-          fetchTopProductsData(),
-          fetchCategoryData(),
-          fetchSalesExpensesData(),
-          fetchDailySalesData(),
-          fetchPurchaseTrendsData(),
-          fetchFoodDrinksSaleData(),
-          fetchPendingInvoiceData()
-        ]);
-      } catch (error) {
-        console.error('Error fetching analytics data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    refreshAllData({ showLoader: true });
 
-    fetchAllData();
+    const refreshTimer = setInterval(() => {
+      refreshAllData();
+    }, REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(refreshTimer);
   }, []);
 
   if (isLoading) {
@@ -241,7 +330,7 @@ function AnalyticsDashboard() {
         
         {/* Error Alert */}
         {error && (
-          <div className="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+          <div className="alert alert-warning alert-dismissible fade show analytics-floating-alert" role="alert">
             <strong>Warning:</strong> {error}
             <button 
               type="button" 
@@ -255,34 +344,15 @@ function AnalyticsDashboard() {
         {/* Refresh Button */}
         <div className="row mb-3">
           <div className="col-12 text-end">
+            {lastUpdated && (
+              <small className="text-muted me-3">
+                Live data updated {lastUpdated.toLocaleTimeString()}
+              </small>
+            )}
             <button 
-              className="btn btn-outline-primary btn-sm"
+              className="btn btn-sm analytics-refresh-button"
               onClick={() => {
-                setError(null);
-                setIsLoading(true);
-                const fetchAllData = async () => {
-                  try {
-                    await Promise.all([
-                      fetchDashboardData(),
-                      fetchMonthlySalesData(),
-                      fetchSuppliersData(),
-                      fetchOrderStatusData(),
-                      fetchTopProductsData(),
-                      fetchCategoryData(),
-                      fetchSalesExpensesData(),
-                      fetchDailySalesData(),
-                      fetchPurchaseTrendsData(),
-                      fetchFoodDrinksSaleData(),
-                      fetchPendingInvoiceData()
-                    ]);
-                  } catch (error) {
-                    console.error('Error refreshing analytics data:', error);
-                    setError('Failed to refresh dashboard data');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                };
-                fetchAllData();
+                refreshAllData({ showLoader: true });
               }}
               disabled={isLoading}
             >
@@ -390,7 +460,7 @@ function AnalyticsDashboard() {
                         <div className="status-indicator" style={{backgroundColor: '#27ae60'}}></div>
                         <div className="status-info">
                           <span className="status-name">Food</span>
-                          <span className="status-value">฿{(parseFloat(foodDrinksSaleData.sales_by_group['food']?.total_sale) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          <span className="status-value">{formatCurrency(foodDrinksSaleData.sales_by_group['food']?.total_sale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       </div>
 
@@ -399,7 +469,7 @@ function AnalyticsDashboard() {
                         <div className="status-indicator" style={{backgroundColor: '#e74c3c'}}></div>
                         <div className="status-info">
                           <span className="status-name">Bar</span>
-                          <span className="status-value">฿{(parseFloat(foodDrinksSaleData.sales_by_group['bar']?.total_sale) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          <span className="status-value">{formatCurrency(foodDrinksSaleData.sales_by_group['bar']?.total_sale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       </div>
 
@@ -408,7 +478,7 @@ function AnalyticsDashboard() {
                         <div className="status-indicator" style={{backgroundColor: '#3498db'}}></div>
                         <div className="status-info">
                           <span className="status-name">Shisha</span>
-                          <span className="status-value">฿{(parseFloat(foodDrinksSaleData.sales_by_group['shisha']?.total_sale) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          <span className="status-value">{formatCurrency(foodDrinksSaleData.sales_by_group['shisha']?.total_sale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       </div>
 
@@ -417,7 +487,7 @@ function AnalyticsDashboard() {
                         <div className="status-indicator" style={{backgroundColor: '#34495e'}}></div>
                         <div className="status-info">
                           <span className="status-name">Total Sale</span>
-                          <span className="status-value">฿{(parseFloat(foodDrinksSaleData.total_all_sales) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          <span className="status-value">{formatCurrency(foodDrinksSaleData.total_all_sales, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       </div>
                     </>
@@ -444,7 +514,7 @@ function AnalyticsDashboard() {
                       <div key={index} className="ranking-item">
                         <span className="rank">#{index + 1}</span>
                         <span className="agent-name">{product.name}</span>
-                        <span className="agent-score">฿{(parseFloat(product.revenue) || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
+                        <span className="agent-score">{formatCurrency(product.revenue, { maximumFractionDigits: 0 })}</span>
                       </div>
                     ))
                   ) : (
@@ -536,35 +606,35 @@ function AnalyticsDashboard() {
             </div>
           </div>
 
-          {/* Customer Sources */}
+          {/* Order Status */}
           <div className="col-lg-4 col-md-6 mb-4">
             <div className="analytics-panel leads-panel">
               <div className="panel-header">
-                <h6>CUSTOMER SOURCES</h6>
+                <h6>ORDER STATUS</h6>
               </div>
               <div className="panel-content">
                 <div className="funnel-chart">
-                  {topProductsData && topProductsData.length > 0 ? (
-                    topProductsData.map((product, index) => {
-                      const maxSales = Math.max(...topProductsData.map(p => p.sales));
+                  {orderStatusData && orderStatusData.length > 0 ? (
+                    orderStatusData.map((status, index) => {
+                      const maxValue = Math.max(...orderStatusData.map(item => Number(item.value || 0)), 1);
                       return (
                         <div key={index} className="funnel-item">
                           <div 
                             className="funnel-bar" 
                             style={{
-                              width: `${(product.sales / maxSales) * 100}%`,
-                              backgroundColor: product.color
+                              width: `${(Number(status.value || 0) / maxValue) * 100}%`,
+                              backgroundColor: status.color || '#95a5a6'
                             }}
                           >
-                            <span className="funnel-label">{product.name}</span>
-                            <span className="funnel-value">฿{product.revenue?.toLocaleString() || '0'}</span>
+                            <span className="funnel-label">{status.status}</span>
+                            <span className="funnel-value">{Number(status.value || 0).toFixed(1)}%</span>
                           </div>
                         </div>
                       );
                     })
                   ) : (
                     <div className="text-center py-3">
-                      <p className="text-muted">No customer source data available</p>
+                      <p className="text-muted">No order status data available</p>
                     </div>
                   )}
                 </div>
@@ -572,20 +642,22 @@ function AnalyticsDashboard() {
             </div>
           </div>
 
-          {/* Revenue Overview */}
+          {/* Sales vs Purchases */}
           <div className="col-lg-4 col-md-12 mb-4">
             <div className="analytics-panel bottom-chart-panel">
               <div className="panel-header">
-                <h6>REVENUE OVERVIEW</h6>
+                <h6>SALES VS PURCHASES</h6>
               </div>
               <div className="panel-content">
                 {monthlySalesData && monthlySalesData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={150}>
                     <BarChart data={monthlySalesData.slice(-6)}>
-                      <Bar dataKey="sales" fill="#3498db" />
+                      <Bar dataKey="sales" fill="#3498db" name="Sales" />
+                      <Bar dataKey="purchases" fill="#f39c12" name="Purchases" />
                       <XAxis dataKey="month" stroke="#2c3e50" fontSize={10} />
                       <YAxis stroke="#2c3e50" fontSize={10} />
                       <Tooltip 
+                        formatter={(value) => formatCurrency(value)}
                         contentStyle={{
                           backgroundColor: '#ffffff',
                           border: '1px solid #bdc3c7',
@@ -597,7 +669,7 @@ function AnalyticsDashboard() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="text-center py-5">
-                    <p className="text-muted">No revenue data available</p>
+                    <p className="text-muted">No monthly sales data available</p>
                   </div>
                 )}
               </div>
@@ -608,7 +680,7 @@ function AnalyticsDashboard() {
         {/* Bottom Charts Row */}
         <div className="row">
           {/* Daily Sales Trend */}
-          <div className="col-lg-12 col-md-12 mb-4">
+          <div className="col-lg-6 col-md-12 mb-4">
             <div className="analytics-panel bottom-chart-panel">
               <div className="panel-header">
                 <h6>DAILY SALES TREND</h6>
@@ -627,6 +699,7 @@ function AnalyticsDashboard() {
                       <XAxis dataKey="day" stroke="#2c3e50" fontSize={10} />
                       <YAxis stroke="#2c3e50" fontSize={10} />
                       <Tooltip 
+                        formatter={(value) => formatCurrency(value)}
                         contentStyle={{
                           backgroundColor: '#ffffff',
                           border: '1px solid #bdc3c7',
@@ -639,6 +712,44 @@ function AnalyticsDashboard() {
                 ) : (
                   <div className="text-center py-5">
                     <p className="text-muted">No daily sales data available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-6 col-md-12 mb-4">
+            <div className="analytics-panel bottom-chart-panel">
+              <div className="panel-header">
+                <h6>PURCHASE TREND</h6>
+              </div>
+              <div className="panel-content">
+                {purchaseTrendsData && purchaseTrendsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={150}>
+                    <AreaChart data={purchaseTrendsData}>
+                      <Area
+                        type="monotone"
+                        dataKey="purchases"
+                        stroke="#f39c12"
+                        fill="#f39c12"
+                        fillOpacity={0.45}
+                      />
+                      <XAxis dataKey="day" stroke="#2c3e50" fontSize={10} />
+                      <YAxis stroke="#2c3e50" fontSize={10} />
+                      <Tooltip
+                        formatter={(value) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #bdc3c7',
+                          borderRadius: '8px',
+                          color: '#2c3e50'
+                        }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-5">
+                    <p className="text-muted">No purchase trend data available</p>
                   </div>
                 )}
               </div>

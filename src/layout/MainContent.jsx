@@ -3,6 +3,8 @@ import Footer from "./Footer";
 
 export default function MainContent({ children, isSidebarOpen }) {
   const [isMobile, setIsMobile] = useState(false);
+  const desktopSidebarWidth = isSidebarOpen ? 240 : 80;
+  const contentPadding = isMobile ? "0 12px 0 12px" : "0 20px 0 24px";
 
   useEffect(() => {
     const checkMobile = () => {
@@ -19,12 +21,13 @@ export default function MainContent({ children, isSidebarOpen }) {
     <div
       className="page-wrapper"
       style={{
-        marginLeft: isMobile ? "0" : (isSidebarOpen ? "240px" : "60px"),
+        marginLeft: isMobile ? "0" : `${desktopSidebarWidth}px`,
         transition: "margin-left 0.3s ease",
-        paddingTop: "2px",
+        paddingTop: "64px",
+        background: 'transparent',
       }}
     >
-      <div className="container-fluid">
+      <div className="container-fluid" style={{ padding: contentPadding }}>
         {children}
       </div>
 
