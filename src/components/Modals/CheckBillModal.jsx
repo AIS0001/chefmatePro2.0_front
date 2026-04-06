@@ -314,6 +314,34 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
     });
   }, [splitGroups, billTableData]);
 
+  const tableSummary = useMemo(() => {
+    const tableList = Array.isArray(TotalTablelist) ? TotalTablelist : [];
+    const freeTables = tableList.filter((table) => Number(table?.status) === 0).length;
+    const busyTables = tableList.length - freeTables;
+
+    return {
+      total: tableList.length,
+      free: freeTables,
+      busy: busyTables,
+    };
+  }, [TotalTablelist]);
+
+  const tableSectionMessage = useMemo(() => {
+    if (isMergeMode) {
+      return selectedTables.length > 0
+        ? `${selectedTables.length} table${selectedTables.length > 1 ? "s" : ""} selected for merge`
+        : "Select multiple active tables to combine them into one bill view";
+    }
+
+    if (isSplitMode) {
+      return selectedTable
+        ? `Working on ${selectedTable}. Select items below and group them into splits.`
+        : "Choose one table first, then create split groups from its bill items";
+    }
+
+    return "Tap any table to load its bill summary and payment controls";
+  }, [isMergeMode, isSplitMode, selectedTables, selectedTable]);
+
   const toggleSplitMode = () => {
     const nextMode = !isSplitMode;
     setIsSplitMode(nextMode);
@@ -2159,7 +2187,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         style={customStyles}
         ariaHideApp={false}
       >
-        <div style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: '12px' }}>
+        <div className="checkbill-modal-surface" style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: '12px' }}>
           
           {/* Header with Ant Design */}
           <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2173,37 +2201,63 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
           <Divider style={{ margin: '12px 0' }} />
 
           {/* Tables Section - Touchscreen Friendly */}
-          <Card size="small" className="tables-compact-card" style={{ marginBottom: '12px' }}>
+          <Card size="small" className="tables-compact-card checkbill-tables-card" style={{ marginBottom: '12px' }}>
             <Space direction="vertical" style={{ width: '100%' }} size="small">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1890ff' }}>🏪 Tables</h4>
-                <Space>
+              <div className="checkbill-tables-card__topbar">
+                <div>
+                  <div className="checkbill-tables-card__eyebrow">Floor management</div>
+                  <h4 className="checkbill-tables-card__title">Table List</h4>
+                  <p className="checkbill-tables-card__subtitle">{tableSectionMessage}</p>
+                </div>
+
+                <Space className="checkbill-tables-card__actions">
                   <Button 
                     type={isMergeMode ? 'primary' : 'default'} 
                     size="large"
                     onClick={toggleMergeMode}
-                    style={{ fontSize: '13px', fontWeight: '600', minWidth: '100px', height: '40px' }}
+                    className={isMergeMode ? 'checkbill-mode-button checkbill-mode-button--active' : 'checkbill-mode-button'}
+                    style={{ fontSize: '13px', fontWeight: '600', minWidth: '112px', height: '44px' }}
                   >
-                    {isMergeMode ? '✕ Exit' : '➕ Merge'}
+                    {isMergeMode ? 'Exit Merge' : 'Merge'}
                   </Button>
                   <Button 
                     type={isSplitMode ? 'primary' : 'default'} 
                     size="large"
                     onClick={toggleSplitMode}
-                    style={{ fontSize: '13px', fontWeight: '600', minWidth: '100px', height: '40px' }}
+                    className={isSplitMode ? 'checkbill-mode-button checkbill-mode-button--active' : 'checkbill-mode-button'}
+                    style={{ fontSize: '13px', fontWeight: '600', minWidth: '112px', height: '44px' }}
                   >
-                    {isSplitMode ? '✕ Exit' : '🔀 Split'}
+                    {isSplitMode ? 'Exit Split' : 'Split'}
                   </Button>
                 </Space>
               </div>
+
+              <div className="checkbill-tables-card__stats">
+                <div className="checkbill-tables-stat checkbill-tables-stat--total">
+                  <span className="checkbill-tables-stat__value">{tableSummary.total}</span>
+                  <span className="checkbill-tables-stat__label">Visible Tables</span>
+                </div>
+                <div className="checkbill-tables-stat checkbill-tables-stat--free">
+                  <span className="checkbill-tables-stat__value">{tableSummary.free}</span>
+                  <span className="checkbill-tables-stat__label">Free</span>
+                </div>
+                <div className="checkbill-tables-stat checkbill-tables-stat--busy">
+                  <span className="checkbill-tables-stat__value">{tableSummary.busy}</span>
+                  <span className="checkbill-tables-stat__label">Busy</span>
+                </div>
+                <div className="checkbill-tables-stat checkbill-tables-stat--selected">
+                  <span className="checkbill-tables-stat__value">{isMergeMode ? selectedTables.length : selectedTable ? 1 : 0}</span>
+                  <span className="checkbill-tables-stat__label">Selected</span>
+                </div>
+              </div>
               
               {isMergeMode && selectedTables.length > 0 && (
-                <Tag color="success" style={{ fontSize: '13px', padding: '6px 12px' }}>✓ Selected: {selectedTables.join(', ')}</Tag>
+                <Tag color="success" className="checkbill-selection-tag" style={{ fontSize: '13px', padding: '6px 12px' }}>Selected: {selectedTables.join(', ')}</Tag>
               )}
 
               {isSplitMode && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Tag color="blue" style={{ fontSize: '13px', padding: '6px 12px' }}>
+                <div className="checkbill-split-toolbar" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Tag color="blue" className="checkbill-selection-tag" style={{ fontSize: '13px', padding: '6px 12px' }}>
                     Split Groups: {splitGroups.length}
                   </Tag>
                   <Button
@@ -2217,38 +2271,49 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
                 </div>
               )}
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: '8px', maxHeight: '160px', overflowY: 'auto', paddingRight: '2px' }}>
+              <div className="checkbill-tables-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '10px', maxHeight: '188px', overflowY: 'auto', paddingRight: '2px' }}>
                 {TotalTablelist && Array.isArray(TotalTablelist) && TotalTablelist.length > 0 ? (
                   TotalTablelist.map((tables, index) => (
                     <div
                       key={index}
                       onClick={() => handleTableSelection(tables.name)}
+                      className={[
+                        'checkbill-table-tile',
+                        Number(tables.status) === 0 ? 'checkbill-table-tile--free' : 'checkbill-table-tile--busy',
+                        !isMergeMode && selectedTable === tables.name ? 'checkbill-table-tile--active' : '',
+                        isMergeMode && selectedTables.includes(tables.name) ? 'checkbill-table-tile--merge-selected' : ''
+                      ].join(' ').trim()}
                       style={{
-                        padding: '10px 8px',
-                        border: `3px solid ${isMergeMode && selectedTables.includes(tables.name) ? '#1890ff' : tables.status === 0 ? '#d9d9d9' : '#ff4d4f'}`,
-                        borderRadius: '8px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        backgroundColor: !isMergeMode && selectedTable === tables.name ? '#e6f7ff' : 'transparent',
-                        transition: 'all 0.2s',
-                        minHeight: '68px',
+                        minHeight: '88px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
-                        alignItems: 'center',
-                        boxShadow: isMergeMode && selectedTables.includes(tables.name) ? '0 4px 12px rgba(24,144,255,0.3)' : 'none'
+                        alignItems: 'flex-start',
                       }}
                     >
-                      <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>{tables.name}</div>
+                      <div className="checkbill-table-tile__topline">
+                        <span className="checkbill-table-tile__name">{tables.name}</span>
+                        {(isMergeMode && selectedTables.includes(tables.name)) || (!isMergeMode && selectedTable === tables.name) ? (
+                          <span className="checkbill-table-tile__check">✓</span>
+                        ) : null}
+                      </div>
                       <Badge 
-                        status={tables.status === 0 ? 'success' : 'error'} 
-                        text={tables.status === 0 ? 'Free' : 'Busy'}
+                        status={Number(tables.status) === 0 ? 'success' : 'error'} 
+                        text={Number(tables.status) === 0 ? 'Free' : 'Busy'}
+                        className="checkbill-table-tile__status"
                         style={{ fontSize: '12px', fontWeight: '600' }}
                       />
+                      <span className="checkbill-table-tile__caption">
+                        {Number(tables.status) === 0 ? 'Ready for service' : 'Active order'}
+                      </span>
                     </div>
                   ))
                 ) : (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#999', padding: '20px', fontSize: '14px' }}>Loading...</div>
+                  <div className="checkbill-tables-empty" style={{ gridColumn: '1 / -1' }}>
+                    <div className="checkbill-tables-empty__spinner" />
+                    <div className="checkbill-tables-empty__title">Loading table list</div>
+                    <div className="checkbill-tables-empty__text">Fetching the latest floor status for bill actions.</div>
+                  </div>
                 )}
               </div>
             </Space>

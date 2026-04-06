@@ -25,11 +25,13 @@ import ESCPosAutoDetectButton from "../../components/ESCPosAutoDetectButton"; //
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
 import "./newPOS.css"; // ✅ Import POS styles
+import appPackage from "../../../package.json";
 
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
+  const appVersion = appPackage?.version || "";
   
   const LOCAL_PRINT_AGENT_URL =
     process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010"; // Local printing agent endpoint
@@ -49,6 +51,7 @@ export default function NewPOS() {
   const [total, setTotal] = useState(0);
   const [maxNumber, setmaxNumber] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [Tablelist, settableList] = useState(null);
   const [TotalTablelist, setTotaltablelist] = useState([]); // Initialize as empty array instead of 0
 
@@ -162,6 +165,7 @@ export default function NewPOS() {
   // Fetch subcategories when a category is clicked
   const handleCategoryClick = (categoryId) => {
     setSelectedCategory(categoryId); // Keep track of selected category
+    setSelectedSubcategory(null);
     // Fetch subcategories using fetchData function
     fetchData("subcategory", setSubcategories, "id", { cat_id: categoryId });
   };
@@ -296,6 +300,7 @@ export default function NewPOS() {
   // Fetch items when a subcategory is clicked
   const handleSubcategoryClick = async (subcategoryId) => {
     try {
+      setSelectedSubcategory(subcategoryId);
       //console.log("Fetching items for subcategory:", subcategoryId);
       
       // Clear data first to show loading state
@@ -2090,120 +2095,55 @@ const decreaseItemQuantity = (index) => {
     fetchAndSetData();
   }, []);
 
+  const selectedCategoryName =
+    categories.find((category) => String(category.id) === String(selectedCategory))?.name ||
+    "Choose a category";
+
+  const selectedSubcategoryName =
+    subcategories.find((subcategory) => String(subcategory.id) === String(selectedSubcategory))?.subcat ||
+    "Choose a subcategory";
+
+  const itemCountLabel = `${data.length} item${data.length === 1 ? "" : "s"}`;
+  const activeTableLabel = selectedTable || "No table selected";
+
   return (
     <>
       {/* ✅ Full Screen POS Container */}
-      <div style={{ 
+      <div className="soft-pos-theme pos-shell" style={{ 
         width: '100vw', 
         height: '100vh', 
         overflow: 'hidden',
-        backgroundColor: '#f8f9fa',
         position: 'relative'
       }}>
         
         {/* ✅ Dashboard Navigation Button */}
         <button 
-          className="btn dashboard-btn"
+          className="btn dashboard-btn pos-float-btn pos-float-btn--home"
           onClick={navigateToDashboard}
-          style={{ 
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            zIndex: 1000,
-            borderRadius: '50%',
-            width: '48px',
-            height: '48px',
-            padding: '0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: '600',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            fontSize: '14px',
-            border: 'none',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            transition: 'all 0.3s ease'
-          }}
+          style={{ top: '20px', right: '20px' }}
           title="Dashboard"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.25)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
-          }}
         >
           <FaHome size={18} />
         </button>
 
         {/* ✅ POS System Title */}
-        <div className="pos-title" style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          backgroundColor: 'white',
-          padding: '10px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          fontWeight: 'bold',
-          fontSize: '18px',
-          color: '#333'
-        }}>
-          ChefmatePro 2.0 POS System
+        <div className="pos-title pos-soft-title" style={{ top: '20px', left: '50%', transform: 'translateX(-50%)' }}>
+          <span className="pos-soft-title__version">Version {appVersion || "Current"}</span>
+          <span className="pos-soft-title__heading">ChefmatePro 2.0 POS System</span>
+          <span className="pos-soft-title__meta">Soft service mode</span>
         </div>
 
         {/* Floating Table Selection Button */}
         <button 
-          className="btn btn-primary floating-table-btn"
+          className="btn floating-table-btn pos-float-btn pos-float-btn--table"
           onClick={showTableSelection}
-          style={{ 
-            position: 'fixed',
-            top: '100px',
-            right: '20px',
-            zIndex: 1000,
-            borderRadius: '50%',
-            width: '60px',
-            height: '60px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0, 123, 255, 0.3)',
-            border: 'none',
-            fontSize: '20px',
-            transition: 'all 0.3s ease'
-          }}
+          style={{ top: '100px', right: '20px' }}
           title={selectedTable ? `Current Table: ${selectedTable}` : 'Select Table'}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 123, 255, 0.4)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 123, 255, 0.3)";
-          }}
         >
           <FaTable />
           {selectedTable && (
             <span 
-              style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                borderRadius: '50%',
-                width: '20px',
-                height: '20px',
-                fontSize: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold'
-              }}
+              className="pos-float-btn__badge"
             >
               ✓
             </span>
@@ -2212,53 +2152,16 @@ const decreaseItemQuantity = (index) => {
 
         {/* ✅ Customer Display Control Button */}
         <button 
-          className={`btn ${isCustomerDisplayOpen ? 'btn-success' : 'btn-warning'} floating-display-btn`}
+          className={`btn floating-display-btn pos-float-btn ${isCustomerDisplayOpen ? 'pos-float-btn--display-open' : 'pos-float-btn--display'}`}
           onClick={toggleCustomerDisplay}
-          style={{ 
-            position: 'fixed',
-            top: '170px',
-            right: '20px',
-            zIndex: 1000,
-            borderRadius: '50%',
-            width: '60px',
-            height: '60px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: isCustomerDisplayOpen 
-              ? '0 4px 12px rgba(40, 167, 69, 0.3)' 
-              : '0 4px 12px rgba(255, 193, 7, 0.3)',
-            border: 'none',
-            fontSize: '18px',
-            transition: 'all 0.3s ease'
-          }}
+          style={{ top: '170px', right: '20px' }}
           title={isCustomerDisplayOpen ? 'Close Customer Display' : 'Open Customer Display'}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.boxShadow = isCustomerDisplayOpen 
-              ? "0 6px 16px rgba(40, 167, 69, 0.4)" 
-              : "0 6px 16px rgba(255, 193, 7, 0.4)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = isCustomerDisplayOpen 
-              ? "0 4px 12px rgba(40, 167, 69, 0.3)" 
-              : "0 4px 12px rgba(255, 193, 7, 0.3)";
-          }}
         >
           {isCustomerDisplayOpen ? <FaEye /> : <FaDesktop />}
         </button>
 
         {/* ✅ Main Content Area with proper spacing */}
-        <div style={{ 
-          height: '100vh',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          paddingTop: '80px',
-          paddingLeft: '12px',
-          paddingRight: '12px',
-          paddingBottom: '200px'
-        }}>
+        <div className="pos-main-content">
 
         {/* Main Category List */}
         <div className="row mt-2">
@@ -2270,7 +2173,7 @@ const decreaseItemQuantity = (index) => {
               bodyClass="panel-body"
               titleStyle={{ color: 'white' }}
             >
-              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+              <div className="panel panel-default card-view pos-panel-surface" style={{ padding: '8px' }}>
                 <div className="row" style={{ margin: '0' }}>
                   {categories.length > 0 ? (
                     categories.map((category, index) => (
@@ -2283,8 +2186,11 @@ const decreaseItemQuantity = (index) => {
                             padding: '8px 4px', 
                             fontSize: '12px', 
                             margin: '2px 0',
-                            minHeight: '35px',
-                            color: '#fff'
+                            minHeight: '38px',
+                            color: '#24312c',
+                            fontWeight: selectedCategory === category.id ? '700' : '600',
+                            background: selectedCategory === category.id ? '#d8e7da' : undefined,
+                            borderColor: selectedCategory === category.id ? '#b6cab9' : undefined
                           }}
                         >
                           {category.name}
@@ -2310,7 +2216,7 @@ const decreaseItemQuantity = (index) => {
               bodyClass="panel-body"
               titleStyle={{ color: 'white' }}
             >
-              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+              <div className="panel panel-default card-view pos-panel-surface" style={{ padding: '8px' }}>
                   <div
                     className="item-list-container"
                     style={{
@@ -2328,10 +2234,13 @@ const decreaseItemQuantity = (index) => {
                             className="btn btn-danger btn-anim fixed-width-btn"
                             style={{
                               width: '100%',
-                              padding: '6px 8px',
-                              fontSize: '11px',
-                              margin: '1px 0',
-                              minHeight: '50px'
+                              padding: '8px 10px',
+                              fontSize: '12px',
+                              margin: '2px 0',
+                              minHeight: '56px',
+                              fontWeight: selectedSubcategory === subcategory.id ? '700' : '600',
+                              background: selectedSubcategory === subcategory.id ? '#f0e7d8' : undefined,
+                              borderColor: selectedSubcategory === subcategory.id ? '#dccfb7' : undefined
                             }}
                           >
                             {subcategory.subcat}
@@ -2356,7 +2265,18 @@ const decreaseItemQuantity = (index) => {
               bodyClass="panel-body"
               titleStyle={{ color: 'white' }}
             >
-              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+              <div className="panel panel-default card-view pos-panel-surface" style={{ padding: '8px' }}>
+                <div className="pos-items-header">
+                  <div>
+                    <span className="pos-items-header__eyebrow">Now showing</span>
+                    <h5 className="pos-items-header__title">{selectedSubcategoryName}</h5>
+                    <p className="pos-items-header__meta">{selectedCategoryName}</p>
+                  </div>
+                  <div className="pos-items-header__stats">
+                    <span className="pos-items-header__chip">{itemCountLabel}</span>
+                    <span className="pos-items-header__chip pos-items-header__chip--active">Table: {activeTableLabel}</span>
+                  </div>
+                </div>
                 <div
                   className="item-list-container"
                   style={{
@@ -2369,29 +2289,47 @@ const decreaseItemQuantity = (index) => {
                     {data.length > 0 ? (
                       data.map((item, index) => (
                         <div key={item.id} className="col-lg-2 col-md-3 col-sm-6 col-xs-12 mb-2" style={{ padding: '5px' }}>
-                          <div className="item-card text-center" style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '8px' }}>
-                            <img
-                              src={`${baseURL}/uploads/${item.filename}`}
-                              alt={item.iname}
-                              onClick={() => addItemToOrder(index, item)}
-                              className="item-image"
-                              style={{ 
-                                marginBottom: '5px',
-                                width: '100%',
-                                height: '120px',
-                                objectFit: 'cover',
-                                borderRadius: '6px',
-                                cursor: 'pointer'
-                              }}
-                            />
-                            <h5 className="item-name" style={{ fontSize: '13px', margin: '3px 0' }}>{item.iname}</h5>
-                            <p className="item-price" style={{ fontSize: '12px', margin: '2px 0' }}>฿ {item.offerprice}.00</p>
-                           
+                          <div
+                            className="item-card pos-menu-card text-center"
+                            onClick={() => addItemToOrder(index, item)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                addItemToOrder(index, item);
+                              }
+                            }}
+                            style={{ padding: '12px', borderRadius: '18px', background: '#fffdf9', cursor: 'pointer' }}
+                          >
+                            <div className="pos-menu-image-wrap">
+                              <img
+                                src={`${baseURL}/uploads/${item.filename}`}
+                                alt={item.iname}
+                                className="item-image pos-menu-image"
+                                style={{
+                                  width: '100%',
+                                  height: '136px',
+                                  objectFit: 'contain',
+                                  borderRadius: '14px'
+                                }}
+                              />
+                            </div>
+                            <div className="pos-menu-content">
+                              <h5 className="item-name pos-menu-name">{item.iname}</h5>
+                              <div className="pos-menu-meta">
+                                <span className="item-price pos-menu-price">฿ {Number(item.offerprice || 0).toFixed(2)}</span>
+                                <span className="pos-menu-action">Tap anywhere on card to add</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p style={{ padding: '20px', fontSize: '14px' }}>No items available for this subcategory.</p>
+                      <div className="pos-empty-state">
+                        <strong>No items available</strong>
+                        <span>Choose a category and subcategory to load the menu for this station.</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2410,12 +2348,12 @@ const decreaseItemQuantity = (index) => {
               bodyClass="panel-body"
               titleStyle={{ color: 'white' }}
             >
-              <div className="panel panel-default card-view" style={{ padding: '5px' }}>
+              <div className="panel panel-default card-view pos-panel-surface" style={{ padding: '8px' }}>
                 <div className="row" style={{ margin: '0' }}>
                   <div className="col-12" style={{ paddingBottom: '8px' }}>
                     {/* Quick Add Item Card - Always Visible */}
-                    <div className="card" style={{ padding: '12px', background: '#f8f9fa', borderRadius: '0', border: '1px solid #e9ecef', marginBottom: '12px' }}>
-                      <h6 style={{ fontWeight: '700', marginBottom: '10px', fontSize: '13px', color: '#495057' }}>⚡ Quick Add Item</h6>
+                    <div className="card pos-quick-add-card">
+                      <h6 className="pos-quick-add-card__title">Quick Add Item</h6>
                       <form
                         onSubmit={async (e) => {
                           e.preventDefault();
@@ -2430,7 +2368,7 @@ const decreaseItemQuantity = (index) => {
                           value={quickItemCode}
                           onChange={(e) => setQuickItemCode(e.target.value)}
                           ref={itemCodeInputRef}
-                          style={{ fontSize: '12px', height: '36px' }}
+                          style={{ fontSize: '12px', height: '38px' }}
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
@@ -2450,7 +2388,7 @@ const decreaseItemQuantity = (index) => {
                           placeholder="Quantity"
                           value={quickQty}
                           onChange={(e) => setQuickQty(e.target.value)}
-                          style={{ fontSize: '12px', height: '36px' }}
+                          style={{ fontSize: '12px', height: '38px' }}
                           onKeyDown={async (e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -2460,7 +2398,7 @@ const decreaseItemQuantity = (index) => {
                             }
                           }}
                         />
-                        <small style={{ fontSize: '11px', color: '#6c757d' }}>Press Enter to move to quantity, Enter again to add</small>
+                        <small className="pos-quick-add-card__hint">Press Enter to move to quantity, then press Enter again to add.</small>
                       </form>
                     </div>
 
@@ -2476,9 +2414,8 @@ const decreaseItemQuantity = (index) => {
                         cart.map((item, index) => (
                           <>
                             <div
-                              className="order-item d-flex align-items-center justify-content-between mb-1"
+                              className="order-item pos-cart-line d-flex align-items-center justify-content-between mb-1"
                               key={index}
-                              style={{ padding: '3px 0' }}
                             >
                               <h5 className=" mb-0 pos-cart-item-name">
                                 {item.iname} x {formatQuantityForDisplay(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
@@ -2519,31 +2456,20 @@ const decreaseItemQuantity = (index) => {
         </div>
 
         {/* Bottom Actions Container */}
-        <div style={{
-          position: 'fixed',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          zIndex: 1000,
-          backgroundColor: 'white',
-          borderRadius: '0',
-          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)',
-          padding: '12px clamp(12px, 2vw, 20px)',
-          width: '100vw'
-        }}>
+        <div className="pos-bottom-bar">
           <div
             className="total-container d-flex justify-content-between align-items-center gap-2"
             style={{
               marginBottom: '8px',
               paddingBottom: '8px',
-              borderBottom: '1px solid #e9ecef',
+              borderBottom: '1px solid #ddd5c9',
               flexWrap: 'nowrap',
               overflow: 'hidden',
             }}
           >
-            <span style={{ fontSize: '22px', fontWeight: '600', color: '#000', margin: 0, lineHeight: '1' }}>
+            <span className="pos-total-label" style={{ margin: 0, lineHeight: '1' }}>
               Total:{" "}
-              <span style={{ color: '#000' }}>฿ {total.toFixed(2)}</span>
+              <span>฿ {total.toFixed(2)}</span>
             </span>
             <div className="d-flex align-items-center gap-2">
               <ESCPosAutoDetectButton
@@ -2586,7 +2512,7 @@ const decreaseItemQuantity = (index) => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', overflowY: 'hidden', flexWrap: 'nowrap', paddingBottom: '4px', WebkitOverflowScrolling: 'touch' }}>
+          <div className="pos-bottom-actions" style={{ overflowX: 'auto', overflowY: 'hidden', flexWrap: 'nowrap', paddingBottom: '4px', WebkitOverflowScrolling: 'touch' }}>
             <button 
               className="btn btn-success"
               onClick={handleBillHistory}

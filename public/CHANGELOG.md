@@ -1,6 +1,34 @@
 # Changelog
 ---
 
+
+## [2.0.5] - 2026-04-06
+
+### Added
+- POS header now shows the current frontend version at the top of the screen.
+- New soft-styled table selection modal with clearer available/occupied states and selection feedback.
+- New cashier dashboard stylesheet and refreshed visual layout for main cashier actions.
+
+### Changed
+- POS screen was redesigned with a softer color palette, calmer floating controls, clearer content panels, and a less harsh bottom action bar.
+- POS item cards were rebuilt into larger full-card touch targets with clearer price pills and easier tap-to-add behavior.
+- POS item area now shows active category, subcategory, item count, and selected table context in a compact header.
+- Quick Add and cart rows in POS were restyled for better readability during fast cashier use.
+- Check Bill modal tables area was redesigned with richer status cards, clearer merge/split actions, and a more touch-friendly layout.
+- Changelog page was restyled into a softer card-based layout and now includes a dashboard return button.
+- Cashier dashboard was redesigned with clearer action cards, release version display, and improved mobile-friendly hierarchy.
+
+### Fixed
+- Changelog route now renders without the main layout wrapper so the page opens in its dedicated full-page design.
+- Shared authenticated access was added for `/changelog`, so authenticated users can open release notes regardless of role-specific route lists.
+- ESC/POS print services now use `REACT_APP_LOCAL_PRINT_AGENT_URL` consistently instead of hardcoded local ports.
+- Local print agent requests now use shorter timeouts and clearer connection error messages when the print agent is unavailable.
+- Debug logging in `updateData.js` was commented out to reduce noisy console output during normal POS use.
+- Analytics `top-products` now tolerates older and newer `order_items` schemas by resolving live sales data without assuming `shop_id`, `bill_id`, `item_id`, or `price` columns always exist.
+- Analytics `category-distribution` now classifies categories from available `order_items` fields and avoids hard failures when production data is missing optional joins or grouping columns.
+- Backend analytics queries now scope `order_items` to `final_bill` through adaptive bill matching so production returns live results instead of 500 errors across mixed database variants.
+
+---
 ## [2.0.4] - 2026-04-04
 
 ### Fixed

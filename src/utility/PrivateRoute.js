@@ -56,6 +56,10 @@ const roleBasedAccess = {
   // Add other roles here if needed
 };
 
+const sharedAuthenticatedPaths = [
+  '/changelog',
+];
+
 const PrivateRoute = ({ children }) => {
   const location = useLocation();
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -67,6 +71,10 @@ const PrivateRoute = ({ children }) => {
 
   if (!userType) {
     return <Navigate to="/accessdenied" state={{ from: location }} replace />;
+  }
+
+  if (sharedAuthenticatedPaths.includes(location.pathname.toLowerCase())) {
+    return children;
   }
 
   const allowedPaths = roleBasedAccess[userType];

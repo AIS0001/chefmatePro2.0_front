@@ -450,7 +450,7 @@ function AppRoutes() {
 
           {/* Changelog - accessible to all authenticated roles */}
           <Route path="/changelog" element={
-            <PrivateRoute><Layout><ChangelogPage /></Layout></PrivateRoute>
+            <PrivateRoute><ChangelogPage /></PrivateRoute>
           } />
 
           {/* Super Admin Routes - Nested under SuperAdminLayout */}

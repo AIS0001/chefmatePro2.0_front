@@ -12,8 +12,8 @@ const updateData = async (tblname, updatedFields, where) => {
     where
   };
 
-  console.log("🟨 URL:", url);
-  console.log("🟨 Data:", data);
+ // console.log("🟨 URL:", url);
+ // console.log("🟨 Data:", data);
 
   try {
     const response = await axios.put(url, data, getHeaders());

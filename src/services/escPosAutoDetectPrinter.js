@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { message } from 'antd';
 
+const LOCAL_PRINT_AGENT_URL =
+  process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || 'http://127.0.0.1:5010';
+
 /**
  * Auto-detect ESC/POS printer and send KOT (Kitchen Order Ticket) print job
  * Uses backend printer detection API to find printer by location
@@ -73,10 +76,10 @@ const escPosAutoDetectService = {
 
       // Call local printing agent
       const printResponse = await axios.post(
-        'http://127.0.0.1:3001/print-kot',
+        `${LOCAL_PRINT_AGENT_URL}/print-kot`,
         printPayload,
         {
-          timeout: 10000 // 10 second timeout for print operation
+          timeout: 7000
         }
       );
 
@@ -105,7 +108,7 @@ const escPosAutoDetectService = {
 
       // Handle different error scenarios
       if (error.code === 'ECONNREFUSED') {
-        errorMsg = 'Local printing agent not running at 127.0.0.1:3001';
+        errorMsg = `Local printing agent not running at ${LOCAL_PRINT_AGENT_URL}`;
       } else if (error.response?.status === 404) {
         errorMsg = `No printer configured for ${location} location`;
       } else if (error.response?.status === 400) {
@@ -166,7 +169,7 @@ const escPosAutoDetectService = {
       });
 
       const printResponse = await axios.post(
-        'http://127.0.0.1:3001/print-kot',
+        `${LOCAL_PRINT_AGENT_URL}/print-kot`,
         {
           printer_ip,
           printer_port,
@@ -177,7 +180,7 @@ const escPosAutoDetectService = {
           mac_address: macAddress,
           timestamp: new Date().toISOString()
         },
-        { timeout: 10000 }
+        { timeout: 7000 }
       );
 
       if (printResponse.data.success) {
@@ -238,10 +241,10 @@ const escPosAutoDetectService = {
 
       // Call local printing agent with specific printer IP
       const printResponse = await axios.post(
-        'http://127.0.0.1:3001/print-kot',
+        `${LOCAL_PRINT_AGENT_URL}/print-kot`,
         printPayload,
         {
-          timeout: 10000 // 10 second timeout
+          timeout: 7000
         }
       );
 
@@ -269,7 +272,7 @@ const escPosAutoDetectService = {
       let errorMsg = 'Unknown error occurred';
 
       if (error.code === 'ECONNREFUSED') {
-        errorMsg = 'Local printing agent not running at 127.0.0.1:3001';
+        errorMsg = `Local printing agent not running at ${LOCAL_PRINT_AGENT_URL}`;
       } else if (error.message === 'timeout of 10000ms exceeded') {
         errorMsg = 'Printer not responding - may be offline';
       } else if (error.message) {
