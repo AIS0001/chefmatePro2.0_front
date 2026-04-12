@@ -7,7 +7,7 @@ import MainContent from "./MainContent";
 import useAutoLogout from "../hooks/useAutoLogout";
 import "../styles/mobile-sidebar.css";
 
-export default function Layout({ children }) {
+export default function Layout({ children, hideSidebar = false }) {
   const navigate = useNavigate();
   const [userType, setUserType] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -81,6 +81,9 @@ export default function Layout({ children }) {
 
   // Function to toggle sidebar
   const toggleSidebar = () => {
+    if (hideSidebar) {
+      return;
+    }
     if (isMobile) {
       setMobileSidebarOpen(prev => !prev);
     } else {
@@ -97,22 +100,24 @@ export default function Layout({ children }) {
     <div className="wrapper theme-4-active pimary-color-red">
       <Topbar onToggleSidebar={toggleSidebar} isSidebarOpen={sidebarOpen} />
 
-      <LeftSidebar 
-        usertype={userType} 
-        isOpen={isMobile ? mobileSidebarOpen : sidebarOpen} 
-        isMobile={isMobile}
-        onClose={closeMobileSidebar}
-      />
+      {!hideSidebar && (
+        <LeftSidebar 
+          usertype={userType} 
+          isOpen={isMobile ? mobileSidebarOpen : sidebarOpen} 
+          isMobile={isMobile}
+          onClose={closeMobileSidebar}
+        />
+      )}
       
       {/* Mobile sidebar overlay */}
-      {isMobile && mobileSidebarOpen && (
+      {!hideSidebar && isMobile && mobileSidebarOpen && (
         <div 
           className="sidebar-overlay show"
           onClick={closeMobileSidebar}
         />
       )}
 
-      <MainContent isSidebarOpen={isMobile ? false : sidebarOpen}>
+      <MainContent isSidebarOpen={hideSidebar ? false : (isMobile ? false : sidebarOpen)}>
         {children}
       </MainContent>
     </div>

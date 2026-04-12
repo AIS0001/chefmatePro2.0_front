@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Tooltip, message } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
 
 /**
@@ -20,24 +20,7 @@ export default function ESCPosAutoDetectButton({
 
   const handlePrintClick = async () => {
     try {
-      // Validate table selection
-      if (!orderData || !orderData.table_number) {
-        message.error('❌ Please select a table first!');
-        return;
-      }
-
-      // Validate order data
-      if (!orderData.items || orderData.items.length === 0) {
-        message.error('❌ No items to print!');
-        return;
-      }
-
       setLoading(true);
-      message.loading({
-        content: '🖨️ Sending KOT to printer...',
-        key: 'printing',
-        duration: 0
-      });
 
       // 🔍 DEBUG: Log complete orderData structure
       // console.log('📤 ===== ESCPosAutoDetectButton DEBUG =====');
@@ -64,34 +47,18 @@ export default function ESCPosAutoDetectButton({
         success = await sendPrintCommand(orderData);
         // console.log('✅ sendPrintCommand returned:', success);
       } else {
-        message.error('Print function not configured');
+        console.error('Print function not configured');
         return;
       }
 
       if (success) {
-        message.success({
-          content: '✅ KOT sent successfully!',
-          key: 'printing',
-          duration: 3
-        });
         if (onPrintSuccess) {
           onPrintSuccess();
         }
-      } else {
-        message.error({
-          content: '❌ Failed to send KOT',
-          key: 'printing',
-          duration: 3
-        });
       }
 
     } catch (error) {
       console.error('Print error:', error);
-      message.error({
-        content: `❌ Error: ${error.message || 'Failed to print'}`,
-        key: 'printing',
-        duration: 4
-      });
     } finally {
       setLoading(false);
     }

@@ -46,6 +46,7 @@ const getCurrentSuperAdminId = () => {
 const Support = () => {
   const [tickets, setTickets] = useState([]);
   const [shops, setShops] = useState([]);
+  const [assignees, setAssignees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [shopsLoading, setShopsLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
@@ -76,6 +77,7 @@ const Support = () => {
     fetchTickets();
     fetchStats();
     fetchShops();
+    fetchAssignees();
   }, []);
 
   const fetchShops = async () => {
@@ -95,6 +97,21 @@ const Support = () => {
       message.error('Failed to load shops list');
     } finally {
       setShopsLoading(false);
+    }
+  };
+
+  const fetchAssignees = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.get('/super-admin/users/super-admins', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data?.success) {
+        setAssignees(Array.isArray(response.data.data) ? response.data.data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching assignees:', error);
     }
   };
 
@@ -214,7 +231,11 @@ const Support = () => {
         setDetailDrawer(true);
         updateForm.setFieldsValue({
           status: response.data.ticket.status,
-          priority: response.data.ticket.priority
+          priority: response.data.ticket.priority,
+          assigned_to: response.data.ticket.assigned_to || undefined,
+          progress_stage: response.data.ticket.progress_stage || '',
+          notes: response.data.ticket.notes || '',
+          resolution: response.data.ticket.resolution || ''
         });
       }
     } catch (error) {
@@ -334,6 +355,13 @@ const Support = () => {
           {subject.length > 30 ? subject.substring(0, 30) + '...' : subject}
         </Tooltip>
       )
+    },
+    {
+      title: 'Stage',
+      dataIndex: 'progress_stage',
+      key: 'progress_stage',
+      width: 140,
+      render: stage => stage || 'New'
     },
     {
       title: 'Priority',
@@ -579,6 +607,51 @@ const Support = () => {
                 </Col>
               </Row>
 
+              <Row gutter={16} style={{ marginTop: '12px' }}>
+                <Col xs={12}>
+                  <div className="detail-item">
+                    <label>Stage:</label>
+                    <p>{selectedTicket.progress_stage || 'New'}</p>
+                  </div>
+                </Col>
+                <Col xs={12}>
+                  <div className="detail-item">
+                    <label>Assigned To:</label>
+                    <p>{selectedTicket.assigned_to_name || 'Unassigned'}</p>
+                  </div>
+                </Col>
+              </Row>
+
+              <Row gutter={16} style={{ marginTop: '12px' }}>
+                <Col xs={12}>
+                  <div className="detail-item">
+                    <label>Created At:</label>
+                    <p>{new Date(selectedTicket.created_at).toLocaleString()}</p>
+                  </div>
+                </Col>
+                <Col xs={12}>
+                  <div className="detail-item">
+                    <label>Stage Updated:</label>
+                    <p>{selectedTicket.stage_updated_at ? new Date(selectedTicket.stage_updated_at).toLocaleString() : 'Not updated yet'}</p>
+                  </div>
+                </Col>
+              </Row>
+
+              <Row gutter={16} style={{ marginTop: '12px' }}>
+                <Col xs={12}>
+                  <div className="detail-item">
+                    <label>Resolved At:</label>
+                    <p>{selectedTicket.resolved_at ? new Date(selectedTicket.resolved_at).toLocaleString() : 'Not resolved yet'}</p>
+                  </div>
+                </Col>
+                <Col xs={12}>
+                  <div className="detail-item">
+                    <label>Closed At:</label>
+                    <p>{selectedTicket.closed_at ? new Date(selectedTicket.closed_at).toLocaleString() : 'Not closed yet'}</p>
+                  </div>
+                </Col>
+              </Row>
+
               <div className="detail-item" style={{ marginTop: '16px' }}>
                 <label>Subject:</label>
                 <p style={{ fontWeight: 'bold' }}>{selectedTicket.subject}</p>
@@ -635,6 +708,21 @@ const Support = () => {
 
             {/* Action Buttons */}
             <Space style={{ marginTop: '24px', width: '100%', justifyContent: 'flex-end' }}>
+              <Button
+                onClick={() => {
+                  updateForm.setFieldsValue({
+                    status: 'CLOSED',
+                    priority: selectedTicket.priority,
+                    assigned_to: selectedTicket.assigned_to || undefined,
+                    progress_stage: selectedTicket.progress_stage || 'Closed',
+                    notes: selectedTicket.notes || '',
+                    resolution: selectedTicket.resolution || ''
+                  });
+                  setUpdateModalVisible(true);
+                }}
+              >
+                Close Ticket
+              </Button>
               <Button onClick={() => setUpdateModalVisible(true)} type="primary">
                 Update Ticket
               </Button>
@@ -727,6 +815,14 @@ const Support = () => {
             />
           </Form.Item>
 
+          <Form.Item
+            name="progress_stage"
+            label="Initial Stage"
+            initialValue="New"
+          >
+            <Input placeholder="Examples: New, Awaiting triage" />
+          </Form.Item>
+
           <Space>
             <Button type="primary" htmlType="submit">
               Create Ticket
@@ -780,6 +876,27 @@ const Support = () => {
                 { label: 'LOW', value: 'LOW' }
               ]}
             />
+          </Form.Item>
+
+          <Form.Item
+            name="assigned_to"
+            label="Assign To"
+          >
+            <Select
+              allowClear
+              placeholder="Select support owner"
+              options={assignees.map((assignee) => ({
+                value: assignee.id,
+                label: [assignee.first_name, assignee.last_name].filter(Boolean).join(' ') || assignee.username || `User ${assignee.id}`
+              }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="progress_stage"
+            label="Progress Stage"
+          >
+            <Input placeholder="Examples: Investigating, Waiting for logs, Patch deployed" />
           </Form.Item>
 
           <Form.Item

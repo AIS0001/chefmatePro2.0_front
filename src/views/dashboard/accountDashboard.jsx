@@ -27,7 +27,8 @@ const VAT_REPORTS = [
   { name: "Low Stock Items", path: "/reports/lowstockitems" },
   { name: "Supplier Ledger", path: "/reports/supplierledger" },
   { name: "Customer Ledger", path: "/reports/saleledger" },
-  { name: "Day Close", path: "/reports/dayclose" }
+  { name: "Day Close", path: "/reports/dayclose" },
+  { name: "Support Tickets", path: "/support/tickets" }
 ];
 
 export default function AccountDashboard() {

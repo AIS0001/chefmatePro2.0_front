@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link,useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -25,14 +25,11 @@ import ESCPosAutoDetectButton from "../../components/ESCPosAutoDetectButton"; //
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
 import "./newPOS.css"; // ✅ Import POS styles
-import appPackage from "../../../package.json";
 
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
-  const appVersion = appPackage?.version || "";
-  
   const LOCAL_PRINT_AGENT_URL =
     process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010"; // Local printing agent endpoint
   //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
@@ -399,17 +396,23 @@ const addItemToOrder = (index, item) => {
 };
 
   const focusItemCodeInput = () => {
+    const focusWithoutScroll = () => {
+      if (!itemCodeInputRef.current) return;
+
+      try {
+        itemCodeInputRef.current.focus({ preventScroll: true });
+      } catch (error) {
+        itemCodeInputRef.current.focus();
+      }
+      itemCodeInputRef.current.select();
+    };
+
     requestAnimationFrame(() => {
-      if (itemCodeInputRef.current) {
-        itemCodeInputRef.current.focus();
-        itemCodeInputRef.current.select();
-      }
+      focusWithoutScroll();
     });
+
     setTimeout(() => {
-      if (itemCodeInputRef.current) {
-        itemCodeInputRef.current.focus();
-        itemCodeInputRef.current.select();
-      }
+      focusWithoutScroll();
     }, 0);
   };
 
@@ -533,6 +536,26 @@ const formatQuantityForDisplay = (item) => {
   }
   return formattedQty;
 };
+
+const cartQuantityByItemId = useMemo(() => {
+  return cart.reduce((acc, cartItem) => {
+    acc[cartItem.id] = cartItem.quantity;
+    return acc;
+  }, {});
+}, [cart]);
+
+const getAddedQuantityLabel = (item) => {
+  const qty = cartQuantityByItemId[item.id];
+  if (!qty) return null;
+
+  const isWeightBased = item.weight === "weight" || item.quantity_type === "weight";
+  if (isWeightBased) {
+    return `${(qty * 1000).toFixed(0)}g`;
+  }
+
+  return Number.isInteger(qty) ? `${qty}` : `${qty.toFixed(2)}`;
+};
+
   // Update total price and sync with customer display
   const updateTotal = (cart) => {
     const newTotal = cart.reduce(
@@ -565,15 +588,21 @@ const decreaseItemQuantity = (index) => {
   updateTotal(updatedCart);
 };
 
-  //delete order
-  const handleDeleteOrder = async () => {
+  const clearCartState = () => {
     setCart([]);
     setTotal(0);
-    
-    // ✅ Clear customer display
+    setQuickItemCode("");
+    setQuickQty("1");
+    setLastAddedAt(0);
+
     if (customerDisplayManager.isDisplayConnected()) {
       customerDisplayManager.updateCart([], 0);
     }
+  };
+
+  //delete order
+  const handleDeleteOrder = async () => {
+    clearCartState();
   }
 
   //Print KOT to thermal printers via print server
@@ -649,7 +678,7 @@ const decreaseItemQuantity = (index) => {
   const isKitchenLocation = (location) =>
     normalizePrinterLocation(location).includes('kitchen');
 
-  const triggerCashierKotFallbackPrint = (orderItems = [], kotData = {}, reasonText = '') => {
+  const triggerCashierKotFallbackPrint = (orderItems = [], kotData = {}, reasonText = '', options = {}) => {
     const fallbackItems = Array.isArray(orderItems) && orderItems.length > 0
       ? orderItems
       : (Array.isArray(kotData?.items) ? kotData.items : []);
@@ -662,18 +691,22 @@ const decreaseItemQuantity = (index) => {
       console.warn('[KOT] Cashier ESC/POS fallback:', reasonText);
     }
 
-    toast.warning('Cashier KOT printer issue detected. Falling back to Windows thermal print.');
+    if (!options?.suppressToasts) {
+      toast.warning('Cashier KOT printer issue detected. Falling back to Windows thermal print.');
+    }
 
     windowPrintKOTByGroup(fallbackItems, {
       tableNumber: kotData?.table || kotData?.table_number || selectedTable,
       orderNumber: kotData?.order_number || kotData?.orderNumber || maxNumber,
       totalAmount: parseFloat(kotData?.total || total || 0) || 0,
       shishaStartTime: kotData?.shishaStartTime || null,
+      suppressToasts: !!options?.suppressToasts,
     });
   };
 
-  const sendEscPosKotCommand = async (kotData = {}) => {
+  const sendEscPosKotCommand = async (kotData = {}, options = {}) => {
     let normalizedItems = [];
+    const shouldNotify = !options?.suppressToasts;
     try {
       // Get user UUID for printer lookup
       const userUuid = localStorage.getItem('user_uuid');
@@ -687,9 +720,10 @@ const decreaseItemQuantity = (index) => {
             order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
             total: kotData?.total,
           },
-          'User UUID unavailable for ESC/POS routing. Using cashier fallback print.'
+          'User UUID unavailable for ESC/POS routing. Using cashier fallback print.',
+          options
         );
-        toast.error('User UUID not found. Please login again.');
+        if (shouldNotify) toast.error('User UUID not found. Please login again.');
         return false;
       }
 
@@ -750,9 +784,10 @@ const decreaseItemQuantity = (index) => {
               order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
               total: kotData?.total,
             },
-            'No printer configs matched this machine UUID. Using cashier fallback print.'
+            'No printer configs matched this machine UUID. Using cashier fallback print.',
+            options
           );
-          toast.error('No printer configuration found for this machine UUID.');
+          if (shouldNotify) toast.error('No printer configuration found for this machine UUID.');
           return false;
         }
 
@@ -765,12 +800,15 @@ const decreaseItemQuantity = (index) => {
             order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
             total: kotData?.total,
           },
-          configError?.message || 'Failed to fetch printer config. Using cashier fallback print.'
+          configError?.message || 'Failed to fetch printer config. Using cashier fallback print.',
+          options
         );
-        if (configError.response?.status === 404) {
-          toast.error('❌ No printer configuration found for this machine UUID.');
-        } else {
-          toast.error('Failed to fetch printer configuration.');
+        if (shouldNotify) {
+          if (configError.response?.status === 404) {
+            toast.error('No printer configuration found for this machine UUID.');
+          } else {
+            toast.error('Failed to fetch printer configuration.');
+          }
         }
         console.error('Printer config error:', configError);
         return false;
@@ -803,7 +841,8 @@ const decreaseItemQuantity = (index) => {
             order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
             total: kotData?.total,
           },
-          'No cashier printer configured for this device. Using Windows thermal fallback for cashier copy.'
+          'No cashier printer configured for this device. Using Windows thermal fallback for cashier copy.',
+          options
         );
       }
 
@@ -889,7 +928,7 @@ const decreaseItemQuantity = (index) => {
         );
 
         if (cashierFallbackTriggered && !kitchenConfigured) {
-          toast.info('KOT printed via cashier fallback thermal print.');
+          if (shouldNotify) toast.info('KOT printed via cashier fallback thermal print.');
           return true;
         }
 
@@ -897,7 +936,7 @@ const decreaseItemQuantity = (index) => {
       }
 
       if (okCount < printResults.length) {
-        toast.warning(`KOT printed on ${okCount}/${printResults.length} attached printers.`);
+        if (shouldNotify) toast.warning(`KOT printed on ${okCount}/${printResults.length} attached printers.`);
       }
 
       return true;
@@ -911,7 +950,8 @@ const decreaseItemQuantity = (index) => {
           order_number: kotData?.order_number || kotData?.orderNumber || maxNumber,
           total: kotData?.total,
         },
-        error?.message || 'ESC/POS KOT request failed; using cashier fallback print.'
+        error?.message || 'ESC/POS KOT request failed; using cashier fallback print.',
+        options
       );
 
       let errorMessage = 'Failed to print KOT';
@@ -925,13 +965,15 @@ const decreaseItemQuantity = (index) => {
         errorMessage = error.message;
       }
 
-      toast.error(errorMessage);
+      if (shouldNotify) toast.error(errorMessage);
       return false;
     }
   };
 
   // Complete ESC/POS order workflow: Save -> Print -> Clear
   const handleESCPosOrderFlow = async (kotData = {}) => {
+    const kotToastId = 'kot-print-flow';
+
     if (!selectedTable) {
       toast.error('Please select a table!');
       return false;
@@ -942,9 +984,14 @@ const decreaseItemQuantity = (index) => {
       return false;
     }
 
-    try {
-      toast.info('Processing order...');
+    toast.dismiss(kotToastId);
+    toast.loading('Processing KOT...', {
+      toastId: kotToastId,
+      autoClose: false,
+      closeOnClick: false,
+    });
 
+    try {
       // Get the next setup date
       const setupDate = await getNextSetupDate();
 
@@ -984,21 +1031,29 @@ const decreaseItemQuantity = (index) => {
 
       if (response1.data.success) {
         console.log("✅ ORDER SAVED SUCCESSFULLY");
-        toast.success(response.data.message);
 
         // Step 2: Send KOT print command
-        const printResult = await sendEscPosKotCommand(kotData);
+        const printResult = await sendEscPosKotCommand(kotData, { suppressToasts: true });
 
         if (printResult) {
           console.log('✅ KOT ESC/POS command sent successfully');
-          toast.success('Order saved and KOT sent to printer!');
+          toast.update(kotToastId, {
+            render: 'KOT sent to printer!',
+            type: 'success',
+            isLoading: false,
+            autoClose: 2500,
+          });
         } else {
-          toast.warning('Order saved but KOT command failed.');
+          toast.update(kotToastId, {
+            render: 'Order saved but KOT print failed.',
+            type: 'error',
+            isLoading: false,
+            autoClose: 3500,
+          });
         }
 
-        // Step 3: Clear cart
-        setCart([]);
-        setTotal(0);
+        // Step 3: Clear cart and menu counters
+        clearCartState();
 
         // Step 4: Update table status and refresh data
         Promise.all([
@@ -1013,19 +1068,35 @@ const decreaseItemQuantity = (index) => {
 
         return printResult;
       } else {
-        toast.error("Failed to save the order!");
+        toast.update(kotToastId, {
+          render: 'Failed to save the order.',
+          type: 'error',
+          isLoading: false,
+          autoClose: 3500,
+        });
         return false;
       }
     } catch (error) {
       console.error('❌ Error in handleESCPosOrderFlow:', error);
-      if (handleAuthError(error)) return false;
+      if (handleAuthError(error)) {
+        toast.dismiss(kotToastId);
+        return false;
+      }
       
       if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
-        toast.error('⚠️ Connection error! Check your network.', {
-          autoClose: 5000
+        toast.update(kotToastId, {
+          render: 'Connection error! Check your network.',
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000,
         });
       } else {
-        toast.error('Error: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+        toast.update(kotToastId, {
+          render: 'Error: ' + (error.response?.data?.message || error.message || 'Unknown error'),
+          type: 'error',
+          isLoading: false,
+          autoClose: 4500,
+        });
       }
       return false;
     }
@@ -1047,8 +1118,10 @@ const decreaseItemQuantity = (index) => {
       ? parseFloat(options.totalAmount)
       : computedTotal;
 
-    // Show immediate feedback
-    toast.success("Preparing KOT...");
+    // Show immediate feedback only when toast suppression is not requested
+    if (!options?.suppressToasts) {
+      toast.success("Preparing KOT...");
+    }
     
     // Create KOT content
     let kotContent = `
@@ -1214,9 +1287,13 @@ const decreaseItemQuantity = (index) => {
       // Start monitoring
       checkPrintDialog();
       
-      toast.success("KOT sent to printer!");
+      if (!options?.suppressToasts) {
+        toast.success("KOT sent to printer!");
+      }
     } else {
-      toast.error("Unable to open print window. Please check popup blocker settings.");
+      if (!options?.suppressToasts) {
+        toast.error("Unable to open print window. Please check popup blocker settings.");
+      }
     }
   };
 
@@ -1684,9 +1761,8 @@ const decreaseItemQuantity = (index) => {
           toast.warning('Order saved but ESC/POS command failed.');
         }
         
-        // Clear cart after successful operations
-        setCart([]);
-        setTotal(0);
+        // Clear cart and menu counters after successful operations
+        clearCartState();
         
         // Update table status and refresh data in background
         Promise.all([
@@ -1854,9 +1930,8 @@ const decreaseItemQuantity = (index) => {
         toast.success(response.data.message);
         setOrderNumber((prevOrder) => prevOrder + 1);
         
-        // Clear cart immediately after successful save
-        setCart([]);
-        setTotal(0);
+        // Clear cart and menu counters immediately after successful save
+        clearCartState();
         
         // Update table status and refresh data in background
         Promise.all([
@@ -1965,8 +2040,7 @@ const decreaseItemQuantity = (index) => {
       //     total: total
       // });
       printKOT(orderItems); // Call function to print the KOT
-      setCart([]);
-      setTotal(0);
+      clearCartState();
       
       // Trigger refresh for CheckBillModal
       setRefreshTrigger(prev => prev + 1);
@@ -2095,17 +2169,6 @@ const decreaseItemQuantity = (index) => {
     fetchAndSetData();
   }, []);
 
-  const selectedCategoryName =
-    categories.find((category) => String(category.id) === String(selectedCategory))?.name ||
-    "Choose a category";
-
-  const selectedSubcategoryName =
-    subcategories.find((subcategory) => String(subcategory.id) === String(selectedSubcategory))?.subcat ||
-    "Choose a subcategory";
-
-  const itemCountLabel = `${data.length} item${data.length === 1 ? "" : "s"}`;
-  const activeTableLabel = selectedTable || "No table selected";
-
   return (
     <>
       {/* ✅ Full Screen POS Container */}
@@ -2116,99 +2179,69 @@ const decreaseItemQuantity = (index) => {
         position: 'relative'
       }}>
         
-        {/* ✅ Dashboard Navigation Button */}
-        <button 
-          className="btn dashboard-btn pos-float-btn pos-float-btn--home"
-          onClick={navigateToDashboard}
-          style={{ top: '20px', right: '20px' }}
-          title="Dashboard"
-        >
-          <FaHome size={18} />
-        </button>
-
-        {/* ✅ POS System Title */}
-        <div className="pos-title pos-soft-title" style={{ top: '20px', left: '50%', transform: 'translateX(-50%)' }}>
-          <span className="pos-soft-title__version">Version {appVersion || "Current"}</span>
-          <span className="pos-soft-title__heading">ChefmatePro 2.0 POS System</span>
-          <span className="pos-soft-title__meta">Soft service mode</span>
-        </div>
-
-        {/* Floating Table Selection Button */}
-        <button 
-          className="btn floating-table-btn pos-float-btn pos-float-btn--table"
-          onClick={showTableSelection}
-          style={{ top: '100px', right: '20px' }}
-          title={selectedTable ? `Current Table: ${selectedTable}` : 'Select Table'}
-        >
-          <FaTable />
-          {selectedTable && (
-            <span 
-              className="pos-float-btn__badge"
-            >
-              ✓
-            </span>
-          )}
-        </button>
-
-        {/* ✅ Customer Display Control Button */}
-        <button 
-          className={`btn floating-display-btn pos-float-btn ${isCustomerDisplayOpen ? 'pos-float-btn--display-open' : 'pos-float-btn--display'}`}
-          onClick={toggleCustomerDisplay}
-          style={{ top: '170px', right: '20px' }}
-          title={isCustomerDisplayOpen ? 'Close Customer Display' : 'Open Customer Display'}
-        >
-          {isCustomerDisplayOpen ? <FaEye /> : <FaDesktop />}
-        </button>
-
         {/* ✅ Main Content Area with proper spacing */}
         <div className="pos-main-content">
 
         {/* Main Category List */}
-        <div className="row mt-2">
+        <div className="row mt-2 pos-category-strip-row">
           <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-            <CardComponent
-              title="Choose Category"
-              headerColor=""
-              pull="left"
-              bodyClass="panel-body"
-              titleStyle={{ color: 'white' }}
-            >
-              <div className="panel panel-default card-view pos-panel-surface" style={{ padding: '8px' }}>
-                <div className="row" style={{ margin: '0' }}>
-                  {categories.length > 0 ? (
-                    categories.map((category, index) => (
-                      <div className="col-1 col-md-1 col-sm-3 col-xs-6" key={index} style={{ padding: '2px' }}>
-                        <button
-                          className="btn btn-primary category-btn"
-                          onClick={() => handleCategoryClick(category.id)}
-                          style={{ 
-                            width: '100%', 
-                            padding: '8px 4px', 
-                            fontSize: '12px', 
-                            margin: '2px 0',
-                            minHeight: '38px',
-                            color: '#24312c',
-                            fontWeight: selectedCategory === category.id ? '700' : '600',
-                            background: selectedCategory === category.id ? '#d8e7da' : undefined,
-                            borderColor: selectedCategory === category.id ? '#b6cab9' : undefined
-                          }}
-                        >
-                          {category.name}
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p>Loading categories...</p>
+            <div className="pos-category-strip">
+              <div className="pos-category-strip__actions">
+                <button
+                  className={`btn dashboard-btn pos-top-action-btn ${isCustomerDisplayOpen ? 'pos-top-action-btn--display-open' : 'pos-top-action-btn--display'}`}
+                  onClick={toggleCustomerDisplay}
+                  title={isCustomerDisplayOpen ? 'Close Customer Display' : 'Open Customer Display'}
+                >
+                  {isCustomerDisplayOpen ? <FaEye /> : <FaDesktop />}
+                </button>
+                <button
+                  className="btn floating-table-btn pos-top-action-btn pos-top-action-btn--table"
+                  onClick={showTableSelection}
+                  title={selectedTable ? `Current Table: ${selectedTable}` : 'Select Table'}
+                >
+                  <FaTable />
+                  {selectedTable && (
+                    <span className="pos-float-btn__badge">
+                      ✓
+                    </span>
                   )}
-                </div>
+                </button>
+                <button
+                  className="btn dashboard-btn pos-top-action-btn pos-top-action-btn--home"
+                  onClick={navigateToDashboard}
+                  title="Dashboard"
+                >
+                  <FaHome size={18} />
+                </button>
               </div>
-            </CardComponent>
+              <div className="pos-category-strip__scroller">
+                {categories.length > 0 ? (
+                  categories.map((category, index) => (
+                    <button
+                      key={index}
+                      className="btn btn-primary category-btn pos-category-strip__button"
+                      onClick={() => handleCategoryClick(category.id)}
+                      style={{ 
+                        color: '#24312c',
+                        fontWeight: selectedCategory === category.id ? '700' : '600',
+                        background: selectedCategory === category.id ? '#d8e7da' : undefined,
+                        borderColor: selectedCategory === category.id ? '#b6cab9' : undefined
+                      }}
+                    >
+                      {category.name}
+                    </button>
+                  ))
+                ) : (
+                  <span className="pos-category-strip__empty">Loading categories...</span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Subcategory List */}
         <div className="row mt-2">
-          <div className="col-lg-2 col-md-2 col-sm-4 col-xs-12">
+          <div className="col-lg-2 col-md-3 col-sm-12 col-xs-12 pos-subcategory-col">
             <CardComponent
               title="Subcategories"
               headerColor="info"
@@ -2257,7 +2290,7 @@ const decreaseItemQuantity = (index) => {
           </div>
 
           {/* Item List */}
-          <div className="col-lg-7 col-md-7 col-sm-8 col-xs-12">
+          <div className="col-lg-7 col-md-9 col-sm-12 col-xs-12 pos-items-col">
             <CardComponent
               title="Items"
               headerColor="info"
@@ -2266,17 +2299,6 @@ const decreaseItemQuantity = (index) => {
               titleStyle={{ color: 'white' }}
             >
               <div className="panel panel-default card-view pos-panel-surface" style={{ padding: '8px' }}>
-                <div className="pos-items-header">
-                  <div>
-                    <span className="pos-items-header__eyebrow">Now showing</span>
-                    <h5 className="pos-items-header__title">{selectedSubcategoryName}</h5>
-                    <p className="pos-items-header__meta">{selectedCategoryName}</p>
-                  </div>
-                  <div className="pos-items-header__stats">
-                    <span className="pos-items-header__chip">{itemCountLabel}</span>
-                    <span className="pos-items-header__chip pos-items-header__chip--active">Table: {activeTableLabel}</span>
-                  </div>
-                </div>
                 <div
                   className="item-list-container"
                   style={{
@@ -2289,6 +2311,9 @@ const decreaseItemQuantity = (index) => {
                     {data.length > 0 ? (
                       data.map((item, index) => (
                         <div key={item.id} className="col-lg-2 col-md-3 col-sm-6 col-xs-12 mb-2" style={{ padding: '5px' }}>
+                          {(() => {
+                            const addedQtyLabel = getAddedQuantityLabel(item);
+                            return (
                           <div
                             className="item-card pos-menu-card text-center"
                             onClick={() => addItemToOrder(index, item)}
@@ -2302,27 +2327,28 @@ const decreaseItemQuantity = (index) => {
                             }}
                             style={{ padding: '12px', borderRadius: '18px', background: '#fffdf9', cursor: 'pointer' }}
                           >
+                            {addedQtyLabel && (
+                              <span className="pos-menu-qty-badge" aria-label={`Added quantity ${addedQtyLabel}`}>
+                                {addedQtyLabel}
+                              </span>
+                            )}
                             <div className="pos-menu-image-wrap">
                               <img
                                 src={`${baseURL}/uploads/${item.filename}`}
                                 alt={item.iname}
                                 className="item-image pos-menu-image"
-                                style={{
-                                  width: '100%',
-                                  height: '136px',
-                                  objectFit: 'contain',
-                                  borderRadius: '14px'
-                                }}
                               />
                             </div>
                             <div className="pos-menu-content">
                               <h5 className="item-name pos-menu-name">{item.iname}</h5>
                               <div className="pos-menu-meta">
                                 <span className="item-price pos-menu-price">฿ {Number(item.offerprice || 0).toFixed(2)}</span>
-                                <span className="pos-menu-action">Tap anywhere on card to add</span>
+                                
                               </div>
                             </div>
                           </div>
+                            );
+                          })()}
                         </div>
                       ))
                     ) : (
@@ -2340,7 +2366,7 @@ const decreaseItemQuantity = (index) => {
           {/* Order Summary */}
 
           {/* Order Summary with quantity adjustment buttons and item total amount display */}
-          <div className="col-lg-3 col-md-3 col-sm-4 col-xs-12">
+          <div className="col-lg-3 col-md-12 col-sm-12 col-xs-12 pos-order-summary-col">
             <CardComponent
               title={selectedTable}
               headerColor="info"
@@ -2403,6 +2429,7 @@ const decreaseItemQuantity = (index) => {
                     </div>
 
                     <div
+                      className="pos-cart-scroll"
                       style={{
                         maxHeight: 'calc(100vh - 420px)',
                         overflowY: 'auto',
@@ -2494,7 +2521,6 @@ const decreaseItemQuantity = (index) => {
                 sendPrintCommand={handleESCPosOrderFlow}
                 onPrintSuccess={() => {
                   console.log('✅ ESC/POS order completed successfully');
-                  toast.success('KOT sent to printer and cart cleared!');
                 }}
                 size="middle"
                 buttonType="default"

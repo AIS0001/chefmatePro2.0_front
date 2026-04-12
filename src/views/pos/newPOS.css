@@ -19,49 +19,124 @@
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: 80px;
+  padding-top: 0;
   padding-left: 12px;
   padding-right: 12px;
   padding-bottom: 200px;
 }
 
-.pos-float-btn {
-  position: fixed;
-  z-index: 1000;
-  border-radius: 50%;
-  width: 58px;
-  height: 58px;
+.pos-category-strip-row {
+  position: sticky;
+  top: 0;
+  z-index: 990;
+  margin-top: 0 !important;
+}
+
+.pos-category-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  margin-left: -12px;
+  margin-right: -12px;
+  background: rgba(255, 253, 249, 0.96);
+  border-top: 1px solid #ddd5c9;
+  border-bottom: 1px solid #ddd5c9;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  box-shadow: 0 8px 18px rgba(110, 118, 112, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.pos-category-strip__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  order: 2;
+}
+
+.pos-category-strip__scroller {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #d4ccbf transparent;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  order: 1;
+}
+
+.pos-category-strip__scroller::-webkit-scrollbar {
+  height: 8px;
+}
+
+.pos-category-strip__scroller::-webkit-scrollbar-thumb {
+  background: #d4ccbf;
+  border-radius: 999px;
+}
+
+.pos-category-strip__button {
+  flex: 0 0 auto;
+  min-width: 120px;
+  padding: 8px 16px !important;
+  min-height: 38px;
+  white-space: nowrap;
+  border-radius: 999px !important;
+}
+
+.pos-category-strip__empty {
+  color: #6f7c76;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 4px;
+}
+
+.pos-top-action-btn {
+  position: relative;
+  z-index: 1;
+  border-radius: 10px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #d7d0c4 !important;
-  font-size: 20px;
+  font-size: 18px;
   color: #24312c !important;
   transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+  flex: 0 0 auto;
+  padding: 0 !important;
+  color: #f7f3ec !important;
 }
 
-.pos-float-btn:hover {
-  transform: scale(1.08);
+.pos-top-action-btn:hover {
+  transform: translateY(-1px);
 }
 
-.pos-float-btn--home {
-  background: #eadfd3 !important;
-  box-shadow: 0 14px 26px rgba(116, 93, 74, 0.18);
+.pos-top-action-btn--home {
+  background: #25312d !important;
+  box-shadow: 0 10px 18px rgba(37, 49, 45, 0.2);
 }
 
-.pos-float-btn--table {
-  background: #dce8df !important;
-  box-shadow: 0 14px 26px rgba(108, 130, 114, 0.2);
+.pos-top-action-btn--table {
+  background: #31413a !important;
+  box-shadow: 0 10px 18px rgba(49, 65, 58, 0.2);
 }
 
-.pos-float-btn--display {
-  background: #f2eadb !important;
-  box-shadow: 0 14px 26px rgba(153, 129, 95, 0.18);
+.pos-top-action-btn--display {
+  background: #3c4d45 !important;
+  box-shadow: 0 10px 18px rgba(60, 77, 69, 0.2);
 }
 
-.pos-float-btn--display-open {
-  background: #dce8df !important;
-  box-shadow: 0 14px 26px rgba(108, 130, 114, 0.2);
+.pos-top-action-btn--display-open {
+  background: #1f2b26 !important;
+  box-shadow: 0 10px 18px rgba(31, 43, 38, 0.22);
 }
 
 .pos-float-btn__badge {
@@ -131,66 +206,6 @@
   background: rgba(255, 253, 249, 0.94) !important;
 }
 
-.pos-items-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 10px 10px 14px;
-  border-bottom: 1px solid #ece3d7;
-  margin-bottom: 10px;
-}
-
-.pos-items-header__eyebrow {
-  display: inline-flex;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #efe6d8;
-  color: #7c6450;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.pos-items-header__title {
-  margin: 8px 0 2px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #24312c;
-}
-
-.pos-items-header__meta {
-  margin: 0;
-  font-size: 13px;
-  color: #73807a;
-}
-
-.pos-items-header__stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.pos-items-header__chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: #edf2ed;
-  color: #34413c;
-  font-size: 12px;
-  font-weight: 700;
-  border: 1px solid #d7dfd7;
-}
-
-.pos-items-header__chip--active {
-  background: #f2eadb;
-  border-color: #e1d5bf;
-}
-
 .pos-empty-state {
   width: 100%;
   min-height: 180px;
@@ -208,12 +223,22 @@
 }
 
 .pos-quick-add-card {
+  width: 100%;
+  display: block;
   padding: 14px !important;
   background: linear-gradient(180deg, #f7f3ed 0%, #f1ece3 100%) !important;
   border-radius: 16px !important;
   border: 1px solid #ddd3c4 !important;
   margin-bottom: 12px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.pos-quick-add-card form {
+  width: 100%;
+}
+
+.pos-quick-add-card .form-control {
+  width: 100%;
 }
 
 .pos-quick-add-card__title {
@@ -235,6 +260,10 @@
   background: rgba(247, 243, 237, 0.92);
   border: 1px solid #e1d8cb;
   margin-bottom: 8px;
+}
+
+.pos-order-summary-col {
+  margin-top: 0;
 }
 
 .pos-bottom-bar {
@@ -268,6 +297,12 @@
 
 .soft-pos-theme {
   color: #31413a;
+}
+
+.soft-pos-theme button,
+.soft-pos-theme .btn,
+.soft-pos-theme .ant-btn {
+  border-radius: 0 !important;
 }
 
 .soft-pos-theme .panel.card-view {
@@ -328,7 +363,28 @@
   flex-direction: column;
   gap: 12px;
   min-height: 238px;
+  position: relative;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.soft-pos-theme .pos-menu-qty-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #d62828;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 6px 14px rgba(214, 40, 40, 0.35);
 }
 
 .soft-pos-theme .pos-menu-card:hover {
@@ -346,42 +402,53 @@
   background: linear-gradient(180deg, #f9f7f2 0%, #f1ece4 100%);
   border: 1px solid #ebe3d7;
   border-radius: 16px;
-  padding: 10px;
-  min-height: 156px;
+  padding: 0;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
 }
 
 .soft-pos-theme .pos-menu-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
   margin-bottom: 0 !important;
   background: transparent;
+  display: block;
 }
 
 .soft-pos-theme .pos-menu-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 
 .soft-pos-theme .pos-menu-name {
   margin: 0;
   color: #1f2b26 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
-  line-height: 1.25;
-  min-height: 38px;
+  line-height: 1.2;
+  min-height: 0;
+  max-height: 2.4em;
+  padding: 0 2px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
 }
 
 .soft-pos-theme .pos-menu-meta {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .soft-pos-theme .pos-menu-price {
@@ -496,16 +563,58 @@
 /* Dashboard button responsive styles */
 @media (max-width: 768px) {
   .pos-main-content {
+    padding-top: 0;
     padding-left: 10px;
     padding-right: 10px;
   }
 
-  .pos-items-header {
-    flex-direction: column;
+  .pos-category-strip {
+    gap: 10px;
+    padding: 8px;
+    margin-left: -10px;
+    margin-right: -10px;
+    flex-wrap: wrap;
   }
 
-  .pos-items-header__stats {
-    justify-content: flex-start;
+  .pos-subcategory-col,
+  .pos-items-col,
+  .pos-order-summary-col {
+    margin-bottom: 12px;
+  }
+
+  .pos-order-summary-col {
+    margin-top: 4px;
+  }
+
+  .pos-order-summary-col .panel-body {
+    position: relative;
+  }
+
+  .pos-order-summary-col .pos-quick-add-card {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin-bottom: 10px;
+  }
+
+  .pos-cart-scroll {
+    max-height: 240px !important;
+  }
+
+  .pos-category-strip__actions {
+    width: 100%;
+    justify-content: flex-end;
+    order: 1;
+  }
+
+  .pos-category-strip__scroller {
+    width: 100%;
+    order: 2;
+  }
+
+  .pos-category-strip__button {
+    min-width: 108px;
+    padding: 9px 14px !important;
   }
 
   .dashboard-btn {
@@ -536,11 +645,6 @@
 
   .pos-soft-title__meta {
     font-size: 10px;
-  }
-
-  .pos-float-btn {
-    width: 50px;
-    height: 50px;
   }
 
   .dashboard-btn {

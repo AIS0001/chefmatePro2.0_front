@@ -115,8 +115,9 @@ export default function BillHistory() {
   
   const navigate = useNavigate();
   const userType = getUserType();
-  const isCashier = userType?.toLowerCase() === 'cashier';
-  const canEditBill = ["admin", "account"].includes((userType || "").toLowerCase());
+  const normalizedUserType = (userType || "").toLowerCase();
+  const isCashier = normalizedUserType === 'cashier';
+  const canEditBill = ["admin", "account"].includes(normalizedUserType);
 
   useEffect(() => {
     let mounted = true;
@@ -733,8 +734,16 @@ export default function BillHistory() {
   ];
 
   // Navigation functions for cashiers
+  const getDashboardPath = () => {
+    if (normalizedUserType === 'cashier') return '/dashboard/cashier';
+    if (normalizedUserType === 'account') return '/dashboard/account';
+    if (normalizedUserType === 'manager' || normalizedUserType === 'admin') return '/dashboard/admin';
+    if (normalizedUserType === 'super_admin') return '/superadmin/dashboard';
+    return '/dashboard';
+  };
+
   const navigateToDashboard = () => {
-    navigate('/dashboard');
+    navigate(getDashboardPath());
   };
 
   const navigateBack = () => {
@@ -1009,13 +1018,6 @@ export default function BillHistory() {
                   </Button>
                   <h3 style={{ margin: 0 }}>Sales Reports</h3>
                 </Space>
-                <Button 
-                  type="primary" 
-                  onClick={navigateToDashboard} 
-                  icon={<HomeOutlined />}
-                >
-                  Dashboard
-                </Button>
               </Space>
             </Card>
           </Col>

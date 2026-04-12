@@ -155,6 +155,12 @@ const fullMenu = [
     icon: 'card-membership',
     dataTargetId: '#subscription'
   },
+  {
+    name: 'Support',
+    path: '/support/tickets',
+    icon: 'help-outline',
+    dataTargetId: '#support'
+  },
   //   { name: 'Logout', 
   //     path: '/logout', 
   //     icon: 'sign-in', 
@@ -220,6 +226,12 @@ const accountMenu = [
     path: '/subscription',
     icon: 'card-membership',
     dataTargetId: '#subscription'
+  },
+  {
+    name: 'Support',
+    path: '/support/tickets',
+    icon: 'help-outline',
+    dataTargetId: '#support'
   },
 ];
 const getMenuItems = (usertype) => {

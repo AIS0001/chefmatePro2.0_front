@@ -71,8 +71,19 @@ export default function ChangelogPage() {
       sections.push(currentSection)
     }
 
+    const sanitizedIntro = introLines
+      .filter((line) => {
+        const trimmed = line.trim()
+        if (!trimmed) return false
+        if (/^#\s*changelog$/i.test(trimmed)) return false
+        if (/^---+$/.test(trimmed)) return false
+        return true
+      })
+      .join('\n')
+      .trim()
+
     return {
-      intro: introLines.join('\n').trim(),
+      intro: sanitizedIntro,
       sections
     }
   }
@@ -99,7 +110,8 @@ export default function ChangelogPage() {
   useEffect(() => {
     const loadChangelog = async () => {
       try {
-        const response = await fetch('/CHANGELOG.md', { cache: 'no-store' })
+        const cacheBust = Date.now()
+        const response = await fetch(`/CHANGELOG.md?v=${cacheBust}`, { cache: 'no-store' })
         if (!response.ok) {
           throw new Error('Unable to load changelog')
         }

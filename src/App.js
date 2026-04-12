@@ -117,6 +117,7 @@ import NotificationManagement from './views/superAdmin/NotificationManagement';
 import LogsViewer from './views/superAdmin/LogsViewer';
 import NotificationsPage from './views/pages/NotificationsPage';
 import ChangelogPage from './views/pages/ChangelogPage';
+import SupportTickets from './views/support/SupportTickets';
 
 // Dummy FeatureProtectedRoute that always returns children
 const FeatureProtectedRoute = ({ children }) => children;
@@ -446,6 +447,10 @@ function AppRoutes() {
           {/* User Notifications Page */}
           <Route path="/notifications" element={
             <PrivateRoute><NotificationsPage /></PrivateRoute>
+          } />
+
+          <Route path="/support/tickets" element={
+            <PrivateRoute><SupportTickets /></PrivateRoute>
           } />
 
           {/* Changelog - accessible to all authenticated roles */}

@@ -10,7 +10,7 @@ const getMax = async (tblname, setmaxNumber, col1, val1, field) => {
         url += `/${col1}/${val1}/${field}`;
     }
   
-    console.log(url);
+   // console.log(url);
     try {
         const headers = getHeaders();
         const response = await axios.get(url, headers);
