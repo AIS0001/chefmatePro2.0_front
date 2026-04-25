@@ -67,6 +67,8 @@ import BillEditLogs from './views/reports/BillEditLogs';
 import DayWiseReports from './views/reports/DayWiseReports';
 import CashDrawer from './views/reports/CashDrawer';
 import LoginAttempts from './views/reports/loginAttempts';
+import EntertainmentReports from './views/reports/EntertainmentReports';
+import GroupWiseReports from './views/reports/GroupWiseReports';
 
 
 //Users
@@ -384,6 +386,16 @@ function AppRoutes() {
           <Route path="/reports/billeditlogs" element={
             <FeatureProtectedRoute route="/reports/billeditlogs">
               <PrivateRoute><BillEditLogs /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/reports/entertainment" element={
+            <FeatureProtectedRoute route="/reports/entertainment">
+              <PrivateRoute><EntertainmentReports /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/reports/groupwise" element={
+            <FeatureProtectedRoute route="/reports/groupwise">
+              <PrivateRoute><GroupWiseReports /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
 

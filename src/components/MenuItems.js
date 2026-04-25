@@ -106,6 +106,8 @@ const fullMenu = [
       { name: 'Day Close', path: '/reports/dayclose' },
       { name: 'Day Wise Reports', path: '/reports/daywise' },
       { name: 'Login Attempts', path: '/reports/loginattempts' },
+      { name: 'Entertainment Report', path: '/reports/entertainment' },
+      { name: 'Group Wise Report', path: '/reports/groupwise' },
 
     ]
   },
@@ -170,6 +172,8 @@ const accountVatReports = [
   { name: 'Customer Ledger', path: '/reports/saleledger' },
   { name: 'Day Close', path: '/reports/dayclose' },
   { name: 'Day Wise Reports', path: '/reports/daywise' },
+  { name: 'Entertainment Report', path: '/reports/entertainment' },
+  { name: 'Group Wise Report', path: '/reports/groupwise' },
 ];
 
 const accountMenu = [

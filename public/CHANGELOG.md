@@ -1,6 +1,25 @@
 # Changelog
 ---
 
+## [3.1.0] - 2026-04-25
+
+### Added
+- Entertainment Reports page (`/reports/entertainment`) showing date-wise food, bar, and shisha totals for entertainment-mode bills.
+- Group Wise Day-wise Reports page (`/reports/groupwise`) showing per-day group totals for non-entertainment bills.
+- Backend API endpoint `GET /api/entertainment-report` with shop_id filter, date range, and dynamic schema detection.
+- Backend API endpoint `GET /api/groupwise-daywise-report` with shop_id filter, date range, and dynamic schema detection.
+- Both new report pages added to the Reports submenu in `MenuItems.js` and `Menu_item_vat.js` for GST and VAT menu layouts.
+
+### Changed
+- Report controller uses dynamic column detection to handle varying `order_items` table schemas across deployments.
+- Analytics controller `getTopSellingProducts` updated to use dynamic revenue expressions to avoid missing-column errors.
+
+### Fixed
+- Resolved `ER_CANT_AGGREGATE_2COLLATIONS` SQL error in report queries by normalising all string comparisons to `utf8mb4_unicode_ci` collation.
+- Resolved 500 errors caused by incorrect destructuring of database pool import in report controller.
+
+---
+
 ## [2.0.9] - 2026-04-12
 
 ### Added

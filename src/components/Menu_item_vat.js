@@ -94,20 +94,24 @@ const fullMenu = [
     icon: 'chart',
     dataTargetId: '#reports',
     submenu: [
-      { name: 'Sale Report', path: '/reports/billhistory' },
+      { name: 'Bill Wise ', path: '/reports/billhistory' },
       //  { name: 'Quotation History', path: '/quotation-history' },
       // { name: 'Item Wise', path: '/reports/itemwisesale' },
       { name: 'Item Wise ', path: '/reports/itemwisesummaryvat' },
-      { name: 'Preorders', path: '/reports/advanceorderreport' },
-      { name: 'Purchase Report', path: '/inventory/stockreports' },
-      { name: 'Low Stock Items', path: '/reports/lowstockitems' },
-      { name: 'Supplier Ledger', path: '/reports/supplierledger' },
-      { name: 'Customer Ledger', path: '/reports/saleledger' },
+        { name: 'Group Wise Report', path: '/reports/groupwise' },
+       { name: 'Entertainment Report', path: '/reports/entertainment' },
+      
       { name: 'Day Close', path: '/reports/dayclose' },
       { name: 'Cash Drawer', path: '/reports/cashdrawer' },
       { name: 'Day Wise Reports', path: '/reports/daywise' },
+      { name: 'Supplier Ledger', path: '/reports/supplierledger' },
+      { name: 'Customer Ledger', path: '/reports/saleledger' },
+       { name: 'Preorders', path: '/reports/advanceorderreport' },
+      { name: 'Purchase Report', path: '/inventory/stockreports' },
+      { name: 'Low Stock Items', path: '/reports/lowstockitems' },
       { name: 'Bill Edit Logs', path: '/reports/billeditlogs' },
       { name: 'Login Attempts', path: '/reports/loginattempts' },
+     
 
     ]
   },
