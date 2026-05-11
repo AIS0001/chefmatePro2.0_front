@@ -6,8 +6,8 @@ export default function Breadcrum() {
 	const pathnames = location.pathname.split('/').filter(x => x);
   return (
     <>
-    <div className="col-lg-9 col-sm-8 col-md-8 col-xs-12">
-						<ol className="breadcrumb">
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+						<Breadcrumb className="mb-0" style={{ margin: 0 }}>
 						<Breadcrumb.Item href="/">Dashboard</Breadcrumb.Item>
       {pathnames.length > 0 ? (
         pathnames.map((value, index) => {
@@ -27,7 +27,7 @@ export default function Breadcrum() {
       ) : (
         <Breadcrumb.Item active>Dashboard</Breadcrumb.Item>
       )}
-						</ol>
+						</Breadcrumb>
 					</div>
     </>
   )

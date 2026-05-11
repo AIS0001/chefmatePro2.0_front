@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+﻿import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link,useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,8 +7,8 @@ import { getHeaders } from "../../utility/getHeader";
 import fetchDataFromTwoTables from "../../functions/fetchdatawithTwoTables";
 import { format } from "date-fns";
 import CardComponent from "../../components/cards/CardComponent";
-// import Header from "../../components/Header"; // ✅ Removed Header import
-// import Layout from "../../layout/Layout"; // ✅ Removed Layout import
+// import Header from "../../components/Header"; // โ… Removed Header import
+// import Layout from "../../layout/Layout"; // โ… Removed Layout import
 import fetchData from "../../functions/fetchData";
 import { Textfield } from "../../components/Buttons/Textfield";
 import getMax from "../../functions/getMax";
@@ -20,11 +20,11 @@ import TableSelectionModal from "../../components/Modals/TableSelectionModal";
 import ReprintKOTModal from "../../components/Modals/ReprintKOTModal";
 import { baseURL } from "../../index"; // Import baseURL from index.js
 import ReprintKOTOrderModal from "../../components/Modals/ReprintKOTOrderModal";
-import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // ✅ Added icons
-import ESCPosAutoDetectButton from "../../components/ESCPosAutoDetectButton"; // ✅ Import ESC/POS auto-detect printer button
-import customerDisplayManager from "../../services/CustomerDisplayManager"; // ✅ Import customer display manager
-import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
-import "./newPOS.css"; // ✅ Import POS styles
+import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // โ… Added icons
+import ESCPosAutoDetectButton from "../../components/ESCPosAutoDetectButton"; // โ… Import ESC/POS auto-detect printer button
+import customerDisplayManager from "../../services/CustomerDisplayManager"; // โ… Import customer display manager
+import { getNextSetupDate } from "../../utils/setupDateUtils"; // โ… Import setup date utility
+import "./newPOS.css"; // โ… Import POS styles
 
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
@@ -68,7 +68,7 @@ export default function NewPOS() {
   const [reprintLoadingOrders, setReprintLoadingOrders] = useState(false);
   const [reprintLoadingItems, setReprintLoadingItems] = useState(false);
 
-  // ✅ Customer Display States
+  // โ… Customer Display States
   const [isCustomerDisplayOpen, setIsCustomerDisplayOpen] = useState(false);
 
   const [companyInfo, setCompanyInfo] = useState({});
@@ -84,7 +84,7 @@ export default function NewPOS() {
     return (profileName || storedShopName || "Restaurant").trim();
   };
 
-  // ✅ Draggable Action Card States
+  // โ… Draggable Action Card States
   const [actionCardPos, setActionCardPos] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -237,7 +237,7 @@ export default function NewPOS() {
     navigate(`/reports/billhistory`);
   };
 
-  // ✅ Customer Display Control Functions
+  // โ… Customer Display Control Functions
   const openCustomerDisplay = () => {
     customerDisplayManager.openCustomerDisplay();
     setIsCustomerDisplayOpen(true);
@@ -564,7 +564,7 @@ const getAddedQuantityLabel = (item) => {
     );
     setTotal(newTotal);
     
-    // ✅ Update customer display in real-time
+    // โ… Update customer display in real-time
     if (customerDisplayManager.isDisplayConnected()) {
       customerDisplayManager.updateCart(cart, newTotal);
     }
@@ -660,7 +660,7 @@ const decreaseItemQuantity = (index) => {
   
     kotContent += `--------------------------------\n`;
     kotContent += `Date: ${new Date().toLocaleString()}\n`;
-    kotContent += `Total: ฿ ${total.toFixed(2)}\n`;
+    kotContent += `Total: เธฟ ${total.toFixed(2)}\n`;
   
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`<pre style="font-family: monospace; font-size: 18px; line-height: 1.6; font-weight: 700;">${kotContent}</pre>`);
@@ -742,7 +742,7 @@ const decreaseItemQuantity = (index) => {
 
       let printerConfigs = [];
 
-      // 🔍 Get all active printers for this machine UUID and print KOT to all of them.
+      // ๐” Get all active printers for this machine UUID and print KOT to all of them.
       try {
         const allPrinterResponse = await axios.get(
           `/printer/config`,
@@ -768,13 +768,13 @@ const decreaseItemQuantity = (index) => {
             return true;
           });
 
-          console.log('✅ Using printer configs for KOT:', printerConfigs.map((p) => ({
-            terminal_id: p?.terminal_id,
-            machine_uuid: p?.machine_uuid,
-            location: p?.location,
-            printer_ip: p?.printer_ip,
-            printer_port: p?.printer_port || 9100
-          })));
+          // console.log('โ… Using printer configs for KOT:', printerConfigs.map((p) => ({
+            // terminal_id: p?.terminal_id,
+            // machine_uuid: p?.machine_uuid,
+            // location: p?.location,
+            // printer_ip: p?.printer_ip,
+            // printer_port: p?.printer_port || 9100
+          // })));
         } else {
           triggerCashierKotFallbackPrint(
             normalizedItems,
@@ -1030,13 +1030,13 @@ const decreaseItemQuantity = (index) => {
       ]);
 
       if (response1.data.success) {
-        console.log("✅ ORDER SAVED SUCCESSFULLY");
+        // console.log("โ… ORDER SAVED SUCCESSFULLY");
 
         // Step 2: Send KOT print command
         const printResult = await sendEscPosKotCommand(kotData, { suppressToasts: true });
 
         if (printResult) {
-          console.log('✅ KOT ESC/POS command sent successfully');
+          // console.log('โ… KOT ESC/POS command sent successfully');
           toast.update(kotToastId, {
             render: 'KOT sent to printer!',
             type: 'success',
@@ -1063,7 +1063,7 @@ const decreaseItemQuantity = (index) => {
           getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
         ]).then(() => {
           setRefreshTrigger(prev => prev + 1);
-          console.log("Order processed and data refreshed...");
+          // console.log("Order processed and data refreshed...");
         });
 
         return printResult;
@@ -1077,7 +1077,7 @@ const decreaseItemQuantity = (index) => {
         return false;
       }
     } catch (error) {
-      console.error('❌ Error in handleESCPosOrderFlow:', error);
+      console.error('โ Error in handleESCPosOrderFlow:', error);
       if (handleAuthError(error)) {
         toast.dismiss(kotToastId);
         return false;
@@ -1187,7 +1187,7 @@ const decreaseItemQuantity = (index) => {
         
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
           <div style="margin-bottom: 5px; font-size: 18px;">
-            <strong>Total: ฿ ${totalAmount.toFixed(2)}</strong>
+            <strong>Total: เธฟ ${totalAmount.toFixed(2)}</strong>
           </div>
           <div style="font-size: 18px; color: #000; font-family: Arial, sans-serif;">
             ${new Date().toLocaleString()}
@@ -1456,7 +1456,7 @@ const decreaseItemQuantity = (index) => {
         </div>
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
           <div style="margin-bottom: 5px; font-size: 18px;">
-            <strong>Total: ฿ ${totalAmount.toFixed(2)}</strong>
+            <strong>Total: เธฟ ${totalAmount.toFixed(2)}</strong>
           </div>
           <div style="font-size: 18px; color: #000; font-family: Arial, sans-serif;">
             ${new Date().toLocaleString()}
@@ -1735,7 +1735,7 @@ const decreaseItemQuantity = (index) => {
       ]);
 
       if (response1.data.success) {
-        console.log("✅ ORDER SAVED SUCCESSFULLY");
+        // console.log("โ… ORDER SAVED SUCCESSFULLY");
         toast.success(response.data.message);
         setOrderNumber((prevOrder) => prevOrder + 1);
 
@@ -1755,7 +1755,7 @@ const decreaseItemQuantity = (index) => {
         const printResult = await sendEscPosKotCommand(kotData);
 
         if (printResult) {
-          console.log('✅ KOT ESC/POS command sent successfully');
+          // console.log('โ… KOT ESC/POS command sent successfully');
           toast.success('Order saved and KOT ESC/POS command sent!');
         } else {
           toast.warning('Order saved but ESC/POS command failed.');
@@ -1772,19 +1772,19 @@ const decreaseItemQuantity = (index) => {
           getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
         ]).then(() => {
           setRefreshTrigger(prev => prev + 1);
-          console.log("KOT ESC/POS sent successfully, data refreshed...");
+          // console.log("KOT ESC/POS sent successfully, data refreshed...");
         });
         
       } else {
         toast.error("Failed to save the order!");
       }
     } catch (error) {
-      console.error('❌ Error in handleSendKOTESCPOS:', error);
+      console.error('โ Error in handleSendKOTESCPOS:', error);
       if (handleAuthError(error)) return;
       
       // Check if it's a network/connection error
       if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
-        toast.error('⚠️ Connection error! Check your network and printer server.', {
+        toast.error('โ ๏ธ Connection error! Check your network and printer server.', {
           autoClose: 5000
         });
       } else {
@@ -1856,13 +1856,13 @@ const decreaseItemQuantity = (index) => {
       // console.log("Order Items API call data:", { items: orderItems });
       // console.log("=== DETAILED ORDER ITEMS ===");
       orderItems.forEach((item, index) => {
-        console.log(`Item ${index + 1}:`, {
-          item_name: item.item_name,
-          table_cat_id: item.table_cat_id,
-          table_number: item.table_number,
-          quantity: item.quantity,
-          total_amount: item.total_amount
-        });
+        // console.log(`Item ${index + 1}:`, {
+          // item_name: item.item_name,
+          // table_cat_id: item.table_cat_id,
+          // table_number: item.table_number,
+          // quantity: item.quantity,
+          // total_amount: item.total_amount
+        // });
       });
       //console.log("selectedTableCategory state:", selectedTableCategory);
       
@@ -1886,7 +1886,7 @@ const decreaseItemQuantity = (index) => {
       // console.log("Order items response:", response1.data);
 
       if (response1.data.success) {
-        console.log("✅ ORDER SAVED SUCCESSFULLY");
+        // console.log("โ… ORDER SAVED SUCCESSFULLY");
 
         let savedOrderItems = [];
         try {
@@ -1941,16 +1941,16 @@ const decreaseItemQuantity = (index) => {
           getMax("orders", setmaxNumber, "userid", getUserName(), "order_number")
         ]).then(() => {
           setRefreshTrigger(prev => prev + 1);
-          console.log("KOT sent successfully, data refreshed...");
+          // console.log("KOT sent successfully, data refreshed...");
         });
         
       } else {
-        // console.log("❌ ORDER SAVE FAILED");
+        // console.log("โ ORDER SAVE FAILED");
         // console.log("Error details:", response1.data);
         toast.error("Failed to save the order!");
       }
     } catch (error) {
-      // console.log("❌ EXCEPTION DURING ORDER SAVE");
+      // console.log("โ EXCEPTION DURING ORDER SAVE");
       // console.error('Error saving order:', error);
       // console.error('Error response:', error.response?.data);
       // console.error('Error status:', error.response?.status);
@@ -1975,7 +1975,7 @@ const decreaseItemQuantity = (index) => {
         table_number: selectedTable,
         total_amount: total,
         status: "1",
-        // setup_date: setupDate // ✅ Add setup_date column
+        // setup_date: setupDate // โ… Add setup_date column
       },
         getHeaders()
       );
@@ -1993,7 +1993,7 @@ const decreaseItemQuantity = (index) => {
         status: "1", //running table status
         uom: item.uom || "", // Unit of measure
         weight_based: item.weight === "weight" ? 1 : 0, // Flag for weight-based items
-        setup_date: setupDate, // ✅ Add setup_date column
+        setup_date: setupDate, // โ… Add setup_date column
         // Add category information for reporting
         category_id: resolveCategoryId(item),
         category_name: resolveCategoryName(item),
@@ -2044,7 +2044,7 @@ const decreaseItemQuantity = (index) => {
       
       // Trigger refresh for CheckBillModal
       setRefreshTrigger(prev => prev + 1);
-      console.log("KOT sent successfully, triggering refresh...");
+      // console.log("KOT sent successfully, triggering refresh...");
       
     } else {
       toast.error("Failed to save the order!");
@@ -2139,7 +2139,7 @@ const decreaseItemQuantity = (index) => {
         await loadTablesForSelection();
         //console.log("Table list fetched successfully");
         
-        // ✅ Fetch company info for customer display and KOT header (prefer company_profile)
+        // โ… Fetch company info for customer display and KOT header (prefer company_profile)
         const companyProfileData = await fetchData("company_profile", null, "id", {});
         const fallbackCompanyInfoData =
           Array.isArray(companyProfileData) && companyProfileData.length > 0
@@ -2171,7 +2171,7 @@ const decreaseItemQuantity = (index) => {
 
   return (
     <>
-      {/* ✅ Full Screen POS Container */}
+      {/* โ… Full Screen POS Container */}
       <div className="soft-pos-theme pos-shell" style={{ 
         width: '100vw', 
         height: '100vh', 
@@ -2179,7 +2179,7 @@ const decreaseItemQuantity = (index) => {
         position: 'relative'
       }}>
         
-        {/* ✅ Main Content Area with proper spacing */}
+        {/* โ… Main Content Area with proper spacing */}
         <div className="pos-main-content">
 
         {/* Main Category List */}
@@ -2202,7 +2202,7 @@ const decreaseItemQuantity = (index) => {
                   <FaTable />
                   {selectedTable && (
                     <span className="pos-float-btn__badge">
-                      ✓
+                      โ“
                     </span>
                   )}
                 </button>
@@ -2342,7 +2342,7 @@ const decreaseItemQuantity = (index) => {
                             <div className="pos-menu-content">
                               <h5 className="item-name pos-menu-name">{item.iname}</h5>
                               <div className="pos-menu-meta">
-                                <span className="item-price pos-menu-price">฿ {Number(item.offerprice || 0).toFixed(2)}</span>
+                                <span className="item-price pos-menu-price">เธฟ {Number(item.offerprice || 0).toFixed(2)}</span>
                                 
                               </div>
                             </div>
@@ -2445,7 +2445,7 @@ const decreaseItemQuantity = (index) => {
                               key={index}
                             >
                               <h5 className=" mb-0 pos-cart-item-name">
-                                {item.iname} x {formatQuantityForDisplay(item)} = ฿ {(item.quantity * item.offerprice).toFixed(2)}
+                                {item.iname} x {formatQuantityForDisplay(item)} = เธฟ {(item.quantity * item.offerprice).toFixed(2)}
                               </h5>
                               <div className="quantity-controls d-flex align-items-center">
                                 <button
@@ -2496,7 +2496,7 @@ const decreaseItemQuantity = (index) => {
           >
             <span className="pos-total-label" style={{ margin: 0, lineHeight: '1' }}>
               Total:{" "}
-              <span>฿ {total.toFixed(2)}</span>
+              <span>เธฟ {total.toFixed(2)}</span>
             </span>
             <div className="d-flex align-items-center gap-2">
               <ESCPosAutoDetectButton
@@ -2520,7 +2520,7 @@ const decreaseItemQuantity = (index) => {
                 }}
                 sendPrintCommand={handleESCPosOrderFlow}
                 onPrintSuccess={() => {
-                  console.log('✅ ESC/POS order completed successfully');
+                  // console.log('โ… ESC/POS order completed successfully');
                 }}
                 size="middle"
                 buttonType="default"
@@ -2544,42 +2544,42 @@ const decreaseItemQuantity = (index) => {
               onClick={handleBillHistory}
               style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
-              📋 Bill History
+              ๐“ Bill History
             </button>
             <button 
               className="btn btn-primary"
               onClick={refreshTables}
               style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
-              🔄 Refresh
+              ๐” Refresh
             </button>
             <button 
               className="btn btn-warning"
               onClick={showtableBillDetails}
               style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
-              💰 Check Bill
+              ๐’ฐ Check Bill
             </button>
             <button 
               className="btn btn-info"
               onClick={showReprintKOT}
               style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
-              🖨️ Reprint KOT
+              ๐–จ๏ธ Reprint KOT
             </button>
             <button 
               className="btn btn-danger"
               onClick={() => navigate('/logout')}
               style={{ padding: '8px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
-              🚪 Logout
+              ๐ช Logout
             </button>
           </div>
         </div>
         
-        </div> {/* ✅ Close main content area */}
+        </div> {/* โ… Close main content area */}
         
-      </div> {/* ✅ Close full screen POS container */}
+      </div> {/* โ… Close full screen POS container */}
       <TableSelectionModal
         isOpen={tableSelectionModal}
         onClose={() => setTableSelectionModal(false)}

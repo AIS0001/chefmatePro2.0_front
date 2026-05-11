@@ -7,20 +7,12 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { getUserType, isTokenExpired, logout } from './utility/auth';
 
-// export const baseURL = "https://sharmachefapi.cloudnetsoftwares.com";  // Use export
-// axios.defaults.baseURL = "https://sharmachefapi.cloudnetsoftwares.com/api/";
 
-// export const baseURL = "https://www.chefmateapi.cloudnetsoftwares.com";  // Use export
-// axios.defaults.baseURL = "https://www.chefmateapi.cloudnetsoftwares.com/api/";
+  // export const baseURL = "https://www.chefmateproapi.livecloudnet.com";  // Use export
+  // axios.defaults.baseURL = "https://www.chefmateproapi.livecloudnet.com/api";
 
-//  export const baseURL = "https://www.pindapi.livecloudnet.com";  // Use export
-//  axios.defaults.baseURL = "https://www.pindapi.livecloudnet.com/api";
-
-  export const baseURL = "https://www.chefmateproapi.livecloudnet.com";  // Use export
-  axios.defaults.baseURL = "https://www.chefmateproapi.livecloudnet.com/api";
-
-// export const baseURL = "http://localhost:4402";  // Use export
-// axios.defaults.baseURL = "http://localhost:4402/api";
+export const baseURL = "http://localhost:4402";  // Use export
+axios.defaults.baseURL = "http://localhost:4402/api";
 
 let isRedirectingToLogin = false;
 

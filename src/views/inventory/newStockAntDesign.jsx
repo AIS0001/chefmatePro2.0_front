@@ -11,16 +11,13 @@ import {
   Table, 
   message, 
   Space, 
-  Checkbox, 
   Row, 
   Col,
   Statistic,
   Tag,
   Typography,
   Divider,
-  Empty,
   Popconfirm,
-  Tooltip,
   Steps,
   Alert
 } from "antd";
@@ -30,7 +27,6 @@ import {
   ShoppingCartOutlined,
   InboxOutlined,
   DeleteOutlined,
-  CopyOutlined,
   CheckCircleOutlined
 } from "@ant-design/icons";
 import Layout from "../../layout/Layout";
@@ -193,7 +189,7 @@ export default function NewStockAntDesign() {
   const addItemToPurchase = async () => {
     try {
       const values = await itemForm.validateFields();
-      const { itemTotal, taxAmount, totalWithTax } = calculateItemTotal();
+      const { taxAmount, totalWithTax } = calculateItemTotal();
 
       const newItem = {
         key: Date.now(),
@@ -260,6 +256,8 @@ export default function NewStockAntDesign() {
 
   // Submit purchase order
   const handleSubmitPurchase = async () => {
+    let payload = null;
+
     try {
       if (!invoiceDetails.supplier_id) {
         message.error("Please select a supplier");
@@ -276,36 +274,52 @@ export default function NewStockAntDesign() {
         return;
       }
 
-      const errors = await invoiceForm.validateFields();
+      await invoiceForm.validateFields();
 
       setLoading(true);
 
+      const normalizedItems = purchaseItems.map((item) => ({
+        productId: parseInt(item.productId, 10),
+        unitId: parseInt(item.unitId, 10),
+        quantity: parseFloat(item.quantity),
+        unitPrice: parseFloat(item.unitPrice),
+        taxRate: parseFloat(item.taxRate || 0),
+        taxAmount: parseFloat(item.taxAmount || 0),
+        totalAmount: parseFloat(item.totalAmount),
+        batchNumber: item.batchNumber || null,
+        expiryDate: item.expiryDate || null,
+        notes: item.notes || ""
+      }));
+
+      const hasInvalidItem = normalizedItems.some((item) =>
+        Number.isNaN(item.productId) ||
+        Number.isNaN(item.unitId) ||
+        Number.isNaN(item.quantity) ||
+        Number.isNaN(item.unitPrice) ||
+        Number.isNaN(item.totalAmount)
+      );
+
+      if (hasInvalidItem) {
+        message.error("Invalid item data. Please reselect item/unit and quantity.");
+        setLoading(false);
+        return;
+      }
+
       // Prepare payload for purchase order creation
-      const payload = {
+      payload = {
         purchaseData: {
-          supplierId: parseInt(invoiceDetails.supplier_id),
+          supplierId: parseInt(invoiceDetails.supplier_id, 10),
           purchaseDate: invoiceDetails.purchase_date.format("YYYY-MM-DD"),
           invoiceNumber: invoiceDetails.invoice_number || null,
           invoiceDate: invoiceDetails.invoice_date ? invoiceDetails.invoice_date.format("YYYY-MM-DD") : null,
-          totalAmount: parseFloat(totals.totalAmount),
-          taxAmount: parseFloat(totals.taxAmount),
-          discountAmount: parseFloat(totals.discountAmount),
-          netAmount: parseFloat(totals.netAmount),
+          totalAmount: parseFloat(totals.totalAmount || 0),
+          taxAmount: parseFloat(totals.taxAmount || 0),
+          discountAmount: parseFloat(totals.discountAmount || 0),
+          netAmount: parseFloat(totals.netAmount || 0),
           paymentStatus: "PENDING",
-          notes: invoiceDetails.notes
+          notes: invoiceDetails.notes || ""
         },
-        items: purchaseItems.map(item => ({
-          productId: item.productId,
-          unitId: item.unitId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
-          taxAmount: item.taxAmount,
-          totalAmount: item.totalAmount,
-          batchNumber: item.batchNumber || null,
-          expiryDate: item.expiryDate || null,
-          notes: item.notes || ""
-        }))
+        items: normalizedItems
       };
 
       const response = await axios.post("/purchase/create", payload, getHeaders());
@@ -345,7 +359,20 @@ export default function NewStockAntDesign() {
         }, 2000);
       }
     } catch (error) {
-      message.error("Failed to create purchase: " + (error.response?.data?.message || error.message));
+      const responseData = error.response?.data;
+      const validationErrors = Array.isArray(responseData?.errors) ? responseData.errors : [];
+
+      if (validationErrors.length > 0) {
+        const firstError = validationErrors[0]?.msg || "Validation failed";
+        message.error(`Failed to create purchase: ${firstError}`);
+        console.error("Purchase validation errors:", validationErrors);
+      } else {
+        message.error("Failed to create purchase: " + (responseData?.message || error.message));
+      }
+
+      if (payload) {
+        console.error("Purchase payload sent:", payload);
+      }
     } finally {
       setLoading(false);
     }

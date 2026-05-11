@@ -1205,3 +1205,105 @@
   opacity: 0.6 !important;
   cursor: not-allowed !important;
 }
+
+/* CheckBillModalAnt - Ant style blue/white theme */
+.checkbill-ant-theme.checkbill-modal-surface {
+  background:
+    radial-gradient(circle at top left, rgba(229, 240, 255, 0.85), transparent 26%),
+    linear-gradient(180deg, #f7fbff 0%, #f1f7ff 100%) !important;
+}
+
+.checkbill-ant-theme .ant-card {
+  background: #ffffff !important;
+  border-color: #dbe8f9 !important;
+  box-shadow: 0 4px 16px rgba(25, 76, 145, 0.08) !important;
+}
+
+.checkbill-ant-theme .checkbill-tables-card.ant-card,
+.checkbill-ant-theme .checkbill-tables-card--minimal.ant-card {
+  background: #ffffff !important;
+  border-color: #d5e4f8 !important;
+  box-shadow: 0 6px 16px rgba(37, 82, 147, 0.08) !important;
+}
+
+.checkbill-ant-theme .ant-input,
+.checkbill-ant-theme .ant-input-number,
+.checkbill-ant-theme .ant-select-selector,
+.checkbill-ant-theme .ant-input-affix-wrapper {
+  border-color: #c9dcf7 !important;
+  background: #fcfeff !important;
+}
+
+.checkbill-ant-theme .ant-input:focus,
+.checkbill-ant-theme .ant-input-number-focused,
+.checkbill-ant-theme .ant-select-focused .ant-select-selector,
+.checkbill-ant-theme .ant-input-affix-wrapper-focused {
+  border-color: #6fa0e4 !important;
+  box-shadow: 0 0 0 2px rgba(111, 160, 228, 0.2) !important;
+}
+
+.checkbill-ant-theme .ant-btn {
+  border-radius: 8px !important;
+  min-height: 38px;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.checkbill-ant-theme .ant-btn.ant-btn-default {
+  background: #ffffff !important;
+  border-color: #b8d0f2 !important;
+  color: #1f4f8f !important;
+}
+
+.checkbill-ant-theme .ant-btn.ant-btn-default:hover,
+.checkbill-ant-theme .ant-btn.ant-btn-default:focus {
+  background: #eef5ff !important;
+  border-color: #82ace3 !important;
+  color: #184278 !important;
+}
+
+.checkbill-ant-theme .ant-btn.ant-btn-primary {
+  background: #1677ff !important;
+  border-color: #1677ff !important;
+  color: #ffffff !important;
+}
+
+.checkbill-ant-theme .ant-btn.ant-btn-primary:hover,
+.checkbill-ant-theme .ant-btn.ant-btn-primary:focus {
+  background: #0958d9 !important;
+  border-color: #0958d9 !important;
+  color: #ffffff !important;
+}
+
+.checkbill-ant-theme .ant-btn.ant-btn-dangerous,
+.checkbill-ant-theme .ant-btn.ant-btn-dangerous.ant-btn-default {
+  background: #ffffff !important;
+  border-color: #ff8b8b !important;
+  color: #d43838 !important;
+}
+
+.checkbill-ant-theme .ant-btn.ant-btn-dangerous:hover,
+.checkbill-ant-theme .ant-btn.ant-btn-dangerous:focus {
+  background: #fff3f3 !important;
+  border-color: #ff6f6f !important;
+  color: #c92a2a !important;
+}
+
+.checkbill-ant-theme .checkbill-mode-button.ant-btn {
+  border-color: #b8d0f2 !important;
+  color: #1f4f8f !important;
+  background: #ffffff !important;
+}
+
+.checkbill-ant-theme .checkbill-mode-button--active.ant-btn,
+.checkbill-ant-theme .checkbill-mode-button--active.ant-btn.ant-btn-primary {
+  border-color: #1677ff !important;
+  background: #1677ff !important;
+  color: #ffffff !important;
+}
+
+.checkbill-ant-theme .checkbill-table-tile--active,
+.checkbill-ant-theme .checkbill-table-tile--merge-selected {
+  border-color: #87b2ea !important;
+  background: #edf5ff !important;
+}

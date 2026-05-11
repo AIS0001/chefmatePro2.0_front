@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Layout,
@@ -6,17 +6,11 @@ import {
   Col,
   Card,
   Button,
-  Table,
   InputNumber,
-  Select,
-  Drawer,
   Space,
   message,
-  Statistic,
-  Divider,
   Empty,
   Modal,
-  Form,
   Input,
   Tag,
   Spin,
@@ -26,14 +20,12 @@ import {
 import {
   DeleteOutlined,
   PrinterOutlined,
-  SaveOutlined,
   ShoppingCartOutlined,
   PlusOutlined,
   MinusOutlined,
   ClearOutlined,
   ArrowLeftOutlined,
   TableOutlined,
-  UserOutlined,
   CheckCircleOutlined,
   StarFilled,
 } from "@ant-design/icons";
@@ -46,33 +38,78 @@ import fetchData from "../../functions/fetchData";
 import fetchDataFromTwoTables from "../../functions/fetchdatawithTwoTables";
 import Header from "../../components/Header";
 import TableSelectionModal from "../../components/Modals/TableSelectionModal";
-import CheckBillModal from "../../components/Modals/CheckBillModal";
+import CheckBillModalAnt from "../../components/Modals/CheckBillModalAnt";
 import getMax from "../../functions/getMax";
 import { getUserName } from "../../functions/storageUtils";
 import updateData from "../../functions/updateData";
 import { getNextSetupDate } from "../../utils/setupDateUtils";
 import { printKOT as printKOTThermal } from "../../services/thermalPrinter";
+import { baseURL } from "../../index";
 import "./newPOS.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
-const { Sider, Content } = Layout;
-const { Option } = Select;
+const { Content } = Layout;
+
+const IMAGE_BASE_URL = (process.env.REACT_APP_IMAGE_BASE_URL || baseURL || "").replace(/\/+$/, "");
+const INLINE_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><rect width="240" height="240" rx="22" fill="#eaf2ff"/><g fill="none" stroke="#8fb3e3" stroke-width="10"><rect x="40" y="52" width="160" height="136" rx="14"/><path d="M62 164l36-42 30 28 24-22 26 36"/></g><circle cx="92" cy="96" r="11" fill="#8fb3e3"/></svg>'
+)}`;
+
+const buildItemImageUrl = (imageRef) => {
+  if (!imageRef) return null;
+
+  const raw = String(imageRef).trim();
+  if (!raw) return null;
+
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  // If backend already returns uploads path, use it directly (with optional base URL).
+  if (/^\/?uploads\//i.test(raw)) {
+    const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+    return IMAGE_BASE_URL ? `${IMAGE_BASE_URL}${normalized}` : normalized;
+  }
+
+  // Convert windows path separators and keep only file name when full path is returned.
+  const normalizedRaw = raw.replace(/\\/g, "/");
+  const fileName = normalizedRaw.includes("/")
+    ? normalizedRaw.substring(normalizedRaw.lastIndexOf("/") + 1)
+    : normalizedRaw;
+
+  const sanitizedName = encodeURI(fileName.replace(/^\/+/, ""));
+  if (!IMAGE_BASE_URL) return `/uploads/${sanitizedName}`;
+  return `${IMAGE_BASE_URL}/uploads/${sanitizedName}`;
+};
+
+const getItemImageRef = (item) => {
+  if (!item) return null;
+  return (
+    item.filename ||
+    item.file_name ||
+    item.image_filename ||
+    item.image_name ||
+    item.image_url ||
+    item.path ||
+    item.image ||
+    item.image_path ||
+    item.filepath ||
+    item.file_path ||
+    null
+  );
+};
 
 export default function NewPOSAnt() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [customers, setCustomers] = useState([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedTable, setSelectedTable] = useState(null);
   const [tables, setTables] = useState([]);
-  const [showItemDrawer, setShowItemDrawer] = useState(false);
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [billForm] = Form.useForm();
   const [discountType, setDiscountType] = useState("fixed");
   const [discountValue, setDiscountValue] = useState(0);
   const [roundOff, setRoundOff] = useState(0);
@@ -109,7 +146,7 @@ export default function NewPOSAnt() {
   // Refresh tables when refreshTrigger changes
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log("Refreshing tables due to refreshTrigger:", refreshTrigger);
+      // console.log("Refreshing tables due to refreshTrigger:", refreshTrigger);
       fetchData("tablelist", setTables, "id", {}).catch(err => {
         console.error("Error refreshing tables:", err);
       });
@@ -119,10 +156,10 @@ export default function NewPOSAnt() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [cats, rawItemsData, custs, tablesList] = await Promise.all([
+      const [cats, subs, rawItemsData, tablesList] = await Promise.all([
         fetchData("categories", null, "id", {}),
+        fetchData("subcategory", null, "id", {}),
         fetchDataFromTwoTables("items", "item_images", "id", "product_id", null, "t1.id", {}),
-        fetchData("customers", null, "id", {}),
         fetchData("tablelist", null, "id", {}),
       ]);
       
@@ -136,29 +173,29 @@ export default function NewPOSAnt() {
           id: item.product_id || item.id  // Use product_id from items table instead of id from item_images
         })) || [];
       
-      console.log(`✅ Loaded ${itemsData.length} valid items (filtered out orphaned records)`);
+      // console.log(`โ… Loaded ${itemsData.length} valid items (filtered out orphaned records)`);
       
-      console.log('📊 Fetched items data:', itemsData);
-      console.log('🔍 Sample items:', itemsData?.slice(0, 5).map(item => ({
-        id: item.id,
-        name: item.iname,
-        isstockable: item.isstockable
-      })));
+      // console.log('๐“ Fetched items data:', itemsData);
+      // console.log('๐” Sample items:', itemsData?.slice(0, 5).map(item => ({
+        // id: item.id,
+        // name: item.iname,
+        // isstockable: item.isstockable
+      // })));
       
       // Check for "Black Label" specifically
       const blackLabel = itemsData?.find(item => item.iname?.toLowerCase().includes('black label'));
       if (blackLabel) {
-        console.log('🥃 Found Black Label in items:', {
-          id: blackLabel.id,
-          name: blackLabel.iname,
-          isstockable: blackLabel.isstockable,
-          catid: blackLabel.catid
-        });
+        // console.log('๐ฅ Found Black Label in items:', {
+          // id: blackLabel.id,
+          // name: blackLabel.iname,
+          // isstockable: blackLabel.isstockable,
+          // catid: blackLabel.catid
+        // });
       }
       
       setCategories(cats || []);
+      setSubCategories(subs || []);
       setItems(itemsData || []);
-      setCustomers(custs || []);
       setTables(tablesList || []);
       
       // Get max order number
@@ -202,12 +239,59 @@ export default function NewPOSAnt() {
 
   const handleCategorySelect = (catId) => {
     setSelectedCategory(catId);
-    setShowItemDrawer(true);
+    setSelectedSubCategory(null);
+  };
+
+  const handleSubCategorySelect = (subCatId) => {
+    setSelectedSubCategory((prev) => (prev === subCatId ? null : subCatId));
   };
 
   const getItemsByCategory = () => {
     if (!selectedCategory) return [];
-    return items.filter((item) => item.catid === selectedCategory);
+
+    const categoryItems = items.filter(
+      (item) => parseInt(item.catid) === parseInt(selectedCategory)
+    );
+
+    if (!selectedSubCategory) return categoryItems;
+
+    return categoryItems.filter(
+      (item) => parseInt(item.subcatid) === parseInt(selectedSubCategory)
+    );
+  };
+
+  const getSubCategoriesByCategory = () => {
+    if (!selectedCategory) return [];
+
+    const resolveSubcategoryParentId = (sub) =>
+      sub?.cat_id ?? sub?.catid ?? sub?.category_id ?? sub?.categoryid ?? sub?.category ?? sub?.cat ?? null;
+
+    const resolveSubcategoryName = (sub) =>
+      sub?.name ?? sub?.subcat ?? sub?.subcategory ?? sub?.subcategory_name ?? sub?.sname ?? null;
+
+    const filteredSubs = (subCategories || []).filter((sub) => {
+      const parentCategoryId = resolveSubcategoryParentId(sub);
+      return parseInt(parentCategoryId) === parseInt(selectedCategory);
+    });
+
+    if (filteredSubs.length > 0) {
+      return filteredSubs.map((sub) => ({
+        ...sub,
+        name: resolveSubcategoryName(sub) || `Subcategory ${sub.id}`,
+      }));
+    }
+
+    const uniqueSubcatIds = [...new Set(
+      (items || [])
+        .filter((item) => parseInt(item.catid) === parseInt(selectedCategory))
+        .map((item) => item.subcatid)
+        .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
+    )];
+
+    return uniqueSubcatIds.map((id) => ({
+      id,
+      name: `Subcategory ${id}`,
+    }));
   };
 
   // Fetch available units for a product
@@ -231,23 +315,23 @@ export default function NewPOSAnt() {
 
   // Handle item click - show unit selection if multiple units exist
   const handleAddToCart = async (item) => {
-    console.log('🛒 handleAddToCart called with item:', {
-      id: item.id,
-      name: item.iname,
-      isstockable: item.isstockable,
-      fullItem: item
-    });
+    // console.log('๐’ handleAddToCart called with item:', {
+      // id: item.id,
+      // name: item.iname,
+      // isstockable: item.isstockable,
+      // fullItem: item
+    // });
     
     // Check if item is stockable and has multiple units
     if (item.isstockable === 1 || item.isstockable === "1") {
-      console.log(`✅ Item ${item.iname} is stockable, fetching units for product ID ${item.id}`);
+      // console.log(`โ… Item ${item.iname} is stockable, fetching units for product ID ${item.id}`);
       const units = await fetchUnits(item.id);
       
-      console.log(`📦 Fetched ${units.length} units for ${item.iname}:`, units);
+      // console.log(`๐“ฆ Fetched ${units.length} units for ${item.iname}:`, units);
       
       if (units.length > 1) {
         // Show unit selection modal
-        console.log(`📱 Showing unit selection modal for ${item.iname} (ID: ${item.id})`);
+        // console.log(`๐“ฑ Showing unit selection modal for ${item.iname} (ID: ${item.id})`);
         setSelectedItem(item);
         setAvailableUnits(units);
         setUnitSelectionModal(true);
@@ -256,24 +340,25 @@ export default function NewPOSAnt() {
     }
     
     // No units or single unit - add directly
-    console.log(`➕ Adding ${item.iname} (ID: ${item.id}) directly to cart (no unit selection)`);
+    // console.log(`โ• Adding ${item.iname} (ID: ${item.id}) directly to cart (no unit selection)`);
     addToCartWithUnit(item, null);
   };
 
   // Add item to cart with selected unit
   const addToCartWithUnit = (item, selectedUnit) => {
-    console.log('🛍️ addToCartWithUnit called:', {
-      itemId: item.id,
-      itemName: item.iname,
-      selectedUnit: selectedUnit,
-      selectedUnitId: selectedUnit?.id
-    });
+    const selectedUnitId = selectedUnit?.id ?? selectedUnit?.unit_id ?? null;
+    // console.log('๐๏ธ addToCartWithUnit called:', {
+      // itemId: item.id,
+      // itemName: item.iname,
+      // selectedUnit: selectedUnit,
+      // selectedUnitId: selectedUnitId
+    // });
     
-    const existingItem = cart.find((i) => i.id === item.id && i.unitId === selectedUnit?.id);
+    const existingItem = cart.find((i) => i.id === item.id && i.unitId === selectedUnitId);
 
     if (existingItem) {
-      console.log(`♻️ Item ${item.iname} already in cart, updating quantity`);
-      updateCartItem(item.id, existingItem.quantity + 1, selectedUnit?.id);
+      // console.log(`โป๏ธ Item ${item.iname} already in cart, updating quantity`);
+      updateCartItem(item.id, existingItem.quantity + 1, selectedUnitId);
     } else {
       const price = selectedUnit?.selling_price || parseFloat(item.offerprice || 0);
       const taxRate = parseFloat(item.tax || 0);
@@ -289,7 +374,7 @@ export default function NewPOSAnt() {
         taxRate: taxRate,
         taxAmount: taxAmount,
         discount: 0,
-        unitId: selectedUnit?.id || null, // Unit ID from product_units table
+        unitId: selectedUnitId, // Unit ID from product_units table
         unitName: selectedUnit?.unit_name || item.unit || "Pc",
         mlCapacity: selectedUnit?.ml_capacity || null,
         // For variant-based stock deduction (separate from unit)
@@ -298,7 +383,7 @@ export default function NewPOSAnt() {
         quantityInBaseUnit: selectedUnit?.conversion_factor || 1,
       };
       
-      console.log('✅ Adding new item to cart:', cartItem);
+      // console.log('โ… Adding new item to cart:', cartItem);
       setCart([...cart, cartItem]);
     }
     
@@ -370,11 +455,11 @@ export default function NewPOSAnt() {
         try {
           // Use productId if available, fallback to id
           const productId = item.productId || item.id;
-          console.log(`🔍 Checking stockability for item ID ${productId}: ${item.name}`);
+          // console.log(`๐” Checking stockability for item ID ${productId}: ${item.name}`);
           
           // Get the product details to check if it's stockable
           const productResponse = await axios.get(`/stock/fetchdata/items/id/${productId}`, headers);
-          console.log(`📦 Product API Response for ${item.name}:`, productResponse.data);
+          // console.log(`๐“ฆ Product API Response for ${item.name}:`, productResponse.data);
           
           // Handle response structure from the endpoint
           let product = null;
@@ -389,9 +474,9 @@ export default function NewPOSAnt() {
           }
           
           if (!product) {
-            console.error(`❌ Product not found for ID ${productId}. API returned:`, productResponse.data);
-            console.error(`⚠️ Item details from cart:`, item);
-            console.error(`💡 This item may have been deleted from the database. Please check if ID ${productId} exists in the items table.`);
+            console.error(`โ Product not found for ID ${productId}. API returned:`, productResponse.data);
+            console.error(`โ ๏ธ Item details from cart:`, item);
+            console.error(`๐’ก This item may have been deleted from the database. Please check if ID ${productId} exists in the items table.`);
             return {
               success: false,
               error: `Product ID ${productId} not found in database. Item may have been deleted.`,
@@ -399,102 +484,75 @@ export default function NewPOSAnt() {
             };
           }
           
-          console.log(`📋 Product details for ${item.name}:`, {
-            id: product.id,
-            isstockable: product.isstockable,
-            type: typeof product.isstockable,
-            unit: product.unit
-          });
+          // console.log(`๐“ Product details for ${item.name}:`, {
+            // id: product.id,
+            // isstockable: product.isstockable,
+            // type: typeof product.isstockable,
+            // unit: product.unit
+          // });
           
           // Skip non-stockable items (check for 0, "0", false, null, undefined)
           const isStockable = product.isstockable === 1 || product.isstockable === "1" || product.isstockable === true;
           
           if (!isStockable) {
-            console.log(`⏭️ Skipping non-stockable item: ${item.name} (isstockable: ${product.isstockable})`);
+            // console.log(`โญ๏ธ Skipping non-stockable item: ${item.name} (isstockable: ${product.isstockable})`);
             return { success: true, skipped: true };
           }
           
-          console.log(`✅ Item ${item.name} is stockable, proceeding with deduction...`);
+          // console.log(`โ… Item ${item.name} is stockable, proceeding with deduction...`);
           
           // Get unit ID - use from cart if available, otherwise fetch unit with stock
           let unitId = item.unitId;
           
-          // Always check stock levels to ensure selected unit has stock (or find alternative unit)
-          try {
-            // Get stock levels to find which unit has available stock
-            const stockLevelResponse = await axios.get(
-              `/stock/level/${productId}`,
-              headers
-            );
-            
-            console.log(`📊 Stock levels for ${item.name}:`, stockLevelResponse.data);
-            
-            if (stockLevelResponse.data?.success && stockLevelResponse.data?.data && Array.isArray(stockLevelResponse.data.data)) {
-              const stockLevels = stockLevelResponse.data.data;
-              
-              // Find unit with available stock
-              let selectedUnit = null;
-              
-              if (unitId) {
-                // If unit was pre-selected from cart, check if it has stock
-                selectedUnit = stockLevels.find(s => 
-                  parseInt(s.unit_id) === parseInt(unitId) && 
+          // Keep the exact sale unit selected in cart (e.g. 30ML/60ML peg).
+          // Only resolve from stock levels when unitId is absent.
+          if (!unitId) {
+            try {
+              const stockLevelResponse = await axios.get(
+                `/stock/level/${productId}`,
+                headers
+              );
+
+              // console.log(`๐“ Stock levels for ${item.name}:`, stockLevelResponse.data);
+
+              if (stockLevelResponse.data?.success && stockLevelResponse.data?.data && Array.isArray(stockLevelResponse.data.data)) {
+                const stockLevels = stockLevelResponse.data.data;
+                let selectedUnit = null;
+
+                // For items without selected unit in cart, prefer base unit with stock
+                selectedUnit = stockLevels.find(s =>
+                  (s.unit_type === 'BASE' || s.is_base_unit === 1) &&
                   parseFloat(s.available_quantity || 0) >= item.quantity
                 );
-                
-                if (selectedUnit) {
-                  console.log(`✅ Using pre-selected unit ${unitId} (${selectedUnit.unit_name}) with ${selectedUnit.available_quantity} available for ${item.name}`);
-                } else {
-                  console.warn(`⚠️ Pre-selected unit ${unitId} doesn't have sufficient stock. Finding alternative...`);
-                  // Fall back to finding any unit with stock
-                  selectedUnit = stockLevels.find(s => 
-                    parseFloat(s.available_quantity || 0) >= item.quantity
-                  );
-                  
-                  if (selectedUnit) {
-                    unitId = selectedUnit.unit_id;
-                    console.log(`✅ Switched to unit ${unitId} (${selectedUnit.unit_name}) with ${selectedUnit.available_quantity} available`);
-                  }
-                }
-              } else {
-                // No pre-selected unit, find one with stock
-                // First try to find BASE unit with stock
-                selectedUnit = stockLevels.find(s => 
-                  (s.unit_type === 'BASE' || s.is_base_unit === 1) && 
-                  parseFloat(s.available_quantity || 0) >= item.quantity
-                );
-                
-                // If no BASE unit with stock, find any unit with sufficient stock
+
                 if (!selectedUnit) {
-                  selectedUnit = stockLevels.find(s => 
+                  selectedUnit = stockLevels.find(s =>
                     parseFloat(s.available_quantity || 0) >= item.quantity
                   );
                 }
-                
-                // If still no unit found, try any unit with any stock
+
                 if (!selectedUnit) {
-                  selectedUnit = stockLevels.find(s => 
+                  selectedUnit = stockLevels.find(s =>
                     parseFloat(s.available_quantity || 0) > 0
                   );
                 }
-                
+
                 if (selectedUnit) {
                   unitId = selectedUnit.unit_id;
-                  console.log(`✅ Using unit ${unitId} (${selectedUnit.unit_name}) with ${selectedUnit.available_quantity} available for ${item.name}`);
+                  // console.log(`โ… Using resolved unit ${unitId} (${selectedUnit.unit_name}) for ${item.name}`);
                 }
               }
-              
-              if (!selectedUnit) {
-                throw new Error(`No units with available stock found for product ${item.id}`);
-              }
-            } else {
-              throw new Error(`No stock levels found for product ${productId}`);
+            } catch (unitError) {
+              console.error(`Error fetching stock levels for product ${productId}:`, unitError);
             }
-          } catch (unitError) {
-            console.error(`Error fetching stock levels for product ${productId}:`, unitError);
+          } else {
+            // console.log(`โ… Using cart-selected unit ${unitId} for ${item.name}`);
+          }
+
+          if (!unitId) {
             return {
               success: false,
-              error: `Unable to verify stock for ${item.name}. Please try again.`,
+              error: `No unit configured for ${item.name}. Please re-add item from menu and select a serving size.`,
               itemName: item.name
             };
           }
@@ -512,7 +570,7 @@ export default function NewPOSAnt() {
               notes: `Sale - Order #${billId} - Table: ${selectedTable || "Walk-in"} - ${item.variantName}`,
             };
             
-            console.log(`📤 Sending variant-based stock deduction for ${item.name} (${item.variantName}):`, variantPayload);
+            // console.log(`๐“ค Sending variant-based stock deduction for ${item.name} (${item.variantName}):`, variantPayload);
             
             response = await axios.post(
               `/stock/remove-variant`,
@@ -520,7 +578,7 @@ export default function NewPOSAnt() {
               headers
             );
             
-            console.log(`✅ Stock deducted via variant for ${item.name}:`, response.data);
+            // console.log(`โ… Stock deducted via variant for ${item.name}:`, response.data);
           } else {
             // Use standard stock deduction for regular items
             const stockPayload = {
@@ -532,7 +590,7 @@ export default function NewPOSAnt() {
               notes: `Sale - Order #${billId} - Table: ${selectedTable || "Walk-in"}`,
             };
             
-            console.log(`📤 Sending stock deduction request for ${item.name}:`, stockPayload);
+            // console.log(`๐“ค Sending stock deduction request for ${item.name}:`, stockPayload);
             
             response = await axios.post(
               `/stock/remove`,
@@ -540,15 +598,15 @@ export default function NewPOSAnt() {
               headers
             );
             
-            console.log(`✅ Stock deducted for ${item.name}:`, response.data);
+            // console.log(`โ… Stock deducted for ${item.name}:`, response.data);
           }
           
           return { success: true, data: response.data };
           
         } catch (itemError) {
-          console.error(`❌ Error deducting stock for item ${item.name}:`, itemError);
-          console.error(`❌ Error response:`, itemError.response?.data);
-          console.error(`❌ Error status:`, itemError.response?.status);
+          console.error(`โ Error deducting stock for item ${item.name}:`, itemError);
+          console.error(`โ Error response:`, itemError.response?.data);
+          console.error(`โ Error status:`, itemError.response?.status);
           
           const errorMessage = itemError.response?.data?.message || itemError.message;
           
@@ -584,12 +642,12 @@ export default function NewPOSAnt() {
       const skipped = results.filter(r => r.skipped === true);
       const successCount = results.filter(r => r.success && !r.skipped).length;
       
-      console.log(`📊 Stock Deduction Results:`, {
-        total: results.length,
-        success: successCount,
-        skipped: skipped.length,
-        failed: failures.length
-      });
+      // console.log(`๐“ Stock Deduction Results:`, {
+        // total: results.length,
+        // success: successCount,
+        // skipped: skipped.length,
+        // failed: failures.length
+      // });
       
       if (failures.length > 0) {
         const failedItems = failures.map(f => `${f.itemName}: ${f.error}`).join(', ');
@@ -599,17 +657,17 @@ export default function NewPOSAnt() {
       }
       
       if (skipped.length > 0) {
-        console.log(`ℹ️ ${skipped.length} non-stockable item(s) skipped`);
+        // console.log(`โน๏ธ ${skipped.length} non-stockable item(s) skipped`);
       }
       
       if (successCount > 0) {
         setStockDeducted(true);
-        message.success(`✅ Stock deducted for ${successCount} item(s)`);
-        console.log(`✅ Successfully deducted stock for ${successCount} items`);
+        message.success(`โ… Stock deducted for ${successCount} item(s)`);
+        // console.log(`โ… Successfully deducted stock for ${successCount} items`);
         return true;
       } else if (skipped.length === results.length) {
         // All items were skipped - no stock items in cart
-        console.log('ℹ️ No stockable items in cart - skipping stock deduction');
+        // console.log('โน๏ธ No stockable items in cart - skipping stock deduction');
         message.info('Order saved (no stockable items)');
         return true;
       }
@@ -617,7 +675,7 @@ export default function NewPOSAnt() {
       return true;
       
     } catch (error) {
-      console.error("❌ Error in deductStock:", error);
+      console.error("โ Error in deductStock:", error);
       message.error(`Failed to deduct stock: ${error.response?.data?.message || error.message}`);
       return false;
     }
@@ -626,18 +684,19 @@ export default function NewPOSAnt() {
   // Send KOT via ESC/POS thermal printer
   const handleSendKOT = async () => {
     if (!selectedTable) {
-      toast.error('Please select a table!');
+      message.error('Please select a table!');
       return;
     }
 
     if (cart.length === 0) {
-      toast.error('Cart is empty!');
+      message.error('Cart is empty!');
       return;
     }
 
+    let processingMsgClose = null;
     try {
       setLoading(true);
-      toast.info('Processing order...');
+      processingMsgClose = message.loading('Processing order...', 0);
 
       // Get the next setup date
       const setupDate = await getNextSetupDate();
@@ -684,17 +743,18 @@ export default function NewPOSAnt() {
       ]);
 
       if (response1.data.success) {
-        console.log("✅ ORDER SAVED SUCCESSFULLY");
-        toast.success(response.data.message);
+        // console.log("โ… ORDER SAVED SUCCESSFULLY");
+        processingMsgClose();
+        message.success(response.data.message || 'Order saved successfully');
         setKotPrinted(true);
 
         // Deduct stock from inventory
         const stockDeductionSuccess = await deductStock(currentOrderNumber);
         if (stockDeductionSuccess) {
-          console.log('✅ Stock deducted successfully');
+          // console.log('โ… Stock deducted successfully');
           setStockDeducted(true);
         } else {
-          toast.warning('Order saved but stock deduction failed. Please check manually.');
+          message.warning('Order saved but stock deduction failed. Please check manually.');
         }
 
         // Prepare KOT data with variant information
@@ -723,15 +783,15 @@ export default function NewPOSAnt() {
 
         // Print KOT using thermal printer service
         const printResult = await printKOTThermal(kotData, {
-          showSuccessMessage: false, // We'll show custom message
-          showErrorMessage: false    // We'll handle errors here
+          showSuccessMessage: false,
+          showErrorMessage: false
         });
 
         if (printResult) {
-          console.log('✅ KOT sent to thermal printer successfully');
-          toast.success('Order saved, stock deducted, and KOT sent to thermal printer!');
+          // console.log('โ… KOT sent to thermal printer successfully');
+          message.success('Order saved, stock deducted, and KOT sent to thermal printer!');
         } else {
-          toast.warning('Order saved and stock deducted but KOT print failed. Check printer.');
+          message.warning('Order saved and stock deducted but KOT print failed. Check printer.');
         }
         
         // Clear cart after successful operations
@@ -744,7 +804,7 @@ export default function NewPOSAnt() {
           getMax("orders", setMaxNumber, "userid", getUserName(), "order_number")
         ]).then(() => {
           setRefreshTrigger(prev => prev + 1);
-          console.log("KOT ESC/POS sent successfully, table status updated to RUNNING, data refreshed...");
+          // console.log("KOT ESC/POS sent successfully, table status updated to RUNNING, data refreshed...");
         }).catch((err) => {
           console.error("Error updating table status:", err);
         });
@@ -755,18 +815,18 @@ export default function NewPOSAnt() {
         }, 1500);
         
       } else {
-        toast.error("Failed to save the order!");
+        processingMsgClose();
+        message.error("Failed to save the order!");
       }
     } catch (error) {
-      console.error('❌ Error in handleSendKOT:', error);
+      console.error('โ Error in handleSendKOT:', error);
+      if (processingMsgClose) processingMsgClose();
       
       // Check if it's a network/connection error
       if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
-        toast.error('⚠️ Connection error! Check your network and printer server.', {
-          autoClose: 5000
-        });
+        message.error('โ ๏ธ Connection error! Check your network and printer server.');
       } else {
-        toast.error('Error: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+        message.error('Error: ' + (error.response?.data?.message || error.message || 'Unknown error'));
       }
     } finally {
       setLoading(false);
@@ -820,7 +880,7 @@ export default function NewPOSAnt() {
         message.success("Bill saved successfully");
         
         // Print receipt
-        console.log("Printing ESCPOS receipt for Bill:", billResponse.data.bill_id);
+        // console.log("Printing ESCPOS receipt for Bill:", billResponse.data.bill_id);
         toast.success("Receipt sent to printer");
 
         // Reset POS
@@ -846,92 +906,21 @@ export default function NewPOSAnt() {
     setPaymentMode("Cash");
     setKotPrinted(false);
     setStockDeducted(false);
-    setShowItemDrawer(false);
   };
-
-  const cartColumns = [
-    {
-      title: "Item",
-      dataIndex: "name",
-      key: "name",
-      width: "40%",
-      render: (name, record) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>{name}</div>
-          {record.unitName && (
-            <Tag color="cyan" size="small" style={{ marginTop: 4 }}>
-              {record.unitName}
-              {record.mlCapacity && ` (${record.mlCapacity}ML)`}
-            </Tag>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      key: "quantity",
-      width: "15%",
-      render: (qty, record) => (
-        <Space>
-          <Button
-            size="small"
-            icon={<MinusOutlined />}
-            onClick={() => updateCartItem(record.id, qty - 1)}
-          />
-          <span>{qty}</span>
-          <Button
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() => updateCartItem(record.id, qty + 1)}
-          />
-        </Space>
-      ),
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
-      width: "15%",
-      render: (price) => `฿${parseFloat(price || 0).toFixed(2)}`,
-    },
-    {
-      title: "Total",
-      key: "total",
-      width: "15%",
-      render: (_, record) => `฿${(parseFloat(record.quantity || 0) * parseFloat(record.price || 0)).toFixed(2)}`,
-    },
-    {
-      title: "Action",
-      key: "action",
-      width: "15%",
-      render: (_, record) => (
-        <Button
-          danger
-          size="small"
-          icon={<DeleteOutlined />}
-          onClick={() => removeCartItem(record.id)}
-        />
-      ),
-    },
-  ];
 
   const totals = calculateTotals();
 
   const categoryButtons = categories.map((cat) => (
     <Button
       key={cat.id}
-      block
       size="large"
       onClick={() => handleCategorySelect(cat.id)}
+      className="pos-category-strip__button"
       style={{
-        marginBottom: 8,
-        backgroundColor:
-          selectedCategory === cat.id ? "#1890ff" : "#e6f4ff",
-        color: selectedCategory === cat.id ? "white" : "#0050b3",
-        border: "none",
-        fontWeight: selectedCategory === cat.id ? "600" : "500",
-        transition: "all 0.3s ease"
+        backgroundColor: selectedCategory === cat.id ? "#d8e7da" : "#eef3ee",
+        color: "#24312c",
+        borderColor: selectedCategory === cat.id ? "#b6cab9" : "#d6dccf",
+        fontWeight: selectedCategory === cat.id ? 700 : 600,
       }}
     >
       {cat.name}
@@ -939,346 +928,278 @@ export default function NewPOSAnt() {
   ));
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout className="soft-pos-theme pos-shell pos-ant-blue" style={{ minHeight: "100vh" }}>
       <Header title="POS - Stock Managed System" />
-      <Layout>
-        {/* Categories Sidebar */}
-        <Sider width={150} style={{ background: "#f0f5ff", overflow: "auto" }}>
-          <div style={{ padding: 16 }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              {categoryButtons}
-            </Space>
-          </div>
-        </Sider>
 
-        {/* Main Content */}
-        <Content style={{ padding: 16, backgroundColor: "#f5f7fa" }}>
-          <Spin spinning={loading}>
-            <div style={{ marginBottom: 16 }}>
-              <Button 
-                icon={<ArrowLeftOutlined />}
-                onClick={() => navigate(-1)}
-                type="text"
-                size="large"
+      <Content className="pos-main-content">
+        <Spin spinning={loading}>
+          <Row className="pos-category-strip-row" style={{ marginTop: 6 }}>
+            <Col span={24}>
+              <div className="pos-category-strip">
+                <div className="pos-category-strip__scroller">
+                  {categoryButtons.length > 0 ? (
+                    categoryButtons
+                  ) : (
+                    <span className="pos-category-strip__empty">No categories available</span>
+                  )}
+                </div>
+                <div className="pos-category-strip__actions">
+                  <Button
+                    className="pos-top-action-btn pos-top-action-btn--display"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => navigate(-1)}
+                    title="Back"
+                  />
+                  <Button
+                    className="pos-top-action-btn pos-top-action-btn--table"
+                    icon={<TableOutlined />}
+                    onClick={showTableSelection}
+                    title="Select Table"
+                  >
+                    {selectedTable && <span className="pos-float-btn__badge">1</span>}
+                  </Button>
+                  <Button
+                    className="pos-top-action-btn pos-top-action-btn--home"
+                    icon={<CheckCircleOutlined />}
+                    onClick={showCheckBill}
+                    title="Check Bill"
+                  />
+                </div>
+              </div>
+            </Col>
+          </Row>
+
+          <Row gutter={12} style={{ marginTop: 4 }}>
+            <Col xs={24} md={6} lg={4} className="pos-subcategory-col">
+              <Card
+                title="Subcategories"
+                className="pos-panel-surface"
+                bodyStyle={{ padding: 8 }}
+                style={{ borderRadius: 14, minHeight: "calc(100vh - 250px)" }}
               >
-                Back
-              </Button>
-            </div>
-            <Row gutter={16}>
-              {/* Items Grid */}
-              <Col xs={24} sm={24} md={16}>
-                <Card 
-                  title="Select Items" 
-                  bordered={false}
-                  style={{ 
-                    backgroundColor: "#ffffff",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
-                  }}
-                >
-                  {selectedCategory ? (
-                    <Row gutter={[12, 12]}>
-                      {getItemsByCategory().map((item) => (
-                        <Col xs={12} sm={8} md={6} lg={4} key={item.id}>
-                          <Card
-                            hoverable
-                            onClick={() => handleAddToCart(item)}
-                            style={{ 
-                              cursor: "pointer",
-                              backgroundColor: "#fafbfc",
-                              borderColor: "#e6f4ff",
-                              transition: "all 0.3s ease"
+                <div style={{ maxHeight: "calc(100vh - 320px)", overflowY: "auto", padding: 2 }}>
+                  <Space direction="vertical" size={6} style={{ width: "100%" }}>
+                    {selectedCategory ? (
+                      getSubCategoriesByCategory().length > 0 ? (
+                        getSubCategoriesByCategory().map((sub) => (
+                          <Button
+                            key={sub.id}
+                            block
+                            onClick={() => handleSubCategorySelect(sub.id)}
+                            style={{
+                              minHeight: 38,
+                              fontWeight: selectedSubCategory === sub.id ? 700 : 600,
+                              color: "#24312c",
+                              borderColor: selectedSubCategory === sub.id ? "#bccfbe" : "#ddd5c9",
+                              backgroundColor: selectedSubCategory === sub.id ? "#edf4ed" : "#f7f3ed",
                             }}
-                            cover={
-                              item.filename ? (
-                                <img
-                                  alt={item.iname}
-                                  src={`/uploads/${item.filename}`}
-                                  style={{
-                                    height: 100,
-                                    objectFit: "cover",
-                                    backgroundColor: "#f0f2f5",
-                                    cursor: "pointer"
-                                  }}
-                                  onError={(e) => {
-                                    e.target.src = `/uploads/placeholder.jpg`;
-                                  }}
-                                />
-                              ) : null
-                            }
                           >
-                            <div style={{ 
-                              fontSize: 12,
-                              fontWeight: "500",
-                              marginBottom: 6,
-                              color: "#262626",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis"
-                            }}>
-                              {item.iname || "N/A"} <span style={{color: '#ff4d4f', fontSize: 10}}>#{item.id}</span>
-                            </div>
-                            <div style={{ 
-                              fontSize: 14, 
-                              fontWeight: "bold",
-                              color: "#1890ff",
-                              marginBottom: 6
-                            }}>
-                              ฿{parseFloat(item.offerprice || 0).toFixed(2)}
-                            </div>
-                            <Tag color="cyan" style={{ fontSize: 10 }}>{item.unit || "Pc"}</Tag>
-                          </Card>
-                        </Col>
-                      ))}
+                            {sub.name || `Subcategory ${sub.id}`}
+                          </Button>
+                        ))
+                      ) : (
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No subcategories" />
+                      )
+                    ) : (
+                      categories.length > 0 ? (
+                        categories.map((cat) => (
+                          <Button
+                            key={cat.id}
+                            block
+                            onClick={() => handleCategorySelect(cat.id)}
+                            style={{
+                              minHeight: 38,
+                              fontWeight: 600,
+                              color: "#24312c",
+                              borderColor: "#ddd5c9",
+                              backgroundColor: "#f7f3ed",
+                            }}
+                          >
+                            {cat.name}
+                          </Button>
+                        ))
+                      ) : (
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No category" />
+                      )
+                    )}
+                    {selectedSubCategory && (
+                        <Button
+                          block
+                          onClick={() => setSelectedSubCategory(null)}
+                          style={{
+                            minHeight: 38,
+                            fontWeight: 600,
+                            color: "#24312c",
+                            borderColor: "#d4c7b0",
+                            backgroundColor: "#fff7eb",
+                          }}
+                        >
+                          Show All Items
+                        </Button>
+                    )}
+                  </Space>
+                </div>
+              </Card>
+            </Col>
+
+            <Col xs={24} md={12} lg={14} className="pos-items-col">
+              <Card
+                title="Items"
+                className="pos-panel-surface"
+                bodyStyle={{ padding: 10 }}
+                style={{ borderRadius: 14, minHeight: "calc(100vh - 250px)" }}
+              >
+                <div style={{ maxHeight: "calc(100vh - 320px)", overflowY: "auto", paddingBottom: 8 }}>
+                  {selectedCategory ? (
+                    <Row gutter={[10, 10]}>
+                      {getItemsByCategory().map((item) => {
+                        const qtyInCart = cart
+                          .filter((cartItem) => cartItem.id === item.id)
+                          .reduce((acc, cartItem) => acc + Number(cartItem.quantity || 0), 0);
+
+                        return (
+                          <Col xs={12} sm={8} md={8} lg={6} xl={4} key={item.id}>
+                            <Card
+                              hoverable
+                              onClick={() => handleAddToCart(item)}
+                              className="pos-menu-card"
+                              bodyStyle={{ padding: 10 }}
+                              style={{
+                                cursor: "pointer",
+                                borderRadius: 14,
+                                border: "1px solid #ded4c5",
+                                backgroundColor: "#fffdf9",
+                                minHeight: 210,
+                                position: "relative",
+                              }}
+                            >
+                              {qtyInCart > 0 && <span className="pos-menu-qty-badge">{qtyInCart}</span>}
+                              <div className="pos-menu-image-wrap" style={{ marginBottom: 10 }}>
+                                {getItemImageRef(item) ? (
+                                  <img
+                                    alt={item.iname}
+                                    src={buildItemImageUrl(getItemImageRef(item))}
+                                    className="pos-menu-image"
+                                    onError={(e) => {
+                                      e.currentTarget.onerror = null;
+                                      e.currentTarget.src = INLINE_PLACEHOLDER_IMAGE;
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#7e8a84",
+                                    fontWeight: 600,
+                                    fontSize: 12,
+                                  }}>
+                                    No image
+                                  </div>
+                                )}
+                              </div>
+                              <div className="pos-menu-content">
+                                <h5 className="pos-menu-name">{item.iname || "N/A"}</h5>
+                                <div className="pos-menu-meta">
+                                  <span className="pos-menu-price">เธฟ{parseFloat(item.offerprice || 0).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </Card>
+                          </Col>
+                        );
+                      })}
                     </Row>
                   ) : (
-                    <Empty description="Select a category to view items" />
+                    <div className="pos-empty-state">
+                      <strong>No items available</strong>
+                      <span>Choose a category to load the menu for this station.</span>
+                    </div>
                   )}
-                </Card>
-              </Col>
+                </div>
+              </Card>
+            </Col>
 
-              {/* Cart & Checkout */}
-              <Col xs={24} sm={24} md={8}>
-                <Card 
-                  title={<ShoppingCartOutlined />} 
-                  bordered={false}
-                  style={{ 
-                    backgroundColor: "#ffffff",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)"
-                  }}
-                >
-                  {/* Customer & Table Selection */}
-                  <Form layout="vertical" style={{ marginBottom: 16 }}>
-                    <Form.Item label={<span><UserOutlined /> Customer</span>} style={{ marginBottom: 12 }}>
-                      <Select
-                        placeholder="Select customer (optional)"
-                        value={selectedCustomer}
-                        onChange={setSelectedCustomer}
-                        allowClear
-                        style={{ backgroundColor: "#f5f7fa" }}
-                        suffixIcon={<UserOutlined />}
+            <Col xs={24} md={6} lg={6} className="pos-order-summary-col">
+              <Card
+                title={selectedTable ? `Table ${selectedTable}` : "Order"}
+                className="pos-panel-surface"
+                bodyStyle={{ padding: 8 }}
+                style={{ borderRadius: 14, minHeight: "calc(100vh - 250px)" }}
+              >
+                <div className="pos-quick-add-card">
+                  <div className="pos-quick-add-card__title">Quick Add Item</div>
+                  <Input placeholder="Item Code / Barcode" size="small" style={{ marginBottom: 8 }} />
+                  <InputNumber min={1} defaultValue={1} size="small" style={{ width: "100%", marginBottom: 4 }} />
+                  <small className="pos-quick-add-card__hint">Press Enter to move to quantity, then Enter again to add.</small>
+                </div>
+
+                <div style={{ maxHeight: "calc(100vh - 470px)", overflowY: "auto", paddingRight: 2 }}>
+                  {cart.length > 0 ? (
+                    cart.map((item, index) => (
+                      <div
+                        key={`${item.id}-${item.unitId || "base"}-${index}`}
+                        className="pos-cart-line"
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}
                       >
-                        {customers.map((cust) => (
-                          <Option key={cust.id} value={cust.id}>
-                            {cust.name}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#24312c", lineHeight: 1.25 }}>
+                          {item.name} x {item.quantity} = เธฟ{(item.quantity * item.price).toFixed(2)}
+                        </div>
+                        <Space.Compact>
+                          <Button size="small" icon={<MinusOutlined />} onClick={() => updateCartItem(item.id, item.quantity - 1, item.unitId)} />
+                          <Button size="small" icon={<PlusOutlined />} onClick={() => updateCartItem(item.id, item.quantity + 1, item.unitId)} />
+                          <Button danger size="small" icon={<DeleteOutlined />} onClick={() => removeCartItem(item.id, item.unitId)} />
+                        </Space.Compact>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: 8, fontSize: 12, color: "#1f2b26", fontWeight: 600 }}>
+                      Your cart is empty.
+                    </div>
+                  )}
+                </div>
 
-                    <Form.Item label={<span><TableOutlined /> Table</span>} style={{ marginBottom: 12 }}>
-                      <Space.Compact style={{ width: '100%' }}>
-                        <Input
-                          value={selectedTable ? `Table ${selectedTable}` : ''}
-                          placeholder="No table selected"
-                          readOnly
-                          style={{ backgroundColor: "#f5f7fa" }}
-                        />
-                        <Button 
-                          type="primary" 
-                          icon={<TableOutlined />}
-                          onClick={showTableSelection}
-                        >
-                          Select
-                        </Button>
-                        {selectedTable && (
-                          <Button 
-                            danger
-                            onClick={() => setSelectedTable(null)}
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </Space.Compact>
-                    </Form.Item>
-                  </Form>
-
-                  <Divider />
-
-                  {/* Cart Items */}
-                  <div style={{ maxHeight: 300, overflow: "auto" }}>
-                    <Table
-                      columns={cartColumns}
-                      dataSource={cart}
-                      pagination={false}
-                      size="small"
-                      rowKey="id"
-                    />
-                  </div>
-
-                  <Divider />
-
-                  {/* Totals */}
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Statistic
-                        title="Subtotal"
-                        value={totals.subtotal}
-                        precision={2}
-                        prefix="฿"
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="Tax"
-                        value={totals.totalTax}
-                        precision={2}
-                        prefix="฿"
-                      />
-                    </Col>
-                  </Row>
-
-                  <Row gutter={16} style={{ marginTop: 16 }}>
-                    <Col span={12}>
-                      <Form layout="vertical">
-                        <Form.Item label="Discount Type" style={{ marginBottom: 0 }}>
-                          <Select
-                            value={discountType}
-                            onChange={setDiscountType}
-                            style={{ backgroundColor: "#f5f7fa" }}
-                          >
-                            <Option value="fixed">Fixed</Option>
-                            <Option value="percentage">Percentage</Option>
-                          </Select>
-                        </Form.Item>
-                      </Form>
-                    </Col>
-                    <Col span={12}>
-                      <Form layout="vertical">
-                        <Form.Item label="Discount Value" style={{ marginBottom: 0 }}>
-                          <InputNumber
-                            min={0}
-                            value={discountValue}
-                            onChange={setDiscountValue}
-                            style={{ width: "100%", backgroundColor: "#f5f7fa" }}
-                          />
-                        </Form.Item>
-                      </Form>
-                    </Col>
-                  </Row>
-
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Statistic
-                        title="Discount"
-                        value={totals.discount}
-                        precision={2}
-                        prefix="฿"
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Form layout="vertical">
-                        <Form.Item label="Round Off" style={{ marginBottom: 0 }}>
-                          <InputNumber
-                            value={roundOff}
-                            onChange={setRoundOff}
-                            style={{ width: "100%", backgroundColor: "#f5f7fa" }}
-                          />
-                        </Form.Item>
-                      </Form>
-                    </Col>
-                  </Row>
-
-                  <Row gutter={16} style={{ marginTop: 16, marginBottom: 16 }}>
-                    <Col span={24}>
-                      <Statistic
-                        title="Grand Total"
-                        value={totals.grandTotal}
-                        precision={2}
-                        prefix="฿"
-                        valueStyle={{ color: "#52c41a", fontSize: 24 }}
-                      />
-                    </Col>
-                  </Row>
-
-                  {/* Payment Mode */}
-                  <Form layout="vertical" style={{ marginBottom: 16 }}>
-                    <Form.Item label="Payment Mode" style={{ marginBottom: 0 }}>
-                      <Select 
-                        value={paymentMode} 
-                        onChange={setPaymentMode}
-                        style={{ backgroundColor: "#f5f7fa" }}
-                      >
-                        <Option value="Cash">Cash</Option>
-                        <Option value="Card">Card</Option>
-                        <Option value="QR Code">QR Code</Option>
-                        <Option value="Credit">Credit</Option>
-                      </Select>
-                    </Form.Item>
-                  </Form>
-
-                  {/* Action Buttons */}
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <Alert
-                      type="info"
-                      message="Stock will be automatically deducted when KOT or Bill is sent"
-                      showIcon
-                    />
-
-                    <Button
-                      type="primary"
-                      icon={<PrinterOutlined />}
-                      block
-                      size="large"
-                      onClick={handleSendKOT}
-                      loading={loading}
-                      disabled={cart.length === 0}
-                    >
-                      Send KOT (Deduct Stock)
-                    </Button>
-
-                    <Button
-                      type="primary"
-                      block
-                      size="large"
-                      onClick={refreshTables}
-                      loading={loading}
-                      style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
-                    >
-                      🔄 Refresh Tables
-                    </Button>
-
-                    <Button
-                      type="default"
-                      icon={<PrinterOutlined />}
-                      block
-                      size="large"
-                      onClick={showCheckBill}
-                      style={{ backgroundColor: '#ffc107', borderColor: '#ffc107', color: '#000' }}
-                    >
-                      💰 Check Bill
-                    </Button>
-
-                    <Button
-                      danger
-                      icon={<ClearOutlined />}
-                      block
-                      onClick={resetPOS}
-                    >
-                      Clear All
-                    </Button>
+                {(kotPrinted || stockDeducted) && (
+                  <Space direction="vertical" size={8} style={{ width: "100%" }}>
+                    {kotPrinted && <Alert type="success" message="KOT Printed & Stock Deducted" showIcon />}
+                    {stockDeducted && <Alert type="success" message="Stock Deducted from Inventory" showIcon />}
                   </Space>
+                )}
+              </Card>
+            </Col>
+          </Row>
 
-                  {kotPrinted && (
-                    <Alert
-                      type="success"
-                      message="KOT Printed & Stock Deducted"
-                      style={{ marginTop: 16 }}
-                    />
-                  )}
+          <div className="pos-bottom-bar">
+            <div className="pos-bottom-top-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, borderBottom: "1px solid #ddd5c9", paddingBottom: 10 }}>
+              <div className="pos-total-label">
+                Total: <span>เธฟ {totals.grandTotal.toFixed(2)}</span>
+              </div>
+              <div className="pos-bottom-actions">
+                <Button
+                  className="pos-btn-main pos-btn-kot"
+                  type="primary"
+                  icon={<PrinterOutlined />}
+                  onClick={handleSendKOT}
+                  loading={loading}
+                  disabled={cart.length === 0}
+                >
+                  KOT
+                </Button>
+                <Button className="pos-btn-main pos-btn-clear" icon={<ClearOutlined />} onClick={resetPOS} danger>
+                  Clear Cart
+                </Button>
+              </div>
+            </div>
 
-                  {stockDeducted && (
-                    <Alert
-                      type="success"
-                      message="Stock Deducted from Inventory"
-                      style={{ marginTop: 16 }}
-                    />
-                  )}
-                </Card>
-              </Col>
-            </Row>
-          </Spin>
-        </Content>
-      </Layout>
+            <Space wrap className="pos-bottom-secondary-actions">
+              <Button className="pos-btn-secondary" onClick={() => navigate(-1)}>Back</Button>
+              <Button className="pos-btn-secondary" onClick={refreshTables} loading={loading}>Refresh</Button>
+              <Button className="pos-btn-secondary" onClick={showCheckBill}>Check Bill</Button>
+              <Button className="pos-btn-secondary" onClick={handleSendESCPOS} disabled={cart.length === 0}>Print Bill</Button>
+              <Button className="pos-btn-secondary pos-btn-secondary-danger" danger onClick={() => navigate("/logout")}>Logout</Button>
+            </Space>
+          </div>
+        </Spin>
+      </Content>
 
       {/* Table Selection Modal */}
       <TableSelectionModal
@@ -1289,7 +1210,7 @@ export default function NewPOSAnt() {
         selectedTable={selectedTable}
       />
 
-      <CheckBillModal
+      <CheckBillModalAnt
         isOpen={checkBillModal}
         customer={selectedCustomer}
         uptableList={selectedTable}
@@ -1297,201 +1218,100 @@ export default function NewPOSAnt() {
         onClose={() => setCheckBillModal(false)}
       />
 
-      {/* Unit/Variant Selection Modal - Sleek Ant Design UI */}
+      {/* Unit/Variant Selection Modal - Ant Design */}
       <Modal
-        title={null}
+        title={(
+          <Space direction="vertical" size={0}>
+            <Space size={8}>
+              <ShoppingCartOutlined style={{ color: "#1677ff" }} />
+              <Text strong style={{ fontSize: 18 }}>Choose Your Serving Size</Text>
+            </Space>
+            {selectedItem && (
+              <Text type="secondary" style={{ marginLeft: 24 }}>
+                {selectedItem.iname}
+              </Text>
+            )}
+          </Space>
+        )}
         open={unitSelectionModal}
         onCancel={() => setUnitSelectionModal(false)}
         footer={null}
         width={600}
-        styles={{ body: { padding: 0 } }}
+        styles={{ body: { padding: 20 } }}
         centered
       >
         {selectedItem && (
           <div>
-            {/* Header Section */}
-            <div style={{ 
-              padding: '24px 24px 16px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white'
-            }}>
-              <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <ShoppingCartOutlined style={{ fontSize: 24 }} />
-                  <Title level={4} style={{ margin: 0, color: 'white' }}>
-                    Choose Your Serving Size
-                  </Title>
-                </div>
-                <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.95)', fontWeight: 500 }}>
-                  {selectedItem.iname}
-                </Text>
-              </Space>
-            </div>
-            
-            {/* Content Section */}
-            <div style={{ padding: 24 }}>
-              {loadingUnits ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <Spin size="large" tip="Loading serving sizes..." />
-                </div>
-              ) : availableUnits.length > 0 ? (
-                <Row gutter={[16, 16]}>
-                  {availableUnits.map((unit, index) => {
-                    const isPopular = unit.unit_type === 'DERIVED' && unit.ml_capacity <= 60;
-                    const isBase = unit.unit_type === 'BASE' || unit.is_base_unit === 1;
-                    
-                    return (
-                      <Col span={24} key={unit.id}>
-                        <Card
-                          hoverable
-                          onClick={() => addToCartWithUnit(selectedItem, unit)}
-                          style={{
-                            cursor: 'pointer',
-                            border: isPopular ? '2px solid #52c41a' : '2px solid #f0f0f0',
-                            borderRadius: 12,
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            position: 'relative',
-                            overflow: 'visible',
-                            background: isPopular ? '#f6ffed' : 'white'
-                          }}
-                          bodyStyle={{ padding: '20px 24px' }}
-                          className="variant-card"
-                        >
-                          {isPopular && (
-                            <div style={{
-                              position: 'absolute',
-                              top: -10,
-                              right: 16,
-                              background: '#52c41a',
-                              color: 'white',
-                              padding: '4px 12px',
-                              borderRadius: 12,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              boxShadow: '0 2px 8px rgba(82, 196, 26, 0.3)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4
-                            }}>
-                              <StarFilled style={{ fontSize: 10 }} />
-                              POPULAR
-                            </div>
-                          )}
-                          
-                          <Row align="middle" justify="space-between">
-                            <Col flex="auto">
-                              <Space direction="vertical" size={8}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                  <Text style={{ 
-                                    fontSize: 18, 
-                                    fontWeight: 600, 
-                                    color: '#1f1f1f'
-                                  }}>
-                                    {unit.unit_name}
-                                  </Text>
-                                  
-                                  {unit.ml_capacity && (
-                                    <Tag 
-                                      color="blue" 
-                                      style={{ 
-                                        borderRadius: 6,
-                                        padding: '2px 10px',
-                                        fontSize: 13,
-                                        fontWeight: 500
-                                      }}
-                                    >
-                                      {unit.ml_capacity}ML
-                                    </Tag>
-                                  )}
-                                  
-                                  {isBase && (
-                                    <Tag 
-                                      color="green"
-                                      style={{ 
-                                        borderRadius: 6,
-                                        padding: '2px 10px',
-                                        fontSize: 11,
-                                        fontWeight: 500
-                                      }}
-                                    >
-                                      FULL SIZE
-                                    </Tag>
-                                  )}
-                                </div>
-                                
-                                {unit.conversion_factor && unit.conversion_factor !== 1 && (
-                                  <Text type="secondary" style={{ fontSize: 12 }}>
-                                    {(1 / unit.conversion_factor).toFixed(2)} servings per bottle
-                                  </Text>
-                                )}
-                              </Space>
-                            </Col>
-                            
-                            <Col>
-                              <Space direction="vertical" size={2} align="end">
-                                <div style={{ 
-                                  fontSize: 24, 
-                                  fontWeight: 700, 
-                                  color: '#1890ff',
-                                  lineHeight: 1
-                                }}>
-                                  ฿{parseFloat(unit.selling_price || 0).toFixed(2)}
-                                </div>
-                                {unit.purchase_price && unit.purchase_price !== unit.selling_price && (
-                                  <div style={{ 
-                                    fontSize: 13, 
-                                    color: '#bfbfbf',
-                                    textDecoration: 'line-through',
-                                    lineHeight: 1
-                                  }}>
-                                    ฿{parseFloat(unit.purchase_price).toFixed(2)}
-                                  </div>
-                                )}
-                              </Space>
-                            </Col>
-                          </Row>
-                        </Card>
-                      </Col>
-                    );
-                  })}
-                </Row>
-              ) : (
-                <Empty 
-                  description={
-                    <span style={{ color: '#8c8c8c' }}>
-                      No serving sizes configured for this item
-                    </span>
-                  }
-                  style={{ padding: '60px 0' }}
-                />
-              )}
-            </div>
-            
-            {/* Footer Hint */}
-            {availableUnits.length > 0 && (
-              <div style={{ 
-                padding: '16px 24px',
-                background: '#fafafa',
-                borderTop: '1px solid #f0f0f0',
-                textAlign: 'center'
-              }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  <CheckCircleOutlined style={{ marginRight: 4 }} />
-                  Click on any option to add to cart
-                </Text>
+            {loadingUnits ? (
+              <div style={{ textAlign: "center", padding: "56px 0" }}>
+                <Spin size="large" tip="Loading serving sizes..." />
               </div>
+            ) : availableUnits.length > 0 ? (
+              <Space direction="vertical" size={12} style={{ width: "100%" }}>
+                {availableUnits.map((unit) => {
+                  const isPopular = unit.unit_type === "DERIVED" && unit.ml_capacity <= 60;
+                  const isBase = unit.unit_type === "BASE" || unit.is_base_unit === 1;
+
+                  return (
+                    <Card
+                      key={unit.id ?? unit.unit_id}
+                      hoverable
+                      onClick={() => addToCartWithUnit(selectedItem, unit)}
+                      className={`variant-card ${isPopular ? "variant-card--popular" : ""}`}
+                      bodyStyle={{ padding: "18px 20px" }}
+                    >
+                      {isPopular && (
+                        <div className="variant-card__popular-pill">
+                          <StarFilled style={{ fontSize: 10 }} /> POPULAR
+                        </div>
+                      )}
+                      <Row align="middle" justify="space-between" gutter={16}>
+                        <Col flex="auto">
+                          <Space direction="vertical" size={6}>
+                            <Space size={8} wrap>
+                              <Text strong style={{ fontSize: 18 }}>
+                                {unit.unit_name}
+                              </Text>
+                              {unit.ml_capacity && <Tag color="blue">{unit.ml_capacity}ML</Tag>}
+                              {isBase && <Tag color="green">FULL SIZE</Tag>}
+                            </Space>
+                            {unit.conversion_factor && unit.conversion_factor !== 1 && (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {(1 / unit.conversion_factor).toFixed(2)} servings per bottle
+                              </Text>
+                            )}
+                          </Space>
+                        </Col>
+                        <Col>
+                          <Space direction="vertical" size={0} align="end">
+                            <Text strong style={{ fontSize: 28, color: "#1677ff", lineHeight: 1 }}>
+                              เธฟ{parseFloat(unit.selling_price || 0).toFixed(2)}
+                            </Text>
+                            {unit.purchase_price && unit.purchase_price !== unit.selling_price && (
+                              <Text type="secondary" delete>
+                                เธฟ{parseFloat(unit.purchase_price).toFixed(2)}
+                              </Text>
+                            )}
+                          </Space>
+                        </Col>
+                      </Row>
+                    </Card>
+                  );
+                })}
+
+                <Alert
+                  type="info"
+                  showIcon
+                  icon={<CheckCircleOutlined />}
+                  message="Click on any option to add to cart"
+                />
+              </Space>
+            ) : (
+              <Empty description="No serving sizes configured for this item" style={{ padding: "52px 0" }} />
             )}
           </div>
         )}
       </Modal>
-      
-      <style jsx>{`
-        .variant-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(24, 144, 255, 0.12) !important;
-          border-color: #1890ff !important;
-        }
-      `}</style>
 
       <ToastContainer
         position="top-right"

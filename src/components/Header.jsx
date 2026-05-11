@@ -4,14 +4,25 @@ import Breadcrum from '../layout/Breadcrum'
 export default function Header({ title }) {
   return (
    <>
-   	<div className="row heading-bg">
-					<div className="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-						<h5 className="txt-dark">{title}</h5>
-					</div>
-					<Breadcrum title="Add New Page" />
-
-
-				</div>
+	<div
+		className="row heading-bg"
+		style={{
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'space-between',
+			gap: '8px',
+			minHeight: '52px',
+			padding: '8px 12px',
+			margin: 0,
+		}}
+	>
+		<div style={{ minWidth: 0 }}>
+			<h5 className="txt-dark" style={{ margin: 0, lineHeight: 1.25 }}>{title}</h5>
+		</div>
+		<div style={{ marginLeft: 'auto' }}>
+			<Breadcrum />
+		</div>
+	</div>
   
    </>
   )

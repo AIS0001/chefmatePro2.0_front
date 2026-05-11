@@ -5,7 +5,7 @@ import axios from "axios";
 import { fetchComboData } from "../../services/api";
 import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
-import { Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag } from "antd";
+import { ConfigProvider, Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag } from "antd";
 import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,7 +16,7 @@ import QRPaymentModal from "../QRPaymentModal";
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
 import { generateQRForCheckBill } from "../../services/qrPaymentService";
-import "./CheckBillModal.css";
+import "./CheckBillModalAnt.css";
 
 
 const customStyles = {
@@ -74,7 +74,7 @@ const getCurrentTime = () => {
 
 //console.log(getCurrentDate()); // Output: YYYY-MM-DD
 
-const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger }) => {
+const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrigger }) => {
   const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010";
   const [formdata, setFormData] = useState({
     pmode: "Cash", // Default to "Cash"
@@ -2175,7 +2175,33 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         style={customStyles}
         ariaHideApp={false}
       >
-        <div className="checkbill-modal-surface" style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: '12px' }}>
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: "#1677ff",
+              borderRadius: 8,
+              colorBgContainer: "#ffffff",
+              colorText: "#1f2937",
+            },
+            components: {
+              Button: {
+                controlHeight: 38,
+                borderRadius: 8,
+                fontWeight: 600,
+              },
+              Input: {
+                controlHeight: 38,
+              },
+              Select: {
+                controlHeight: 38,
+              },
+              Card: {
+                borderRadiusLG: 12,
+              },
+            },
+          }}
+        >
+        <div className="checkbill-modal-surface checkbill-ant-theme" style={{ padding: '16px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: '12px' }}>
           
           {/* Header with Ant Design */}
           <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2646,6 +2672,7 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
             </Col>
           </Row>
         </div>
+        </ConfigProvider>
       </Modal>
       <LineQRDiscountModal
         isOpen={isLineQRModalOpen}
@@ -2681,4 +2708,4 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   );
 };
 
-export default CheckBillModal;
+export default CheckBillModalAnt;
