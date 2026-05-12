@@ -105,12 +105,6 @@ const TableSelectionModal = ({ isOpen, onClose, tables, onTableSelect, selectedT
                     <h6 className="table-selection-modal__table-name">
                       {table.name}
                     </h6>
-                    <span className="table-selection-modal__table-meta">
-                      {categoryLabel ? `Category ${categoryLabel}` : 'General table'}
-                    </span>
-                    <span className="table-selection-modal__table-caption">
-                      {isAvailable ? 'Ready for new orders' : 'Currently in use'}
-                    </span>
                   </button>
                 </div>
               )})

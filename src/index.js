@@ -74,9 +74,10 @@ axios.interceptors.request.use(
 
     const requestUrl = (config?.url || '').toString().toLowerCase();
     const isLoginRequest = requestUrl.includes('/login');
+    const isPublicRequest = requestUrl.includes('/loyalty/public/');
     const hasToken = !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
 
-    if (!isLoginRequest && hasToken && isTokenExpired()) {
+    if (!isLoginRequest && !isPublicRequest && hasToken && isTokenExpired()) {
       redirectToLogin();
       return Promise.reject(new axios.Cancel('Session expired'));
     }
@@ -93,6 +94,7 @@ axios.interceptors.response.use(
     const message = (error?.response?.data?.message || '').toString().toLowerCase();
     const requestUrl = (error?.config?.url || '').toString().toLowerCase();
     const isLoginRequest = requestUrl.includes('/login');
+    const isPublicRequest = requestUrl.includes('/loyalty/public/');
     const hasToken = !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
     const isExpiredMessage =
       message.includes('jwt expired') ||
@@ -100,7 +102,7 @@ axios.interceptors.response.use(
       message.includes('invalid or expired token') ||
       message.includes('session expired');
 
-    if (!isLoginRequest && hasToken && (status === 401 || status === 403 || isExpiredMessage)) {
+    if (!isLoginRequest && !isPublicRequest && hasToken && (status === 401 || status === 403 || isExpiredMessage)) {
       redirectToLogin();
     }
 

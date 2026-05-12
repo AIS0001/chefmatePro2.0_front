@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Layout, Button, Dropdown, Avatar, Badge, Space } from 'antd'
-import { MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SettingOutlined, UserOutlined, LogoutOutlined, ProfileOutlined, ClockCircleOutlined, ShopOutlined, CalendarOutlined, CloseOutlined } from '@ant-design/icons'
+import { MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SettingOutlined, UserOutlined, LogoutOutlined, ProfileOutlined, ClockCircleOutlined, ShopOutlined, CalendarOutlined, CloseOutlined, GiftOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import { getAuthToken } from '../utility/auth'
 import appPackage from '../../package.json'
@@ -591,6 +591,11 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 			label: <Link to="/setting/companyinfo">Settings</Link>,
 		},
 		{
+			key: 'loyalty-program',
+			icon: <UserOutlined />,
+			label: <Link to="/master/loyalty-program">Loyalty Program</Link>,
+		},
+		{
 			key: 'divider1',
 			type: 'divider',
 		},
@@ -902,6 +907,15 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 
 			{/* Right side - Navigation */}
 			<Space size="large" className="topbar-nav-right">
+				<Button
+					type="text"
+					icon={<GiftOutlined style={{fontSize: '16px'}}/>}
+					onClick={() => navigate('/master/loyalty-program')}
+					style={{color: '#fff'}}
+					title="Loyalty Program"
+				>
+					Loyalty
+				</Button>
 				<button
 					type="button"
 					onClick={() => navigate('/changelog')}

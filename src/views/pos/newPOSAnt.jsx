@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Layout,
@@ -50,6 +50,7 @@ import "./newPOS.css";
 const { Text } = Typography;
 
 const { Content } = Layout;
+const POS_CURRENCY = "฿";
 
 const IMAGE_BASE_URL = (process.env.REACT_APP_IMAGE_BASE_URL || baseURL || "").replace(/\/+$/, "");
 const INLINE_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -100,6 +101,8 @@ const getItemImageRef = (item) => {
 
 export default function NewPOSAnt() {
   const navigate = useNavigate();
+  const itemCodeInputRef = useRef(null);
+  const quickQtyInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -135,6 +138,8 @@ export default function NewPOSAnt() {
   const [maxNumber, setMaxNumber] = useState(0);
   const [selectedTableCategory, setSelectedTableCategory] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [quickItemCode, setQuickItemCode] = useState("");
+  const [quickQty, setQuickQty] = useState(1);
 
   const currentDate = format(new Date(), "yyyy-MM-dd");
 
@@ -246,6 +251,88 @@ export default function NewPOSAnt() {
     setSelectedSubCategory((prev) => (prev === subCatId ? null : subCatId));
   };
 
+  const focusItemCodeInput = () => {
+    requestAnimationFrame(() => {
+      if (itemCodeInputRef.current?.focus) {
+        itemCodeInputRef.current.focus();
+      }
+      if (itemCodeInputRef.current?.input?.select) {
+        itemCodeInputRef.current.input.select();
+      }
+    });
+  };
+
+  const focusQuickQtyInput = () => {
+    requestAnimationFrame(() => {
+      if (quickQtyInputRef.current?.focus) {
+        quickQtyInputRef.current.focus();
+      }
+    });
+  };
+
+  const findItemByQuickCode = (rawCode) => {
+    const normalizedCode = String(rawCode || "").trim().toLowerCase();
+    if (!normalizedCode) return null;
+
+    return (
+      (items || []).find((item) => {
+        const lookupValues = [
+          item?.barcode,
+          item?.item_code,
+          item?.code,
+          item?.id,
+          item?.iname,
+        ];
+
+        return lookupValues.some((value) => {
+          if (value === null || value === undefined) return false;
+          return String(value).trim().toLowerCase() === normalizedCode;
+        });
+      }) || null
+    );
+  };
+
+  const handleQuickAddByCode = async () => {
+    const code = String(quickItemCode || "").trim();
+    if (!code) {
+      message.error("Enter item code or barcode");
+      focusItemCodeInput();
+      return;
+    }
+
+    const quantityToAdd = Math.max(Number(quickQty) || 1, 1);
+    let matchedItem = findItemByQuickCode(code);
+
+    if (!matchedItem) {
+      try {
+        const [byItemCode, byBarcode, byId] = await Promise.all([
+          fetchData("items", null, "id", { item_code: code }),
+          fetchData("items", null, "id", { barcode: code }),
+          fetchData("items", null, "id", { id: code }),
+        ]);
+
+        matchedItem =
+          byItemCode?.[0] ||
+          byBarcode?.[0] ||
+          byId?.[0] ||
+          null;
+      } catch (error) {
+        console.error("Error fetching item by code:", error);
+      }
+    }
+
+    if (!matchedItem) {
+      message.error("Item not found for this code");
+      focusItemCodeInput();
+      return;
+    }
+
+    await addToCartWithUnit(matchedItem, null, quantityToAdd);
+    setQuickItemCode("");
+    setQuickQty(1);
+    focusItemCodeInput();
+  };
+
   const getItemsByCategory = () => {
     if (!selectedCategory) return [];
 
@@ -345,8 +432,9 @@ export default function NewPOSAnt() {
   };
 
   // Add item to cart with selected unit
-  const addToCartWithUnit = (item, selectedUnit) => {
+  const addToCartWithUnit = async (item, selectedUnit, quantityToAdd = 1) => {
     const selectedUnitId = selectedUnit?.id ?? selectedUnit?.unit_id ?? null;
+    const safeQuantity = Math.max(Number(quantityToAdd) || 1, 1);
     // console.log('๐๏ธ addToCartWithUnit called:', {
       // itemId: item.id,
       // itemName: item.iname,
@@ -354,22 +442,27 @@ export default function NewPOSAnt() {
       // selectedUnitId: selectedUnitId
     // });
     
-    const existingItem = cart.find((i) => i.id === item.id && i.unitId === selectedUnitId);
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((i) => i.id === item.id && i.unitId === selectedUnitId);
 
-    if (existingItem) {
-      // console.log(`โป๏ธ Item ${item.iname} already in cart, updating quantity`);
-      updateCartItem(item.id, existingItem.quantity + 1, selectedUnitId);
-    } else {
+      if (existingItem) {
+        return prevCart.map((cartItem) =>
+          cartItem.id === item.id && cartItem.unitId === selectedUnitId
+            ? { ...cartItem, quantity: cartItem.quantity + safeQuantity }
+            : cartItem
+        );
+      }
+
       const price = selectedUnit?.selling_price || parseFloat(item.offerprice || 0);
       const taxRate = parseFloat(item.tax || 0);
       // Tax is included in price - calculate tax portion: tax = price * (taxRate / (100 + taxRate))
       const taxAmount = price * (taxRate / (100 + taxRate));
-      
+
       const cartItem = {
         id: item.id, // Always store PRODUCT ID, not variant ID
         productId: item.id, // Explicitly store product ID
         name: item.iname,
-        quantity: 1,
+        quantity: safeQuantity,
         price: price,
         taxRate: taxRate,
         taxAmount: taxAmount,
@@ -382,10 +475,9 @@ export default function NewPOSAnt() {
         variantName: selectedUnit?.unit_name || null,
         quantityInBaseUnit: selectedUnit?.conversion_factor || 1,
       };
-      
-      // console.log('โ… Adding new item to cart:', cartItem);
-      setCart([...cart, cartItem]);
-    }
+
+      return [...prevCart, cartItem];
+    });
     
     const unitText = selectedUnit ? ` (${selectedUnit.unit_name})` : '';
     message.success(`${item.iname}${unitText} added to cart`);
@@ -681,6 +773,48 @@ export default function NewPOSAnt() {
     }
   };
 
+  // HTML thermal KOT fallback (used when ESC/POS agent is not configured)
+  const printKOTHtmlFallback = (kotData) => {
+    const newWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!newWindow) return;
+    const itemRows = (kotData.items || [])
+      .map(
+        (item) =>
+          `<tr><td style="padding:2px 4px;font-size:20px;">${item.item_name}</td><td style="padding:2px 4px;text-align:right;font-size:20px;">${item.quantity}</td></tr>`
+      )
+      .join('');
+    newWindow.document.write(`
+      <html>
+        <head>
+          <style>
+            body { font-family: monospace; width: 80mm; margin: 0; padding: 6px; font-size: 20px; }
+            h2 { text-align: center; margin: 4px 0; font-size: 22px; }
+            .divider { border-top: 1px dashed #000; margin: 6px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th { text-align: left; font-size: 20px; border-bottom: 1px solid #000; }
+            th:last-child { text-align: right; }
+            td:last-child { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <h2>KOT</h2>
+          <div class="divider"></div>
+          <div style="font-size:20px;"><strong>Table:</strong> ${kotData.table || '-'}</div>
+          <div style="font-size:20px;"><strong>Order #:</strong> ${kotData.orderNumber || '-'}</div>
+          <div style="font-size:20px;"><strong>Time:</strong> ${new Date().toLocaleTimeString()}</div>
+          <div class="divider"></div>
+          <table>
+            <thead><tr><th>Item</th><th>Qty</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <div class="divider"></div>
+        </body>
+      </html>
+    `);
+    newWindow.document.close();
+    newWindow.onload = () => { newWindow.print(); newWindow.close(); };
+  };
+
   // Send KOT via ESC/POS thermal printer
   const handleSendKOT = async () => {
     if (!selectedTable) {
@@ -791,7 +925,9 @@ export default function NewPOSAnt() {
           // console.log('โ… KOT sent to thermal printer successfully');
           message.success('Order saved, stock deducted, and KOT sent to thermal printer!');
         } else {
-          message.warning('Order saved and stock deducted but KOT print failed. Check printer.');
+          // ESC/POS not configured or failed - fall back to HTML thermal KOT
+          printKOTHtmlFallback(kotData);
+          message.info('ESC/POS printer not configured. KOT printed via browser.');
         }
         
         // Clear cart after successful operations
@@ -1101,7 +1237,7 @@ export default function NewPOSAnt() {
                               <div className="pos-menu-content">
                                 <h5 className="pos-menu-name">{item.iname || "N/A"}</h5>
                                 <div className="pos-menu-meta">
-                                  <span className="pos-menu-price">เธฟ{parseFloat(item.offerprice || 0).toFixed(2)}</span>
+                                  <span className="pos-menu-price">{POS_CURRENCY} {parseFloat(item.offerprice || 0).toFixed(2)}</span>
                                 </div>
                               </div>
                             </Card>
@@ -1128,8 +1264,32 @@ export default function NewPOSAnt() {
               >
                 <div className="pos-quick-add-card">
                   <div className="pos-quick-add-card__title">Quick Add Item</div>
-                  <Input placeholder="Item Code / Barcode" size="small" style={{ marginBottom: 8 }} />
-                  <InputNumber min={1} defaultValue={1} size="small" style={{ width: "100%", marginBottom: 4 }} />
+                  <Input
+                    ref={itemCodeInputRef}
+                    value={quickItemCode}
+                    placeholder="Item Code / Barcode"
+                    size="small"
+                    style={{ marginBottom: 8 }}
+                    onChange={(event) => setQuickItemCode(event.target.value)}
+                    onPressEnter={(event) => {
+                      event.preventDefault();
+                      focusQuickQtyInput();
+                    }}
+                  />
+                  <InputNumber
+                    ref={quickQtyInputRef}
+                    min={1}
+                    value={quickQty}
+                    size="small"
+                    style={{ width: "100%", marginBottom: 4 }}
+                    onChange={(value) => setQuickQty(value || 1)}
+                    onKeyDown={async (event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        await handleQuickAddByCode();
+                      }
+                    }}
+                  />
                   <small className="pos-quick-add-card__hint">Press Enter to move to quantity, then Enter again to add.</small>
                 </div>
 
@@ -1142,7 +1302,7 @@ export default function NewPOSAnt() {
                         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}
                       >
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#24312c", lineHeight: 1.25 }}>
-                          {item.name} x {item.quantity} = เธฟ{(item.quantity * item.price).toFixed(2)}
+                          {item.name} x {item.quantity} = {POS_CURRENCY} {(item.quantity * item.price).toFixed(2)}
                         </div>
                         <Space.Compact>
                           <Button size="small" icon={<MinusOutlined />} onClick={() => updateCartItem(item.id, item.quantity - 1, item.unitId)} />
@@ -1171,7 +1331,7 @@ export default function NewPOSAnt() {
           <div className="pos-bottom-bar">
             <div className="pos-bottom-top-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, borderBottom: "1px solid #ddd5c9", paddingBottom: 10 }}>
               <div className="pos-total-label">
-                Total: <span>เธฟ {totals.grandTotal.toFixed(2)}</span>
+                Total: <span>{POS_CURRENCY} {totals.grandTotal.toFixed(2)}</span>
               </div>
               <div className="pos-bottom-actions">
                 <Button

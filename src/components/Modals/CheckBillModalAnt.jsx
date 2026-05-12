@@ -5,7 +5,7 @@ import axios from "axios";
 import { fetchComboData } from "../../services/api";
 import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
-import { ConfigProvider, Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag } from "antd";
+import { ConfigProvider, Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag, Modal as AntdModal } from "antd";
 import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,6 +16,7 @@ import QRPaymentModal from "../QRPaymentModal";
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // ✅ Import setup date utility
 import { generateQRForCheckBill } from "../../services/qrPaymentService";
+import QRCode from "qrcode";
 import "./CheckBillModalAnt.css";
 
 
@@ -106,6 +107,20 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   const [latestBillId, setLatestBillId] = useState(null);
   const [latestInvoiceNumber, setLatestInvoiceNumber] = useState(null);
   const [savedSplitInvoices, setSavedSplitInvoices] = useState([]);
+  const [loyaltyCustomers, setLoyaltyCustomers] = useState([]);
+  const [selectedLoyaltyMemberId, setSelectedLoyaltyMemberId] = useState(null);
+  const [isLoyaltyLookupLoading, setIsLoyaltyLookupLoading] = useState(false);
+  const [isLoyaltyProgramModalOpen, setIsLoyaltyProgramModalOpen] = useState(false);
+  const [loyaltySearchMobile, setLoyaltySearchMobile] = useState("");
+  const [loyaltySearchResults, setLoyaltySearchResults] = useState([]);
+  const [loyaltySearchSelectionId, setLoyaltySearchSelectionId] = useState(null);
+  const [loyaltyPrograms, setLoyaltyPrograms] = useState([]);
+  const [selectedLoyaltyProgramId, setSelectedLoyaltyProgramId] = useState(null);
+  const [eligibleLoyaltyOffers, setEligibleLoyaltyOffers] = useState([]);
+  const [selectedEligibleOfferId, setSelectedEligibleOfferId] = useState(null);
+  const [isApplyingLoyaltyOffer, setIsApplyingLoyaltyOffer] = useState(false);
+  const [loyaltyRedemptionInfo, setLoyaltyRedemptionInfo] = useState(null);
+  const [loyaltySelectedMemberInfo, setLoyaltySelectedMemberInfo] = useState(null);
 
   const resolveCompanyName = () => {
     const company = companyInfo?.[0] || {};
@@ -175,6 +190,26 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   });
   const [isBillSaved, setIsBillSaved] = useState(false);
 
+  const normalizeIncomingCustomer = (rawCustomer) => {
+    if (!rawCustomer) return null;
+
+    if (typeof rawCustomer === "string" || typeof rawCustomer === "number") {
+      return {
+        custid: rawCustomer,
+        name: "",
+        phone: "",
+        email: "",
+      };
+    }
+
+    return {
+      custid: rawCustomer.custid ?? rawCustomer.id ?? rawCustomer.customer_id ?? null,
+      name: rawCustomer.name ?? rawCustomer.customer_name ?? "",
+      phone: rawCustomer.phone ?? rawCustomer.mobile ?? rawCustomer.mobile_number ?? "",
+      email: rawCustomer.email ?? "",
+    };
+  };
+
   //   if (!customer) return null;
 
   const refreshTables = (event) => {
@@ -207,6 +242,272 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
   const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
   const [currencySign, setCurrencySign] = useState("฿"); // Default to Thai Baht
+
+  const selectedLoyaltyMember = useMemo(
+    () => (loyaltyCustomers || []).find((row) => row.member_id === selectedLoyaltyMemberId) || null,
+    [loyaltyCustomers, selectedLoyaltyMemberId]
+  );
+
+  const normalizePhone = (value) => String(value || "").replace(/\D/g, "");
+  const getLoyaltyContact = (row) => row?.contact || row?.phone || row?.mobile || row?.mobile_number || "";
+
+  const filterLoyaltyCustomers = (members, mobileInput) => {
+    const typedMobile = normalizePhone(mobileInput);
+    if (!typedMobile) return members || [];
+
+    return (members || []).filter((row) => {
+      const memberMobile = normalizePhone(getLoyaltyContact(row));
+      return memberMobile && memberMobile.includes(typedMobile);
+    });
+  };
+
+  const searchLoyaltyByMobile = async (mobileInput = loyaltySearchMobile, showEmptyToast = true) => {
+    setIsLoyaltyLookupLoading(true);
+    try {
+      let members = loyaltyCustomers;
+      if (!members || members.length === 0) {
+        const response = await axios.get("/loyalty/customers", getHeaders());
+        const rows = response?.data?.data || [];
+        members = rows.filter((row) => row.member_id);
+        setLoyaltyCustomers(members);
+      }
+
+      const matches = filterLoyaltyCustomers(members, mobileInput);
+
+      if (!matches.length) {
+        setLoyaltySearchResults([]);
+        setLoyaltySearchSelectionId(null);
+        if (showEmptyToast) {
+          toast.warning("No loyalty customer found for this mobile number.");
+        }
+        return;
+      }
+
+      setLoyaltySearchResults(matches);
+      setLoyaltySearchSelectionId(matches[0]?.member_id || null);
+      if (showEmptyToast) {
+        toast.success(`Found ${matches.length} loyalty customer(s).`);
+      }
+    } catch (error) {
+      console.error("Error searching loyalty customer by mobile:", error);
+      toast.error("Unable to search loyalty customer right now.");
+    } finally {
+      setIsLoyaltyLookupLoading(false);
+    }
+  };
+
+  const openLoyaltyProgramModal = () => {
+    setLoyaltySearchMobile("");
+    const initialResults = loyaltyCustomers || [];
+    setLoyaltySearchResults(initialResults);
+    setLoyaltySearchSelectionId(initialResults[0]?.member_id || null);
+    setEligibleLoyaltyOffers([]);
+    setSelectedEligibleOfferId(null);
+    setIsLoyaltyProgramModalOpen(true);
+  };
+
+  const handleConfirmLoyaltySelection = () => {
+    if (!loyaltySearchSelectionId) {
+      toast.info("Select a loyalty customer.");
+      return;
+    }
+
+    applyLoyaltyCustomerSelection(loyaltySearchSelectionId);
+    setIsLoyaltyProgramModalOpen(false);
+  };
+
+  const loadLoyaltyPrograms = async () => {
+    try {
+      const response = await axios.get('/loyalty/programs', getHeaders());
+      const rows = response?.data?.data || [];
+      setLoyaltyPrograms(rows);
+      if (rows.length > 0 && !selectedLoyaltyProgramId) {
+        setSelectedLoyaltyProgramId(rows[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading loyalty programs:', error);
+    }
+  };
+
+  const loadEligibleLoyaltyOffers = async ({ memberId, programId, billAmount }) => {
+    if (!memberId) {
+      setEligibleLoyaltyOffers([]);
+      setSelectedEligibleOfferId(null);
+      return;
+    }
+
+    try {
+      const headersConfig = getHeaders();
+      const response = await axios.get('/loyalty/offers/eligible/list', {
+        ...headersConfig,
+        params: {
+          ...(headersConfig.params || {}),
+          member_id: memberId,
+          program_id: programId || undefined,
+          bill_amount: Number(billAmount) || 0,
+        },
+      });
+
+      const offers = response?.data?.data?.offers || [];
+      setEligibleLoyaltyOffers(offers);
+
+      const firstEligible = offers.find((row) => Number(row.is_eligible) === 1);
+      setSelectedEligibleOfferId(firstEligible?.id || null);
+    } catch (error) {
+      console.error('Error loading eligible loyalty offers:', error);
+      setEligibleLoyaltyOffers([]);
+      setSelectedEligibleOfferId(null);
+    }
+  };
+
+  const applySelectedLoyaltyOffer = async () => {
+    if (!loyaltySearchSelectionId) {
+      toast.info('Select loyalty customer first.');
+      return;
+    }
+    if (!selectedEligibleOfferId) {
+      toast.info('Select eligible offer first.');
+      return;
+    }
+
+    setIsApplyingLoyaltyOffer(true);
+    try {
+      const response = await axios.post(
+        '/loyalty/offers/redeem',
+        {
+          member_id: loyaltySearchSelectionId,
+          program_id: selectedLoyaltyProgramId || null,
+          offer_id: selectedEligibleOfferId,
+          bill_amount: Number(grandAmount) || 0,
+          note: 'Redeemed from POS CheckBill modal',
+        },
+        getHeaders()
+      );
+
+      const redemption = response?.data?.data || {};
+      const offerType = redemption.offer_type;
+
+      if (offerType === 'DISCOUNT_AMOUNT') {
+        setFormData((prev) => ({ ...prev, discountType: 'fixed' }));
+        setDiscAmount(Number(redemption.discount_value || 0));
+      }
+
+      if (offerType === 'DISCOUNT_PERCENT') {
+        const selectedOffer = (eligibleLoyaltyOffers || []).find((row) => row.id === selectedEligibleOfferId);
+        setFormData((prev) => ({ ...prev, discountType: 'percentage' }));
+        setDiscAmount(Number(selectedOffer?.discount_percent || 0));
+      }
+
+      if (offerType === 'FREE_ITEM') {
+        toast.info(`Free item offer selected: ${redemption.free_item_name || 'Free item'}. Add item to bill manually.`);
+      }
+
+      const selectedCustomer = (loyaltyCustomers || []).find((r) => r.member_id === loyaltySearchSelectionId);
+      setLoyaltyRedemptionInfo({
+        offer_name: redemption.offer_name || '',
+        offer_type: redemption.offer_type || '',
+        points_used: Number(redemption.points_used || 0),
+        discount_value: Number(redemption.discount_value || 0),
+        free_item_name: redemption.free_item_name || null,
+        points_balance: Number(redemption.points_balance || 0),
+        member_name: selectedCustomer?.name || '',
+        member_id: loyaltySearchSelectionId || null,
+        contact: selectedCustomer?.contact || selectedCustomer?.phone || selectedCustomer?.mobile || '',
+      });
+
+      applyLoyaltyCustomerSelection(loyaltySearchSelectionId);
+      toast.success(`Offer applied: ${redemption.offer_name || 'Loyalty offer'}`);
+      setIsLoyaltyProgramModalOpen(false);
+    } catch (error) {
+      console.error('Error applying loyalty offer:', error);
+      toast.error(error?.response?.data?.message || 'Unable to apply loyalty offer');
+    } finally {
+      setIsApplyingLoyaltyOffer(false);
+    }
+  };
+
+  const applyLoyaltyCustomerSelection = (memberId) => {
+    setSelectedLoyaltyMemberId(memberId || null);
+
+    const selected = (loyaltyCustomers || []).find((row) => row.member_id === memberId);
+    if (!selected) {
+      return;
+    }
+
+    setLoyaltySelectedMemberInfo({
+      member_id: memberId,
+      contact: selected.contact || selected.phone || selected.mobile || '',
+      member_name: selected.name || '',
+    });
+    setphones(selected.contact ? String(selected.contact) : "");
+  };
+
+  const creditLoyaltyPoints = async ({ billId, billAmount, note }) => {
+    if (!selectedLoyaltyMemberId) return;
+
+    try {
+      await axios.post(
+        "/loyalty/transactions/earn",
+        {
+          member_id: selectedLoyaltyMemberId,
+          bill_id: billId,
+          bill_amount: Number(billAmount) || 0,
+          note: note || "POS bill loyalty points",
+        },
+        getHeaders()
+      );
+    } catch (error) {
+      console.error("Error crediting loyalty points:", error);
+      toast.warning("Bill saved, but loyalty point credit failed.");
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !customer) return;
+
+    const normalizedCustomer = normalizeIncomingCustomer(customer);
+    if (!normalizedCustomer) return;
+
+    setCustomerDetails((prev) => ({
+      ...prev,
+      ...normalizedCustomer,
+    }));
+  }, [customer, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadLoyaltyCustomers = async () => {
+      try {
+        const response = await axios.get("/loyalty/customers", getHeaders());
+        const rows = response?.data?.data || [];
+        const membersOnly = rows.filter((row) => row.member_id);
+        setLoyaltyCustomers(membersOnly);
+        setLoyaltySearchResults(membersOnly);
+        setSelectedLoyaltyMemberId(null);
+        setphones("");
+      } catch (error) {
+        console.error("Error fetching loyalty customers:", error);
+      }
+    };
+
+    loadLoyaltyCustomers();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isLoyaltyProgramModalOpen) return;
+    loadLoyaltyPrograms();
+  }, [isLoyaltyProgramModalOpen]);
+
+  useEffect(() => {
+    if (!isLoyaltyProgramModalOpen) return;
+
+    loadEligibleLoyaltyOffers({
+      memberId: loyaltySearchSelectionId,
+      programId: selectedLoyaltyProgramId,
+      billAmount: grandAmount,
+    });
+  }, [isLoyaltyProgramModalOpen, loyaltySearchSelectionId, selectedLoyaltyProgramId, grandAmount]);
 
 
 
@@ -669,7 +970,15 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
             grand_total: Number(job.total || 0),
             grandTotal: Number(job.total || 0),
             tax_percent: Number(job.taxPercent || 0),
-            taxPercent: Number(job.taxPercent || 0)
+            taxPercent: Number(job.taxPercent || 0),
+            loyalty_redeemed: !!loyaltyRedemptionInfo,
+            loyalty_member_name: loyaltyRedemptionInfo?.member_name || null,
+            loyalty_offer_name: loyaltyRedemptionInfo?.offer_name || null,
+            loyalty_offer_type: loyaltyRedemptionInfo?.offer_type || null,
+            loyalty_points_used: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_used : 0,
+            loyalty_discount_value: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.discount_value : 0,
+            loyalty_free_item: loyaltyRedemptionInfo?.free_item_name || null,
+            loyalty_points_balance: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_balance : 0
           };
 
           const response = await axios.post(
@@ -1189,6 +1498,12 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       setLatestInvoiceNumber(inv_number || String(bill_id));
       setSavedSplitInvoices([]);
 
+      await creditLoyaltyPoints({
+        billId: bill_id,
+        billAmount: calculatedGrandTotal,
+        note: `Bill #${inv_number || bill_id}`,
+      });
+
       // console.log('Bill saved successfully with ID:', bill_id);
 
       // Update table status - handle both single table and merged tables
@@ -1360,6 +1675,12 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
           throw new Error(`Failed to create ${split.name}`);
         }
 
+        await creditLoyaltyPoints({
+          billId: bill_id,
+          billAmount: splitGrandTotal,
+          note: `Split ${split.name} - Bill #${inv_number || bill_id}`,
+        });
+
         createdBillIds.push(bill_id);
 
         splitInvoicesForPrint.push({
@@ -1451,6 +1772,26 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
       const newWindow = window.open("", "_blank");
 
+      // Pre-generate loyalty QR code (base64 PNG) — show for any selected loyalty customer
+      let loyaltyQrDataUrl = null;
+      const loyaltyQrSource = loyaltyRedemptionInfo || loyaltySelectedMemberInfo;
+      if (loyaltyQrSource) {
+        try {
+          const shopId = getResolvedShopId();
+          const qrParams = loyaltyQrSource.member_id
+            ? `member_id=${loyaltyQrSource.member_id}&shop_id=${shopId}`
+            : loyaltyQrSource.contact
+            ? `contact=${encodeURIComponent(loyaltyQrSource.contact)}&shop_id=${shopId}`
+            : null;
+          if (qrParams) {
+            const loyaltyUrl = `${window.location.origin}/loyalty/check?${qrParams}`;
+            loyaltyQrDataUrl = await QRCode.toDataURL(loyaltyUrl, { width: 120, margin: 1 });
+          }
+        } catch (_qrErr) {
+          // QR generation failure is non-critical
+        }
+      }
+
       const invoicesForPrint = (savedSplitInvoices && savedSplitInvoices.length > 0)
         ? savedSplitInvoices
         : [{
@@ -1528,6 +1869,23 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
               <span>Round Off: ${currencySign} ${Number(invoice.roundOff || 0).toFixed(2)}</span><br>
               <span>Total Amount: ${currencySign} ${Number(invoice.total || 0).toFixed(2)}</span>
             </div>
+            ${loyaltyRedemptionInfo ? `
+            <div style="margin-top:10px;border-top:1px dashed #000;padding-top:8px;font-size:18px;text-align:center;">
+              <div style="font-weight:700;font-size:19px;letter-spacing:0.3px;">*** LOYALTY REWARD REDEEMED ***</div>
+              ${loyaltyRedemptionInfo.member_name ? `<div>Member: ${escapeHtml(loyaltyRedemptionInfo.member_name)}</div>` : ''}
+              <div>Offer: ${escapeHtml(loyaltyRedemptionInfo.offer_name)}</div>
+              ${loyaltyRedemptionInfo.offer_type === 'DISCOUNT_AMOUNT' ? `<div>Discount Applied: ${currencySign} ${Number(loyaltyRedemptionInfo.discount_value).toFixed(2)}</div>` : ''}
+              ${loyaltyRedemptionInfo.offer_type === 'DISCOUNT_PERCENT' ? `<div>Discount Applied: ${currencySign} ${Number(loyaltyRedemptionInfo.discount_value).toFixed(2)}</div>` : ''}
+              ${loyaltyRedemptionInfo.offer_type === 'FREE_ITEM' ? `<div>Free Item: ${escapeHtml(loyaltyRedemptionInfo.free_item_name || '-')}</div>` : ''}
+              <div>Points Used: ${loyaltyRedemptionInfo.points_used}</div>
+              <div>Remaining Points: ${loyaltyRedemptionInfo.points_balance}</div>
+            </div>` : ''}
+            ${loyaltyQrDataUrl ? `
+            <div style="margin-top:10px;border-top:1px dashed #000;padding-top:8px;text-align:center;">
+              <div style="font-size:16px;margin-bottom:4px;font-weight:600;">Check Your Loyalty Points</div>
+              <img src="${loyaltyQrDataUrl}" width="120" height="120" alt="Loyalty QR"/>
+              <div style="font-size:14px;margin-top:2px;color:#555;">Scan QR to view points &amp; history</div>
+            </div>` : ''}
           </div>
           <div class="footer">
             <p>Powered by Cloudnet Softwares</p>
@@ -1836,7 +2194,15 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
                   grand_total: Number(job.total || 0),
                   grandTotal: Number(job.total || 0),
                   tax_percent: Number(job.taxPercent || 0),
-                  taxPercent: Number(job.taxPercent || 0)
+                  taxPercent: Number(job.taxPercent || 0),
+                  loyalty_redeemed: !!loyaltyRedemptionInfo,
+                  loyalty_member_name: loyaltyRedemptionInfo?.member_name || null,
+                  loyalty_offer_name: loyaltyRedemptionInfo?.offer_name || null,
+                  loyalty_offer_type: loyaltyRedemptionInfo?.offer_type || null,
+                  loyalty_points_used: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_used : 0,
+                  loyalty_discount_value: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.discount_value : 0,
+                  loyalty_free_item: loyaltyRedemptionInfo?.free_item_name || null,
+                  loyalty_points_balance: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_balance : 0
                 };
 
                 const response = await axios.post(
@@ -1876,6 +2242,26 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       }
 
       const newWindow = window.open("", "_blank");
+
+      // Pre-generate loyalty QR code for bill summary — show for any selected loyalty customer
+      let loyaltyQrDataUrl = null;
+      const loyaltyQrSource = loyaltyRedemptionInfo || loyaltySelectedMemberInfo;
+      if (loyaltyQrSource) {
+        try {
+          const shopId = getResolvedShopId();
+          const qrParams = loyaltyQrSource.member_id
+            ? `member_id=${loyaltyQrSource.member_id}&shop_id=${shopId}`
+            : loyaltyQrSource.contact
+            ? `contact=${encodeURIComponent(loyaltyQrSource.contact)}&shop_id=${shopId}`
+            : null;
+          if (qrParams) {
+            const loyaltyUrl = `${window.location.origin}/loyalty/check?${qrParams}`;
+            loyaltyQrDataUrl = await QRCode.toDataURL(loyaltyUrl, { width: 120, margin: 1 });
+          }
+        } catch (_qrErr) {
+          // non-critical
+        }
+      }
 
       const summaryBlocks = (invoicesForSummary && invoicesForSummary.length > 0)
         ? invoicesForSummary.map((invoice, idx) => `
@@ -1929,6 +2315,23 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
                   <span>Round Off: ${currencySign} ${Number(invoice.roundOff || 0).toFixed(2)}</span><br>
                   <span>Total Amount: ${currencySign} ${Number(invoice.total || 0).toFixed(2)}</span>
                 </div>
+                ${loyaltyRedemptionInfo ? `
+                <div style="margin-top:10px;border-top:1px dashed #000;padding-top:8px;font-size:18px;text-align:center;">
+                  <div style="font-weight:700;font-size:19px;letter-spacing:0.3px;">*** LOYALTY REWARD REDEEMED ***</div>
+                  ${loyaltyRedemptionInfo.member_name ? `<div>Member: ${escapeHtml(loyaltyRedemptionInfo.member_name)}</div>` : ''}
+                  <div>Offer: ${escapeHtml(loyaltyRedemptionInfo.offer_name)}</div>
+                  ${loyaltyRedemptionInfo.offer_type === 'DISCOUNT_AMOUNT' ? `<div>Discount Applied: ${currencySign} ${Number(loyaltyRedemptionInfo.discount_value).toFixed(2)}</div>` : ''}
+                  ${loyaltyRedemptionInfo.offer_type === 'DISCOUNT_PERCENT' ? `<div>Discount Applied: ${currencySign} ${Number(loyaltyRedemptionInfo.discount_value).toFixed(2)}</div>` : ''}
+                  ${loyaltyRedemptionInfo.offer_type === 'FREE_ITEM' ? `<div>Free Item: ${escapeHtml(loyaltyRedemptionInfo.free_item_name || '-')}</div>` : ''}
+                  <div>Points Used: ${loyaltyRedemptionInfo.points_used}</div>
+                  <div>Remaining Points: ${loyaltyRedemptionInfo.points_balance}</div>
+                </div>` : ''}
+                ${loyaltyQrDataUrl ? `
+                <div style="margin-top:10px;border-top:1px dashed #000;padding-top:8px;text-align:center;">
+                  <div style="font-size:16px;margin-bottom:4px;font-weight:600;">Check Your Loyalty Points</div>
+                  <img src="${loyaltyQrDataUrl}" width="120" height="120" alt="Loyalty QR"/>
+                  <div style="font-size:14px;margin-top:2px;color:#555;">Scan QR to view points &amp; history</div>
+                </div>` : ''}
               </div>
               <div class="footer">
                 <p>Powered by Cloudnet Softwares</p>
@@ -1987,6 +2390,23 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
                   <span>Round Off: ${currencySign} ${roundoffAmount}</span><br>
                   <span>Total Amount: ${currencySign} ${grandAmount}</span>
                 </div>
+                ${loyaltyRedemptionInfo ? `
+                <div style="margin-top:10px;border-top:1px dashed #000;padding-top:8px;font-size:18px;text-align:center;">
+                  <div style="font-weight:700;font-size:19px;letter-spacing:0.3px;">*** LOYALTY REWARD REDEEMED ***</div>
+                  ${loyaltyRedemptionInfo.member_name ? `<div>Member: ${escapeHtml(loyaltyRedemptionInfo.member_name)}</div>` : ''}
+                  <div>Offer: ${escapeHtml(loyaltyRedemptionInfo.offer_name)}</div>
+                  ${loyaltyRedemptionInfo.offer_type === 'DISCOUNT_AMOUNT' ? `<div>Discount Applied: ${currencySign} ${Number(loyaltyRedemptionInfo.discount_value).toFixed(2)}</div>` : ''}
+                  ${loyaltyRedemptionInfo.offer_type === 'DISCOUNT_PERCENT' ? `<div>Discount Applied: ${currencySign} ${Number(loyaltyRedemptionInfo.discount_value).toFixed(2)}</div>` : ''}
+                  ${loyaltyRedemptionInfo.offer_type === 'FREE_ITEM' ? `<div>Free Item: ${escapeHtml(loyaltyRedemptionInfo.free_item_name || '-')}</div>` : ''}
+                  <div>Points Used: ${loyaltyRedemptionInfo.points_used}</div>
+                  <div>Remaining Points: ${loyaltyRedemptionInfo.points_balance}</div>
+                </div>` : ''}
+                ${loyaltyQrDataUrl ? `
+                <div style="margin-top:10px;border-top:1px dashed #000;padding-top:8px;text-align:center;">
+                  <div style="font-size:16px;margin-bottom:4px;font-weight:600;">Check Your Loyalty Points</div>
+                  <img src="${loyaltyQrDataUrl}" width="120" height="120" alt="Loyalty QR"/>
+                  <div style="font-size:14px;margin-top:2px;color:#555;">Scan QR to view points &amp; history</div>
+                </div>` : ''}
               </div>
               <div class="footer">
                 <p>Powered by Cloudnet Softwares</p>
@@ -2107,6 +2527,8 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   useEffect(() => {
     if (finalData.length > 0) {
       setIsBillSaved(false);
+      setLoyaltyRedemptionInfo(null);
+      setLoyaltySelectedMemberInfo(null);
     }
   }, [finalData]);
 
@@ -2422,17 +2844,28 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
                 {/* Customer Info Card */}
                 <Card size="small" className="customer-card" style={{ padding: '16px' }}>
                   <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: '700', color: '#1890ff' }}>👤 Customer</h4>
-                  <Input 
-                    type="tel"
-                    size="large"
-                    placeholder="Mobile number"
-                    value={phones}
-                    onChange={(e) => setphones(e.target.value)}
-                    style={{ marginBottom: '12px', fontSize: '14px', height: '44px' }}
-                  />
-                  <Button type="dashed" size="large" block onClick={() => setCustomerModalOpen(true)} style={{ height: '44px', fontSize: '13px', fontWeight: '600' }}>
-                    📝 Add Details
+                  <Button type="primary" size="large" block onClick={openLoyaltyProgramModal} style={{ height: '44px', fontSize: '13px', fontWeight: '700', marginBottom: '12px' }}>
+                    Loyality Program
                   </Button>
+                  {selectedLoyaltyMember && (
+                    <div style={{ marginBottom: '10px', fontSize: '12px', color: '#1677ff', lineHeight: 1.4 }}>
+                      Loyalty selected: {selectedLoyaltyMember.name || 'Customer'}
+                      {selectedLoyaltyMember.contact ? ` (${selectedLoyaltyMember.contact})` : ''}
+                      . Points will auto-credit on bill save.
+                    </div>
+                  )}
+                  <Divider style={{ margin: '10px 0' }} />
+                  <div style={{ marginBottom: '6px', fontSize: '12px', color: '#666', fontWeight: 600 }}>Credit Sale Customer (separate)</div>
+                  {(customerDetails.name || customerDetails.phone || customerDetails.custid) && (
+                    <div style={{ marginBottom: '10px', fontSize: '12px', color: '#4b5563', lineHeight: 1.4 }}>
+                      <strong>Selected:</strong> {customerDetails.name || 'Customer'}
+                      {customerDetails.phone ? ` (${customerDetails.phone})` : ''}
+                    </div>
+                  )}
+                  <Button type="dashed" size="large" block onClick={() => setCustomerModalOpen(true)} style={{ height: '44px', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>
+                    📝 Select Credit Customer
+                  </Button>
+                  <div style={{ fontSize: '11px', color: '#8c8c8c' }}>Loyalty selection and Credit customer selection are kept separate.</div>
                 </Card>
 
                 {/* Payment Info Card */}
@@ -2704,6 +3137,93 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
           handleQuickPayment('QR Scan');
         }}
       />
+
+      <AntdModal
+        open={isLoyaltyProgramModalOpen}
+        title="Loyality Program"
+        onCancel={() => setIsLoyaltyProgramModalOpen(false)}
+        onOk={handleConfirmLoyaltySelection}
+        okText="Use Customer"
+        getContainer={false}
+        zIndex={2100}
+        mask={false}
+        destroyOnClose
+      >
+        <div style={{ marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: 600 }}>
+          Search customer by mobile number
+        </div>
+        <Space.Compact style={{ width: '100%', marginBottom: '12px' }}>
+          <Input
+            type="tel"
+            placeholder="Enter mobile number"
+            value={loyaltySearchMobile}
+            onChange={(e) => {
+              const nextValue = e.target.value;
+              setLoyaltySearchMobile(nextValue);
+              const filtered = filterLoyaltyCustomers(loyaltyCustomers || loyaltySearchResults, nextValue);
+              setLoyaltySearchResults(filtered);
+              setLoyaltySearchSelectionId(filtered[0]?.member_id || null);
+            }}
+            onPressEnter={() => searchLoyaltyByMobile(loyaltySearchMobile)}
+          />
+          <Button
+            type="primary"
+            loading={isLoyaltyLookupLoading}
+            onClick={() => searchLoyaltyByMobile(loyaltySearchMobile)}
+          >
+            Search
+          </Button>
+        </Space.Compact>
+
+        <Select
+          size="large"
+          placeholder="Select Loyalty Customer"
+          value={loyaltySearchSelectionId}
+          onChange={setLoyaltySearchSelectionId}
+          style={{ width: '100%', marginBottom: '12px' }}
+          optionFilterProp="label"
+          showSearch
+          options={(loyaltySearchResults || []).map((row) => ({
+            value: row.member_id,
+            label: `${row.name || 'Customer'} (${getLoyaltyContact(row) || 'No contact'}) - Points: ${row.points_balance || 0}`,
+          }))}
+        />
+
+        <Select
+          size="large"
+          placeholder="Select Loyalty Program"
+          value={selectedLoyaltyProgramId}
+          onChange={setSelectedLoyaltyProgramId}
+          style={{ width: '100%', marginBottom: '12px' }}
+          options={(loyaltyPrograms || []).filter((row) => Number(row.is_active) === 1).map((row) => ({
+            value: row.id,
+            label: `${row.program_name} (1 pt / ${row.earn_spend_amount} THB)`,
+          }))}
+        />
+
+        <Select
+          size="large"
+          placeholder="Select Eligible Offer"
+          value={selectedEligibleOfferId}
+          onChange={setSelectedEligibleOfferId}
+          style={{ width: '100%', marginBottom: '12px' }}
+          optionFilterProp="label"
+          showSearch
+          options={(eligibleLoyaltyOffers || []).filter((row) => Number(row.is_eligible) === 1).map((row) => ({
+            value: row.id,
+            label: `${row.offer_name} - ${row.points_required} pts`,
+          }))}
+        />
+
+        <Button
+          type="primary"
+          block
+          loading={isApplyingLoyaltyOffer}
+          onClick={applySelectedLoyaltyOffer}
+        >
+          Redeem & Apply Offer
+        </Button>
+      </AntdModal>
     </>
   );
 };

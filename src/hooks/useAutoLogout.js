@@ -7,7 +7,7 @@ const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
 const SESSION_LIMIT = 3 * 60 * 60 * 1000; // 3 hours
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ["/", "/login", "/superadmin-login", "/logout", "/accessdenied", "/customer-display", "/sale-customer-display", "/public", "/boarding-pass", "/vending-machine", "/kiosk"];
+const PUBLIC_ROUTES = ["/", "/login", "/superadmin-login", "/logout", "/accessdenied", "/customer-display", "/sale-customer-display", "/public", "/boarding-pass", "/vending-machine", "/kiosk", "/loyalty/check"];
 
 export default function useAutoLogout() {
   const navigate = useNavigate();

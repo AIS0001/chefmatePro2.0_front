@@ -29,6 +29,7 @@ const fullMenu = [
       { name: 'New Category', path: '/master/newcategory' },
       { name: 'New Sub Category', path: '/master/newsubcategory' },
       { name: 'Payment Options', path: '/master/paymentoptions' },
+      { name: 'Loyalty Program', path: '/master/loyalty-program' },
 
     ]
   },

@@ -26,6 +26,7 @@ import Categories from './views/master/categories';
 import SubCategories from './views/master/subCategories';
 import TableList from './views/master/newTable';
 import PaymentOptions from './views/master/paymentOptions';
+import LoyaltyProgram from './views/master/LoyaltyProgram';
 
 import NewItem from './views/inventory/newItem';
 import NewStock from './views/inventory/newStock';
@@ -101,6 +102,7 @@ import Units from './views/master/units';
 import BoardingPass from './views/public/BoardingPass';
 import PublicAccess from './views/public/PublicAccess';
 import VendingMachine from './views/public/VendingMachine';
+import LoyaltyPublicCheck from './views/public/LoyaltyPublicCheck';
 import { Views } from 'react-big-calendar';
 
 // Super Admin Pages
@@ -146,6 +148,7 @@ function AppRoutes() {
           <Route path="/boarding-pass" element={<BoardingPass />} />
           <Route path="/vending-machine" element={<VendingMachine />} />
           <Route path="/kiosk" element={<Kiosk />} />
+          <Route path="/loyalty/check" element={<LoyaltyPublicCheck />} />
 
           {/* Protected Routes with Feature Control */}
           <Route path="/master/newsupplier" element={
@@ -176,6 +179,11 @@ function AppRoutes() {
           <Route path="/master/paymentoptions" element={
             <FeatureProtectedRoute route="/master/paymentoptions">
               <PrivateRoute><PaymentOptions /></PrivateRoute>
+            </FeatureProtectedRoute>
+          } />
+          <Route path="/master/loyalty-program" element={
+            <FeatureProtectedRoute route="/master/loyalty-program">
+              <PrivateRoute><LoyaltyProgram /></PrivateRoute>
             </FeatureProtectedRoute>
           } />
 
