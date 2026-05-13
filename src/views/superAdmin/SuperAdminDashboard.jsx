@@ -29,7 +29,11 @@ import './SuperAdminDashboard.css';
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 const CURRENCY_SYMBOL = '฿';
-const PIE_COLORS = ['#1677ff', '#36cfc9', '#ffc53d', '#ff7875', '#9254de', '#73d13d'];
+const PIE_COLORS = ['#2563eb', '#06b6d4', '#f59e0b', '#7c3aed', '#ec4899', '#14b8a6'];
+const CHART_SERIES_COLORS = {
+  sales: '#2563eb',
+  bills: '#7c3aed'
+};
 const DATE_PRESETS = [
   { key: 'today', label: 'Today', days: 0 },
   { key: 'last7', label: 'Last 7 Days', days: 6 },
@@ -294,7 +298,10 @@ function SuperAdminDashboard() {
                         ))}
                       </Pie>
                       <Tooltip formatter={(value) => [`${value} shops`, 'Count']} />
-                      <Legend />
+                      <Legend
+                        iconType="circle"
+                        formatter={(value) => <span style={{ color: '#334155', fontWeight: 600 }}>{value}</span>}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -319,8 +326,30 @@ function SuperAdminDashboard() {
                           return [value, 'Bills'];
                         }}
                       />
-                      <Line type="monotone" dataKey="sales" stroke="#1677ff" strokeWidth={3} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="bills" stroke="#13c2c2" strokeWidth={2} dot={{ r: 3 }} />
+                      <Legend
+                        iconType="circle"
+                        formatter={(value) => (
+                          <span style={{ color: '#334155', fontWeight: 600 }}>
+                            {value === 'sales' ? 'Sales' : 'Bills'}
+                          </span>
+                        )}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="sales"
+                        name="Sales"
+                        stroke={CHART_SERIES_COLORS.sales}
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: CHART_SERIES_COLORS.sales }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="bills"
+                        name="Bills"
+                        stroke={CHART_SERIES_COLORS.bills}
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: CHART_SERIES_COLORS.bills }}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>

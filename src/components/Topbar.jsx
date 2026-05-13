@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Layout, Button, Dropdown, Avatar, Badge, Space } from 'antd'
 import { MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, SettingOutlined, UserOutlined, LogoutOutlined, ProfileOutlined, ClockCircleOutlined, ShopOutlined, CalendarOutlined, CloseOutlined, GiftOutlined } from '@ant-design/icons'
@@ -24,13 +24,47 @@ const resolveWebSocketUrl = () => {
 	return `${wsProtocol}//${window.location.host}/ws`;
 };
 
+const normalizeReadFlag = (notif) => {
+	const raw = notif?.isRead ?? notif?.is_read ?? notif?.read ?? notif?.read_status;
+	if (typeof raw === 'boolean') return raw;
+	if (typeof raw === 'number') return raw === 1;
+	if (typeof raw === 'string') {
+		const normalized = raw.trim().toLowerCase();
+		if (['true', '1', 'yes', 'read'].includes(normalized)) return true;
+		if (['false', '0', 'no', 'unread'].includes(normalized)) return false;
+	}
+
+	return Boolean(notif?.readAt || notif?.read_at);
+};
+
+const normalizeNotification = (notif) => ({
+	id: notif.id,
+	title: notif.title,
+	message: notif.message,
+	type: notif.notificationType || notif.type || 'general',
+	priority: notif.priority || 'normal',
+	imageUrl: notif.image_url || notif.imageUrl,
+	timestamp: notif.created_at || notif.createdAt || notif.timestamp,
+	isRead: normalizeReadFlag(notif),
+	createdAt: notif.created_at || notif.createdAt || notif.timestamp
+});
+
+const normalizePlanTier = (planName) => {
+	const normalized = String(planName || '').trim().toLowerCase();
+	if (!normalized) return 'starter';
+	if (normalized.includes('enterprise')) return 'enterprise';
+	if (normalized.includes('professional') || normalized.includes('business') || normalized.includes('pro')) return 'professional';
+	if (normalized.includes('starter') || normalized.includes('basic')) return 'starter';
+	return 'starter';
+};
+
 export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	const appVersion = appPackage?.version || '';
 	const navigate = useNavigate();
-	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 	const [currentTime, setCurrentTime] = useState(new Date());
 	const [businessDate, setBusinessDate] = useState('');
 	const [shopName, setShopName] = useState(localStorage.getItem('shop_name') || sessionStorage.getItem('shop_name') || '');
+	const [planName, setPlanName] = useState(localStorage.getItem('shop_plan_name') || sessionStorage.getItem('shop_plan_name') || '');
 	const [paymentData, setPaymentData] = useState(null);
 	const [bannerVisible, setBannerVisible] = useState(true);
 	const [realtimeNotifications, setRealtimeNotifications] = useState([]);
@@ -42,34 +76,12 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 	const userType = (localStorage.getItem('usertype') || sessionStorage.getItem('usertype') || '').toLowerCase();
 	const isSuperAdmin = userType === 'super_admin' || window.location.pathname.startsWith('/super-admin');
 	const shopId = localStorage.getItem('shop_id') || sessionStorage.getItem('shop_id');
-
-	const normalizeReadFlag = (notif) => {
-		const raw = notif?.isRead ?? notif?.is_read ?? notif?.read ?? notif?.read_status;
-		if (typeof raw === 'boolean') return raw;
-		if (typeof raw === 'number') return raw === 1;
-		if (typeof raw === 'string') {
-			const normalized = raw.trim().toLowerCase();
-			if (['true', '1', 'yes', 'read'].includes(normalized)) return true;
-			if (['false', '0', 'no', 'unread'].includes(normalized)) return false;
-		}
-
-		return Boolean(notif?.readAt || notif?.read_at);
-	};
-
-	const normalizeNotification = (notif) => ({
-		id: notif.id,
-		title: notif.title,
-		message: notif.message,
-		type: notif.notificationType || notif.type || 'general',
-		priority: notif.priority || 'normal',
-		imageUrl: notif.image_url || notif.imageUrl,
-		timestamp: notif.created_at || notif.createdAt || notif.timestamp,
-		isRead: normalizeReadFlag(notif),
-		createdAt: notif.created_at || notif.createdAt || notif.timestamp
-	});
+	const planTier = normalizePlanTier(planName);
+	const showTopbarUpgradeBadge = !isSuperAdmin && planName && planTier === 'starter';
+	const isLoyaltyLocked = showTopbarUpgradeBadge;
 
 	// Fetch initial notifications from database
-	const fetchInitialNotifications = async () => {
+	const fetchInitialNotifications = useCallback(async () => {
 		try {
 			const token = getAuthToken();
 			if (!token) return;
@@ -100,15 +112,35 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 		} catch (error) {
 			// console.warn('⚠️ Could not fetch initial notifications:', error.message);
 		}
-	};
+	}, []);
 
-	// Fetch shop name from backend if not in storage but shop_id exists
+	// Fetch shop context (name + package) from backend when missing in storage.
 	useEffect(() => {
-		if (shopName || !shopId || isSuperAdmin) return;
-		const fetchShopName = async () => {
+		if (!shopId || isSuperAdmin) return;
+		const fetchShopContext = async () => {
 			try {
 				const token = getAuthToken();
 				if (!token) return;
+				const profileRes = await axios.get('/shop/profile', {
+					headers: { Authorization: `Bearer ${token}` },
+					params: { shop_id: shopId }
+				});
+				const resolvedShopName = profileRes?.data?.data?.name || '';
+				const resolvedPlanName = profileRes?.data?.data?.plan_name || '';
+
+				if (resolvedShopName || resolvedPlanName) {
+					const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+					if (resolvedShopName) {
+						setShopName(resolvedShopName);
+						storage.setItem('shop_name', resolvedShopName);
+					}
+					if (resolvedPlanName) {
+						setPlanName(resolvedPlanName);
+						storage.setItem('shop_plan_name', resolvedPlanName);
+					}
+					return;
+				}
+
 				const res = await axios.get('/shop-name', {
 					headers: { Authorization: `Bearer ${token}` },
 					params: { shop_id: shopId }
@@ -118,17 +150,28 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 					const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
 					storage.setItem('shop_name', res.data.shop_name);
 				}
+
+				// Fallback for package name when /shop/profile is restricted for some roles.
+				if (!resolvedPlanName) {
+					const subscriptionRes = await axios.get('/shop/subscription/overview', {
+						headers: { Authorization: `Bearer ${token}` },
+						params: { limit: 1 }
+					});
+
+					const overviewPlanName = subscriptionRes?.data?.data?.subscription?.plan_name || '';
+					if (overviewPlanName) {
+						setPlanName(overviewPlanName);
+						const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+						storage.setItem('shop_plan_name', overviewPlanName);
+					}
+				}
 			} catch (err) {
 				// console.warn('Could not fetch shop name:', err.message);
 			}
 		};
-		fetchShopName();
-	}, [shopId, shopName, isSuperAdmin]);
+		fetchShopContext();
+	}, [shopId, shopName, planName, isSuperAdmin]);
 	
-	const toggleMobileNav = () => {
-		setIsMobileNavOpen(!isMobileNavOpen);
-	};
-
 	// Real-time clock - updates every second
 	useEffect(() => {
 		const timer = setInterval(() => {
@@ -187,7 +230,7 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 		// Refresh notifications every 30 seconds
 		const interval = setInterval(fetchInitialNotifications, 30 * 1000);
 		return () => clearInterval(interval);
-	}, []);
+	}, [fetchInitialNotifications]);
 
 	// WebSocket connection for real-time notifications
 	useEffect(() => {
@@ -903,6 +946,33 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 						{currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
 					</span>
 				</div>
+				{!isSuperAdmin && planName && <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.25)' }} />}
+				{!isSuperAdmin && planName && (
+					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+						<span style={{ opacity: 0.7, fontSize: '12px' }}>Package:</span>
+						<span style={{ fontSize: '14px', fontWeight: 700, color: '#ffd666' }}>{planName}</span>
+						{showTopbarUpgradeBadge && (
+							<span
+								style={{
+									fontSize: 10,
+									lineHeight: '14px',
+									padding: '0 6px',
+									borderRadius: 10,
+									background: 'rgba(250, 173, 20, 0.2)',
+									color: '#ffd666',
+									border: '1px solid rgba(250, 173, 20, 0.45)',
+									letterSpacing: 0.2,
+									cursor: 'not-allowed',
+									pointerEvents: 'none',
+									userSelect: 'none'
+								}}
+								title="Upgrade badge"
+							>
+								Upgrade
+							</span>
+						)}
+					</div>
+				)}
 			</div>
 
 			{/* Right side - Navigation */}
@@ -910,11 +980,34 @@ export default function Topbar({ onToggleSidebar, isSidebarOpen }) {
 				<Button
 					type="text"
 					icon={<GiftOutlined style={{fontSize: '16px'}}/>}
-					onClick={() => navigate('/master/loyalty-program')}
-					style={{color: '#fff'}}
+					onClick={() => {
+						if (isLoyaltyLocked) return;
+						navigate('/master/loyalty-program');
+					}}
+					style={{color: '#fff', cursor: isLoyaltyLocked ? 'not-allowed' : 'pointer', opacity: isLoyaltyLocked ? 0.85 : 1}}
 					title="Loyalty Program"
 				>
-					Loyalty
+					<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+						<span>Loyalty</span>
+						{isLoyaltyLocked && (
+							<span
+								style={{
+									fontSize: 10,
+									lineHeight: '14px',
+									padding: '0 6px',
+									borderRadius: 10,
+									background: 'rgba(250, 173, 20, 0.2)',
+									color: '#ffd666',
+									border: '1px solid rgba(250, 173, 20, 0.45)',
+									letterSpacing: 0.2,
+									pointerEvents: 'none',
+									userSelect: 'none'
+								}}
+							>
+								Upgrade
+							</span>
+						)}
+					</span>
 				</Button>
 				<button
 					type="button"

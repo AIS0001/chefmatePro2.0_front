@@ -1,6 +1,3 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-
 const fullMenu = [
 
   
@@ -155,7 +152,7 @@ const fullMenu = [
     ]
   },
   {
-    name: 'Subscription',
+    name: 'Shop Subscription Details',
     path: '/subscription',
     icon: 'card-membership',
     dataTargetId: '#subscription'
@@ -227,7 +224,7 @@ const accountMenu = [
     ]
   },
   {
-    name: 'Subscription',
+    name: 'Shop Subscription Details',
     path: '/subscription',
     icon: 'card-membership',
     dataTargetId: '#subscription'

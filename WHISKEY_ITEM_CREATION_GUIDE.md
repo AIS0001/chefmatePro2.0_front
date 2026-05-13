@@ -122,3 +122,35 @@ Use this checklist after creating a whiskey item:
 - Purchase entry: 10 Bottles
 
 This setup ensures buy-in-bottle and sell-in-peg both work correctly with stock deduction.
+## Stock Math Example (30ML Peg)
+
+For a 750ML bottle product:
+
+- 1 peg sale = 30ML
+- Bottle deduction per peg = 30 / 750 = 0.04 bottle
+
+If opening stock is 12 bottles:
+
+- Remaining bottles = 12 - 0.04 = 11.96 bottles
+
+Convert remaining bottles to ML:
+
+\[
+\text{Remaining ML} = \text{Remaining Bottles} \times \text{Bottle Capacity}
+\]
+
+\[
+= 11.96 \times 750 = 8970\ \text{ML}
+\]
+
+Cross-check:
+
+\[
+12 \times 750 = 9000\ \text{ML}
+\]
+
+\[
+9000 - 30 = 8970\ \text{ML}
+\]
+
+So after selling 1 x 30ML peg from 12 bottles, stock 11.96 bottles is correct.

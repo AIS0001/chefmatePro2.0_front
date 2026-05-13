@@ -1,203 +1,251 @@
-/* Shops Management Styles */
+/* Shops Management - Colorful UI */
 
 .shops-management {
   padding: 0;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(59, 130, 246, 0.14), transparent 30%),
+    radial-gradient(circle at 94% 2%, rgba(236, 72, 153, 0.12), transparent 28%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.1), transparent 36%);
+  border-radius: 16px;
 }
 
-.page-header {
+.shops-management .page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 30px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #0f172a 0%, #1e293b 45%, #1d4ed8 100%);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
 }
 
-.page-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 32px;
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.page-header p {
+.shops-management .page-header h2 {
   margin: 0;
-  color: #7f8c8d;
-  font-size: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #f8fafc;
 }
 
-/* Filters Section */
+.shops-management .page-header p {
+  margin: 2px 0 0;
+  color: #cbd5e1;
+  font-size: 12px;
+}
 
-.filters-section {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
+.shops-management .filters-section {
+  background: linear-gradient(135deg, #ffffff, #f8fbff);
+  padding: 10px;
+  border-radius: 14px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #dbeafe;
+  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.08);
 }
 
-.filters-section .ant-space {
-  width: 100%;
+.shops-management .filters-section .ant-input-affix-wrapper,
+.shops-management .filters-section .ant-select-selector {
+  border-radius: 10px !important;
 }
 
-/* Table Section */
-
-.table-section {
-  background: white;
+.shops-management .table-section {
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
 
-.table-section .ant-spin-nested-loading {
-  padding: 20px;
+.shops-management .shops-table-toolbar {
+  padding: 10px 6px 14px;
 }
 
-.shops-table {
+.shops-management .shops-table-toolbar .ant-input-affix-wrapper,
+.shops-management .shops-table-toolbar .ant-select-selector {
+  border-radius: 10px !important;
+}
+
+.shops-management .table-section .ant-spin-nested-loading {
+  padding: 14px;
+}
+
+.shops-management .shops-table {
   margin-bottom: 0;
 }
 
-.shops-table .ant-table-thead > tr > th {
-  background: #f8f9fa;
-  color: #2c3e50;
+.shops-management .shops-table .ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.shops-management .shops-table .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: #111827;
   font-weight: 600;
+  font-size: 13px;
   border: none;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.shops-table .ant-table-tbody > tr {
-  border-bottom: 1px solid #ecf0f1;
+.shops-management .shops-table .ant-table-tbody > tr {
+  border-bottom: 1px solid #edf2f7;
+  transition: background 0.2s ease;
 }
 
-.shops-table .ant-table-tbody > tr:hover {
-  background: #f8f9fa;
+.shops-management .shops-table .ant-table-tbody > tr:nth-child(2n) {
+  background: #ffffff;
 }
 
-.shop-name {
-  font-weight: 600;
-  color: #2c3e50;
+.shops-management .shops-table .ant-table-tbody > tr:hover > td {
+  background: #f9fafb !important;
+}
+
+.shops-management .shops-table .ant-table-cell {
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+.shops-management .shop-name {
+  font-weight: 700;
+  color: #1f2937;
   font-size: 14px;
 }
 
-.shop-code {
-  color: #95a5a6;
-  font-size: 12px;
+.shops-management .shop-code {
+  color: #6b7280;
+  font-size: 11px;
   margin-top: 2px;
 }
 
-.user-count {
-  background: #e8f5e9;
-  color: #27ae60;
-  padding: 2px 8px;
-  border-radius: 4px;
+.shops-management .user-count {
+  background: #f8fafc;
+  color: #475569;
+  padding: 2px 9px;
+  border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
+  border: 1px solid #d1d5db;
 }
 
-/* Pagination */
-
-.pagination-section {
+.shops-management .pagination-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-top: 1px solid #ecf0f1;
-  background: #f8f9fa;
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #fafafa;
 }
 
-.pagination-info {
-  color: #7f8c8d;
+.shops-management .shops-table .ant-btn-sm {
+  border-radius: 8px;
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+
+.shops-management .shops-table .ant-btn-sm.ant-btn-primary {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.shops-management .shops-table .ant-btn-sm.ant-btn-dangerous {
+  color: #ef4444;
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+
+.shops-management .pagination-info {
+  color: #475569;
   font-size: 13px;
+  font-weight: 600;
 }
 
-.pagination-section .ant-pagination {
+.shops-management .pagination-section .ant-pagination {
   margin: 0;
 }
 
-/* Modal Styles */
-
-.ant-modal-header {
-  border: none;
-  padding: 20px;
-  background: #f8f9fa;
+.shops-management .ant-btn-primary {
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
 }
 
-.ant-modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
+.shops-management .ant-btn-primary:hover,
+.shops-management .ant-btn-primary:focus {
+  background: linear-gradient(90deg, #1d4ed8, #6d28d9) !important;
+  border-color: transparent !important;
 }
 
-.ant-modal-body {
-  padding: 20px;
+.shops-management .ant-btn-dangerous {
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.2);
 }
 
-.ant-form-item-label > label {
-  color: #2c3e50;
-  font-weight: 500;
+.shops-management .ant-tag-success {
+  background: #dcfce7;
+  border: 1px solid #4ade80;
+  color: #15803d;
 }
 
-.ant-input,
-.ant-select-selector,
-.ant-input-number {
-  border-color: #bdc3c7 !important;
+.shops-management .ant-tag-error {
+  background: #fee2e2;
+  border: 1px solid #f87171;
+  color: #b91c1c;
 }
 
-.ant-input:hover,
-.ant-select-selector:hover,
-.ant-input-number:hover {
-  border-color: #3498db !important;
+.shops-management .ant-tag-processing {
+  background: #dbeafe;
+  border: 1px solid #60a5fa;
+  color: #1d4ed8;
 }
 
-.ant-input:focus,
-.ant-select-selector:focus,
-.ant-input-number:focus {
-  border-color: #3498db !important;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+.shops-management .ant-tag-default {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
 }
 
-/* Responsive */
+.shops-color-modal .ant-modal-content {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  box-shadow: 0 14px 30px rgba(30, 64, 175, 0.25);
+}
+
+.shops-color-modal .ant-modal-header {
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(120deg, #0f172a 0%, #1e293b 45%, #1d4ed8 100%);
+}
+
+.shops-color-modal .ant-modal-title {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.shops-color-modal .ant-modal-close {
+  color: #cbd5e1;
+}
+
+.shops-color-modal .ant-modal-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.shops-color-modal .ant-modal-body {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
 
 @media (max-width: 768px) {
-  .page-header {
+  .shops-management .page-header {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
-  .page-header h1 {
+  .shops-management .page-header h2 {
     font-size: 24px;
   }
 
-  .filters-section {
-    margin-bottom: 15px;
-  }
-
-  .pagination-section {
+  .shops-management .pagination-section {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     text-align: center;
   }
-}
-
-/* Status Tags */
-
-.ant-tag-success {
-  background: #e8f5e9;
-  border: 1px solid #4caf50;
-  color: #27ae60;
-}
-
-.ant-tag-error {
-  background: #ffebee;
-  border: 1px solid #f44336;
-  color: #e74c3c;
-}
-
-.ant-tag-processing {
-  background: #e3f2fd;
-  border: 1px solid #2196f3;
-  color: #3498db;
-}
-
-.ant-tag-default {
-  background: #f5f5f5;
-  border: 1px solid #d4d4d4;
-  color: #7f8c8d;
 }

@@ -1,0 +1,14 @@
+Subscription Menu Matrix
+
+Scope: applies to shop roles that use plan-based navigation (`manager`, `account`).
+
+| Package | Allowed Menu Items | Upgrade Badge / Blocked Items |
+| --- | --- | --- |
+| Starter | Bill History, Day Close, Cash Drawer, Vouchers, Support, Subscription | Reports like Quotation History, Item Wise, Purchase Report, Low Stock Items, Day Wise Reports, Bill Edit Logs, Sales Ledger, Supplier Ledger show Upgrade |
+| Professional | All report menus except Supplier Ledger and Customer Ledger | Supplier Ledger, Customer Ledger show Upgrade to Enterprise |
+| Enterprise | All menu items | No upgrade badges in reports |
+
+Notes:
+- The sidebar reads the current package from `/shop/profile`.
+- If `/shop/profile` is unavailable, the UI falls back to cached shop plan data.
+- Ledger pages are treated as Enterprise-only in the current navigation rules.

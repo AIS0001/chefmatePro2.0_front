@@ -81,7 +81,7 @@ import CustomerDisplay from './components/CustomerDisplay/CustomerDisplay';
 import SaleCustomerDisplay from './components/CustomerDisplay/SaleCustomerDisplay';
 
 //Pages
-import Subscription from './views/pages/Subscription';
+import ShopSubscriptionDetails from './views/pages/ShopSubscriptionDetails';
 // import { SubscriptionDemo } from './lib/subscription-system'
 // import SubscriptionDebug from './lib/subscription-system/demo/SubscriptionDebug';
 import Layout from './layout/Layout';
@@ -304,7 +304,7 @@ function AppRoutes() {
           } />
 
           {/* Pages */}
-          <Route path="/subscription" element={<PrivateRoute><Layout><Subscription /></Layout></PrivateRoute>} />
+          <Route path="/subscription" element={<PrivateRoute><Layout><ShopSubscriptionDetails /></Layout></PrivateRoute>} />
           {/*
           <Route path="/demo" element={<SubscriptionDemo Layout={Layout} />} />
           <Route path="/subscription-demo" element={<SubscriptionDemo Layout={Layout} />} />

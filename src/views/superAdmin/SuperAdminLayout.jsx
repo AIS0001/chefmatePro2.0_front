@@ -130,29 +130,32 @@ function SuperAdminLayout() {
   const selectedKey = menuItems.find(item => item.key === location.pathname)?.key || '/superadmin';
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout className="superadmin-ant-layout" style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
       <Sider
+        className="superadmin-dark-sider"
         trigger={null}
         collapsible
         collapsed={collapsed}
         width={200}
-        style={{ backgroundColor: '#fff', borderRight: '1px solid #f0f0f0' }}
+        style={{ backgroundColor: '#0f172a', borderRight: '1px solid #1e293b' }}
       >
-        <div style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
-          <h3 style={{ margin: 0, fontSize: collapsed ? '12px' : '16px', fontWeight: 'bold' }}>
+        <div className="superadmin-sider-brand" style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #1e293b' }}>
+          <h3 style={{ margin: 0, fontSize: collapsed ? '12px' : '16px', fontWeight: 'bold', color: '#e2e8f0' }}>
             {collapsed ? 'CM' : 'ChefMate Pro'}
           </h3>
         </div>
 
         <Menu
+          theme="dark"
+          className="superadmin-side-menu"
           mode="inline"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          style={{ border: 'none' }}
+          style={{ border: 'none', backgroundColor: '#0f172a' }}
         />
 
-        <div style={{ padding: '16px', marginTop: 'auto', borderTop: '1px solid #f0f0f0' }}>
+        <div style={{ padding: '16px', marginTop: 'auto', borderTop: '1px solid #1e293b' }}>
           <Button
             type="primary"
             danger
@@ -169,9 +172,10 @@ function SuperAdminLayout() {
       <Layout>
         {/* Top Header */}
         <Header
+          className="superadmin-dark-header"
           style={{
-            backgroundColor: '#fff',
-            borderBottom: '1px solid #f0f0f0',
+            backgroundColor: '#111827',
+            borderBottom: '1px solid #1f2937',
             padding: '0 20px',
             display: 'flex',
             alignItems: 'center',
@@ -182,13 +186,15 @@ function SuperAdminLayout() {
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: '18px' }}
+            style={{ fontSize: '18px', color: '#e5e7eb' }}
           />
-          <h2 style={{ margin: 0, flex: 1, marginLeft: '20px' }}>Super Admin Dashboard</h2>
+          <h2 style={{ margin: 0, flex: 1, marginLeft: '20px', color: '#f9fafb', fontSize: '16px', fontWeight: 700, lineHeight: 1.2 }}>
+            Super Admin Dashboard
+          </h2>
           
           {/* Shop Selector */}
           <div style={{ minWidth: '250px', marginRight: '20px' }}>
-            <label style={{ fontSize: '12px', color: '#666', marginRight: '8px' }}>Select Shop:</label>
+            <label style={{ fontSize: '12px', color: '#cbd5e1', marginRight: '8px' }}>Select Shop:</label>
             <Spin spinning={loading} size="small">
               <Select
                 placeholder="Choose a shop..."
@@ -204,7 +210,7 @@ function SuperAdminLayout() {
           </div>
 
           <Space>
-            <span style={{ fontSize: '12px', color: '#666' }}>{new Date().toLocaleDateString()}</span>
+            <span style={{ fontSize: '12px', color: '#cbd5e1' }}>{new Date().toLocaleDateString()}</span>
           </Space>
         </Header>
 

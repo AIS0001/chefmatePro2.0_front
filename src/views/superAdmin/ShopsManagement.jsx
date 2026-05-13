@@ -3,9 +3,9 @@
  * Super admin dashboard for managing all shops
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Spin, message, Space, Tooltip, Tag, Pagination, Card, Empty, Alert, Drawer, Popconfirm, Badge } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ExclamationCircleOutlined, ReloadOutlined, TeamOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ReloadOutlined, TeamOutlined, UserAddOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -68,12 +68,7 @@ function ShopsManagement() {
   const [editingUser, setEditingUser] = useState(null);
   const [userForm] = Form.useForm();
 
-  useEffect(() => {
-    fetchShops();
-    fetchPlans();
-  }, [pagination.page, statusFilter]);
-
-  const fetchShops = async () => {
+  const fetchShops = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -114,9 +109,9 @@ function ShopsManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, searchText, statusFilter]);
 
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       console.log('Fetching plans with token:', token ? 'Present' : 'Missing');
@@ -138,7 +133,12 @@ function ShopsManagement() {
       console.error('Failed to fetch plans:', error.response?.data || error.message);
       setPlans([]);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchShops();
+    fetchPlans();
+  }, [fetchShops, fetchPlans]);
 
   const handleAddShop = () => {
     console.log('handleAddShop called');
@@ -201,20 +201,6 @@ function ShopsManagement() {
       form.resetFields();
     } catch (error) {
       message.error(error.response?.data?.error || 'Failed to save shop');
-    }
-  };
-
-  const handleStatusChange = async (shopId, newStatus) => {
-    try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      await axios.patch(`/super-admin/shops/${shopId}/status`, 
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      message.success('Shop status updated');
-      fetchShops();
-    } catch (error) {
-      message.error('Failed to update shop status');
     }
   };
 
@@ -553,11 +539,18 @@ function ShopsManagement() {
     },
   ];
 
+  const resolvePlanName = (shop) => {
+    if (shop?.plan_name) return shop.plan_name;
+    const matchedPlan = plans.find((plan) => Number(plan.id) === Number(shop?.subscription_plan_id));
+    return matchedPlan?.name || 'N/A';
+  };
+
   const columns = [
     {
       title: 'Shop Name',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a, b) => String(a.name || '').localeCompare(String(b.name || '')),
       render: (text, record) => (
         <div>
           <div className="shop-name">{text}</div>
@@ -570,27 +563,42 @@ function ShopsManagement() {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      sorter: (a, b) => String(a.email || '').localeCompare(String(b.email || '')),
       width: 150
     },
     {
       title: 'Phone',
       dataIndex: 'phone_number',
       key: 'phone_number',
+      sorter: (a, b) => String(a.phone_number || '').localeCompare(String(b.phone_number || '')),
       width: 130
     },
     {
-      title: 'Plan',
-      dataIndex: 'plan_name',
-      key: 'plan_name',
-      render: (text) => text || 'N/A'
+      title: 'Plan ID',
+      dataIndex: 'subscription_plan_id',
+      key: 'subscription_plan_id',
+      width: 90,
+      sorter: (a, b) => Number(a.subscription_plan_id || 0) - Number(b.subscription_plan_id || 0),
+      render: (value) => value || '-'
+    },
+    {
+      title: 'Package Selected',
+      key: 'package_selected',
+      width: 160,
+      sorter: (a, b) => resolvePlanName(a).localeCompare(resolvePlanName(b)),
+      render: (_, record) => {
+        const planName = resolvePlanName(record);
+        return <Tag color={planName === 'N/A' ? 'default' : 'geekblue'}>{planName}</Tag>;
+      }
     },
     {
       title: 'Status',
       dataIndex: 'subscription_status',
       key: 'subscription_status',
+      sorter: (a, b) => String(a.subscription_status || '').localeCompare(String(b.subscription_status || '')),
       render: (status) => (
         <Tag color={STATUS_COLORS[status] || 'default'}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+          {String(status || '').charAt(0).toUpperCase() + String(status || '').slice(1)}
         </Tag>
       )
     },
@@ -598,6 +606,7 @@ function ShopsManagement() {
       title: 'Users',
       dataIndex: 'total_users',
       key: 'total_users',
+      sorter: (a, b) => Number(a.total_users || 0) - Number(b.total_users || 0),
       render: (count) => <span className="user-count">{count}</span>
     },
     {
@@ -656,8 +665,39 @@ function ShopsManagement() {
     fetchShops();
   };
 
+  const tableToolbar = (
+    <div className="shops-table-toolbar">
+      <Space size="middle" wrap>
+        <Input.Search
+          placeholder="Search shop..."
+          allowClear
+          style={{ width: 250 }}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onSearch={handleSearch}
+        />
+        <Select
+          placeholder="Filter by status"
+          style={{ width: 170 }}
+          allowClear
+          value={statusFilter || undefined}
+          onChange={(value) => {
+            setStatusFilter(value || '');
+            setPagination(p => ({ ...p, page: 1 }));
+          }}
+          options={[
+            { label: 'Active', value: 'active' },
+            { label: 'Inactive', value: 'inactive' },
+            { label: 'Trial', value: 'trial' },
+            { label: 'Suspended', value: 'suspended' }
+          ]}
+        />
+      </Space>
+    </div>
+  );
+
   return (
-    <div style={{ width: '100%' }}>
+    <div className="shops-management" style={{ width: '100%' }}>
       {/* Error Alert */}
       {error && (
         <Alert
@@ -676,7 +716,7 @@ function ShopsManagement() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
           <h2 style={{ margin: 0 }}>Shops Management</h2>
           <p style={{ color: '#666', fontSize: '12px', margin: '4px 0 0 0' }}>
@@ -693,38 +733,8 @@ function ShopsManagement() {
         </Space>
       </div>
 
-      {/* Filters */}
-      <Card style={{ marginBottom: '20px', padding: '12px' }}>
-        <Space size="middle" wrap>
-          <Input.Search
-            placeholder="Search shop..."
-            allowClear
-            style={{ width: 250 }}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={handleSearch}
-          />
-          <Select
-            placeholder="Filter by status"
-            style={{ width: 150 }}
-            allowClear
-            value={statusFilter || undefined}
-            onChange={(value) => {
-              setStatusFilter(value);
-              setPagination(p => ({ ...p, page: 1 }));
-            }}
-            options={[
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-              { label: 'Trial', value: 'trial' },
-              { label: 'Suspended', value: 'suspended' }
-            ]}
-          />
-        </Space>
-      </Card>
-
       {/* Table */}
-      <Card style={{ padding: '0' }}>
+      <Card className="table-section" style={{ padding: '0' }}>
         <Spin spinning={loading}>
           {shops.length === 0 && !loading ? (
             <Empty 
@@ -734,8 +744,11 @@ function ShopsManagement() {
             />
           ) : (
             <Table
+              className="shops-table"
               columns={columns}
               dataSource={shops.map(shop => ({ ...shop, key: shop.id }))}
+              title={() => tableToolbar}
+              showSorterTooltip={{ target: 'sorter-icon' }}
               pagination={false}
               scroll={{ x: 1200 }}
               style={{ marginBottom: '16px' }}
@@ -745,7 +758,7 @@ function ShopsManagement() {
 
         {/* Pagination */}
         {shops.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid #f0f0f0' }}>
+          <div className="pagination-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid #f0f0f0' }}>
             <Pagination
               current={pagination.page}
               pageSize={pagination.limit}
@@ -755,7 +768,7 @@ function ShopsManagement() {
               pageSizeOptions={['10', '20', '50']}
               size="small"
             />
-            <span style={{ fontSize: '12px', color: '#666' }}>
+            <span className="pagination-info" style={{ fontSize: '12px', color: '#666' }}>
               Total: {pagination.total} shops
             </span>
           </div>
@@ -765,6 +778,7 @@ function ShopsManagement() {
       {/* Add/Edit Modal */}
       <Modal
         title={editingShop ? 'Edit Shop' : 'Add New Shop'}
+        className="shops-color-modal"
         open={isModalVisible}
         onCancel={() => {
           console.log('Modal onCancel called');

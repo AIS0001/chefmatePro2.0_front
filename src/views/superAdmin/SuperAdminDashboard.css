@@ -1,7 +1,13 @@
-/* Super Admin Dashboard - Minimal */
+/* Super Admin Dashboard */
 
 .super-admin-dashboard {
   width: 100%;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(59, 130, 246, 0.14), transparent 32%),
+    radial-gradient(circle at 92% 0%, rgba(236, 72, 153, 0.12), transparent 28%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.1), transparent 38%);
+  border-radius: 16px;
+  padding: 10px;
 }
 
 .dashboard-header {
@@ -9,6 +15,10 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #0f172a 0%, #1e293b 45%, #1d4ed8 100%);
+  box-shadow: 0 10px 26px rgba(30, 64, 175, 0.22);
 }
 
 .dashboard-actions {
@@ -24,37 +34,37 @@
 }
 
 .quick-preset-btn {
-  border-color: #d6e4ff;
-  color: #1d39c4;
-  background: #f0f5ff;
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #eaf2ff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .quick-preset-btn:hover,
 .quick-preset-btn:focus {
-  border-color: #91caff;
-  color: #0958d9;
-  background: #e6f4ff;
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .quick-preset-btn-active,
 .quick-preset-btn-active:hover,
 .quick-preset-btn-active:focus {
-  border-color: #1677ff;
+  border-color: #60a5fa;
   color: #ffffff;
-  background: #1677ff;
-  box-shadow: 0 6px 14px rgba(22, 119, 255, 0.18);
+  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.35);
 }
 
 .dashboard-header h2 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
+  color: #f8fafc;
 }
 
 .dashboard-header p {
   margin: 4px 0 0;
-  color: #6b7280;
+  color: #cbd5e1;
   font-size: 13px;
 }
 
@@ -68,6 +78,14 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.8), rgba(255, 255, 255, 0.95));
+}
+
+.ant-list .ant-list-item:nth-child(2n) .shop-item-minimal {
+  background: linear-gradient(135deg, rgba(245, 243, 255, 0.85), rgba(255, 255, 255, 0.95));
 }
 
 .chart-wrap {
@@ -76,55 +94,79 @@
 }
 
 .ant-card {
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .kpi-card {
-  border: 1px solid #e8edf3;
+  border: none;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
 }
 
 .kpi-soft-blue {
-  background: linear-gradient(180deg, #f3f8ff 0%, #ffffff 42%);
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 48%, #60a5fa 100%);
 }
 
 .kpi-soft-green {
-  background: linear-gradient(180deg, #f2fbf5 0%, #ffffff 42%);
+  background: linear-gradient(135deg, #0891b2 0%, #06b6d4 48%, #22d3ee 100%);
 }
 
 .kpi-soft-cyan {
-  background: linear-gradient(180deg, #f2fcfc 0%, #ffffff 42%);
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 48%, #2dd4bf 100%);
 }
 
 .kpi-soft-amber {
-  background: linear-gradient(180deg, #fff8ed 0%, #ffffff 42%);
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 48%, #fbbf24 100%);
 }
 
 .kpi-soft-purple {
-  background: linear-gradient(180deg, #f7f3ff 0%, #ffffff 42%);
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 48%, #a78bfa 100%);
 }
 
 .kpi-soft-rose {
-  background: linear-gradient(180deg, #fff3f4 0%, #ffffff 42%);
+  background: linear-gradient(135deg, #db2777 0%, #ec4899 48%, #f472b6 100%);
+}
+
+.kpi-card .ant-statistic-title,
+.kpi-card .ant-statistic-content,
+.kpi-card .ant-statistic-content-prefix,
+.kpi-card .ant-statistic-content-suffix {
+  color: #ffffff !important;
+}
+
+.kpi-card .ant-statistic-title {
+  opacity: 0.95;
+  font-weight: 600;
+}
+
+.soft-header-card {
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
 }
 
 .soft-header-card .ant-card-head {
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .soft-header-blue .ant-card-head {
-  background: #f2f7ff;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.18), rgba(14, 165, 233, 0.18));
 }
 
 .soft-header-green .ant-card-head {
-  background: #f2fbf7;
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.2), rgba(34, 197, 94, 0.18));
 }
 
 .soft-header-amber .ant-card-head {
-  background: #fff8ef;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(249, 115, 22, 0.17));
 }
 
 .soft-header-purple .ant-card-head {
-  background: #f6f2ff;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.2), rgba(168, 85, 247, 0.16));
 }
 
 .soft-header-card .ant-card-body .ant-typography {
@@ -138,6 +180,9 @@
   gap: 12px;
   margin-top: 14px;
   flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08), rgba(124, 58, 237, 0.06));
 }
 
 @media (max-width: 768px) {

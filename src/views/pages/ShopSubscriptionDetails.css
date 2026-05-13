@@ -1,21 +1,21 @@
-.subscription-page {
+.shop-subscription-page {
   min-height: 100vh;
   padding: 24px 0;
   background: linear-gradient(160deg, #f4f7fb 0%, #eef4f7 45%, #f9f6ef 100%);
 }
 
-.subscription-header h2 {
+.shop-subscription-header h2 {
   margin: 0;
   color: #1d3557;
   font-weight: 700;
 }
 
-.subscription-header p {
+.shop-subscription-header p {
   margin: 6px 0 18px;
   color: #5f6c7b;
 }
 
-.subscription-card-panel {
+.shop-subscription-card {
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid #e3e8ef;
@@ -33,7 +33,7 @@
 
 .stat-card h3 {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: 1.25rem;
   color: #1f2a37;
 }
 
@@ -51,10 +51,6 @@
 
 .stat-card.overdue {
   border-left: 4px solid #e76f51;
-}
-
-.stat-card.plan {
-  border-left: 4px solid #457b9d;
 }
 
 .detail-panel h5 {
@@ -112,12 +108,14 @@
 }
 
 .status-chip.failed,
-.status-chip.cancelled {
+.status-chip.cancelled,
+.status-chip.overdue,
+.status-chip.expired {
   background: #fde2e4;
   color: #b42318;
 }
 
-.loading-spinner {
+.shop-subscription-spinner {
   display: inline-block;
   width: 20px;
   height: 20px;

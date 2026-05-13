@@ -54,8 +54,8 @@ export default function Login() {
           // Continue without MAC address - backend will handle it
         }
 
-        axios.post("/login", empdata)
-          .then((res) => {
+                axios.post("/login", empdata)
+                    .then(async (res) => {
             if (res.status === 200) {
               const data = res.data;
               if (data.token) {
@@ -75,6 +75,9 @@ export default function Login() {
                   if (data.data.shop_name) {
                     localStorage.setItem("shop_name", data.data.shop_name);
                   }
+                                    if (data.data.plan_name) {
+                                        localStorage.setItem("shop_plan_name", data.data.plan_name);
+                                    }
                 } else {
                   sessionStorage.setItem("token", token);
                   sessionStorage.setItem("expirationTime", expirationTime);
@@ -86,7 +89,31 @@ export default function Login() {
                   if (data.data.shop_name) {
                     sessionStorage.setItem("shop_name", data.data.shop_name);
                   }
+                                    if (data.data.plan_name) {
+                                        sessionStorage.setItem("shop_plan_name", data.data.plan_name);
+                                    }
                 }
+
+                                // Fetch latest plan_name for plan-aware manager permissions.
+                                if (data.data.shop_id) {
+                                    try {
+                                        const profileResponse = await axios.get('/shop/profile', {
+                                            headers: {
+                                                Authorization: `Bearer ${token}`
+                                            }
+                                        });
+                                        const planName = profileResponse?.data?.data?.plan_name;
+                                        if (planName) {
+                                            if (keepLoggedIn) {
+                                                localStorage.setItem('shop_plan_name', planName);
+                                            } else {
+                                                sessionStorage.setItem('shop_plan_name', planName);
+                                            }
+                                        }
+                                    } catch (planError) {
+                                        console.warn('Could not fetch shop plan at login:', planError?.message || planError);
+                                    }
+                                }
 
                 // ✅ Store UUID in localStorage (persists for device identification)
                 if (userUuid) {

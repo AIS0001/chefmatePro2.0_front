@@ -1,6 +1,61 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { isTokenExpired } from './auth';
+import { getAuthToken, getShopPlanName, getUserType, isTokenExpired } from './auth';
+
+const STARTER_MANAGER_PATHS = [
+  "/dashboard/analytics",
+  "/dashboard/account",
+  "/dashboard/manager",
+  "/dashboard/admin",
+  "/reports/billhistory",
+  "/reports/dayclose",
+  "/reports/cashdrawer",
+  "/support/tickets",
+  "/subscription",
+  "/notifications",
+  "/logout",
+];
+
+const PROFESSIONAL_MANAGER_PATHS = [
+  ...STARTER_MANAGER_PATHS,
+  "/vouchers/recieptvoucher",
+  "/vouchers/paymentvoucher",
+  "/expenses/suppliersexpenses",
+  "/users/editprofile",
+  "/master/loyalty-program",
+  "/reports/itemwisesummaryvat",
+  "/reports/itemwisesale",
+  "/reports/itemwisesalegst",
+  "/reports/daywise",
+  "/reports/advanceorderreport",
+  "/reports/advanceorderreportgst",
+  "/reports/lowstockitems",
+  "/reports/billeditlogs",
+  "/reports/loginattempts",
+  "/reports/entertainment",
+  "/reports/groupwise",
+  "/inventory/stockreports",
+  "/inventory/stockreports-ant",
+  "/quotation-history",
+];
+
+const normalizeManagerPlanTier = (planName) => {
+  const normalized = String(planName || '').trim().toLowerCase();
+  if (!normalized) return 'starter';
+  if (normalized.includes('enterprise')) return 'enterprise';
+  if (normalized.includes('professional') || normalized.includes('business') || normalized.includes('pro')) return 'professional';
+  if (normalized.includes('starter') || normalized.includes('basic')) return 'starter';
+  return 'starter';
+};
+
+const getManagerAllowedPaths = (planName) => {
+  const tier = normalizeManagerPlanTier(planName);
+  if (tier === 'enterprise') return 'all';
+  if (tier === 'professional') return PROFESSIONAL_MANAGER_PATHS;
+  return STARTER_MANAGER_PATHS;
+};
+
+const PLAN_GATED_ROLES = new Set(['manager', 'account']);
 
 // Define allowed paths per userType (all lowercase)
 const roleBasedAccess = {
@@ -43,17 +98,7 @@ const roleBasedAccess = {
   ],
   manager: [
     "/dashboard/manager",
-    "/dashboard/admin", // Managers can also access admin dashboard
-    "/reports/billhistory",
-    "/reports/saleledger", 
-    "/reports/supplierledger",
-    "/inventory/stockreports",
-    "/reports/lowstockitems",
-    "/vouchers/recieptvoucher",
-    "/vouchers/paymentvoucher",
-    "/support/tickets",
-    "/subscription",
-    "/logout",
+    "/dashboard/admin",
   ],
   admin: "all", // admin can access all routes
   // Add other roles here if needed
@@ -65,8 +110,9 @@ const sharedAuthenticatedPaths = [
 
 const PrivateRoute = ({ children }) => {
   const location = useLocation();
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  const userType = (localStorage.getItem('usertype') || sessionStorage.getItem('usertype') || '').toLowerCase();
+  const token = getAuthToken();
+  const userType = String(getUserType() || '').trim().toLowerCase();
+  const storedPlanName = getShopPlanName();
 
   if (!token || isTokenExpired()) {
     return <Navigate to="/" state={{ from: location }} replace />;
@@ -80,7 +126,13 @@ const PrivateRoute = ({ children }) => {
     return children;
   }
 
-  const allowedPaths = roleBasedAccess[userType];
+  const allowedPaths = PLAN_GATED_ROLES.has(userType)
+    ? getManagerAllowedPaths(storedPlanName)
+    : roleBasedAccess[userType];
+
+  if (!allowedPaths) {
+    return <Navigate to="/accessdenied" replace />;
+  }
 
   if (allowedPaths !== "all" && !allowedPaths.includes(location.pathname.toLowerCase())) {
     return <Navigate to="/accessdenied" replace />;

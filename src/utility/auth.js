@@ -51,6 +51,16 @@ const getUserType = () => {
   return localStorage.getItem("usertype") || sessionStorage.getItem("usertype");
 };
 
+// Function to get plan name from active auth storage
+const getShopPlanName = () => {
+  const activeSession = getActiveAuthSession();
+  if (activeSession) {
+    return activeSession.storage.getItem("shop_plan_name") || '';
+  }
+
+  return localStorage.getItem('shop_plan_name') || sessionStorage.getItem('shop_plan_name') || '';
+};
+
   // Function to get user UUID from storage
   // UUID is stored in localStorage for device persistence
   const getUserUuid = () => {
@@ -101,6 +111,7 @@ const logout = () => {
   localStorage.removeItem("username");
   localStorage.removeItem("shop_id");
   localStorage.removeItem("shop_name");
+  localStorage.removeItem("shop_plan_name");
   // ✅ Do NOT remove user_uuid - it persists for device identification
 
   sessionStorage.removeItem("token");
@@ -111,6 +122,7 @@ const logout = () => {
   sessionStorage.removeItem("username");
   sessionStorage.removeItem("shop_id");
   sessionStorage.removeItem("shop_name");
+  sessionStorage.removeItem("shop_plan_name");
   sessionStorage.removeItem("user_uuid"); // ✅ Clear from sessionStorage only
 };
 
@@ -128,6 +140,7 @@ const clearDeviceUuid = () => {
     getHeaders,
     isTokenExpired,
     getUserType,
+    getShopPlanName,
     getUserUuid, // ✅ Export the new function
     getShopId, // ✅ Get shop_id for tenant scoping
     logout,

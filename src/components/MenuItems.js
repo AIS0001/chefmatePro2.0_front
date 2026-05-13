@@ -143,7 +143,13 @@ const fullMenu = [
     ]
   },
   {
-    name: 'Subscription',
+    name: 'Shop Subscription Details',
+    path: '/subscription',
+    icon: 'card-membership',
+    dataTargetId: '#subscription'
+  },
+  {
+    name: 'Shop Subscription Details',
     path: '/subscription',
     icon: 'card-membership',
     dataTargetId: '#subscription'

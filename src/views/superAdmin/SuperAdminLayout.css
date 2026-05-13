@@ -1,5 +1,43 @@
 /* Super Admin Layout Styles */
 
+.superadmin-ant-layout .superadmin-dark-sider {
+  background: #0f172a !important;
+}
+
+.superadmin-ant-layout .superadmin-sider-brand {
+  background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+}
+
+.superadmin-ant-layout .superadmin-side-menu.ant-menu-dark,
+.superadmin-ant-layout .superadmin-side-menu.ant-menu-inline {
+  background: #0f172a !important;
+}
+
+.superadmin-ant-layout .superadmin-side-menu .ant-menu-item {
+  color: #cbd5e1;
+  border-radius: 8px;
+  margin: 4px 10px;
+  width: calc(100% - 20px);
+}
+
+.superadmin-ant-layout .superadmin-side-menu .ant-menu-item:hover {
+  color: #f8fafc !important;
+  background-color: #1e293b !important;
+}
+
+.superadmin-ant-layout .superadmin-side-menu .ant-menu-item-selected {
+  color: #ffffff !important;
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+.superadmin-ant-layout .superadmin-side-menu .ant-menu-item-selected a {
+  color: #ffffff !important;
+}
+
+.superadmin-ant-layout .superadmin-dark-header {
+  background: linear-gradient(90deg, #111827 0%, #0b1220 100%) !important;
+}
+
 :root {
   --primary-color: #2c3e50;
   --secondary-color: #3498db;
