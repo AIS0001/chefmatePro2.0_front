@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 
 // Default print server configuration
 const PRINT_SERVER_URL =
-  process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || 'http://127.0.0.1:5010';
+  process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || 'http://127.0.0.1:7001';
 
 class PrinterManager {
   constructor() {

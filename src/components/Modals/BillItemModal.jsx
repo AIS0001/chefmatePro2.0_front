@@ -12,7 +12,7 @@ import { getUserType } from "../../utility/auth";
 import { getUserName } from "../../functions/storageUtils";
 
 export default function BillItemModal({ isOpen, onClose, bill, isEditMode = false, onBillUpdated }) {
-  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010";
+  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:7001";
   const isCancelled = bill?.status === 2 || bill?.status === "2" || bill?.status === "cancelled";
   const userType = getUserType();
   const canEditInModal = ["admin", "account"].includes((userType || "").toLowerCase());

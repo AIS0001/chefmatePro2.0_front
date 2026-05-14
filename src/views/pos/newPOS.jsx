@@ -31,7 +31,7 @@ import "./newPOS.css"; // โ… Import POS styles
 export default function NewPOS() {
   //console.log("NewPOS Component: Component is rendering...");
   const LOCAL_PRINT_AGENT_URL =
-    process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010"; // Local printing agent endpoint
+    process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:7001"; // Local printing agent endpoint
   //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
    

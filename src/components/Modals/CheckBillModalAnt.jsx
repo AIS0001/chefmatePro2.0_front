@@ -76,7 +76,56 @@ const getCurrentTime = () => {
 //console.log(getCurrentDate()); // Output: YYYY-MM-DD
 
 const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrigger }) => {
-  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010";
+  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:7001";
+  const safeToast = {
+    loading: (msg) => {
+      try {
+        // Avoid react-toastify loading/dismiss race in this screen.
+        toast.info(msg, {
+          autoClose: 1500,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: false,
+        });
+        return null;
+      } catch (err) {
+        console.warn('toast.loading failed:', err);
+        return null;
+      }
+    },
+    dismiss: (id) => {
+      try {
+        if (id !== undefined && id !== null) {
+          toast.dismiss(id);
+        } else {
+          toast.dismiss();
+        }
+      } catch (err) {
+        console.warn('toast.dismiss failed:', err);
+      }
+    },
+    success: (msg) => {
+      try {
+        toast.success(msg);
+      } catch (err) {
+        console.warn('toast.success failed:', err);
+      }
+    },
+    warning: (msg) => {
+      try {
+        toast.warning(msg);
+      } catch (err) {
+        console.warn('toast.warning failed:', err);
+      }
+    },
+    error: (msg) => {
+      try {
+        toast.error(msg);
+      } catch (err) {
+        console.warn('toast.error failed:', err);
+      }
+    }
+  };
   const [formdata, setFormData] = useState({
     pmode: "Cash", // Default to "Cash"
     discAmount: 0,
@@ -823,12 +872,58 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     navigate(`/reports/billhistory`);
   };
 
+  const buildEscPosLoyaltyPayload = () => {
+    const selectedMember = selectedLoyaltyMember || null;
+    const memberId =
+      loyaltyRedemptionInfo?.member_id ||
+      loyaltySelectedMemberInfo?.member_id ||
+      selectedMember?.member_id ||
+      null;
+    const memberContact =
+      loyaltyRedemptionInfo?.contact ||
+      loyaltySelectedMemberInfo?.contact ||
+      getLoyaltyContact(selectedMember) ||
+      null;
+    const memberName =
+      loyaltyRedemptionInfo?.member_name ||
+      loyaltySelectedMemberInfo?.member_name ||
+      selectedMember?.name ||
+      null;
+    const pointsBalance = loyaltyRedemptionInfo
+      ? Number(loyaltyRedemptionInfo.points_balance || 0)
+      : Number(selectedMember?.points_balance || 0);
+
+    const shopId = getResolvedShopId();
+    let loyaltyQrUrl = null;
+    if (shopId && memberId) {
+      loyaltyQrUrl = `${window.location.origin}/loyalty/check?member_id=${memberId}&shop_id=${shopId}`;
+    } else if (shopId && memberContact) {
+      loyaltyQrUrl = `${window.location.origin}/loyalty/check?contact=${encodeURIComponent(memberContact)}&shop_id=${shopId}`;
+    }
+
+    return {
+      loyalty_selected: Boolean(memberId || memberContact),
+      loyalty_redeemed: !!loyaltyRedemptionInfo,
+      loyalty_member_id: memberId,
+      loyalty_member_name: memberName,
+      loyalty_member_contact: memberContact,
+      loyalty_offer_name: loyaltyRedemptionInfo?.offer_name || null,
+      loyalty_offer_type: loyaltyRedemptionInfo?.offer_type || null,
+      loyalty_points_used: loyaltyRedemptionInfo ? Number(loyaltyRedemptionInfo.points_used || 0) : 0,
+      loyalty_discount_value: loyaltyRedemptionInfo ? Number(loyaltyRedemptionInfo.discount_value || 0) : 0,
+      loyalty_free_item: loyaltyRedemptionInfo?.free_item_name || null,
+      loyalty_points_balance: pointsBalance,
+      loyalty_qr_url: loyaltyQrUrl,
+      loyalty_qr_note: loyaltyQrUrl ? "Scan QR to view loyalty points and history" : null
+    };
+  };
+
   const triggerWindowsFallbackPrint = async (reasonText) => {
     const fallbackMessage = reasonText
       ? `${reasonText} Falling back to Windows default printer...`
       : "ESC/POS print failed. Falling back to Windows default printer...";
 
-    toast.warning(fallbackMessage);
+    safeToast.warning(fallbackMessage);
 
     // Browser print dialog will use the OS-selected default printer (e.g., USB printer).
     await handlePrintBill();
@@ -893,7 +988,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
             : []);
 
       if (!invoicePrintJobs.length) {
-        toast.error("No invoice number found. Please save bill first.");
+        safeToast.error("No invoice number found. Please save bill first.");
         return;
       }
 
@@ -920,7 +1015,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
         return;
       }
 
-      toastId = toast.loading("Sending invoice to cashier printer...");
+      toastId = safeToast.loading("Sending invoice to cashier printer...");
 
       let successCount = 0;
       for (const printer of targetPrinters) {
@@ -971,14 +1066,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
             grandTotal: Number(job.total || 0),
             tax_percent: Number(job.taxPercent || 0),
             taxPercent: Number(job.taxPercent || 0),
-            loyalty_redeemed: !!loyaltyRedemptionInfo,
-            loyalty_member_name: loyaltyRedemptionInfo?.member_name || null,
-            loyalty_offer_name: loyaltyRedemptionInfo?.offer_name || null,
-            loyalty_offer_type: loyaltyRedemptionInfo?.offer_type || null,
-            loyalty_points_used: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_used : 0,
-            loyalty_discount_value: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.discount_value : 0,
-            loyalty_free_item: loyaltyRedemptionInfo?.free_item_name || null,
-            loyalty_points_balance: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_balance : 0
+            ...buildEscPosLoyaltyPayload()
           };
 
           const response = await axios.post(
@@ -996,22 +1084,22 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
         }
       }
 
-      toast.dismiss(toastId);
+      safeToast.dismiss(toastId);
 
       const totalJobs = targetPrinters.length * invoicePrintJobs.length;
       if (successCount === totalJobs) {
-        toast.success(
+        safeToast.success(
           invoicePrintJobs.length > 1
             ? "Split invoices printed on cashier printer(s)!"
             : "Invoice printed on cashier printer(s)!"
         );
       } else if (successCount > 0) {
-        toast.warning(`Printed ${successCount}/${totalJobs} invoice job(s) on cashier printer(s).`);
+        safeToast.warning(`Printed ${successCount}/${totalJobs} invoice job(s) on cashier printer(s).`);
       } else {
         await triggerWindowsFallbackPrint("ESC/POS print job failed.");
       }
     } catch (error) {
-      if (toastId) toast.dismiss(toastId);
+      if (toastId) safeToast.dismiss(toastId);
       console.error("❌ Cashier direct print error:", error);
       await triggerWindowsFallbackPrint(error?.response?.data?.message || "Cashier ESC/POS print failed.");
     }
@@ -1022,27 +1110,27 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     let toastId;
     try {
       if (!isBillSaved) {
-        toast.error("Please save the bill first before generating QR code.");
+        safeToast.error("Please save the bill first before generating QR code.");
         return;
       }
 
-      toastId = toast.loading("Generating QR code...");
+      toastId = safeToast.loading("Generating QR code...");
       const qrData = await generateQRForCheckBill(grandAmount);
       
       if (qrData) {
         if (toastId) {
-          toast.dismiss(toastId);
+          safeToast.dismiss(toastId);
         }
-        toast.success("QR code generated successfully!");
+        safeToast.success("QR code generated successfully!");
         console.log("QR Data:", qrData);
         // You can use qrData here if needed for additional processing
       }
     } catch (error) {
       if (toastId) {
-        toast.dismiss(toastId);
+        safeToast.dismiss(toastId);
       }
       console.error("❌ Error generating QR code:", error);
-      toast.error("Error generating QR code: " + error.message);
+      safeToast.error("Error generating QR code: " + error.message);
     }
   };
 
@@ -1085,15 +1173,6 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   // ✅ Handle modal close and clear customer display
   const handleModalClose = () => {
     try {
-      // Dismiss all active toasts to prevent errors
-      try {
-        if (toast && typeof toast.dismiss === 'function') {
-          toast.dismiss();
-        }
-      } catch (toastError) {
-        console.warn('Error dismissing toasts:', toastError);
-      }
-      
       // Clear bill confirmation from customer display
       if (customerDisplayManager.isDisplayConnected()) {
         customerDisplayManager.sendCustomMessage('NORMAL_MODE', 'normal');
@@ -1766,11 +1845,15 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     try {
       // Check if bill is already saved
       if (!isBillSaved) {
-        toast.error("Please save the bill first before printing.");
+        safeToast.error("Please save the bill first before printing.");
         return;
       }
 
       const newWindow = window.open("", "_blank");
+      if (!newWindow || !newWindow.document) {
+        safeToast.error("Unable to open print window. Please allow popups and try again.");
+        return;
+      }
 
       // Pre-generate loyalty QR code (base64 PNG) — show for any selected loyalty customer
       let loyaltyQrDataUrl = null;
@@ -2010,13 +2093,13 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     
     } catch (error) {
       console.error("Error in print and save:", error);
-      toast.error("Error occurred while saving and printing bill.");
+      safeToast.error("Error occurred while saving and printing bill.");
     }
   };
   const handlePrintBillSummary = async () => {
     try {
       if (!finalData || finalData.length === 0) {
-        toast.error("No items to preview. Please add items first.");
+        safeToast.error("No items to preview. Please add items first.");
         return;
       }
 
@@ -2145,7 +2228,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
           });
 
           if (targetPrinters.length > 0) {
-            escposToastId = toast.loading('Sending bill summary to cashier printer...');
+            escposToastId = safeToast.loading('Sending bill summary to cashier printer...');
 
             let successCount = 0;
             for (const printer of targetPrinters) {
@@ -2195,14 +2278,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
                   grandTotal: Number(job.total || 0),
                   tax_percent: Number(job.taxPercent || 0),
                   taxPercent: Number(job.taxPercent || 0),
-                  loyalty_redeemed: !!loyaltyRedemptionInfo,
-                  loyalty_member_name: loyaltyRedemptionInfo?.member_name || null,
-                  loyalty_offer_name: loyaltyRedemptionInfo?.offer_name || null,
-                  loyalty_offer_type: loyaltyRedemptionInfo?.offer_type || null,
-                  loyalty_points_used: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_used : 0,
-                  loyalty_discount_value: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.discount_value : 0,
-                  loyalty_free_item: loyaltyRedemptionInfo?.free_item_name || null,
-                  loyalty_points_balance: loyaltyRedemptionInfo ? loyaltyRedemptionInfo.points_balance : 0
+                  ...buildEscPosLoyaltyPayload()
                 };
 
                 const response = await axios.post(
@@ -2222,26 +2298,30 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
             const totalJobs = targetPrinters.length * summaryPrintJobs.length;
             if (successCount === totalJobs) {
-              if (escposToastId) toast.dismiss(escposToastId);
-              toast.success('Bill summary printed on cashier printer(s)!');
+              if (escposToastId) safeToast.dismiss(escposToastId);
+              safeToast.success('Bill summary printed on cashier printer(s)!');
               return;
             }
 
-            if (escposToastId) toast.dismiss(escposToastId);
-            toast.warning(`ESC/POS printed ${successCount}/${totalJobs} summary job(s). Falling back to thermal HTML...`);
+            if (escposToastId) safeToast.dismiss(escposToastId);
+            safeToast.warning(`ESC/POS printed ${successCount}/${totalJobs} summary job(s). Falling back to thermal HTML...`);
           } else {
-            toast.warning('No cashier ESC/POS printer configured for this device. Using thermal HTML print...');
+            safeToast.warning('No cashier ESC/POS printer configured for this device. Using thermal HTML print...');
           }
         } else {
-          toast.warning('User UUID not found for ESC/POS. Using thermal HTML print...');
+          safeToast.warning('User UUID not found for ESC/POS. Using thermal HTML print...');
         }
       } catch (escposError) {
-        if (escposToastId) toast.dismiss(escposToastId);
+        if (escposToastId) safeToast.dismiss(escposToastId);
         console.error('Bill summary ESC/POS print error:', escposError);
-        toast.warning('ESC/POS bill summary print failed. Falling back to thermal HTML...');
+        safeToast.warning('ESC/POS bill summary print failed. Falling back to thermal HTML...');
       }
 
       const newWindow = window.open("", "_blank");
+      if (!newWindow || !newWindow.document) {
+        safeToast.error("Unable to open print window. Please allow popups and try again.");
+        return;
+      }
 
       // Pre-generate loyalty QR code for bill summary — show for any selected loyalty customer
       let loyaltyQrDataUrl = null;
@@ -2521,7 +2601,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       };
     } catch (error) {
       console.error("Error in bill summary print:", error);
-      toast.error("Error occurred while printing bill summary.");
+      safeToast.error("Error occurred while printing bill summary.");
     }
   };
   useEffect(() => {
@@ -2592,7 +2672,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
       <Modal
         isOpen={isOpen}
-        onRequestClose={onClose}
+        onRequestClose={handleModalClose}
         contentLabel="New Item Entry"
         style={customStyles}
         ariaHideApp={false}

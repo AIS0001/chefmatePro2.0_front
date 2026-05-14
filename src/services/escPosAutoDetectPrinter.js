@@ -2,7 +2,7 @@ import axios from 'axios';
 import { message } from 'antd';
 
 const LOCAL_PRINT_AGENT_URL =
-  process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || 'http://127.0.0.1:5010';
+  process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || 'http://127.0.0.1:7001';
 
 /**
  * Auto-detect ESC/POS printer and send KOT (Kitchen Order Ticket) print job

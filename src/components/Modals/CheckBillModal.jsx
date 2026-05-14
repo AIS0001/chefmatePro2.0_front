@@ -75,7 +75,7 @@ const getCurrentTime = () => {
 //console.log(getCurrentDate()); // Output: YYYY-MM-DD
 
 const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger }) => {
-  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:5010";
+  const LOCAL_PRINT_AGENT_URL = process.env.REACT_APP_LOCAL_PRINT_AGENT_URL || "http://127.0.0.1:7001";
   const [formdata, setFormData] = useState({
     pmode: "Cash", // Default to "Cash"
     discAmount: 0,
@@ -619,7 +619,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         return;
       }
 
-      toastId = toast.loading("Sending invoice to cashier printer...");
+      toast.info("Sending invoice to cashier printer...", {
+        autoClose: 1500,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+      });
+      toastId = null;
 
       let successCount = 0;
       for (const printer of targetPrinters) {
@@ -687,7 +693,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         }
       }
 
-      toast.dismiss(toastId);
+      if (toastId !== null && toastId !== undefined) {
+        toast.dismiss(toastId);
+      }
 
       const totalJobs = targetPrinters.length * invoicePrintJobs.length;
       if (successCount === totalJobs) {
@@ -717,7 +725,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
         return;
       }
 
-      toastId = toast.loading("Generating QR code...");
+      toast.info("Generating QR code...", {
+        autoClose: 1500,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+      });
+      toastId = null;
       const qrData = await generateQRForCheckBill(grandAmount);
       
       if (qrData) {
@@ -1787,7 +1801,13 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
           });
 
           if (targetPrinters.length > 0) {
-            escposToastId = toast.loading('Sending bill summary to cashier printer...');
+            toast.info('Sending bill summary to cashier printer...', {
+              autoClose: 1500,
+              closeOnClick: true,
+              pauseOnHover: false,
+              draggable: false,
+            });
+            escposToastId = null;
 
             let successCount = 0;
             for (const printer of targetPrinters) {

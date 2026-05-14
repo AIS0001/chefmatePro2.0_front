@@ -909,6 +909,7 @@ export default function NewPOSAnt() {
             
             return {
               item_name: itemName,
+              item_group: item.item_group || item.itemGroup || item.group || item.category || 'food',
               quantity: parseFloat(item.quantity.toFixed(2))
             };
           }),
