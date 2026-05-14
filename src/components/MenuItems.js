@@ -226,6 +226,19 @@ const accountMenu = [
     dataTargetId: '#support'
   },
 ];
+
+const kdsMenu = [
+  {
+    name: 'Dashboard',
+    path: '/dashboard',
+    icon: 'folder',
+    dataTargetId: '#dashboard',
+    submenu: [
+      { name: 'KDS Dashboard', path: '/dashboard/kds' }
+    ]
+  }
+];
+
 const getMenuItems = (usertype) => {
   const normalizedUsertype = (usertype || "").toLowerCase();
   if (normalizedUsertype === "cashier")
@@ -251,6 +264,10 @@ const getMenuItems = (usertype) => {
 
   if (normalizedUsertype === "account") {
     return accountMenu;
+  }
+
+  if (normalizedUsertype === "kds") {
+    return kdsMenu;
   }
 
   // Default for Admin or other full-access users

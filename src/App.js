@@ -9,6 +9,7 @@ import Dashboard from "./views/dashboard/dashboard";
 import CashierDashboard from "./views/dashboard/cashierDashboard";
 import AccountDashboard from "./views/dashboard/accountDashboard";
 import AnalyticsDashboard from "./views/dashboard/analyticsDashboard";
+import KdsDashboard from "./views/dashboard/kdsDashboard";
 
 import AccessDenied from "./views/pages/accessDenied";
 
@@ -287,6 +288,7 @@ function AppRoutes() {
           <Route path="/dashboard/analytics" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
           <Route path="/dashboard/cashier" element={<PrivateRoute><CashierDashboard /></PrivateRoute>} />
           <Route path="/dashboard/account" element={<PrivateRoute><AccountDashboard /></PrivateRoute>} />
+          <Route path="/dashboard/kds" element={<PrivateRoute><KdsDashboard /></PrivateRoute>} />
           <Route path="/dashboard/analytics" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
           <Route path="/dashboard/admin" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><AnalyticsDashboard /></PrivateRoute>} />

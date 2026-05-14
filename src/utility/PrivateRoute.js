@@ -100,6 +100,11 @@ const roleBasedAccess = {
     "/dashboard/manager",
     "/dashboard/admin",
   ],
+  kds: [
+    "/dashboard/kds",
+    "/logout",
+    "/changelog"
+  ],
   admin: "all", // admin can access all routes
   // Add other roles here if needed
 };

@@ -1,16 +1,14 @@
 ﻿import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { getHeaders } from "../../utility/getHeader";
 import fetchDataFromTwoTables from "../../functions/fetchdatawithTwoTables";
-import { format } from "date-fns";
 import CardComponent from "../../components/cards/CardComponent";
 // import Header from "../../components/Header"; // โ… Removed Header import
 // import Layout from "../../layout/Layout"; // โ… Removed Layout import
 import fetchData from "../../functions/fetchData";
-import { Textfield } from "../../components/Buttons/Textfield";
 import getMax from "../../functions/getMax";
 import getRunningTable from "../../functions/getRunningTable";
 import { getUserName } from "../../functions/storageUtils";
@@ -20,11 +18,15 @@ import TableSelectionModal from "../../components/Modals/TableSelectionModal";
 import ReprintKOTModal from "../../components/Modals/ReprintKOTModal";
 import { baseURL } from "../../index"; // Import baseURL from index.js
 import ReprintKOTOrderModal from "../../components/Modals/ReprintKOTOrderModal";
-import { FaEdit, FaTrash, FaPrint, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // โ… Added icons
+import { FaTrash, FaTable, FaHome, FaDesktop, FaEye } from "react-icons/fa"; // โ… Added icons
 import ESCPosAutoDetectButton from "../../components/ESCPosAutoDetectButton"; // โ… Import ESC/POS auto-detect printer button
 import customerDisplayManager from "../../services/CustomerDisplayManager"; // โ… Import customer display manager
 import { getNextSetupDate } from "../../utils/setupDateUtils"; // โ… Import setup date utility
+import { printKOT as printKOTThermal } from "../../services/thermalPrinter";
 import "./newPOS.css"; // โ… Import POS styles
+
+const POS_CURRENCY = "฿";
+const THAI_FONT_STACK = "'Noto Sans Thai', 'Sarabun', Tahoma, Arial, sans-serif";
 
 
 //const itemPrices = Array.from({ length: 9 }, (_, index) => 100 + index * 50);
@@ -35,8 +37,6 @@ export default function NewPOS() {
   //  const baseURL = 'https://www.balibeachcluapi.livecloudnet.com';
   //const baseURL = 'https://www.chefmateapi.cloudnetsoftwares.com';
    
-  let currentDate = format(new Date(), "yyyy-MM-dd");
-
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -52,7 +52,7 @@ export default function NewPOS() {
   const [Tablelist, settableList] = useState(null);
   const [TotalTablelist, setTotaltablelist] = useState([]); // Initialize as empty array instead of 0
 
-  const [selectedContract, setSelectedContract] = useState(null);
+  const [selectedContract] = useState(null);
   const [tableshowModal, settableShowModal] = useState(false);
   const [tableSelectionModal, setTableSelectionModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
@@ -63,7 +63,7 @@ export default function NewPOS() {
   const [reprintTable, setReprintTable] = useState("");
   const [reprintOrderNumbers, setReprintOrderNumbers] = useState([]);
   const [reprintOrderNumber, setReprintOrderNumber] = useState(null);
-  const [reprintOrderField, setReprintOrderField] = useState("order_number");
+  const [, setReprintOrderField] = useState("order_number");
   const [reprintItems, setReprintItems] = useState([]);
   const [reprintLoadingOrders, setReprintLoadingOrders] = useState(false);
   const [reprintLoadingItems, setReprintLoadingItems] = useState(false);
@@ -85,9 +85,7 @@ export default function NewPOS() {
   };
 
   // โ… Draggable Action Card States
-  const [actionCardPos, setActionCardPos] = useState({ x: 20, y: 20 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [, setActionCardPos] = useState({ x: 20, y: 20 });
   const actionCardRef = React.useRef(null);
 
   // Position the action card at bottom-right on mount
@@ -125,9 +123,6 @@ export default function NewPOS() {
     setReprintLoadingItems(false);
   };
 
-  const [tableStatus, setTableStatus] = useState(
-    Array.from({ length: 20 }, () => "vacant") // Default all tables to "vacant"
-  );
   const navigate = useNavigate();
 
   const getDashboardPath = () => {
@@ -153,12 +148,6 @@ export default function NewPOS() {
     return false;
   };
 
-  const columns = [
-    { label: "Product Id", field: "product_id" },
-    { label: "Image", field: "filename" },
-    { label: "Photo", field: "path" },
-  ];
-
   // Fetch subcategories when a category is clicked
   const handleCategoryClick = (categoryId) => {
     setSelectedCategory(categoryId); // Keep track of selected category
@@ -167,7 +156,7 @@ export default function NewPOS() {
     fetchData("subcategory", setSubcategories, "id", { cat_id: categoryId });
   };
   // Add this state for tracking the order number and selected table
-  const [orderNumber, setOrderNumber] = useState(1);  // Starts with 1 or fetched from the backend
+  const [, setOrderNumber] = useState(1);  // Starts with 1 or fetched from the backend
   const [selectedTable, setSelectedTable] = useState(null); // Table selection
   const [selectedTableCategory, setSelectedTableCategory] = useState(null); // Table category ID
   // Handle table selection
@@ -660,10 +649,19 @@ const decreaseItemQuantity = (index) => {
   
     kotContent += `--------------------------------\n`;
     kotContent += `Date: ${new Date().toLocaleString()}\n`;
-    kotContent += `Total: เธฟ ${total.toFixed(2)}\n`;
+    kotContent += `Total: ${POS_CURRENCY} ${total.toFixed(2)}\n`;
   
     const newWindow = window.open("", "_blank");
-    newWindow.document.write(`<pre style="font-family: monospace; font-size: 18px; line-height: 1.6; font-weight: 700;">${kotContent}</pre>`);
+    newWindow.document.write(`
+      <html>
+        <head>
+          <meta charSet="UTF-8" />
+        </head>
+        <body>
+          <pre style="font-family: ${THAI_FONT_STACK}; font-size: 18px; line-height: 1.6; font-weight: 700;">${kotContent}</pre>
+        </body>
+      </html>
+    `);
     newWindow.document.close();
     newWindow.print();
     newWindow.close();
@@ -708,6 +706,19 @@ const decreaseItemQuantity = (index) => {
     let normalizedItems = [];
     const shouldNotify = !options?.suppressToasts;
     try {
+      // Normalize items for KOT as early as possible so fallback print can use them.
+      normalizedItems = (Array.isArray(kotData?.items) ? kotData.items : []).map((item) => {
+        const normalized = {
+          item_name: item?.item_name || item?.iname || item?.name || "Item",
+          quantity: parseFloat(item?.quantity || item?.qty || 0) || 0,
+          price: parseFloat(item?.price || item?.offerprice || 0) || 0,
+          item_group: resolveItemGroup(item),
+          item_type: item?.item_type || item?.itemType || resolveItemGroup(item),
+          special_instructions: item?.special_instructions || item?.notes || ''
+        };
+        return normalized;
+      });
+
       // Get user UUID for printer lookup
       const userUuid = localStorage.getItem('user_uuid');
       
@@ -726,19 +737,6 @@ const decreaseItemQuantity = (index) => {
         if (shouldNotify) toast.error('User UUID not found. Please login again.');
         return false;
       }
-
-      // Normalize items for KOT
-      normalizedItems = (Array.isArray(kotData?.items) ? kotData.items : []).map((item, idx) => {
-        const normalized = {
-          item_name: item?.item_name || item?.iname || item?.name || "Item",
-          quantity: parseFloat(item?.quantity || item?.qty || 0) || 0,
-          price: parseFloat(item?.price || item?.offerprice || 0) || 0,
-          item_group: resolveItemGroup(item),
-          item_type: item?.item_type || item?.itemType || resolveItemGroup(item),
-          special_instructions: item?.special_instructions || item?.notes || ''
-        };
-        return normalized;
-      });
 
       let printerConfigs = [];
 
@@ -855,7 +853,6 @@ const decreaseItemQuantity = (index) => {
             terminal_id: printerConfig.terminal_id || 'KITCHEN',
             location: printerConfig.location || 'kitchen',
             type: 'KOT',
-            data: kotPayload,
             ...kotPayload,
             printerIp: printerConfig.printer_ip,
             printerPort: printerConfig.printer_port || 9100,
@@ -973,6 +970,42 @@ const decreaseItemQuantity = (index) => {
   // Complete ESC/POS order workflow: Save -> Print -> Clear
   const handleESCPosOrderFlow = async (kotData = {}) => {
     const kotToastId = 'kot-print-flow';
+    const safeShowProcessingToast = () => {
+      try {
+        toast.dismiss(kotToastId);
+        toast.loading('Processing KOT...', {
+          toastId: kotToastId,
+          autoClose: false,
+          closeOnClick: false,
+        });
+      } catch (toastError) {
+        // Fallback when toast update internals are not available.
+        console.warn('Processing toast unavailable:', toastError);
+        toast.info('Processing KOT...');
+      }
+    };
+
+    const safeUpdateKotToast = (message, type = 'default', autoClose = 3000) => {
+      try {
+        toast.update(kotToastId, {
+          render: message,
+          type,
+          isLoading: false,
+          autoClose,
+        });
+      } catch (toastError) {
+        console.warn('Toast update unavailable, using fallback toast:', toastError);
+        if (type === 'success') {
+          toast.success(message);
+        } else if (type === 'error') {
+          toast.error(message);
+        } else if (type === 'warning') {
+          toast.warning(message);
+        } else {
+          toast(message);
+        }
+      }
+    };
 
     if (!selectedTable) {
       toast.error('Please select a table!');
@@ -984,12 +1017,7 @@ const decreaseItemQuantity = (index) => {
       return false;
     }
 
-    toast.dismiss(kotToastId);
-    toast.loading('Processing KOT...', {
-      toastId: kotToastId,
-      autoClose: false,
-      closeOnClick: false,
-    });
+    safeShowProcessingToast();
 
     try {
       // Get the next setup date
@@ -1033,23 +1061,21 @@ const decreaseItemQuantity = (index) => {
         // console.log("โ… ORDER SAVED SUCCESSFULLY");
 
         // Step 2: Send KOT print command
-        const printResult = await sendEscPosKotCommand(kotData, { suppressToasts: true });
+        let printResult = await sendEscPosKotCommand(kotData, { suppressToasts: true });
+
+        // Fallback to thermal printer service used by newPOSAnt when ESC/POS routing fails.
+        if (!printResult) {
+          printResult = await printKOTThermal(kotData, {
+            showSuccessMessage: false,
+            showErrorMessage: false,
+          });
+        }
 
         if (printResult) {
           // console.log('โ… KOT ESC/POS command sent successfully');
-          toast.update(kotToastId, {
-            render: 'KOT sent to printer!',
-            type: 'success',
-            isLoading: false,
-            autoClose: 2500,
-          });
+          safeUpdateKotToast('KOT sent to printer!', 'success', 2500);
         } else {
-          toast.update(kotToastId, {
-            render: 'Order saved but KOT print failed.',
-            type: 'error',
-            isLoading: false,
-            autoClose: 3500,
-          });
+          safeUpdateKotToast('Order saved but KOT print failed.', 'error', 3500);
         }
 
         // Step 3: Clear cart and menu counters
@@ -1068,12 +1094,7 @@ const decreaseItemQuantity = (index) => {
 
         return printResult;
       } else {
-        toast.update(kotToastId, {
-          render: 'Failed to save the order.',
-          type: 'error',
-          isLoading: false,
-          autoClose: 3500,
-        });
+        safeUpdateKotToast('Failed to save the order.', 'error', 3500);
         return false;
       }
     } catch (error) {
@@ -1084,19 +1105,13 @@ const decreaseItemQuantity = (index) => {
       }
       
       if (error.message === 'Failed to fetch' || error.message.includes('Network') || error.code === 'ERR_NETWORK') {
-        toast.update(kotToastId, {
-          render: 'Connection error! Check your network.',
-          type: 'error',
-          isLoading: false,
-          autoClose: 5000,
-        });
+        safeUpdateKotToast('Connection error! Check your network.', 'error', 5000);
       } else {
-        toast.update(kotToastId, {
-          render: 'Error: ' + (error.response?.data?.message || error.message || 'Unknown error'),
-          type: 'error',
-          isLoading: false,
-          autoClose: 4500,
-        });
+        safeUpdateKotToast(
+          'Error: ' + (error.response?.data?.message || error.message || 'Unknown error'),
+          'error',
+          4500
+        );
       }
       return false;
     }
@@ -1125,7 +1140,7 @@ const decreaseItemQuantity = (index) => {
     
     // Create KOT content
     let kotContent = `
-      <div style="font-family: 'Courier New', monospace; max-width: 320px; margin: 0 auto; padding: 16px; font-weight: 700;">
+      <div style="font-family: ${THAI_FONT_STACK}; max-width: 320px; margin: 0 auto; padding: 16px; font-weight: 700;">
         <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
           <h2 style="margin: 0; font-size: 22px;">${kotHeader}</h2>
         </div>
@@ -1187,9 +1202,9 @@ const decreaseItemQuantity = (index) => {
         
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
           <div style="margin-bottom: 5px; font-size: 18px;">
-            <strong>Total: เธฟ ${totalAmount.toFixed(2)}</strong>
+            <strong>Total: ${POS_CURRENCY} ${totalAmount.toFixed(2)}</strong>
           </div>
-          <div style="font-size: 18px; color: #000; font-family: Arial, sans-serif;">
+          <div style="font-size: 18px; color: #000; font-family: ${THAI_FONT_STACK};">
             ${new Date().toLocaleString()}
           </div>
         </div>
@@ -1200,7 +1215,7 @@ const decreaseItemQuantity = (index) => {
         </div>
         ` : ''}
         
-        <div style="text-align: center; margin-top: 8px; font-size: 18px; color: #131111; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-top: 8px; font-size: 18px; color: #131111; font-family: ${THAI_FONT_STACK};">
           <p style="margin: 0;">Thank you!</p>
         </div>
       </div>
@@ -1215,6 +1230,7 @@ const decreaseItemQuantity = (index) => {
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charSet="UTF-8" />
           <title>${kotHeader} - Table ${tableNumber}</title>
           <style>
             @media print {
@@ -1222,7 +1238,7 @@ const decreaseItemQuantity = (index) => {
               @page { margin: 0.2in; size: 4in 6in; }
             }
             body {
-              font-family: 'Courier New', monospace;
+              font-family: ${THAI_FONT_STACK};
               font-size: 18px;
               line-height: 1.45;
               font-weight: 700;
@@ -1417,7 +1433,7 @@ const decreaseItemQuantity = (index) => {
     }, 0);
 
     let kotContent = `
-      <div style="font-family: 'Courier New', monospace; max-width: 220px; margin: 0 auto; padding: 12px; font-size: 18px; font-weight: 700;">
+      <div style="font-family: ${THAI_FONT_STACK}; max-width: 220px; margin: 0 auto; padding: 12px; font-size: 18px; font-weight: 700;">
         <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
           <h2 style="margin: 0; font-size: 18px;">KITCHEN ORDER TICKET</h2>
           <h3 style="margin: 2px 0; font-size: 14px;">(KOT)</h3>
@@ -1456,13 +1472,13 @@ const decreaseItemQuantity = (index) => {
         </div>
         <div style="margin-top: 8px; text-align: center; border-top: 1px dashed #000; padding-top: 5px;">
           <div style="margin-bottom: 5px; font-size: 18px;">
-            <strong>Total: เธฟ ${totalAmount.toFixed(2)}</strong>
+            <strong>Total: ${POS_CURRENCY} ${totalAmount.toFixed(2)}</strong>
           </div>
-          <div style="font-size: 18px; color: #000; font-family: Arial, sans-serif;">
+          <div style="font-size: 18px; color: #000; font-family: ${THAI_FONT_STACK};">
             ${new Date().toLocaleString()}
           </div>
         </div>
-        <div style="text-align: center; margin-top: 8px; font-size: 18px; color: #0f0c0c; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-top: 8px; font-size: 18px; color: #0f0c0c; font-family: ${THAI_FONT_STACK};">
           <p style="margin: 0;">Thank you!</p>
         </div>
       </div>
@@ -1478,6 +1494,7 @@ const decreaseItemQuantity = (index) => {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charSet="UTF-8" />
         <title>KOT COPY - Table ${tableNumber}</title>
         <style>
           @media print {
@@ -1486,7 +1503,7 @@ const decreaseItemQuantity = (index) => {
             .watermark { display: block !important; }
           }
           body {
-            font-family: 'Courier New', monospace;
+            font-family: ${THAI_FONT_STACK};
             font-size: 18px;
             line-height: 1.4;
             font-weight: 700;
@@ -1506,7 +1523,7 @@ const decreaseItemQuantity = (index) => {
             pointer-events: none;
             z-index: 9999;
             letter-spacing: 4px;
-            font-family: 'Courier New', monospace;
+            font-family: ${THAI_FONT_STACK};
             user-select: none;
           }
         </style>
@@ -2342,7 +2359,7 @@ const decreaseItemQuantity = (index) => {
                             <div className="pos-menu-content">
                               <h5 className="item-name pos-menu-name">{item.iname}</h5>
                               <div className="pos-menu-meta">
-                                <span className="item-price pos-menu-price">เธฟ {Number(item.offerprice || 0).toFixed(2)}</span>
+                                <span className="item-price pos-menu-price">{POS_CURRENCY} {Number(item.offerprice || 0).toFixed(2)}</span>
                                 
                               </div>
                             </div>
@@ -2445,7 +2462,7 @@ const decreaseItemQuantity = (index) => {
                               key={index}
                             >
                               <h5 className=" mb-0 pos-cart-item-name">
-                                {item.iname} x {formatQuantityForDisplay(item)} = เธฟ {(item.quantity * item.offerprice).toFixed(2)}
+                                {item.iname} x {formatQuantityForDisplay(item)} = {POS_CURRENCY} {(item.quantity * item.offerprice).toFixed(2)}
                               </h5>
                               <div className="quantity-controls d-flex align-items-center">
                                 <button
@@ -2496,7 +2513,7 @@ const decreaseItemQuantity = (index) => {
           >
             <span className="pos-total-label" style={{ margin: 0, lineHeight: '1' }}>
               Total:{" "}
-              <span>เธฟ {total.toFixed(2)}</span>
+              <span>{POS_CURRENCY} {total.toFixed(2)}</span>
             </span>
             <div className="d-flex align-items-center gap-2">
               <ESCPosAutoDetectButton

@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Modal from "react-modal";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { fetchComboData } from "../../services/api";
-import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
+import { getHeaders, getResolvedShopId } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
-import { ConfigProvider, Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag, Modal as AntdModal } from "antd";
+import { ConfigProvider, Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag, Modal as AntdModal, message } from "antd";
 import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -80,17 +80,48 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   const safeToast = {
     loading: (msg) => {
       try {
-        // Avoid react-toastify loading/dismiss race in this screen.
-        toast.info(msg, {
-          autoClose: 1500,
-          closeOnClick: true,
+        const toastId = toast.loading(msg, {
+          autoClose: false,
+          closeButton: false,
           pauseOnHover: false,
           draggable: false,
         });
-        return null;
+        return toastId;
       } catch (err) {
         console.warn('toast.loading failed:', err);
         return null;
+      }
+    },
+    update: (toastId, options = {}) => {
+      if (!toastId) return;
+      try {
+        if (typeof toast.update === 'function') {
+          toast.update(toastId, {
+            isLoading: false,
+            autoClose: 2000,
+            closeButton: true,
+            pauseOnHover: true,
+            ...options
+          });
+        } else {
+          console.warn('toast.update not available, using dismiss + show fallback');
+          toast.dismiss(toastId);
+          if (options.render) {
+            if (options.type === 'error') {
+              toast.error(options.render);
+            } else if (options.type === 'success') {
+              toast.success(options.render);
+            } else {
+              toast.info(options.render);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('toast.update failed:', err);
+        toast.dismiss(toastId);
+        if (options.render) {
+          toast.info(options.render);
+        }
       }
     },
     dismiss: (id) => {
@@ -106,21 +137,33 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     },
     success: (msg) => {
       try {
-        toast.success(msg);
+        toast.success(msg, {
+          autoClose: 2000,
+          closeButton: true,
+          pauseOnHover: true,
+        });
       } catch (err) {
         console.warn('toast.success failed:', err);
       }
     },
     warning: (msg) => {
       try {
-        toast.warning(msg);
+        toast.warning(msg, {
+          autoClose: 3000,
+          closeButton: true,
+          pauseOnHover: true,
+        });
       } catch (err) {
         console.warn('toast.warning failed:', err);
       }
     },
     error: (msg) => {
       try {
-        toast.error(msg);
+        toast.error(msg, {
+          autoClose: 3000,
+          closeButton: true,
+          pauseOnHover: true,
+        });
       } catch (err) {
         console.warn('toast.error failed:', err);
       }
@@ -143,15 +186,13 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   const [isSplitMode, setIsSplitMode] = useState(false); // Toggle split mode
   const [selectedSplitItemKeys, setSelectedSplitItemKeys] = useState([]); // Selected items for split group creation
   const [splitGroups, setSplitGroups] = useState([]); // [{ id, name, itemKeys }]
-  const [, setFinalBillData] = useState([]); // Manage the table data state
-  const [, setOrderItemsData] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
   const [isQRPaymentModalOpen, setQRPaymentModalOpen] = useState(false);
 
   const [, setpaymentOptions] = useState([]);
   const [finalData, setFinalData] = useState([]);
   const [changeMoney, setChangeMoney] = useState("");
-  const [phones, setphones] = useState("");
+  const [, setphones] = useState("");
   const printRef = useRef();
   const [latestBillId, setLatestBillId] = useState(null);
   const [latestInvoiceNumber, setLatestInvoiceNumber] = useState(null);
@@ -287,10 +328,10 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   const [taxAmount, settaxAmount] = useState(0);
   const [roundoffAmount, setroundoffAmount] = useState(0);
   const [grandAmount, setgrandAmount] = useState(0);
-  const [totalAmount, settotalAmount] = useState(0);
+  const [, settotalAmount] = useState(0);
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
-  const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
   const [currencySign, setCurrencySign] = useState("฿"); // Default to Thai Baht
+  const THAI_FONT_STACK = "'Noto Sans Thai', 'Sarabun', Tahoma, Arial, sans-serif";
 
   const selectedLoyaltyMember = useMemo(
     () => (loyaltyCustomers || []).find((row) => row.member_id === selectedLoyaltyMemberId) || null,
@@ -365,7 +406,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     setIsLoyaltyProgramModalOpen(false);
   };
 
-  const loadLoyaltyPrograms = async () => {
+  const loadLoyaltyPrograms = useCallback(async () => {
     try {
       const response = await axios.get('/loyalty/programs', getHeaders());
       const rows = response?.data?.data || [];
@@ -376,7 +417,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     } catch (error) {
       console.error('Error loading loyalty programs:', error);
     }
-  };
+  }, [selectedLoyaltyProgramId]);
 
   const loadEligibleLoyaltyOffers = async ({ memberId, programId, billAmount }) => {
     if (!memberId) {
@@ -491,11 +532,42 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
     setphones(selected.contact ? String(selected.contact) : "");
   };
 
+  const refreshLoyaltyMemberSnapshot = async (memberId) => {
+    if (!memberId) return null;
+
+    try {
+      const response = await axios.get("/loyalty/customers", getHeaders());
+      const rows = response?.data?.data || [];
+      const membersOnly = rows.filter((row) => row.member_id);
+      setLoyaltyCustomers(membersOnly);
+      setLoyaltySearchResults(membersOnly);
+
+      const latestMember = membersOnly.find(
+        (row) => String(row.member_id) === String(memberId)
+      );
+
+      if (latestMember) {
+        setLoyaltySelectedMemberInfo((prev) => ({
+          ...(prev || {}),
+          member_id: latestMember.member_id,
+          contact: latestMember.contact || latestMember.phone || latestMember.mobile || "",
+          member_name: latestMember.name || "",
+          points_balance: Number(latestMember.points_balance || 0),
+        }));
+      }
+
+      return latestMember || null;
+    } catch (error) {
+      console.error("Error refreshing loyalty member snapshot:", error);
+      return null;
+    }
+  };
+
   const creditLoyaltyPoints = async ({ billId, billAmount, note }) => {
     if (!selectedLoyaltyMemberId) return;
 
     try {
-      await axios.post(
+      const earnResponse = await axios.post(
         "/loyalty/transactions/earn",
         {
           member_id: selectedLoyaltyMemberId,
@@ -505,6 +577,44 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
         },
         getHeaders()
       );
+
+      let latestBalance = Number(
+        earnResponse?.data?.data?.points_balance ??
+          earnResponse?.data?.points_balance
+      );
+
+      const latestMember = await refreshLoyaltyMemberSnapshot(selectedLoyaltyMemberId);
+      if (latestMember && Number.isFinite(Number(latestMember.points_balance))) {
+        latestBalance = Number(latestMember.points_balance);
+      }
+
+      if (Number.isFinite(latestBalance)) {
+        setLoyaltyCustomers((prev) =>
+          (prev || []).map((row) =>
+            String(row.member_id) === String(selectedLoyaltyMemberId)
+              ? { ...row, points_balance: latestBalance }
+              : row
+          )
+        );
+
+        setLoyaltyRedemptionInfo((prev) =>
+          prev
+            ? {
+                ...prev,
+                points_balance: latestBalance,
+              }
+            : prev
+        );
+
+        setLoyaltySelectedMemberInfo((prev) =>
+          prev
+            ? {
+                ...prev,
+                points_balance: latestBalance,
+              }
+            : prev
+        );
+      }
     } catch (error) {
       console.error("Error crediting loyalty points:", error);
       toast.warning("Bill saved, but loyalty point credit failed.");
@@ -546,7 +656,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
   useEffect(() => {
     if (!isLoyaltyProgramModalOpen) return;
     loadLoyaltyPrograms();
-  }, [isLoyaltyProgramModalOpen]);
+  }, [isLoyaltyProgramModalOpen, loadLoyaltyPrograms]);
 
   useEffect(() => {
     if (!isLoyaltyProgramModalOpen) return;
@@ -557,36 +667,6 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       billAmount: grandAmount,
     });
   }, [isLoyaltyProgramModalOpen, loyaltySearchSelectionId, selectedLoyaltyProgramId, grandAmount]);
-
-
-
-
-
-
-
-  const handleComboChange = (e) => {
-    const { value } = e.target;
-    setFormData((prevData) => ({ ...prevData, pmode: value }));
-
-    // console.log("Payment Mode Selected:", value); // ✅ Debugging
-    if (value === "Credit") {
-      // console.log("Opening Customer Details Modal"); // ✅ Debugging
-      setCustomerModalOpen(true);
-    }
-  };
-
-
-  // Handle changes to the discount type (percentage or amount)
-  const handleDiscountTypeChange = (e) => {
-    setFormData({
-      ...formdata,
-      discountType: e.target.value, // Update the discountType value based on selection
-    });
-
-    // Recalculate discount immediately after changing type
-    //handlediscount({ target: { value: discAmount.toString() } });
-  };
-
 
   // Fetch subcategories based on selected category
   const handleTableHistory = async (tableName) => {
@@ -800,20 +880,6 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       toast.error("Error occurred while merging tables");
     }
   };
-
-  // Merge selected tables and show combined bill
-  const handleMergeTables = async () => {
-    if (selectedTables.length < 2) {
-      toast.error("Please select at least 2 tables to merge");
-      return;
-    }
-
-    // Use the auto-merge function
-    await autoMergeTables(selectedTables);
-    toast.success(`Successfully merged ${selectedTables.length} tables`);
-  };
-
-
   // Runs when discAmount or discountType changes
   useEffect(() => {
     if (finalData.length === 0 || !TaxesData || TaxesData.length === 0) return; // Prevent running when there's no data
@@ -931,7 +997,6 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
   // ✅ Handle RSC POS single-mode Invoice printing via cashier printer config
   const handlePrintBillRSCPOS = async () => {
-    let toastId;
     try {
       const machineUuid = localStorage.getItem("user_uuid");
       if (!machineUuid) {
@@ -988,7 +1053,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
             : []);
 
       if (!invoicePrintJobs.length) {
-        safeToast.error("No invoice number found. Please save bill first.");
+        message.error("No invoice number found. Please save bill first.");
         return;
       }
 
@@ -1015,8 +1080,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
         return;
       }
 
-      toastId = safeToast.loading("Sending invoice to cashier printer...");
-
+      console.log('Sending invoice to cashier printer...');
       let successCount = 0;
       for (const printer of targetPrinters) {
         for (const job of invoicePrintJobs) {
@@ -1043,6 +1107,10 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
             payment_mode: job.paymentMethod,
             printType: 'invoice'
             ,
+            language: 'th',
+            codepage: 'thai',
+            encoding: 'tis620',
+            codepageIndex: 21,
             date: getCurrentDate(),
             time: getCurrentTime(),
             companyAddress,
@@ -1084,22 +1152,19 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
         }
       }
 
-      safeToast.dismiss(toastId);
-
       const totalJobs = targetPrinters.length * invoicePrintJobs.length;
       if (successCount === totalJobs) {
-        safeToast.success(
+        message.success(
           invoicePrintJobs.length > 1
             ? "Split invoices printed on cashier printer(s)!"
             : "Invoice printed on cashier printer(s)!"
         );
       } else if (successCount > 0) {
-        safeToast.warning(`Printed ${successCount}/${totalJobs} invoice job(s) on cashier printer(s).`);
+        message.warning(`Printed ${successCount}/${totalJobs} invoice job(s) on cashier printer(s).`);
       } else {
         await triggerWindowsFallbackPrint("ESC/POS print job failed.");
       }
     } catch (error) {
-      if (toastId) safeToast.dismiss(toastId);
       console.error("❌ Cashier direct print error:", error);
       await triggerWindowsFallbackPrint(error?.response?.data?.message || "Cashier ESC/POS print failed.");
     }
@@ -1190,229 +1255,6 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       }
     }
   };
-
-  const handlePrintClick = async (itemId) => {
-    try {
-
-      const invId = itemId;
-      //alert(invId);
-      // Fetch the final_bill and order_items details for the given itemId
-      const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
-      const myOrderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
-      // Check if inv_time exists in finalBillData
-      const invTime = myfinalbilldata[0].inv_time;
-      const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
-
-      // Format the data for printing using a similar structure
-      const printContent = `
-        <html>
-          <head>
-            <style>
-              html, body {
-                margin: 0;
-                padding: 0;
-                font-family: 'Cambria', monospace;
-              }
-              body {
-                font-size: 18px;
-                width: 80mm;
-              }
-              .bill-header {
-                text-align: center;
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                border-bottom: none;
-              }
-              .bill-header h2 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                line-height: 1.25;
-                word-break: break-word;
-              }
-              .bill-header .company-info {
-                margin-top: 4px;
-              }
-              .bill-header .company-info p {
-                margin: 2px 0;
-                font-size: 18px;
-                line-height: 1.35;
-                word-break: break-word;
-                white-space: normal;
-              }
-              .table {
-                width: 100%;
-                margin-top: 1px;
-                border-collapse: collapse;
-              }
-              .table th, .table td {
-                text-align: left;
-                padding: 5px 0;
-                font-size: 18px;
-                line-height: 1.6;
-              }
-              .table th {
-                font-weight: bold;
-                border-bottom: 1px solid #000;
-              }
-              .table th.header {
-                font-weight: bold;
-                
-              }
-              .table td {
-                border-bottom: 1px solid #ddd;
-              }
-              .table td.total {
-                font-weight: bold;
-                font-size: 18px;
-                margin-right: 2px;
-                border-bottom: 1px solid #000;
-              }
-              .total-row {
-                margin-top: 5px;
-                margin-right: 10px;
-                font-weight: bold;
-                text-align: right;
-                font-size: 18px;
-              }
-              .footer {
-                margin-top: 15px;
-                text-align: center;
-                font-size: 18px;
-              }
-            </style>
-          </head>
-          <body>
-            ${buildCompanyHeaderHtml()}
-            <div class="bill-bill-body">
-             
-              <table class="table">
-                
-                  <tr >
-                    <td class="header" >Invoice No: ${myfinalbilldata[0].inv_number || myfinalbilldata[0].id}</td>
-                   
-                    <td class="header" >${myfinalbilldata[0].table_number}</td>
-                    
-                  </tr>
-                   <tr >
-                    <td>Date: ${myfinalbilldata[0].inv_date}</td>
-                   
-                    <td>Time:${formattedTime}</td>
-                    
-                  </tr>
-                
-                <tbody> 
-                <tr>  </tr>
-                <tr>  </tr>
-                </tbody>
-                </table>
-             
-            </div>
-            <div class="bill-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>Qty</th>
-                    <th>Rate</th>
-                    <th>Total </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${myOrderItemsData
-          .map(
-            (item) => `
-                        <tr>
-                          <td>${item.item_name}</td>
-                          <td>${item.quantity}</td>
-                          <td>${currencySign} ${item.total_price / item.quantity}</td>
-                          <td>${currencySign} ${item.total_price}</td>
-                        </tr>
-                      `
-          )
-          .join('')}
-                </tbody>
-              </table>
-               <div class="total-row">
-              <span>Subtotal: ${currencySign} ${myfinalbilldata[0].subtotal}</span><br>
-              <span>Discount: ${currencySign} ${myfinalbilldata[0].discount_amount}</span><br>
-              <span>Subtotal After Discount: ${currencySign} ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
-
-              <span>Tax (7%): ${currencySign} ${myfinalbilldata[0].tax}</span><br>
-              <span>Round Off: ${currencySign} ${myfinalbilldata[0].roundoff}</span><br>
-              <span>Total Amount: ${currencySign} ${myfinalbilldata[0].grand_total}</span>
-            </div>
-              
-            </div>
-            <div class="footer">
-              <p>Printed on ${new Date().toLocaleString()}</p>
-              <p>Powered by Cloudnet Softwares</p>
-            </div>
-          </body>
-        </html>
-      `;
-
-      // Open the print dialog with the formatted content
-      const newWindow = window.open("", "_blank");
-      newWindow.document.write(printContent);
-      newWindow.document.close();
-
-      newWindow.onload = () => {
-        newWindow.print(); // Print the document
-        newWindow.close(); // Close the window after printing
-      };
-    } catch (error) {
-      console.error("Error fetching data for printing:", error);
-    }
-  };
-
-  const calculateTaxedTotal = async (subtotal) => {
-    try {
-      // const response = await axios.get("/api/taxes/active", getHeaders());
-      const response = await fetchData("taxes", setTotaltablelist, "id", { status: "active" });
-      const taxes = response.data;
-
-      let finalSubtotal = subtotal;
-      let total = subtotal;
-      const taxDetails = [];
-
-      taxes.forEach((tax) => {
-        const rate = parseFloat(tax.taxvalue);
-
-        if (tax.included) {
-          const taxAmount = (subtotal * rate) / (100 + rate);
-          finalSubtotal -= taxAmount;
-          taxDetails.push({
-            name: tax.taxname,
-            amount: taxAmount.toFixed(2),
-            included: true,
-          });
-        } else {
-          const taxAmount = (finalSubtotal * rate) / 100;
-          total += taxAmount;
-          taxDetails.push({
-            name: tax.taxname,
-            amount: taxAmount.toFixed(2),
-            included: false,
-          });
-        }
-      });
-
-      return {
-        subtotal: finalSubtotal.toFixed(2),
-        total: total.toFixed(2),
-        taxes: taxDetails,
-      };
-    } catch (err) {
-      console.error("Failed to fetch or calculate taxes", err);
-      return {
-        subtotal: subtotal.toFixed(2),
-        total: subtotal.toFixed(2),
-        taxes: [],
-      };
-    }
-  };
-
 
   const handleSaveBill = async (overrideMode) => {
     try {
@@ -1849,6 +1691,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
         return;
       }
 
+      window.focus();
       const newWindow = window.open("", "_blank");
       if (!newWindow || !newWindow.document) {
         safeToast.error("Unable to open print window. Please allow popups and try again.");
@@ -1979,11 +1822,12 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       newWindow.document.write(`
         <html>
           <head>
+            <meta charset="UTF-8" />
             <style>
               html, body {
                 margin: 0;
                 padding: 0;
-                font-family: 'Cambria', monospace; /* Common font for receipts */
+                font-family: ${THAI_FONT_STACK}; /* Common font for receipts */
               }
               body {
                 font-size: 18px;
@@ -2080,7 +1924,10 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
     newWindow.onload = () => {
       newWindow.print(); // Print the document
-      newWindow.close(); // Close the window after printing
+      setTimeout(() => {
+        newWindow.close(); // Close the window after printing
+        window.focus(); // Restore main window focus to prevent rc-motion toggle error
+      }, 500);
       
       // Notify customer display that bill is completed
       customerDisplayManager.sendCustomMessage("Bill printed successfully. Thank you for your visit!");
@@ -2200,7 +2047,6 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
           }];
 
       // Try ESC/POS first (invoice-like format), then fallback to thermal HTML.
-      let escposToastId;
       try {
         const machineUuid = localStorage.getItem('user_uuid');
         if (machineUuid) {
@@ -2228,8 +2074,7 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
           });
 
           if (targetPrinters.length > 0) {
-            escposToastId = safeToast.loading('Sending bill summary to cashier printer...');
-
+            console.log('Sending bill summary to cashier printer...');
             let successCount = 0;
             for (const printer of targetPrinters) {
               for (const job of summaryPrintJobs) {
@@ -2255,6 +2100,10 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
                   paymentMode: job.paymentMethod,
                   payment_mode: job.paymentMethod,
                   printType: 'bill-summary',
+                  language: 'th',
+                  codepage: 'thai',
+                  encoding: 'tis620',
+                  codepageIndex: 21,
                   date: getCurrentDate(),
                   time: getCurrentTime(),
                   companyAddress,
@@ -2298,25 +2147,22 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
             const totalJobs = targetPrinters.length * summaryPrintJobs.length;
             if (successCount === totalJobs) {
-              if (escposToastId) safeToast.dismiss(escposToastId);
-              safeToast.success('Bill summary printed on cashier printer(s)!');
+              message.success('Bill summary printed on cashier printer(s)!');
               return;
             }
 
-            if (escposToastId) safeToast.dismiss(escposToastId);
-            safeToast.warning(`ESC/POS printed ${successCount}/${totalJobs} summary job(s). Falling back to thermal HTML...`);
+            console.warn(`ESC/POS printed ${successCount}/${totalJobs} summary job(s). Falling back to thermal HTML...`);
           } else {
-            safeToast.warning('No cashier ESC/POS printer configured for this device. Using thermal HTML print...');
+            console.warn('No cashier ESC/POS printer configured for this device. Using thermal HTML print...');
           }
         } else {
-          safeToast.warning('User UUID not found for ESC/POS. Using thermal HTML print...');
+          console.warn('User UUID not found for ESC/POS. Using thermal HTML print...');
         }
       } catch (escposError) {
-        if (escposToastId) safeToast.dismiss(escposToastId);
         console.error('Bill summary ESC/POS print error:', escposError);
-        safeToast.warning('ESC/POS bill summary print failed. Falling back to thermal HTML...');
       }
 
+      window.focus();
       const newWindow = window.open("", "_blank");
       if (!newWindow || !newWindow.document) {
         safeToast.error("Unable to open print window. Please allow popups and try again.");
@@ -2498,11 +2344,12 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
       newWindow.document.write(`
         <html>
           <head>
+            <meta charset="UTF-8" />
             <style>
               html, body {
                 margin: 0;
                 padding: 0;
-                font-family: 'Cambria', monospace;
+                font-family: ${THAI_FONT_STACK};
               }
               body {
                 font-size: 18px;
@@ -2597,7 +2444,10 @@ const CheckBillModalAnt = ({ isOpen, customer, uptableList, onClose, refreshTrig
 
       newWindow.onload = () => {
         newWindow.print();
-        newWindow.close();
+        setTimeout(() => {
+          newWindow.close();
+          window.focus(); // Restore main window focus to prevent rc-motion toggle error
+        }, 500);
       };
     } catch (error) {
       console.error("Error in bill summary print:", error);

@@ -15,7 +15,8 @@ const resolveShopId = () => {
 const typeOptions = [
     { label: 'Admin', value: 'Admin' },
     { label: 'Cashier', value: 'Cashier' },
-    { label: 'Account', value: 'Account' }
+    { label: 'Account', value: 'Account' },
+    { label: 'KDS', value: 'KDS' }
 ];
 
 export default function NewUser() {

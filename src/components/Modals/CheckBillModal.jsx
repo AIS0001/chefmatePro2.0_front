@@ -3,7 +3,7 @@ import Modal from "react-modal";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { fetchComboData } from "../../services/api";
-import { getHeaders, getAuthToken, getResolvedShopId } from "../../utility/getHeader";
+import { getHeaders } from "../../utility/getHeader";
 import fetchData from "../../functions/fetchData";
 import { Table, Row, Col, Card, Button, Input, Select, Space, Badge, Divider, Tag } from "antd";
 import { ReloadOutlined, CloseOutlined } from "@ant-design/icons";
@@ -93,8 +93,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [isSplitMode, setIsSplitMode] = useState(false); // Toggle split mode
   const [selectedSplitItemKeys, setSelectedSplitItemKeys] = useState([]); // Selected items for split group creation
   const [splitGroups, setSplitGroups] = useState([]); // [{ id, name, itemKeys }]
-  const [, setFinalBillData] = useState([]); // Manage the table data state
-  const [, setOrderItemsData] = useState([]); // Manage the table data state
   const [isLineQRModalOpen, setLineQRModalOpen] = useState(false);
   const [isQRPaymentModalOpen, setQRPaymentModalOpen] = useState(false);
 
@@ -203,40 +201,9 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
   const [taxAmount, settaxAmount] = useState(0);
   const [roundoffAmount, setroundoffAmount] = useState(0);
   const [grandAmount, setgrandAmount] = useState(0);
-  const [totalAmount, settotalAmount] = useState(0);
+  const [, settotalAmount] = useState(0);
   const [subtotalAfterDiscount, setsubtotalAfterDiscount] = useState(0);
-  const [isCustomerPhoneModalOpen, setIsCustomerPhoneModalOpen] = useState(false);
   const [currencySign, setCurrencySign] = useState("฿"); // Default to Thai Baht
-
-
-
-
-
-
-
-  const handleComboChange = (e) => {
-    const { value } = e.target;
-    setFormData((prevData) => ({ ...prevData, pmode: value }));
-
-    // console.log("Payment Mode Selected:", value); // ✅ Debugging
-    if (value === "Credit") {
-      // console.log("Opening Customer Details Modal"); // ✅ Debugging
-      setCustomerModalOpen(true);
-    }
-  };
-
-
-  // Handle changes to the discount type (percentage or amount)
-  const handleDiscountTypeChange = (e) => {
-    setFormData({
-      ...formdata,
-      discountType: e.target.value, // Update the discountType value based on selection
-    });
-
-    // Recalculate discount immediately after changing type
-    //handlediscount({ target: { value: discAmount.toString() } });
-  };
-
 
   // Fetch subcategories based on selected category
   const handleTableHistory = async (tableName) => {
@@ -450,20 +417,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       toast.error("Error occurred while merging tables");
     }
   };
-
-  // Merge selected tables and show combined bill
-  const handleMergeTables = async () => {
-    if (selectedTables.length < 2) {
-      toast.error("Please select at least 2 tables to merge");
-      return;
-    }
-
-    // Use the auto-merge function
-    await autoMergeTables(selectedTables);
-    toast.success(`Successfully merged ${selectedTables.length} tables`);
-  };
-
-
   // Runs when discAmount or discountType changes
   useEffect(() => {
     if (finalData.length === 0 || !TaxesData || TaxesData.length === 0) return; // Prevent running when there's no data
@@ -816,229 +769,6 @@ const CheckBillModal = ({ isOpen, customer, uptableList, onClose, refreshTrigger
       }
     }
   };
-
-  const handlePrintClick = async (itemId) => {
-    try {
-
-      const invId = itemId;
-      //alert(invId);
-      // Fetch the final_bill and order_items details for the given itemId
-      const myfinalbilldata = await fetchData("final_bill", setFinalBillData, "id", { id: invId });
-      const myOrderItemsData = await fetchData("order_items", setOrderItemsData, "id", { invoice_number: invId });
-      // Check if inv_time exists in finalBillData
-      const invTime = myfinalbilldata[0].inv_time;
-      const formattedTime = invTime ? invTime.split(':').slice(0, 2).join(':') : 'N/A'; // Use 'N/A' if inv_time is undefined
-
-      // Format the data for printing using a similar structure
-      const printContent = `
-        <html>
-          <head>
-            <style>
-              html, body {
-                margin: 0;
-                padding: 0;
-                font-family: 'Cambria', monospace;
-              }
-              body {
-                font-size: 18px;
-                width: 80mm;
-              }
-              .bill-header {
-                text-align: center;
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                border-bottom: none;
-              }
-              .bill-header h2 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                line-height: 1.25;
-                word-break: break-word;
-              }
-              .bill-header .company-info {
-                margin-top: 4px;
-              }
-              .bill-header .company-info p {
-                margin: 2px 0;
-                font-size: 18px;
-                line-height: 1.35;
-                word-break: break-word;
-                white-space: normal;
-              }
-              .table {
-                width: 100%;
-                margin-top: 1px;
-                border-collapse: collapse;
-              }
-              .table th, .table td {
-                text-align: left;
-                padding: 5px 0;
-                font-size: 18px;
-                line-height: 1.6;
-              }
-              .table th {
-                font-weight: bold;
-                border-bottom: 1px solid #000;
-              }
-              .table th.header {
-                font-weight: bold;
-                
-              }
-              .table td {
-                border-bottom: 1px solid #ddd;
-              }
-              .table td.total {
-                font-weight: bold;
-                font-size: 18px;
-                margin-right: 2px;
-                border-bottom: 1px solid #000;
-              }
-              .total-row {
-                margin-top: 5px;
-                margin-right: 10px;
-                font-weight: bold;
-                text-align: right;
-                font-size: 18px;
-              }
-              .footer {
-                margin-top: 15px;
-                text-align: center;
-                font-size: 18px;
-              }
-            </style>
-          </head>
-          <body>
-            ${buildCompanyHeaderHtml()}
-            <div class="bill-bill-body">
-             
-              <table class="table">
-                
-                  <tr >
-                    <td class="header" >Invoice No: ${myfinalbilldata[0].inv_number || myfinalbilldata[0].id}</td>
-                   
-                    <td class="header" >${myfinalbilldata[0].table_number}</td>
-                    
-                  </tr>
-                   <tr >
-                    <td>Date: ${myfinalbilldata[0].inv_date}</td>
-                   
-                    <td>Time:${formattedTime}</td>
-                    
-                  </tr>
-                
-                <tbody> 
-                <tr>  </tr>
-                <tr>  </tr>
-                </tbody>
-                </table>
-             
-            </div>
-            <div class="bill-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>Qty</th>
-                    <th>Rate</th>
-                    <th>Total </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${myOrderItemsData
-          .map(
-            (item) => `
-                        <tr>
-                          <td>${item.item_name}</td>
-                          <td>${item.quantity}</td>
-                          <td>${currencySign} ${item.total_price / item.quantity}</td>
-                          <td>${currencySign} ${item.total_price}</td>
-                        </tr>
-                      `
-          )
-          .join('')}
-                </tbody>
-              </table>
-               <div class="total-row">
-              <span>Subtotal: ${currencySign} ${myfinalbilldata[0].subtotal}</span><br>
-              <span>Discount: ${currencySign} ${myfinalbilldata[0].discount_amount}</span><br>
-              <span>Subtotal After Discount: ${currencySign} ${myfinalbilldata[0].subtotal_afterdiscount}</span><br>
-
-              <span>Tax (7%): ${currencySign} ${myfinalbilldata[0].tax}</span><br>
-              <span>Round Off: ${currencySign} ${myfinalbilldata[0].roundoff}</span><br>
-              <span>Total Amount: ${currencySign} ${myfinalbilldata[0].grand_total}</span>
-            </div>
-              
-            </div>
-            <div class="footer">
-              <p>Printed on ${new Date().toLocaleString()}</p>
-              <p>Powered by Cloudnet Softwares</p>
-            </div>
-          </body>
-        </html>
-      `;
-
-      // Open the print dialog with the formatted content
-      const newWindow = window.open("", "_blank");
-      newWindow.document.write(printContent);
-      newWindow.document.close();
-
-      newWindow.onload = () => {
-        newWindow.print(); // Print the document
-        newWindow.close(); // Close the window after printing
-      };
-    } catch (error) {
-      console.error("Error fetching data for printing:", error);
-    }
-  };
-
-  const calculateTaxedTotal = async (subtotal) => {
-    try {
-      // const response = await axios.get("/api/taxes/active", getHeaders());
-      const response = await fetchData("taxes", setTotaltablelist, "id", { status: "active" });
-      const taxes = response.data;
-
-      let finalSubtotal = subtotal;
-      let total = subtotal;
-      const taxDetails = [];
-
-      taxes.forEach((tax) => {
-        const rate = parseFloat(tax.taxvalue);
-
-        if (tax.included) {
-          const taxAmount = (subtotal * rate) / (100 + rate);
-          finalSubtotal -= taxAmount;
-          taxDetails.push({
-            name: tax.taxname,
-            amount: taxAmount.toFixed(2),
-            included: true,
-          });
-        } else {
-          const taxAmount = (finalSubtotal * rate) / 100;
-          total += taxAmount;
-          taxDetails.push({
-            name: tax.taxname,
-            amount: taxAmount.toFixed(2),
-            included: false,
-          });
-        }
-      });
-
-      return {
-        subtotal: finalSubtotal.toFixed(2),
-        total: total.toFixed(2),
-        taxes: taxDetails,
-      };
-    } catch (err) {
-      console.error("Failed to fetch or calculate taxes", err);
-      return {
-        subtotal: subtotal.toFixed(2),
-        total: subtotal.toFixed(2),
-        taxes: [],
-      };
-    }
-  };
-
 
   const handleSaveBill = async (overrideMode) => {
     try {

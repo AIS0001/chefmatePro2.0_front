@@ -134,6 +134,8 @@ export default function Login() {
                     navigate("/dashboard/account", { replace: true });
                   } else if (usertype === "cashier") {
                     navigate("/dashboard/cashier", { replace: true });
+                                    } else if (usertype === "kds") {
+                                        navigate("/dashboard/kds", { replace: true });
                   } else if (usertype === "manager") {
                     navigate("/dashboard/analytics", { replace: true });
                   } else {
@@ -196,6 +198,9 @@ export default function Login() {
                     break;
                 case "cashier":
                     navigate("/dashboard/cashier", { replace: true });
+                    break;
+                case "kds":
+                    navigate("/dashboard/kds", { replace: true });
                     break;
                 case "manager":
                     navigate("/dashboard/admin", { replace: true });
