@@ -1,6 +1,21 @@
 # Changelog
 ---
 
+## [3.1.1] - 2026-05-22
+
+### Added
+- Loyalty Program V2 migration safety updates for MariaDB deployments, including guarded foreign key creation checks.
+- Inventory module update: liquor stock deduction now works correctly with the new POS billing flow.
+
+### Changed
+- Loyalty migration flow now creates dependent tables first, then applies foreign keys in conditional post-create steps.
+- Migration scripts now auto-align FK column types with referenced parent primary key types to reduce cross-install schema mismatch issues.
+
+### Fixed
+- Resolved repeated `errno: 150` foreign key creation failures in loyalty tables on existing installations with legacy schema differences.
+
+---
+
 ## [3.1.0] - 2026-04-25
 
 ### Added
